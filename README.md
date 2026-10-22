@@ -10,6 +10,8 @@
 - [设计系统与 Token](design-system/task-manager/MASTER.md)
 - [真实链路验收矩阵](docs/ACCEPTANCE.md)
 - [开源研究与决策](docs/RESEARCH.md)
+- [实际后端 API](docs/API.md)
+- [后端阶段验收](docs/evidence/native-backend.md)
 
 只显示真实 Windows 数据。无法获取的指标以“不可用”及原因呈现；进程 I/O 不冒充磁盘物理吞吐，应用历史明确限定为本次采集会话。最终交付需同时通过后端、浏览器 UI 和 Electron 桌面验证。
 
