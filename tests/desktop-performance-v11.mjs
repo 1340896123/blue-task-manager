@@ -7,7 +7,7 @@ import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { until, delay, processTree, ownedAlive, portOpen, check } from './e2e-support.mjs';
-import { probe } from './native-ui-support.mjs';
+import { probe, windows, nativeUi } from './native-ui-support.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const port = 5196, cdp = 9226, origin = `http://127.0.0.1:${port}`;
 if (await portOpen(port) || await portOpen(cdp)) throw new Error('Performance ports in use');
@@ -21,6 +21,7 @@ async function wire(encoding, etag) { const start = performance.now(); return ne
 try {
   await until(async () => (await (await fetch(origin+'/api/health')).json()).ready && await portOpen(cdp), 'release desktop ready', 45000); const startupMs = performance.now()-started;
   browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`, { noDefaults: true }); await until(()=>browser.contexts()[0]?.pages().length,'desktop page'); page=browser.contexts()[0].pages()[0];
+  tree=processTree(host.pid);const window=windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid));check(Boolean(window),'performance native app window observed');nativeUi(window,'foreground');await page.bringToFront();await page.waitForFunction(()=>!document.hidden);check(await page.evaluate(()=>!document.hidden),'performance window is genuinely visible without CDP focus emulation');
   await page.getByText('已连接 · 实时采样',{exact:true}).waitFor(); await page.keyboard.press('Control+0');
   await until(async()=>{last=await (await fetch(origin+'/api/snapshot')).json(); return last.performanceHistory.length===120;},'fill120 actual one-second history points',160000);
   check(last.performanceHistory.length===120,'history fully warmed'); console.log('120 real history points warmed');
@@ -35,7 +36,8 @@ try {
   tree=processTree(host.pid); const before=resources(tree); const measureStarted=performance.now();
   await delay(32000);
   const afterTree=processTree(host.pid); check(afterTree.length===tree.length&&afterTree.every(p=>tree.some(b=>b.pid===p.pid&&b.fileTime===p.fileTime)),'whole app identity set stays stable during resource measurement'); const after=resources(tree); const elapsedMs=performance.now()-measureStarted;measuring=false;
-  check(measurements.length>=20 && measurements.every(s=>s.history===120),'real full-history steady-state measure');
+  check(await page.evaluate(()=>!document.hidden),'performance window remained genuinely visible');
+  check(measurements.length>=20 && measurements.every(s=>s.history===120),`real full-history steady-state measure (${measurements.length} UI samples)`);
   const cpu=(a,b)=>Number(BigInt(b.cpuTime100ns)-BigInt(a.cpuTime100ns))/10000/elapsedMs*100;
   const appCpu=after.reduce((n,r)=>n+cpu(before.find(b=>b.pid===r.pid),r),0); const hostCpu=cpu(before.find(b=>b.pid===host.pid),after.find(b=>b.pid===host.pid));
   const nativeMetrics=await page.evaluate(()=>({jsHeapBytes:performance.memory?.usedJSHeapSize??null,totalJsHeapBytes:performance.memory?.totalJSHeapSize??null,domNodes:document.querySelectorAll('*').length,mountedRows:document.querySelectorAll('tbody tr[data-row-key]').length,logicalViewport:{width:innerWidth,height:innerHeight},dpr:devicePixelRatio}));
