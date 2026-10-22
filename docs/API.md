@@ -6,6 +6,12 @@
 
 ### 版本、偏好与详情
 
+阶段2a已实现（后续动作仍按下方合同继续实施）：`GET/POST preferences`返回`{preferences,warning:Unavailable|null}`，POST为完整UiPreferences对象而非补丁。字段精确为`version:1,density:compact|standard,sidebarCollapsed:boolean,processView:flat|tree,pages:{页面名:{query,sortKey,sortDirection:ascending|descending,visibleColumns:string[]|null,filters:{currentUser,sessionId,state:all|running|restricted}|null,scrollTop,selectedIdentity}},window:{width,height,zoomFactor,alwaysOnTop}|null`。query≤256、8页、40列、配置≤64KiB；进程/详情必须保留name/pid。省略pages/window使用默认。保存位置为`%LOCALAPPDATA%/BlueDomainTaskManager/preferences.json`，测试必须设`TASKMANAGER_DATA_DIR`隔离。坏文件降级warning，不保存paused/frozen。
+
+快照增加`samplingDurationMs`（本次原生+慢数据+聚合的单调耗时，非HTTP序列化耗时）；进程增加`privateBytes`（PROCESS_MEMORY_COUNTERS_EX.PrivateUsage，专用提交）、`handleCount,startedAtUtc,uptimeSeconds`；系统增加`commitBytes,commitLimitBytes,cacheBytes,threadCount,handleCount`（GetPerformanceInfo×PageSize）。unknown仍null并有unavailable。元数据后台有界队列初读期间为`loading`，基本路径与实时资源先可用。
+
+快照JSON.NET UTF-8表示按完整revision缓存，ETag含每次Host启动随机实例ID；暂停/周期/历史/警告变更使其失效。标准gzip Fastest按Accept-Encoding协商；默认GET仍是完整原合同，不新增私有差分协议。
+
 - GET `snapshot`返回标准ETag；客户端携带`If-None-Match`，表示未变返回304且无体。ETag对应完整表示，采样、暂停/周期、警告、历史重置等变化都使其改变，不能只依赖sampleId。304不等于断线，不重建React快照对象。`bootstrap`及token继续no-store；快照即使no-store仍可用客户端内存中的手动条件请求，不使用磁盘HTTP缓存。
 - GET/POST `preferences`读写白名单UI偏好：`version`、`density`、`sidebarCollapsed`、`processView`、`pages`（已知页面各自query≤256字符、排序白名单、visibleColumns白名单、筛选）。列表数量有界且保留名称/PID；JSON.NET原子写用户本地配置。interval沿用settings并持久化；paused/frozen默认不跨重启恢复。坏文件回退默认并给可见原因；不允许持久化token/快照。
 - GET `processes/{pid}/details?creationTimeFileTime=...`按身份实时读取，返回`process`、`capturedAtUtc`、`startedAtUtc`、`uptimeSeconds`、`handleCount`、`privateBytes`（PrivateUsage，UI称“专用提交”）、`relatedServices[]`和`unavailable`。退出404，身份变化409；未知仍null。可在现有ProcessDto增加低成本字段，不能因此每帧拉取所有服务配置/网络端点。

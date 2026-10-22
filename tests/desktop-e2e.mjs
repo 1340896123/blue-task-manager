@@ -16,7 +16,7 @@ const port = Number(process.env.TASKMANAGER_DESKTOP_PORT ?? 5193), cdp = Number(
 const origin = `http://127.0.0.1:${port}`;
 await mkdir(output, { recursive: true });
 if (await portOpen(port) || await portOpen(cdp)) throw new Error('Desktop test ports already in use');
-const host = spawn(executable, [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore' });
+const host = spawn(executable, [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences'), TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore' });
 const independent = spawn(workloadExe, [temporary, '180'], { cwd: root, windowsHide: true, stdio: 'ignore' });
 let browser, target, tree = [], page;
 const screenshots = [];

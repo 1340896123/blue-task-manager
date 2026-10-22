@@ -13,7 +13,7 @@ const workloadExe = path.join(root, 'tests', 'TaskManager.TestWorkload', 'bin', 
 const port = Number(process.env.TASKMANAGER_TEST_PORT ?? 5191);
 const origin = `http://127.0.0.1:${port}`;
 const directory = await mkdtemp(path.join(tmpdir(), 'taskmanager-native-'));
-const host = spawn(hostExe, ['--headless', `--port=${port}`], { cwd: root, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+const host = spawn(hostExe, ['--headless', `--port=${port}`], { cwd: root, env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(directory, 'preferences') }, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
 let startupFailure = '';
 host.stderr.on('data', value => { startupFailure += value; });
 host.stdout.on('data', () => {}); // Do not persist native snapshots, tokens or unrelated process listings.

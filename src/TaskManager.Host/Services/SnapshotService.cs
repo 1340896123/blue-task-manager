@@ -4,11 +4,14 @@ using System.Diagnostics;
 
 namespace TaskManager.Host.Services;
 
-public sealed class SnapshotService(ILogger<SnapshotService> logger) : BackgroundService
+public sealed class SnapshotService(ILogger<SnapshotService> logger, PreferencesService preferences) : BackgroundService
 {
     private readonly object _gate = new();
     private readonly Win32Collector _collector = new();
-    private SamplingSettings _settings = new();
+    private SamplingSettings _settings = new(preferences.IntervalMs, false);
+    private readonly string _instance = Guid.NewGuid().ToString("N");
+    private long _revision;
+    private SnapshotRepresentation? _serialized;
     private SnapshotDto? _snapshot;
     private DateTime _sessionStartedAt = DateTime.UtcNow;
     private bool _resetHistory;
@@ -31,13 +34,43 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger) : Backgroun
     };
 
     public SamplingSettings Settings { get { lock (_gate) return _settings; } }
-    public SnapshotDto? Current { get { lock (_gate) return _snapshot is null ? null : _snapshot with { IntervalMs = _settings.IntervalMs, Paused = _settings.Paused, SessionStartedAtUtc = _sessionStartedAt }; } }
+    public SnapshotDto? Current { get { lock (_gate) { SynchronizePreferenceWarning(); return _snapshot; } } }
+    public SnapshotRepresentation? Representation
+    {
+        get
+        {
+            lock (_gate)
+            {
+                SynchronizePreferenceWarning();
+                if (_snapshot is null) return null;
+                return _serialized ??= new($"\"{_instance}-{_revision}\"", System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(_snapshot, SnapshotJson.Settings)));
+            }
+        }
+    }
+    private void Invalidate() { _revision++; _serialized = null; }
+    private void SynchronizePreferenceWarning()
+    {
+        if (_snapshot is null) return;
+        var before = _snapshot.Warnings.FirstOrDefault(value => value.Code.StartsWith("preferences", StringComparison.Ordinal));
+        var after = preferences.Warning;
+        if (before == after) return;
+        var warnings = _snapshot.Warnings.Where(value => !value.Code.StartsWith("preferences", StringComparison.Ordinal));
+        _snapshot = _snapshot with { Warnings = (after is null ? warnings : warnings.Append(after)).ToArray() };
+        Invalidate();
+    }
     public SamplingSettings ApplySettings(SettingsRequest request)
     {
         if (request.IntervalMs is not (1000 or 2000 or 5000)) throw new ApiException(400, "invalidInterval", "采样周期只允许 1000、2000、5000 毫秒。");
-        lock (_gate) return _settings = new(request.IntervalMs, request.Paused);
+        preferences.SaveInterval(request.IntervalMs);
+        lock (_gate)
+        {
+            _settings = new(request.IntervalMs, request.Paused);
+            if (_snapshot is not null) _snapshot = _snapshot with { IntervalMs = _settings.IntervalMs, Paused = _settings.Paused };
+            Invalidate();
+            return _settings;
+        }
     }
-    public void ResetHistory() { lock (_gate) { _sessionStartedAt = DateTime.UtcNow; _resetHistory = true; if (_snapshot is not null) _snapshot = _snapshot with { History = Array.Empty<ProcessHistoryDto>(), SessionStartedAtUtc = _sessionStartedAt }; } }
+    public void ResetHistory() { lock (_gate) { _sessionStartedAt = DateTime.UtcNow; _resetHistory = true; if (_snapshot is not null) _snapshot = _snapshot with { History = Array.Empty<ProcessHistoryDto>(), SessionStartedAtUtc = _sessionStartedAt }; Invalidate(); } }
     public void RefreshSlowData() { lock (_gate) _forceSlowRefresh = true; }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -52,6 +85,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger) : Backgroun
             {
                 try
                 {
+                    var started = Stopwatch.GetTimestamp();
                     var raw = _collector.Collect();
                     var capturedAt = DateTime.UtcNow;
                     bool refreshSlow;
@@ -66,14 +100,16 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger) : Backgroun
                         while (_performance.Count > 120) _performance.Dequeue();
                         _snapshot = new(++sampleId, capturedAt, _sessionStartedAt, _settings.IntervalMs, _settings.Paused, raw.System, raw.Processes,
                             slow.Services, slow.StartupItems, users, _history.Values.Select(item => item.ToDto()).OrderByDescending(item => item.IsRunning).ThenBy(item => item.Name).ToArray(),
-                            _performance.ToArray(), Capabilities, slow.Warnings, slow.CapturedAtUtc);
+                            _performance.ToArray(), Capabilities, preferences.Warning is { } warning ? slow.Warnings.Append(warning).ToArray() : slow.Warnings, slow.CapturedAtUtc)
+                        { SamplingDurationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds };
+                        Invalidate();
                     }
                     nextSample = Stopwatch.GetTimestamp() + settings.IntervalMs * Stopwatch.Frequency / 1000;
                 }
                 catch (Exception exception)
                 {
                     logger.LogError(exception, "Windows 采样失败；保留最后成功快照");
-                    lock (_gate) if (_snapshot is not null) _snapshot = _snapshot with { Warnings = _snapshot.Warnings.Append(new Unavailable("error", "最新系统采样失败；当前数据是上次成功快照。")).TakeLast(20).ToArray() };
+                    lock (_gate) { if (_snapshot is not null) _snapshot = _snapshot with { Warnings = _snapshot.Warnings.Append(new Unavailable("error", "最新系统采样失败；当前数据是上次成功快照。")).TakeLast(20).ToArray() }; Invalidate(); }
                     nextSample = Stopwatch.GetTimestamp() + settings.IntervalMs * Stopwatch.Frequency / 1000;
                 }
             }
@@ -81,6 +117,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger) : Backgroun
             await Task.Delay(100, stoppingToken);
         }
     }
+
+    public override void Dispose() { base.Dispose(); _collector.Dispose(); }
 
     private void Accumulate(RawCollection raw, DateTime capturedAt)
     {

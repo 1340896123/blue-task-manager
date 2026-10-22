@@ -16,7 +16,7 @@ const origin = `http://127.0.0.1:${port}`;
 const output = path.join(root, 'output', 'playwright');
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-ui-'));
 await mkdir(output, { recursive: true });
-const host = spawn(hostExe, ['--headless', `--port=${port}`], { cwd: path.dirname(hostExe), windowsHide: true, stdio: 'ignore' });
+const host = spawn(hostExe, ['--headless', `--port=${port}`], { cwd: path.dirname(hostExe), env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences') }, windowsHide: true, stdio: 'ignore' });
 const workload = spawn(workloadExe, [temporary, '150'], { cwd: root, windowsHide: true, stdio: 'ignore' });
 let browser;
 let launchedTarget;

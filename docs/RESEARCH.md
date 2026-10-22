@@ -49,6 +49,8 @@ Release采用官方支持的.NET优先启动，`.electron`与主机放同目录�
 
 ## 3. CsWin32
 
+1.1核心增量复核TaskExplorer `TaskExplorer/API/Windows/WinProcess.cpp` 的SetPriority/SetPowerThrottled与`WinService.cpp`的Start/Stop：采用独立对象动作、最小权限句柄与原生错误模式；不使用其驱动/提权代理/私有协议。Windows10/11的[GetProcessMemoryInfo权限文档](https://learn.microsoft.com/windows/win32/api/psapi/nf-psapi-getprocessmemoryinfo)仅要求QUERY_INFORMATION或QUERY_LIMITED_INFORMATION，VM_READ为XP/Server2003旧要求，本项目复用limited句柄读EX工作集/PrivateUsage。ETag/If-None-Match遵循标准HTTP，gzip使用ASP.NET官方ResponseCompression；文件/账户慢元数据借鉴成熟监控工具的独立缓存，后台单worker与显式loading避免阻塞实时采样。
+
 核验[microsoft/CsWin32 README](https://github.com/microsoft/CsWin32/blob/main/README.md)与[Getting started](https://microsoft.github.io/CsWin32/docs/getting-started.html)。它在编译时基于Win32 metadata生成强类型P/Invoke、COM及友好SafeHandle重载；不需要手写DllImport签名。采用NativeMethods.txt最小API集，把句柄生命周期集中在原生采集层。
 
 ## 4. UI/UX Pro Max 核验记录

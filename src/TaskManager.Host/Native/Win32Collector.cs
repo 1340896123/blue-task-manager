@@ -18,9 +18,9 @@ internal sealed record ProcessCounters(ulong? Cpu, ulong? Read, ulong? Write, lo
 internal sealed record ProcessMetadata(string? Path, string? Publisher, string? UserName, Dictionary<string, Unavailable> Unavailable);
 internal sealed record RawCollection(SystemDto System, List<ProcessDto> Processes, Dictionary<string, ProcessCounters> Counters);
 
-internal sealed class Win32Collector
+internal sealed class Win32Collector : IDisposable
 {
-    private readonly Dictionary<string, ProcessMetadata> _metadata = new();
+    private readonly ProcessMetadataCache _metadata = new();
     private Dictionary<string, ProcessCounters> _previous = new();
     private (ulong Idle, ulong Total)? _systemPrevious;
     private Dictionary<ulong, (ulong Receive, ulong Send)>? _networkPrevious;
@@ -60,7 +60,7 @@ internal sealed class Win32Collector
         }
         _previous = counters;
         var identities = counters.Keys.ToHashSet();
-        foreach (var key in _metadata.Keys.Where(key => !identities.Contains(key)).ToArray()) _metadata.Remove(key);
+        _metadata.Retain(identities);
         var system = ReadSystem(tick);
         system.ProcessCount = processes.Count;
         return new(system, processes, counters);
@@ -78,7 +78,7 @@ internal sealed class Win32Collector
         if (handle.IsInvalid)
         {
             var reason = NativeSupport.Error(openError, "打开进程失败");
-            foreach (var field in new[] { "creationTimeFileTime", "cpuPercent", "totalCpuTime100ns", "workingSetBytes", "path", "publisher", "userName", "priority", "ioReadBytes", "ioWriteBytes", "ioReadBytesPerSecond", "ioWriteBytesPerSecond", "terminate" }) unavailable[field] = reason;
+            foreach (var field in new[] { "creationTimeFileTime", "cpuPercent", "totalCpuTime100ns", "workingSetBytes", "privateBytes", "handleCount", "startedAtUtc", "uptimeSeconds", "path", "publisher", "userName", "priority", "ioReadBytes", "ioWriteBytes", "ioReadBytesPerSecond", "ioWriteBytesPerSecond", "terminate" }) unavailable[field] = reason;
             basic.State = "restricted";
             return basic;
         }
@@ -99,11 +99,7 @@ internal sealed class Win32Collector
         var row = new ProcessDto { Identity = identity, Pid = basic.Pid, ParentPid = basic.ParentPid, Name = basic.Name,
             ThreadCount = basic.ThreadCount, CreationTimeFileTime = basic.CreationTimeFileTime, TotalCpuTime100ns = basic.TotalCpuTime100ns,
             SessionId = basic.SessionId, Unavailable = unavailable };
-        if (!_metadata.TryGetValue(identity, out var metadata))
-        {
-            metadata = ReadMetadata(handle);
-            if (row.CreationTimeFileTime is not null) _metadata[identity] = metadata;
-        }
+        var metadata = _metadata.Read(handle, basic.Pid, identity);
         row.Path = metadata.Path;
         row.Publisher = metadata.Publisher;
         row.UserName = metadata.UserName;
@@ -112,11 +108,13 @@ internal sealed class Win32Collector
         if (priority != 0) row.Priority = priority switch { 0x20 => "正常", 0x40 => "空闲", 0x80 => "高", 0x100 => "实时", 0x4000 => "低于正常", 0x8000 => "高于正常", _ => priority.ToString(CultureInfo.InvariantCulture) };
         else unavailable["priority"] = NativeSupport.LastError("读取优先级失败");
 
-        // PSAPI requires stronger access on some Windows versions; retain all other readable fields on failure.
-        using (var memoryHandle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_INFORMATION | PROCESS_ACCESS_RIGHTS.PROCESS_VM_READ, false, row.Pid))
+        ReadMemory(handle, row);
+        if (PInvoke.GetProcessHandleCount(handle, out var handleCount)) row.HandleCount = handleCount;
+        else unavailable["handleCount"] = NativeSupport.LastError("读取进程句柄数失败");
+        if (row.CreationTimeFileTime is { } time && long.TryParse(time, out var rawTime))
         {
-            if (!memoryHandle.IsInvalid && PInvoke.K32GetProcessMemoryInfo(memoryHandle, out PROCESS_MEMORY_COUNTERS memory)) row.WorkingSetBytes = checked((long)memory.WorkingSetSize);
-            else unavailable["workingSetBytes"] = NativeSupport.LastError("读取工作集失败");
+            row.StartedAtUtc = DateTime.FromFileTimeUtc(rawTime);
+            row.UptimeSeconds = Math.Max(0, (DateTime.UtcNow - row.StartedAtUtc.Value).TotalSeconds);
         }
         ulong? read = null, write = null;
         if (PInvoke.GetProcessIoCounters(handle, out var io))
@@ -164,51 +162,19 @@ internal sealed class Win32Collector
         return (current.Value - previous.Value) / seconds * multiplier;
     }
 
-    private static ProcessMetadata ReadMetadata(SafeFileHandle handle)
+    internal static unsafe void ReadMemory(SafeFileHandle handle, ProcessDto row)
     {
-        var unavailable = new Dictionary<string, Unavailable>();
-        string? path = null, publisher = null, userName = null;
-        var buffer = new char[32768];
-        var length = (uint)buffer.Length;
-        if (PInvoke.QueryFullProcessImageName(handle, 0, buffer, ref length))
+        // Windows 10/11 accept QUERY_LIMITED_INFORMATION. VM_READ was an XP/2003 requirement.
+        var memory = new PROCESS_MEMORY_COUNTERS_EX { cb = (uint)sizeof(PROCESS_MEMORY_COUNTERS_EX) };
+        if (PInvoke.K32GetProcessMemoryInfo(new HANDLE(handle.DangerousGetHandle()), (PROCESS_MEMORY_COUNTERS*)&memory, (uint)sizeof(PROCESS_MEMORY_COUNTERS_EX)))
         {
-            path = new string(buffer, 0, (int)length);
-            try { publisher = FileVersionInfo.GetVersionInfo(path).CompanyName; }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception) { unavailable["publisher"] = new("error", "无法读取文件版本发布者。"); }
-            if (string.IsNullOrWhiteSpace(publisher)) { publisher = null; unavailable.TryAdd("publisher", new("notCollected", "文件未提供 CompanyName；该字段不是签名验证结果。")); }
+            row.WorkingSetBytes = checked((long)memory.WorkingSetSize);
+            row.PrivateBytes = checked((long)memory.PrivateUsage);
         }
-        else
-        {
-            unavailable["path"] = NativeSupport.LastError("读取路径失败");
-            unavailable["publisher"] = unavailable["path"];
-        }
-        userName = ReadOwner(handle, unavailable);
-        return new(path, publisher, userName, unavailable);
+        else row.Unavailable["workingSetBytes"] = row.Unavailable["privateBytes"] = NativeSupport.LastError("读取工作集/专用提交失败");
+        GC.KeepAlive(handle);
     }
-
-    private static unsafe string? ReadOwner(SafeFileHandle handle, Dictionary<string, Unavailable> unavailable)
-    {
-        if (!PInvoke.OpenProcessToken(handle, TOKEN_ACCESS_MASK.TOKEN_QUERY, out var token)) { unavailable["userName"] = NativeSupport.LastError("读取进程令牌失败"); return null; }
-        using (token)
-        {
-            uint required = 0;
-            PInvoke.GetTokenInformation(token, TOKEN_INFORMATION_CLASS.TokenUser, null, 0, out required);
-            if (required == 0 || required > 1024 * 1024) { unavailable["userName"] = NativeSupport.LastError("读取令牌用户长度失败"); return null; }
-            var bytes = new byte[required];
-            fixed (byte* data = bytes)
-            {
-                if (!PInvoke.GetTokenInformation(token, TOKEN_INFORMATION_CLASS.TokenUser, data, required, out _)) { unavailable["userName"] = NativeSupport.LastError("读取令牌用户失败"); return null; }
-                var user = (TOKEN_USER*)data;
-                var name = new char[512]; var domain = new char[512]; uint nameSize = 512, domainSize = 512;
-                fixed (char* namePointer = name)
-                fixed (char* domainPointer = domain)
-                {
-                    if (!PInvoke.LookupAccountSid(null, user->User.Sid, name, ref nameSize, domain, ref domainSize, out _)) { unavailable["userName"] = NativeSupport.LastError("解析用户 SID 失败"); return null; }
-                    return domainSize > 0 ? $"{new string(domainPointer, 0, (int)domainSize)}\\{new string(namePointer, 0, (int)nameSize)}" : new string(namePointer, 0, (int)nameSize);
-                }
-            }
-        }
-    }
+    public void Dispose() => _metadata.Dispose();
 
     private unsafe SystemDto ReadSystem(long tick)
     {
@@ -232,6 +198,16 @@ internal sealed class Win32Collector
             _systemPrevious = (idle, total);
         }
         else system.Unavailable["cpuPercent"] = NativeSupport.LastError("读取系统 CPU 失败");
+        var performance = new PERFORMANCE_INFORMATION { cb = (uint)sizeof(PERFORMANCE_INFORMATION) };
+        if (PInvoke.GetPerformanceInfo(ref performance, (uint)sizeof(PERFORMANCE_INFORMATION)))
+        {
+            system.CommitBytes = checked((long)(performance.CommitTotal * performance.PageSize));
+            system.CommitLimitBytes = checked((long)(performance.CommitLimit * performance.PageSize));
+            system.CacheBytes = checked((long)(performance.SystemCache * performance.PageSize));
+            system.ThreadCount = performance.ThreadCount;
+            system.HandleCount = performance.HandleCount;
+        }
+        else foreach (var field in new[] { "commitBytes", "commitLimitBytes", "cacheBytes", "threadCount", "handleCount" }) system.Unavailable[field] = NativeSupport.LastError("读取系统提交/缓存/句柄失败");
         ReadNetwork(system, tick);
         return system;
     }

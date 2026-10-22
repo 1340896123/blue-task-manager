@@ -6,7 +6,7 @@ namespace TaskManager.Host.Api;
 
 [ApiController]
 [Route("api")]
-public sealed class TaskManagerController(SnapshotService snapshots, ProcessActionService actions, LocalAccessGuard guard, DesktopWindowService desktop) : ControllerBase
+public sealed class TaskManagerController(SnapshotService snapshots, ProcessActionService actions, LocalAccessGuard guard, DesktopWindowService desktop, PreferencesService preferences) : ControllerBase
 {
     [HttpGet("health")]
     public IActionResult Health() => Ok(new { platform = "Windows", version = "1.0.0", ready = snapshots.Current is not null, processId = Environment.ProcessId, nativeSource = "Microsoft.Windows.CsWin32", json = "Newtonsoft.Json" });
@@ -15,7 +15,20 @@ public sealed class TaskManagerController(SnapshotService snapshots, ProcessActi
     public IActionResult Bootstrap() => Ok(new { token = guard.Token, settings = snapshots.Settings, capabilities = SnapshotService.Capabilities, version = "1.0.0", desktop = desktop.Available });
 
     [HttpGet("snapshot")]
-    public IActionResult Snapshot() => snapshots.Current is { } snapshot ? Ok(snapshot) : StatusCode(503, new ErrorEnvelope(new("warmingUp", "Windows 首次采样尚未完成，请稍后重试。")));
+    public IActionResult Snapshot()
+    {
+        var representation = snapshots.Representation;
+        if (representation is null) return StatusCode(503, new ErrorEnvelope(new("warmingUp", "Windows 首次采样尚未完成，请稍后重试。")));
+        Response.Headers.ETag = representation.ETag;
+        if (Request.Headers.IfNoneMatch.ToString().Split(',').Any(value => value.Trim() is "*" || value.Trim().Replace("W/", "", StringComparison.Ordinal) == representation.ETag)) return StatusCode(304);
+        return File(representation.Utf8, "application/json; charset=utf-8");
+    }
+
+    [HttpGet("preferences")]
+    public IActionResult Preferences() => Ok(preferences.Current);
+
+    [HttpPost("preferences")]
+    public IActionResult Preferences(UiPreferences request) => Ok(preferences.Save(request));
 
     [HttpPost("processes/start")]
     public IActionResult Start(StartRequest request) => Ok(actions.Start(request));

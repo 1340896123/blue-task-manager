@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { assertions, check, delay, until, portOpen } from './e2e-support.mjs';
@@ -9,7 +10,8 @@ const hostExe = path.join(root, 'src/TaskManager.Host/bin/Release/net10.0-window
 const port = 5194, origin = `http://127.0.0.1:${port}`, output = path.join(root, 'output/playwright');
 await mkdir(output, { recursive: true });
 if (await portOpen(port)) throw new Error('Recovery test port already in use');
-const start = () => spawn(hostExe, ['--headless', `--port=${port}`], { cwd: path.dirname(hostExe), windowsHide: true, stdio: 'ignore' });
+const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-recovery-'));
+const start = () => spawn(hostExe, ['--headless', `--port=${port}`], { cwd: path.dirname(hostExe), env: { ...process.env, TASKMANAGER_DATA_DIR: temporary }, windowsHide: true, stdio: 'ignore' });
 let host = start(), browser;
 try {
   await until(async () => (await (await fetch(origin + '/api/health')).json()).ready, 'host ready');
@@ -41,4 +43,4 @@ try {
   await page.screenshot({ path: path.join(output, 'final-recovery-connected.png') });
   console.log(JSON.stringify({ result: 'PASS', assertions: assertions.length, checks: assertions }, null, 2));
   await writeFile(path.join(output, 'final-recovery-results.json'), JSON.stringify({ result: 'PASS', checks: assertions, checkedAtUtc: new Date().toISOString() }, null, 2));
-} finally { await browser?.close(); host.kill(); await until(async () => !await portOpen(port), 'recovery cleanup'); }
+} finally { await browser?.close(); host.kill(); await until(async () => !await portOpen(port), 'recovery cleanup'); await rm(temporary, { recursive: true, force: true }); }

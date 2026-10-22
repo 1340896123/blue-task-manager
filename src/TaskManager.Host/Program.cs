@@ -27,11 +27,15 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
     options.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Include;
 });
 builder.Services.AddSingleton<LocalAccessGuard>();
+builder.Services.AddSingleton<PreferencesService>();
+builder.Services.AddResponseCompression(options => options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>());
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options => options.Level = System.IO.Compression.CompressionLevel.Fastest);
 builder.Services.AddSingleton<SnapshotService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<SnapshotService>());
 builder.Services.AddSingleton<ProcessActionService>();
 var app = builder.Build();
 app.UseMiddleware<LocalAccessMiddleware>();
+app.UseResponseCompression();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapControllers();
