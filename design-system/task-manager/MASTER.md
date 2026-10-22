@@ -1,5 +1,47 @@
 # Task Manager — Windows Blue Design System
 
+## 1.1组件与Token增量
+
+本节扩展既有视觉而不改变参考布局/Windows蓝色方向。实现先映射这些CSS变量/Tailwind语义值；组件禁止新硬编码Hex/RGB/阴影/动画。已有Token适用于全部新增菜单、详情、资源选择器、树及CSV反馈。
+
+```css
+--width-context-menu: 248px;
+--width-detail-panel: 820px;
+--width-dialog-wide: 720px;
+--width-column-name: 272px;
+--width-column-name-detail: 240px;
+--width-column-pid: 80px;
+--width-column-number: 112px;
+--width-column-path: 420px;
+--width-resource-list: 200px;
+--height-menu-item: 32px;
+--height-tab: 40px;
+--height-chip: 24px;
+--height-chart: 168px;
+--space-tree-indent: 20px;
+--size-tree-toggle: 24px;
+--size-process-icon: 16px;
+--stroke-icon: 1.75px;
+--border-width: 1px;
+--focus-width: 2px;
+--focus-offset: 2px;
+--z-sticky: 2;
+--z-menu: 20;
+--z-toast: 30;
+--z-modal: 40;
+--shadow-popover: 0 8px 24px rgb(15 35 60 / 16%);
+```
+
+- 详情宽度`min(--width-detail-panel, viewport - 2×--space-6)`；内部页签、内容滚动，长路径换行/可选择。窄窗口不挤压后方列表；关闭后恢复发起行焦点与滚动。详情里普通标签用caption/body，数值用tabular-nums，不堆24px指标卡。
+- 右键/更多菜单使用surface、control-border、shadow-popover、radius-control；普通项text/hover，危险项danger，禁用项text-disabled+原因。菜单方向键/Home/End/Enter/Escape、Shift+F10可用；菜单开时固定目标；菜单不能盖住后还漂移跟随动态行。
+- 树展开按钮24px命中区，SVG使用icon-sm，缩进只由space-tree-indent乘层级；深树名称列内部裁切/提示，不能扩大整个页面。层级语义/展开状态可访问；名称和PID不可被列选择隐藏。
+- 冻结/暂停分别使用warning文字+warning-bg，明确状态/时刻/恢复操作；连接成功使用success。锁定/运行状态不能仅用色点；热度仅真实有效指标按原色阶。
+- 密度切换唯一来源为height-row-compact/standard，虚拟估算与CSS统一读取；菜单、快捷键提示、列选择器、筛选器统一control尺寸与space-2/3/4，不新增每页不同规格。
+- 主命令保持可见；低频操作合并“更多”且有菜单名称。窄窗口工具栏允许折到已命名菜单，不能横向溢出页面或隐藏唯一入口。
+- 图标优先真实Shell应用图标；失败使用统一AppWindow，禁止猜品牌。位图固定size-process-icon并保留布局，延迟加载不引起行高变化。业务徽标与导航仍统一Lucide线性SVG。
+- 资源曲线遵守原chart Token；GPU/物理磁盘/适配器选中状态复用selection+accent。图例说明实际来源/单位与当前接口，不以空曲线冒充0。
+- 无障碍验收继续桌面范围：960×640、1380×860、125%缩放、reduced-motion、键盘与焦点；不套用手机safe-area或强行新增暗色主题。所有新增字号≥12px；颜色对比标准沿用正文4.5:1、边界/焦点3:1。
+
 版本1.0；适用于全部业务页与设置。来源：用户参考图的信息结构 + Windows Fluent蓝色方向 + 已核验的UI/UX Pro Max通用可访问性/实时监控建议。系统查询返回的营销模板未采纳，详见docs/RESEARCH.md。本文件是视觉Token的唯一源，页面覆盖不得削弱状态正确性和可访问性。
 
 ## 1. 视觉原则

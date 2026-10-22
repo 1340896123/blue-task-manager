@@ -1,5 +1,23 @@
 # 开源实现研究与技术决策
 
+## 1.1日常闭环增量核验（2026-10-23）
+
+本轮先查成熟源码，再约束实现；只借鉴公开接口和交互模型，不复制GPL实现或私有协议。GitHub API/raw在线核验TaskExplorer仍为`9f3f95d22f07f759dd1e0114417529ba51decb01`；SystemInformer当前master为`83d559622c4582358c3cbc23ba9f128b47f17e47`。
+
+| 来源/位置 | 本次核验观察 | 采用/限制 |
+|---|---|---|
+| [TaskExplorer WinService.cpp](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/TaskExplorer/API/Windows/WinService.cpp) 约328/361/394/427行 | StartService与ControlService区分启动/暂停/恢复/停止，查询状态与配置独立 | 服务动作走SCM/CsWin32，成功必须等待真实状态；不照搬提权/驱动路径 |
+| [TaskExplorer WinSocket.cpp](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/TaskExplorer/API/Windows/WinSocket.cpp) 约459～514行 | 对IPv4/IPv6分别GetExtendedTcpTable/GetExtendedUdpTable，关联owner与创建时间 | 本项目选择轻量OWNER_PID按需连接页；枚举前后重验目标创建身份。TCP/UDP是端点，不是网络吞吐 |
+| [SystemInformer phlib/svcsup.c](https://github.com/winsiderss/systeminformer/blob/83d559622c4582358c3cbc23ba9f128b47f17e47/phlib/svcsup.c) 约794/804/951/959/980/2553/2583行 | QueryServiceStatusEx、StartService、ControlService分开，操作后状态查询 | 成熟SCM模式、状态/权限与超时模型；不把API接受当最终完成，不自动停止依赖 |
+| [SystemInformer netprv.c](https://github.com/winsiderss/systeminformer/blob/83d559622c4582358c3cbc23ba9f128b47f17e47/SystemInformer/netprv.c) 约1109/1179/1776～1813行 | 连接CreateTime参与对象关联；IPv4/IPv6及TCP/UDP独立收集；provider elapsed使用真实时间 | 连接身份与部分读取说明，短TTL按需页签；不引入其服务/驱动 |
+| [微软PdhAddEnglishCounterW](https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhaddenglishcounterw)（本轮HTTP200核验） | 标准English counter接口避免本地化路径名称 | CsWin32 PDH query复用+两帧有效样本；GPU最忙引擎，PhysicalDisk注明源语义；异步后置初始化不阻塞基本就绪 |
+| [微软GetProcessMemoryInfo](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getprocessmemoryinfo)（主代理在线核验） | 当前Windows QUERY_INFORMATION或QUERY_LIMITED_INFORMATION即可，VM_READ是XP/Server2003要求 | 复用现有limited句柄，PROCESS_MEMORY_COUNTERS_EX.PrivateUsage称专用提交；减少约850额外OpenProcess/frame及误报无权 |
+| [微软Starting a Service](https://learn.microsoft.com/en-us/windows/win32/services/starting-a-service)（本轮HTTP200核验） | StartService、实际状态及等待过程属于独立环节 | 有界QueryServiceStatusEx等待与最新状态回报；不安装服务/申请管理员权限作为普通运行前提 |
+
+本机验证事实由主代理提供：GPU Engine有效实例1632，支持可用采集；883进程完整快照约1.26MB；当前非管理员。故GPU应真实接入并测开销，304/缓存有实际收益，服务成功E2E需明确权限条件，不为覆盖率操作用户服务。
+
+UI沿既有MASTER增量。应用About Face的“目标→场景→行为→可观察验收”方法，不编造访谈；`ui-ux-pro-max`本轮React查询`memo list rendering`命中按实测使用memo/稳定keys，采用identity key。`virtualize data table`与重试`large list virtualize`未匹配虚拟化规则，不能作为数据库已验证结论；虚拟列表沿用现有TanStack成熟实现与真实DOM测量，通用表格容器滚动建议适用。已读pro-rules并按其scope选择桌面适用项，不套用手机安全区或375px验收。
+
 核验日期：2026-10-23。只借鉴架构、计数语义和公开Win32实践，不直接复制TaskExplorer的C++实现、驱动代码或远程协议。
 
 ## 1. TaskExplorer

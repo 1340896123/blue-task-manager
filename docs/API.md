@@ -1,4 +1,40 @@
-# 实际后端 API 合同
+# 后端 API 合同
+
+## 1.1实施增量
+
+本节是本轮实施合同；以下原有章节是1.0已验收基线。可根据实际CsWin32生成类型调整DTO/路径，但必须同步前端、本文与真实E2E。继续复用JSON.NET、标准HTTP状态和同源POST令牌校验，不发明私有协议。
+
+### 版本、偏好与详情
+
+- GET `snapshot`返回标准ETag；客户端携带`If-None-Match`，表示未变返回304且无体。ETag对应完整表示，采样、暂停/周期、警告、历史重置等变化都使其改变，不能只依赖sampleId。304不等于断线，不重建React快照对象。`bootstrap`及token继续no-store；快照即使no-store仍可用客户端内存中的手动条件请求，不使用磁盘HTTP缓存。
+- GET/POST `preferences`读写白名单UI偏好：`version`、`density`、`sidebarCollapsed`、`processView`、`pages`（已知页面各自query≤256字符、排序白名单、visibleColumns白名单、筛选）。列表数量有界且保留名称/PID；JSON.NET原子写用户本地配置。interval沿用settings并持久化；paused/frozen默认不跨重启恢复。坏文件回退默认并给可见原因；不允许持久化token/快照。
+- GET `processes/{pid}/details?creationTimeFileTime=...`按身份实时读取，返回`process`、`capturedAtUtc`、`startedAtUtc`、`uptimeSeconds`、`handleCount`、`privateBytes`（PrivateUsage，UI称“专用提交”）、`relatedServices[]`和`unavailable`。退出404，身份变化409；未知仍null。可在现有ProcessDto增加低成本字段，不能因此每帧拉取所有服务配置/网络端点。
+- GET `processes/{pid}/connections?creationTimeFileTime=...`返回`capturedAtUtc,identity,connections[],unavailable,truncated`。连接含`protocol`（TCP/UDP）、`addressFamily`、`localAddress/localPort`、`remoteAddress/remotePort`（UDP可null）、`state`、`pid`，IPv4/IPv6均覆盖。CsWin32 GetExtendedTcpTable/GetExtendedUdpTable OWNER_PID，枚举前后核验身份，不做自动反向DNS；按需短TTL，最多5000条并显式截断。连接不是流量吞吐。
+- GET `processes/{pid}/icon?creationTimeFileTime=...`按身份取路径，返回标准image/png或明确无图标响应；SHGetFileInfo等公开Shell接口，有界路径+mtime缓存；前端仅可见行请求并保留通用图标，不把base64塞进快照。
+
+### 写动作
+
+| 方法与路径 | 输入与行为 |
+|---|---|
+| POST `processes/{pid}/priority` | `{creationTimeFileTime,priority}`；priority白名单`idle/belowNormal/normal/aboveNormal/high`，拒绝realtime/未知值；同句柄身份/保护检查+SetPriorityClass+GetPriorityClass读回；返回实际身份与实际优先级 |
+| POST `processes/{pid}/tree-preview` | `{creationTimeFileTime}`；返回当前根/后代成员完整`pid,creationTimeFileTime,identity,name,parentIdentity,canTerminate,reason`与采样时间；无法可靠建立身份的成员阻止树动作，不能悄悄跳过 |
+| POST `processes/{pid}/terminate-tree` | `{creationTimeFileTime,members:[{pid,creationTimeFileTime}]}`；仅接受用户预览的确切集合。执行前重新枚举比对成员并打开所有必要句柄，逐一重验身份/保护；集合变动409且不开始。叶到根执行，执行中失败返回逐项成功/失败/未执行，不声称事务全成功，不重试或扩大集合 |
+| POST `processes/{pid}/file-action` | `{creationTimeFileTime,action:"openLocation"\|"properties"}`；后端取核验路径，Shell标准接口定位文件/属性；禁止renderer传入任意路径/脚本/verb。无路径/已退出/权限给具体错误 |
+| POST `desktop/browse-executable` | 本地exe选择，取消返回`{cancelled:true,path:null}`；成功返回规范路径，不执行；headless明确503。不自动提权，不将文件选择当作进程已启动 |
+| POST `services/{name}/control` | `{command:"start"\|"stop"\|"restart",expectedState,expectedPid}`；URL编码真实服务名；SCM最小权限、同服务句柄重验状态/PID，StartService/ControlService并QueryServiceStatusEx等待（有界≤15秒）；返回实际state/pid/completed/timedOut/message。权限403；输入400；目标变化409；超时保留最新实际状态不伪报成功。不得自动停依赖服务 |
+| POST `startup/{id}/open-location` | 服务端按已知真实条目定位其来源文件/父目录；不执行Run命令、不猜StartupApproved。无法可靠解析返回明确不支持 |
+| POST `desktop/open-system-location` | `{location:"startupSettings"\|"userStartup"\|"commonStartup"\|"services"}`固定枚举，使用`ms-settings:startupapps`、已知Startup目录、系统服务管理入口；不可接受任意URI/shell文本 |
+
+效率模式如果实现，使用单独`processes/{pid}/efficiency`：身份、enabled、Windows能力和原生节流读回，保留可恢复的原优先级/节流状态；只降优先级不能声称效率模式。复制与CSV由前端基于明确所见快照完成；不包含写token。CSV为当前筛选全部行（非虚拟窗口一屏），标记采样时刻/单位，RFC4180转义和UTF-8 BOM，文本单元防公式注入。
+
+### 资源增量
+
+- `process.gpuPercent:number|null`来自PDH English GPU Engine；两有效采样、有效CStatus才可取值。按PID最忙引擎而非各引擎求和；计数器实例PID还须关联当前创建身份，不跨PID复用沿用。缺实例/无权限/未就绪语义明确，不填假0。可附`gpuEngine`与不可用原因。
+- `networkAdapters[]`包含稳定LUID/接口ID、alias/description、hardware/virtual说明、linkSpeed、receive/sendBytesPerSecond与unavailable；来自GetIfTable2。用户可选择具体接口，原总量保留“包含虚拟接口”的提示，不能宣称所有接口相加就是物理网卡吞吐。
+- `disks[]`包含真实PhysicalDisk实例、read/writeBytesPerSecond及activityPercent/其明确PDH语义、capturedAtUtc/unavailable；无计数器/预热保留null，不能用进程I/O代填。
+- 系统可增加commitBytes/commitLimitBytes/cacheBytes/threadCount/handleCount，来源GetPerformanceInfo；页内标明提交与工作集不同。GPU/磁盘初始化异步后置，查询长寿命复用；新的原生query和图标句柄在退出释放。
+
+## 1.0已验收基线
 
 C#源合同是 `src/TaskManager.Host/Models/Contracts.cs`。字段camelCase，JSON由MVC + JSON.NET输出。URL同源根 `/api`，默认 `http://127.0.0.1:5188`。可用 `--port=5191` 或环境变量 `TASKMANAGER_PORT` 指定端口。正常启动由Electron.NET创建桌面；仅显式 `--headless` 为无窗口测试主机。`bootstrap.desktop` 反映当前真实窗口是否存在。
 
