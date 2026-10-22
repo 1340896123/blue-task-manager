@@ -38,7 +38,7 @@ internal static class NativeUi
             var windows = new List<object>();
             PInvoke.EnumWindows((window, _) =>
             {
-                if (!PInvoke.IsWindowVisible(window)) return true;
+                if (!args.Contains("--include-hidden") && !PInvoke.IsWindowVisible(window)) return true;
                 var title = Title(window); var cls = ClassName(window);
                 // Only inspect known app/dialog/Shell surfaces selected by caller.
                 if (args[1].StartsWith("class:") ? cls != args[1][6..] : !title.Contains(args[1], StringComparison.OrdinalIgnoreCase)) return true;

@@ -12,7 +12,7 @@ export const assertions = [];
 export function check(condition, message) { assert.ok(condition, message); assertions.push(message); }
 export function processTree(rootPid) {
   // Only return descendants of the exact host PID created by this test; never select by name.
-  const command = `$all = Get-CimInstance Win32_Process; $ids = [System.Collections.Generic.HashSet[int]]::new(); [void]$ids.Add(${rootPid}); do { $changed = $false; foreach ($p in $all) { if ($ids.Contains([int]$p.ParentProcessId) -and $ids.Add([int]$p.ProcessId)) { $changed = $true } } } while ($changed); @($all | Where-Object { $ids.Contains([int]$_.ProcessId) } | Select-Object @{n='pid';e={$_.ProcessId}},@{n='created';e={$_.CreationDate.ToUniversalTime().ToString('O')}},@{n='fileTime';e={$_.CreationDate.ToFileTimeUtc().ToString()}}) | ConvertTo-Json -Compress`;
+  const command = `$all = Get-CimInstance Win32_Process; $ids = [System.Collections.Generic.HashSet[int]]::new(); [void]$ids.Add(${rootPid}); do { $changed = $false; foreach ($p in $all) { if ($ids.Contains([int]$p.ParentProcessId) -and $ids.Add([int]$p.ProcessId)) { $changed = $true } } } while ($changed); @($all | Where-Object { $ids.Contains([int]$_.ProcessId) } | Select-Object @{n='pid';e={$_.ProcessId}},@{n='imagePath';e={$_.ExecutablePath}},@{n='created';e={$_.CreationDate.ToUniversalTime().ToString('O')}},@{n='fileTime';e={$_.CreationDate.ToFileTimeUtc().ToString()}}) | ConvertTo-Json -Compress`;
   const result = spawnSync('powershell', ['-NoProfile', '-Command', command], { encoding: 'utf8', windowsHide: true });
   if (result.status !== 0) throw new Error('Independent Windows process-tree query failed');
   const data = JSON.parse(result.stdout || '[]'); return Array.isArray(data) ? data : [data];

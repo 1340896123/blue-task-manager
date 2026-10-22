@@ -8,5 +8,5 @@ export function probe(...args) {
   if (result.status !== 0) throw new Error('Independent CsWin32 probe: ' + (result.stderr || result.error));
   return JSON.parse(result.stdout);
 }
-export const windows = filter => probe('windows', filter);
+export const windows = (filter, includeHidden = false) => probe('windows', filter, ...(includeHidden ? ['--include-hidden'] : []));
 export const nativeUi = (window, command, ...args) => probe('native-ui', window.hwnd, window.pid, window.fileTime, command, ...args);

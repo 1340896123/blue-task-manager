@@ -7,6 +7,9 @@ using Windows.Win32.NetworkManagement.IpHelper;
 using Windows.Win32.System.ProcessStatus;
 using Windows.Win32.Graphics.Dxgi;
 
+// JSON emitted to redirected Node/Playwright pipes must be UTF-8 on Windows too.
+Console.OutputEncoding = new System.Text.UTF8Encoding(false);
+
 if (NativeUi.TryRun(args)) return;
 
 if (args[0] == "gpu-identities")
