@@ -17,9 +17,9 @@ export type Column<T> = {
 };
 export type Sort = { key: string; direction: 'ascending' | 'descending' };
 export const cssNumber = (token: string, fallback: number) => Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(token)) || fallback;
-export function DataTable<T>({ rows, columns, rowKey, label, rowHeight, sort, onSort, selected, onSelect, emptyDescription, onActivate, onContextMenu, onRowKey, initialScrollTop = 0, onScrollTop, revealKey, scrollResetKey, getHierarchy }: {
+export function DataTable<T>({ rows, columns, rowKey, label, rowHeight, sort, onSort, selected, onSelect, emptyDescription, emptyTitle, onActivate, onContextMenu, onRowKey, initialScrollTop = 0, onScrollTop, revealKey, scrollResetKey, getHierarchy }: {
   rows: T[]; columns: Column<T>[]; rowKey: (row: T) => string; label: string; rowHeight: number;
-  sort?: Sort; onSort?: (key: string) => void; selected?: string | null; onSelect?: (row: T) => void; emptyDescription?: string;
+  sort?: Sort; onSort?: (key: string) => void; selected?: string | null; onSelect?: (row: T) => void; emptyDescription?: string; emptyTitle?: string;
   onActivate?: (row: T) => void; onContextMenu?: (row: T, event: MouseEvent | KeyboardEvent) => void; onRowKey?: (row: T, event: KeyboardEvent) => void;
   initialScrollTop?: number; onScrollTop?: (top: number) => void; revealKey?: string | null; scrollResetKey?: string;
   getHierarchy?: (row: T) => { level: number; expanded?: boolean };
@@ -60,7 +60,7 @@ export function DataTable<T>({ rows, columns, rowKey, label, rowHeight, sort, on
         {last && <tr aria-hidden="true"><td colSpan={columns.length} style={{ height: Math.max(0, virtual.getTotalSize() - (last.end - headerHeight)), padding: 0, border: 0 }}/></tr>}
       </tbody>
     </table>
-    {rows.length === 0 && <Empty description={emptyDescription}/>}
+    {rows.length === 0 && <Empty title={emptyTitle} description={emptyDescription}/>}
   </div>;
 }
 export function Modal({ title, description, children, onClose, busy = false, wide = false }: { title: string; description?: string; children: ReactNode; onClose: () => void; busy?: boolean; wide?: boolean }) {

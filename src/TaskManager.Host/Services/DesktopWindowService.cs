@@ -1,6 +1,7 @@
 using ElectronNET.API;
 using ElectronNET.API.Entities;
 using TaskManager.Host.Models;
+using TaskManager.Host.Native;
 
 namespace TaskManager.Host.Services;
 
@@ -19,15 +20,27 @@ public sealed class DesktopWindowService(PreferencesService preferences)
         zoomFactor = saved.ZoomFactor;
         window = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions
         {
-            Width = saved.Width, Height = saved.Height, MinWidth = 960, MinHeight = 640,
+            Width = saved.Width, Height = saved.Height, UseContentSize = true, MinWidth = 960, MinHeight = 640,
             Frame = false, Show = false, AutoHideMenuBar = true,
             Title = "蓝域任务管理器", BackgroundColor = "#F3F7FC",
-            WebPreferences = new WebPreferences { ContextIsolation = true, NodeIntegration = false, Sandbox = true }
+            WebPreferences = new WebPreferences { ContextIsolation = true, NodeIntegration = false, Sandbox = true, BackgroundThrottling = true }
         }, origin);
-        window.SetMenuBarVisibility(false);
-        window.SetAlwaysOnTop(saved.AlwaysOnTop);
-        window.WebContents.SetZoomFactor(zoomFactor);
         window.OnReadyToShow += () => window?.Show();
+        // Electron.NET 0.6.0 adds a legacy Windows 10 frame compensation at
+        // creation, including on Windows 11. Use the official content setter
+        // and actual readback to restore the requested client size without any
+        // hard-coded border subtraction.
+        window.SetContentSize(saved.Width, saved.Height);
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            var actual = await window.GetContentBoundsAsync();
+            if (actual.Width == saved.Width && actual.Height == saved.Height) break;
+            await Task.Delay(50);
+        }
+        window.SetMenuBarVisibility(false);
+        try { await DesktopTopmost.SetAsync(window, saved.AlwaysOnTop); }
+        catch (ApiException) { /* A failed optional preference must not prevent the main window from showing. */ }
+        window.WebContents.SetZoomFactor(zoomFactor);
         window.OnResize += () => { saveBounds?.Cancel(); saveBounds = new(); _ = SaveBoundsAsync(saveBounds.Token); };
         window.OnClosed += () => { window = null; lifetime.StopApplication(); };
     }
@@ -44,8 +57,8 @@ public sealed class DesktopWindowService(PreferencesService preferences)
             case "zoom-out": zoomFactor = Math.Max(.75, zoomFactor - .25); current.WebContents.SetZoomFactor(zoomFactor); break;
             case "zoom-reset": zoomFactor = 1; current.WebContents.SetZoomFactor(1); break;
             case "always-on-top":
-                var next = !await current.IsAlwaysOnTopAsync(); current.SetAlwaysOnTop(next);
-                if (await current.IsAlwaysOnTopAsync() != next) throw new ApiException(409, "windowStateNotApplied", "窗口置顶状态未能读回确认，请重试。");
+                var next = !await DesktopTopmost.ReadAsync(current);
+                await DesktopTopmost.SetAsync(current, next);
                 preferences.SaveWindow((preferences.Current.Preferences.Window ?? new()) with { AlwaysOnTop = next });
                 break;
             default: throw new ApiException(400, "invalidWindowAction", "未知窗口操作。");
@@ -67,14 +80,14 @@ public sealed class DesktopWindowService(PreferencesService preferences)
         }
         finally { Volatile.Write(ref browsing, 0); }
     }
-    public async Task<object> StateAsync() => new { available = Available, alwaysOnTop = window is { } current && await current.IsAlwaysOnTopAsync(), zoomFactor };
+    public async Task<object> StateAsync() => new { available = Available, alwaysOnTop = window is { } current && await DesktopTopmost.ReadAsync(current), zoomFactor = window is { } zoomWindow ? await zoomWindow.WebContents.GetZoomFactorAsync() : zoomFactor };
     private async Task SaveBoundsAsync(CancellationToken token)
     {
         try
         {
             await Task.Delay(600, token);
-            var current = window; if (current is null || await current.IsMaximizedAsync()) return;
-            var bounds = await current.GetBoundsAsync(); token.ThrowIfCancellationRequested();
+            var current = window; if (current is null || await current.IsMaximizedAsync() || await current.IsMinimizedAsync()) return;
+            var bounds = await current.GetContentBoundsAsync(); token.ThrowIfCancellationRequested();
             preferences.SaveWindow((preferences.Current.Preferences.Window ?? new()) with { Width = Math.Clamp(bounds.Width, 960, 3840), Height = Math.Clamp(bounds.Height, 640, 2160) });
         }
         catch (OperationCanceledException) { }

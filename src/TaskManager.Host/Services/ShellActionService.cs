@@ -46,19 +46,20 @@ public sealed class ShellActionService(ShellDispatcher shell, SnapshotService sn
             return "Windows已接受打开来源文件位置的请求；原始注册表来源仍以列表为准。";
         });
     }
-    private static unsafe void Reveal(string path)
+    private static void Reveal(string path)
     {
-        var id = PInvoke.ILCreateFromPath(path);
-        if (id is null) throw new ApiException(404, "fileNotFound", "Windows无法定位该文件，文件可能已移动或删除。");
-        try { var result = PInvoke.SHOpenFolderAndSelectItems(id, 0, null, 0); if (result.Failed) throw new ApiException(400, "shellFailed", "Windows未能打开文件位置。", result.Value); }
-        finally { PInvoke.ILFree(id); }
+        // Standard Explorer /select command. The path comes only from an
+        // identity-validated existing executable or a re-read startup source;
+        // Windows filenames cannot contain a quote, and no shell is involved.
+        Execute(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), "open", false, $"/select,\"{path}\"");
     }
-    private static unsafe void Execute(string path, string verb, bool properties)
+    private static unsafe void Execute(string path, string verb, bool properties, string? arguments = null)
     {
         fixed (char* pathPointer = path)
         fixed (char* verbPointer = verb)
+        fixed (char* argumentsPointer = arguments)
         {
-            var info = new SHELLEXECUTEINFOW { cbSize = (uint)sizeof(SHELLEXECUTEINFOW), fMask = PInvoke.SEE_MASK_FLAG_NO_UI | (properties ? PInvoke.SEE_MASK_INVOKEIDLIST : 0u), lpFile = new PCWSTR(pathPointer), lpVerb = new PCWSTR(verbPointer), nShow = 1 /* SW_SHOWNORMAL */ };
+            var info = new SHELLEXECUTEINFOW { cbSize = (uint)sizeof(SHELLEXECUTEINFOW), fMask = PInvoke.SEE_MASK_FLAG_NO_UI | (properties ? PInvoke.SEE_MASK_INVOKEIDLIST : 0u), lpFile = new PCWSTR(pathPointer), lpVerb = new PCWSTR(verbPointer), lpParameters = new PCWSTR(argumentsPointer), nShow = 1 /* SW_SHOWNORMAL */ };
             if (!PInvoke.ShellExecuteEx(ref info)) ProcessAccess.Throw("Windows Shell未能打开目标");
         }
     }

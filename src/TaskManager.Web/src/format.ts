@@ -16,8 +16,10 @@ export function bigBytes(value: string | null): string {
   return bytes(Number(count));
 }
 export const cpuTime = (value: string | null) => value === null ? '—' : `${(Number(BigInt(value) / 10000n) / 1000).toFixed(2)} 秒`;
-export const time = (value: string) => new Date(value).toLocaleTimeString('zh-CN', { hour12: false });
-export const dateTime = (value: string) => new Date(value).toLocaleString('zh-CN', { hour12: false });
+const timeFormatter = new Intl.DateTimeFormat('zh-CN', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false });
+const dateTimeFormatter = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false });
+export const time = (value: string) => timeFormatter.format(new Date(value));
+export const dateTime = (value: string) => dateTimeFormatter.format(new Date(value));
 export function uptime(seconds: number) { const s = Math.floor(seconds); return `${Math.floor(s / 86400)} 天 ${Math.floor(s % 86400 / 3600)}:${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 export const reason = (unavailable: Availability, key: string, fallback = '当前字段不可读取') => unavailable[key]?.message ?? fallback;
 export function heat(value: number | null) { if (value === null) return undefined; return `var(--color-heat-${value >= 80 ? 4 : value >= 50 ? 3 : value >= 20 ? 2 : value >= 5 ? 1 : 0})`; }

@@ -74,3 +74,13 @@ Release采用官方支持的.NET优先启动，`.electron`与主机放同目录�
 阶段3补充：React堆栈查询 `virtualized table polling` 无命中，按合同收窄为 `virtualize` 后命中“100项以上使用windowing，优先react-virtual”的有效Performance建议，采用成熟 [TanStack Virtual](https://github.com/TanStack/virtual) 的React适配器，不自研虚拟滚动协议。Tailwind 4.2插件的Vite peer范围不含Vite8，经npm核验后采用兼容的4.3.3。按钮/搜索/表格状态按项目MASTER落实，未持久化无匹配的检索输出。
 
 1.1进程工作流补充：`virtualize lists stable keys --stack react`实际命中stable unique keys与100项以上windowing两条适用建议，继续使用TanStack Virtual，tree先扁平化且保留identity key。结合上文TaskExplorer ProcessModel的创建身份/独立字段模式，实现真实父子与按需详情，不移植其Qt组件或私有协议。按MASTER桌面范围复核pro-rules的焦点、对比度、状态、Token与reduced-motion项目，不把手机尺寸/暗色主题作为本Windows应用新需求。
+
+
+## 最终验收修复所用公开模式
+
+- 复核[官方Electron.NET BrowserWindow/API基类](https://github.com/ElectronNET/Electron.NET/blob/87cc6f98b6a9c5968d7846c0e775ea713bd0d7b2/src/ElectronNET.API/API/BrowserWindow.cs)及打包Socket处理，GetNativeWindowHandle是官方接口。当地框架SetAlwaysOnTop实际读回不生效，改为其可信HWND加Windows公开SetWindowPos(HWND_TOPMOST/NOTOPMOST)，没有新增IPC。缩放用WebContents.GetZoomFactorAsync。
+- [ShellExecuteExW](https://learn.microsoft.com/windows/win32/api/shellapi/nf-shellapi-shellexecuteexw)与Windows Explorer标准/select参数。当地SHOpenFolderAndSelectItems两种公开PIDL写法均返回S_OK而无可观察定位窗口；固定Windows目录explorer.exe的/select路径在同一独有测试文件上由原生UI Automation确认实际选中。仅传后端核验路径，固定exe/verb，无cmd/任意renderer参数。
+- 版本资源按[VerQueryValueW](https://learn.microsoft.com/windows/win32/api/winver/nf-winver-verqueryvaluew) Translation表读取，账户用GetUserNameEx，Run/RunOnce按RegEnumValue原始REG_SZ/REG_EXPAND_SZ枚举。沿用TaskExplorer的公开Windows来源/独立慢元数据模式，不移植代码、驱动或专有协议。
+- UI排序与时间格式复用模块级Intl.Collator/Intl.DateTimeFormat，避免每次900余项排序/120点曲线重新创建ICU格式器。慢来源异步和新快照串行发布分离，不伪造数据或改采样单位。
+
+- 尺寸复验定位[官方WindowManager](https://github.com/ElectronNET/Electron.NET/blob/87cc6f98b6a9c5968d7846c0e775ea713bd0d7b2/src/ElectronNET.API/API/WindowManager.cs)仍对OSDescription含Windows 10的环境硬加14×7旧边框补偿，Windows11也命中。项目不扣固定边框；GetContentBounds客户区保存、UseContentSize创建后再用官方SetContentSize与实际GetContentBounds读回请求尺寸，原生ClientRect独立确认重启不累加。

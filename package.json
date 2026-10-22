@@ -1,5 +1,7 @@
 {
-  "name": "blue-task-manager", "private": true, "version": "1.1.0",
+  "name": "blue-task-manager",
+  "private": true,
+  "version": "1.1.0",
   "scripts": {
     "build": "npm --prefix src/TaskManager.Web run build",
     "typecheck": "npm --prefix src/TaskManager.Web run typecheck",
@@ -10,7 +12,20 @@
     "build:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1",
     "test:desktop": "node tests/desktop-e2e.mjs",
     "test:recovery": "node tests/recovery-e2e.mjs",
-    "test:e2e": "npm run test:native && npm run test:ui && npm run test:recovery && npm run test:desktop"
+    "test:e2e": "npm run test:regression && npm run test:desktop && npm run test:process-desktop && npm run test:native-desktop && npm run test:system-locations && npm run test:performance",
+    "test:core": "node tests/native-core-v11.mjs",
+    "test:management": "node tests/native-management-v11.mjs",
+    "test:telemetry": "node tests/native-telemetry-v11.mjs",
+    "test:metadata": "node tests/native-metadata-v11.mjs",
+    "test:gpu-identity": "node tests/gpu-identity-v11.mjs",
+    "test:static": "node tests/static-v11.mjs",
+    "test:regression": "node tests/regression-v11.mjs",
+    "test:native-desktop": "node tests/native-desktop-v11.mjs",
+    "test:system-locations": "node tests/system-locations-v11.mjs",
+    "test:performance": "node tests/desktop-performance-v11.mjs",
+    "test:process-desktop": "node tests/process-desktop-v11.mjs"
   },
-  "devDependencies": { "playwright": "1.64.1" }
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
 }

@@ -5,13 +5,16 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { processTree, ownedAlive, portOpen } from './e2e-support.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const framework = 'net10.0-windows10.0.19041.0';
-const hostExe = path.join(root, 'src/TaskManager.Host/bin/Release', framework, 'TaskManager.Host.exe');
+const desktopMode = process.env.TASKMANAGER_PROCESS_UI_DESKTOP === '1'; const cdp = 9227;
+const hostExe = desktopMode ? path.join(root, 'output/TaskManager-win-x64/TaskManager.Host.exe') : path.join(root, 'src/TaskManager.Host/bin/Release', framework, 'TaskManager.Host.exe');
 const workloadExe = path.join(root, 'tests/TaskManager.TestWorkload/bin/Release', framework, 'TaskManager.TestWorkload.exe');
 const port = Number(process.env.TASKMANAGER_PROCESS_UI_PORT ?? 5193); const origin = `http://127.0.0.1:${port}`;
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-process-ui-')); const output = path.join(root, 'output/playwright'); await mkdir(output, { recursive: true });
-const host = spawn(hostExe, ['--headless', `--port=${port}`], { cwd: path.dirname(hostExe), env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences') }, stdio: 'ignore', windowsHide: true });
+if (await portOpen(port) || desktopMode && await portOpen(cdp)) throw new Error('Process UI test ports already in use');
+const host = spawn(hostExe, [...(desktopMode ? [] : ['--headless']), `--port=${port}`], { cwd: path.dirname(hostExe), env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences'), ...(desktopMode ? {TASKMANAGER_CDP_PORT:String(cdp)} : {}) }, stdio: 'ignore', windowsHide: true });
 const workload = spawn(workloadExe, [path.join(temporary, 'tree'), '180', 'tree'], { cwd: root, stdio: 'ignore', windowsHide: true });
 let browser; let token; let created; let ownRoot; let assertions = 0; const checks = []; const errors = []; const cspErrors = [];
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -24,7 +27,8 @@ try {
   await until(async () => (await get('snapshot')).processes.some(p => p.pid === workload.pid), 'owned workload sampled');
   ownRoot = (await get('snapshot')).processes.find(p => p.pid === workload.pid);
   const children = (await readFile(path.join(temporary, 'tree/children.txt'), 'utf8')).trim().split(/\r?\n/).map(line => line.split(':'));
-  browser = await chromium.launch({ headless: true }); const context = await browser.newContext({ viewport: { width: 1380, height: 860 }, reducedMotion: 'reduce', permissions: ['clipboard-read', 'clipboard-write'] }); const page = await context.newPage();
+  if (desktopMode) await until(() => portOpen(cdp), 'actual Electron CDP ready');
+  browser = desktopMode ? await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`) : await chromium.launch({ headless: true }); const context = desktopMode ? browser.contexts()[0] : await browser.newContext({ viewport: { width: 1380, height: 860 }, reducedMotion: 'reduce', permissions: ['clipboard-read', 'clipboard-write'] }); const page = desktopMode ? context.pages()[0] : await context.newPage();
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (/content.security.policy|violates.*directive|refused to load.*blob:/i.test(message.text())) cspErrors.push(message.text()); });
   const snapshotResponses = []; page.on('response', response => { if (response.url() === `${origin}/api/snapshot`) snapshotResponses.push(response.status()); });
@@ -73,8 +77,8 @@ try {
   check(csv.subarray(0, 3).equals(Buffer.from([239, 187, 191])), 'CSV has UTF-8 BOM'); check(csv.toString('utf8').includes('工作集 (bytes)'), 'CSV includes explicit units');
   await page.screenshot({ path: path.join(output, 'v11-process-tree.png') });
   await search.fill('no-such-task-unique-query'); check(await page.getByRole('button', { name: '结束任务', exact: true }).isDisabled(), 'filter excludes old selection from toolbar actions');
-  await page.keyboard.press('Control+n'); await dialog.getByLabel('程序名称或完整路径', { exact: true }).fill('Z:\\no-such-taskmanager-test.exe'); await dialog.getByRole('button', { name: '运行', exact: true }).click(); await dialog.locator('.form-error').waitFor();
-  check(await dialog.getByLabel('程序名称或完整路径', { exact: true }).inputValue() === 'Z:\\no-such-taskmanager-test.exe', 'run failure preserves input and native error');
+  await page.keyboard.press('Control+n'); await dialog.getByLabel('程序名称或完整路径', { exact: true }).fill(path.join(temporary, 'confirmed-absent', 'missing.exe')); await dialog.getByRole('button', { name: '运行', exact: true }).click(); await dialog.locator('.form-error').waitFor();
+  check(await dialog.getByLabel('程序名称或完整路径', { exact: true }).inputValue() === path.join(temporary, 'confirmed-absent', 'missing.exe'), 'run failure preserves input and native error');
   await dialog.getByLabel('程序名称或完整路径', { exact: true }).fill(workloadExe); await dialog.getByLabel('参数（可选）', { exact: true }).fill(`"${path.join(temporary, 'created')}" 120`);
   const response = page.waitForResponse(r => r.url() === `${origin}/api/processes/start` && r.request().method() === 'POST'); await dialog.getByRole('button', { name: '运行', exact: true }).click(); created = await (await response).json();
   await until(async () => await page.locator(`tr[data-row-key="${created.identity}"]`).count() === 1, 'created actual identity located');
@@ -93,11 +97,12 @@ try {
   check(snapshotResponses.includes(304), 'conditional snapshot reads receive successful empty 304');
   await page.getByRole('button', { name: '标准', exact: true }).click(); await delay(800); await page.reload(); await until(async () => (await page.locator('.app-shell').getAttribute('data-density')) === 'standard', 'JSON.NET preferences restore density after reload');
   check(true, 'persisted UI preference restored'); check(errors.length === 0, 'no browser runtime exceptions'); check(cspErrors.length === 0, 'no content security policy violations including native icon blobs');
-  await writeFile(path.join(output, 'process-ui-v11-results.json'), JSON.stringify({ assertions, checks, errors, cspErrors, screenshotPaths: ['v11-process-tree.png', 'v11-process-960.png'] }, null, 2));
+  await writeFile(path.join(output, desktopMode ? 'process-desktop-v11-results.json' : 'process-ui-v11-results.json'), JSON.stringify({ runtime: desktopMode ? 'Release Electron.NET' : 'real Chromium', assertions, checks, errors, cspErrors, screenshotPaths: ['v11-process-tree.png', 'v11-process-960.png'] }, null, 2));
   console.log(JSON.stringify({ passed: true, assertions, checks }, null, 2));
 } catch (error) { if (browser) await browser.contexts()[0]?.pages()[0]?.screenshot({ path: path.join(output, 'process-ui-v11-failure.png') }).catch(() => {}); throw error; }
 finally {
   if (created?.creationTimeFileTime && token) await post(`processes/${created.pid}/terminate`, { creationTimeFileTime: created.creationTimeFileTime }).catch(() => {});
   if (ownRoot?.creationTimeFileTime && token) { const preview = await post(`processes/${ownRoot.pid}/tree-preview`, { creationTimeFileTime: ownRoot.creationTimeFileTime }).catch(() => null); if (preview?.canTerminate) await post(`processes/${ownRoot.pid}/terminate-tree`, { creationTimeFileTime: ownRoot.creationTimeFileTime, members: preview.members.map(m => ({ pid: m.pid, creationTimeFileTime: m.creationTimeFileTime })) }).catch(() => {}); }
+  if(desktopMode && host.exitCode===null){const appTree=processTree(host.pid);await post('window/close',{}).catch(()=>{});await until(()=>host.exitCode!==null,'desktop process flow host close',20000);await until(async()=>!await portOpen(port)&&!await portOpen(cdp),'desktop process flow ports closed');if(!appTree.every(p=>!ownedAlive(p)))throw new Error('Desktop process flow app identity leaked');}
   await browser?.close(); if (host.exitCode === null) host.kill(); await delay(600); await rm(temporary, { recursive: true, force: true }).catch(() => {});
 }

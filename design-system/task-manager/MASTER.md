@@ -80,7 +80,7 @@
 - GPU资源名称优先显示Windows DXGI真实描述；选择器主文字复用font-size-body/font-weight-semibold，LUID、PDH phys索引与软件标志使用既有caption/text-secondary。标题复用subtitle，长名称按既有overflow-wrap换行，不增加自定义字号/颜色。名称失败才回退LUID并显示原因；保留次级LUID区分同名设备，不猜Windows GPU编号；GPU合计口径包含软件适配器，不一概称实体硬件。
 - 无障碍验收继续桌面范围：960×640、1380×860、125%缩放、reduced-motion、键盘与焦点；不套用手机safe-area或强行新增暗色主题。所有新增字号≥12px；颜色对比标准沿用正文4.5:1、边界/焦点3:1。
 
-版本1.0；适用于全部业务页与设置。来源：用户参考图的信息结构 + Windows Fluent蓝色方向 + 已核验的UI/UX Pro Max通用可访问性/实时监控建议。系统查询返回的营销模板未采纳，详见docs/RESEARCH.md。本文件是视觉Token的唯一源，页面覆盖不得削弱状态正确性和可访问性。
+版本1.1（含原1.0基础与本轮增量）；适用于全部业务页与设置。来源：用户参考图的信息结构 + Windows Fluent蓝色方向 + 已核验的UI/UX Pro Max通用可访问性/实时监控建议。系统查询返回的营销模板未采纳，详见docs/RESEARCH.md。本文件是视觉Token的唯一源，页面覆盖不得削弱状态正确性和可访问性。
 
 ## 1. 视觉原则
 

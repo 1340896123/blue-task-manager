@@ -1,4 +1,3 @@
-using Microsoft.Win32;
 using System.Runtime.InteropServices;
 using TaskManager.Host.Models;
 using Windows.Win32;
@@ -8,7 +7,7 @@ using Windows.Win32.System.Services;
 
 namespace TaskManager.Host.Native;
 
-internal sealed record SlowData(List<ServiceDto> Services, List<StartupDto> StartupItems, List<UserDto> Users, List<Unavailable> Warnings, DateTime CapturedAtUtc);
+internal sealed record SlowData(List<ServiceDto> Services, List<StartupDto> StartupItems, List<UserDto> Users, List<Unavailable> Warnings, DateTime? CapturedAtUtc);
 
 internal static class SlowDataReader
 {
@@ -78,27 +77,7 @@ internal static class SlowDataReader
 
     internal static List<StartupDto> ReadStartup(List<Unavailable> warnings)
     {
-        var result = new List<StartupDto>();
-        foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
-        foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-        foreach (var keyName in new[] { @"Software\Microsoft\Windows\CurrentVersion\Run", @"Software\Microsoft\Windows\CurrentVersion\RunOnce" })
-        {
-            try
-            {
-                using var root = RegistryKey.OpenBaseKey(hive, view);
-                using var key = root.OpenSubKey(keyName, false);
-                if (key is null) continue;
-                var source = $"{(hive == RegistryHive.CurrentUser ? "HKCU" : "HKLM")}\\{keyName} ({view})";
-                foreach (var name in key.GetValueNames())
-                {
-                    var value = key.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                    if (value is not string command) continue;
-                    result.Add(new($"{source}\\{name}", name, command, source, null, "只读枚举启动注册项；未解析 StartupApproved/组策略的最终启用状态。"));
-                }
-            }
-            catch (Exception exception) when (exception is UnauthorizedAccessException or System.Security.SecurityException or IOException)
-            { warnings.Add(new("accessDenied", $"读取启动注册项失败：{hive}/{view}/{keyName}。")); }
-        }
+        var result = StartupRegistry.Read(warnings);
         foreach (var location in new[] { Environment.SpecialFolder.Startup, Environment.SpecialFolder.CommonStartup })
         {
             var path = Environment.GetFolderPath(location);

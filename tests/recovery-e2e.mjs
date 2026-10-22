@@ -19,8 +19,9 @@ try {
   const page = await browser.newPage({ viewport: { width: 1380, height: 860 } });
   await page.goto(origin);
   await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
-  await page.getByRole('button', { name: '暂停采样', exact: true }).click();
-  await page.getByRole('button', { name: '继续采样', exact: true }).waitFor();
+  await page.getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByRole('switch', { name: '自动采样', exact: true }).click();
+  await page.getByRole('button', { name: '进程', exact: true }).click();
   // Allow the settings POST and any already in-flight poll to settle. Compare
   // the first real identity and its values, independent of virtual overscan.
   await delay(2600);
@@ -37,8 +38,9 @@ try {
   await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
   const after = (await (await fetch(origin + '/api/bootstrap')).json()).token;
   check(after !== previousToken, 'A15 new host rotates in-memory operation token');
-  await page.getByRole('button', { name: '暂停采样', exact: true }).click();
-  await page.getByRole('button', { name: '继续采样', exact: true }).waitFor();
+  await page.getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByRole('switch', { name: '自动采样', exact: true }).click();
+  await page.getByRole('button', { name: '进程', exact: true }).click();
   check((await (await fetch(origin + '/api/snapshot')).json()).paused, 'A15 recovered UI rebootstrap authorizes real writes to replacement host');
   await page.screenshot({ path: path.join(output, 'final-recovery-connected.png') });
   console.log(JSON.stringify({ result: 'PASS', assertions: assertions.length, checks: assertions }, null, 2));

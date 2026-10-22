@@ -2,7 +2,7 @@ export type Missing = { code: string; message: string; nativeErrorCode?: number 
 export type Availability = Record<string, Missing>;
 export type Capability = { available: boolean; source: string; reason: string | null };
 export type Settings = { intervalMs: number; paused: boolean };
-export type Bootstrap = { token: string; settings: Settings; capabilities: Record<string, Capability>; version: string; desktop: boolean; hostPid: number; currentUserName: string; currentSessionId: number | null };
+export type Bootstrap = { token: string; settings: Settings; capabilities: Record<string, Capability>; version: string; desktop: boolean; hostPid: number; currentUserName: string | null; currentSessionId: number | null };
 export type Process = {
   identity: string; pid: number; parentPid: number; creationTimeFileTime: string | null; name: string;
   path: string | null; publisher: string | null; sessionId: number | null; userName: string | null;

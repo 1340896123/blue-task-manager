@@ -9,6 +9,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     private readonly object _gate = new();
     private readonly Win32Collector _collector = new();
     private PdhTelemetryCollector? _telemetry;
+    private Task<SlowData>? _slowRead;
     private SamplingSettings _settings = new(preferences.IntervalMs, false);
     private readonly string _instance = Guid.NewGuid().ToString("N");
     private long _revision;
@@ -89,7 +90,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _telemetry = new(() => Settings);
-        SlowData? slow = null;
+        var slow = new SlowData([], [], [], [new Unavailable("loading", "服务、启动项和会话正在后台读取；基础进程采样继续。")], null);
+        var nextSlowAttempt = DateTime.MinValue;
         long sampleId = 0;
         long nextSample = 0;
         while (!stoppingToken.IsCancellationRequested)
@@ -106,10 +108,28 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
                     var capturedAt = DateTime.UtcNow;
                     bool refreshSlow;
                     lock (_gate) { refreshSlow = _forceSlowRefresh; _forceSlowRefresh = false; }
-                    if (slow is null || capturedAt - slow.CapturedAtUtc > TimeSpan.FromSeconds(15) || refreshSlow) slow = SlowDataReader.Read();
+                    if (_slowRead is { IsCompleted: true } completed)
+                    {
+                        _slowRead = null;
+                        try { slow = await completed; }
+                        catch (Exception ex)
+                        {
+                            logger.LogWarning(ex, "慢来源读取失败；保留上次来源，基础采样继续");
+                            slow = slow with { Warnings = slow.Warnings.Where(w => w.Code != "slowSourceError").Append(new Unavailable("slowSourceError", "服务、启动项或会话读取失败，保留上次来源并稍后重试。")).TakeLast(20).ToList() };
+                            nextSlowAttempt = DateTime.UtcNow.AddSeconds(5);
+                        }
+                    }
+                    if ((slow.CapturedAtUtc is null || capturedAt - slow.CapturedAtUtc.Value > TimeSpan.FromSeconds(15) || refreshSlow) && capturedAt >= nextSlowAttempt)
+                    {
+                        if (_slowRead is null) _slowRead = Task.Run(SlowDataReader.Read, CancellationToken.None);
+                        else if (refreshSlow) lock (_gate) _forceSlowRefresh = true;
+                    }
                     var users = AggregateUsers(slow.Users, raw.Processes);
                     lock (_gate)
                     {
+                        // A pause accepted during the native collection must not
+                        // publish a later sample/history point after its response.
+                        if (_settings.Paused) continue;
                         if (_resetHistory) { _history.Clear(); _historyPrevious.Clear(); _resetHistory = false; }
                         Accumulate(raw, capturedAt);
                         _performance.Enqueue(new(capturedAt, raw.System.CpuPercent, raw.System.MemoryPercent, raw.System.NetworkReceiveBytesPerSecond, raw.System.NetworkSendBytesPerSecond)
@@ -146,6 +166,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     {
         await base.StopAsync(cancellationToken);
         if (_telemetry is not null) await _telemetry.DisposeAsync();
+        if (_slowRead is { } pending) { try { await pending.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken); } catch (Exception ex) { logger.LogWarning(ex, "慢来源关闭时读取失败"); } }
     }
     public override void Dispose() { base.Dispose(); _collector.Dispose(); }
 

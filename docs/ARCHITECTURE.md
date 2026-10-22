@@ -2,6 +2,10 @@
 
 > 1.1实施增量见 `PRODUCT-V1.1.md` 与 `API.md` 的1.1合同。新增能力沿用同源HTTP/JSON.NET/CsWin32，不新增私有传输协议；以下原始架构继续适用，服务只读等1.0范围由本轮增量覆盖。
 
+最终1.1补充：慢服务/启动/会话来源的首读与15秒更新均在单个合并后台任务，初次时间为null并明确loading，失败保留旧来源并退避，关闭最多等2秒。版本CompanyName、当前账户与启动注册表均已切换为CsWin32生成接口；常规文件枚举/时间/PNG编码保留.NET。
+
+窗口置顶通过官方Electron.NET GetNativeWindowHandle取得可信HWND，再用CsWin32 SetWindowPos和extended style实际读回；缩放GET用官方WebContents.GetZoomFactorAsync读回。窗口保存GetContentBounds客户区DIP，并以UseContentSize恢复，最大化/最小化不覆盖正常尺寸。文件位置使用固定Windows explorer.exe的标准/select参数，仅接受后端重验所得路径，不通过cmd或renderer自定义命令。
+
 ## 1. 技术决策
 
 - 前端：React + TypeScript + Tailwind CSS，由 Vite 构建本地静态资源。默认使用 Windows 系统字体和统一 SVG 图标。

@@ -7,6 +7,8 @@ using Windows.Win32.NetworkManagement.IpHelper;
 using Windows.Win32.System.ProcessStatus;
 using Windows.Win32.Graphics.Dxgi;
 
+if (NativeUi.TryRun(args)) return;
+
 if (args[0] == "gpu-identities")
 {
     IDXGIFactory1? factory = null;
@@ -61,7 +63,7 @@ if (args[0] == "process-resources")
     using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, uint.Parse(args[1]));
     if (handle.IsInvalid || !PInvoke.GetProcessTimes(handle, out var creation, out _, out var kernel, out var user)) throw new InvalidOperationException("Test process unavailable.");
     var actual = ((ulong)(uint)creation.dwHighDateTime << 32) | (uint)creation.dwLowDateTime;
-    if (actual != ulong.Parse(args[2])) throw new InvalidOperationException("Test process identity changed.");
+    if (actual / 10 != ulong.Parse(args[2]) / 10) throw new InvalidOperationException("Test process identity changed.");
     unsafe
     {
         var memory = new PROCESS_MEMORY_COUNTERS_EX { cb = (uint)sizeof(PROCESS_MEMORY_COUNTERS_EX) };
@@ -77,7 +79,7 @@ if (args[0] == "process-state")
     using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, uint.Parse(args[1]));
     if (handle.IsInvalid || !PInvoke.GetProcessTimes(handle, out var creation, out _, out _, out _)) throw new InvalidOperationException("Test process unavailable.");
     var actual = ((ulong)(uint)creation.dwHighDateTime << 32) | (uint)creation.dwLowDateTime;
-    if (actual != ulong.Parse(args[2])) throw new InvalidOperationException("Test process identity changed.");
+    if (actual / 10 != ulong.Parse(args[2]) / 10) throw new InvalidOperationException("Test process identity changed.");
     unsafe
     {
         var power = new PROCESS_POWER_THROTTLING_STATE { Version = 1 };
@@ -106,6 +108,7 @@ PInvoke.EnumWindows((window, unused) =>
         // Win32_Process datetime is precise to microseconds; allow its <1us truncation.
         var actual = ((ulong)(uint)created.dwHighDateTime << 32) | (uint)created.dwLowDateTime;
         if (actual / 10 != expected / 10) return true;
+        if (NativeUi.ClassName(window) != "Chrome_WidgetWin_1" || !(NativeUi.Title(window).Contains("蓝域") && NativeUi.Title(window).Contains("任务管理器"))) return true;
         target = window; return false;
     }
     return true;
@@ -115,10 +118,13 @@ if (args.Length > 1 && args[1] == "restore") PInvoke.ShowWindow(target, SHOW_WIN
 if (args.Length > 3 && args[1] == "resize")
 {
     PInvoke.ShowWindow(target, SHOW_WINDOW_CMD.SW_RESTORE);
-    if (!PInvoke.SetWindowPos(target, default, 0, 0, int.Parse(args[2]), int.Parse(args[3]), SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOZORDER | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE))
+    if (!PInvoke.GetWindowRect(target, out var beforeRect) || !PInvoke.GetClientRect(target, out var beforeClient)) throw new InvalidOperationException("Native client bounds unavailable.");
+    var clientWidth = int.Parse(args[2]) + (beforeRect.right - beforeRect.left) - (beforeClient.right - beforeClient.left);
+    var clientHeight = int.Parse(args[3]) + (beforeRect.bottom - beforeRect.top) - (beforeClient.bottom - beforeClient.top);
+    if (!PInvoke.SetWindowPos(target, default, 0, 0, clientWidth, clientHeight, SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOZORDER | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE))
         throw new InvalidOperationException("Native resize failed.");
 }
 var placement = new WINDOWPLACEMENT();
 unsafe { placement.length = (uint)sizeof(WINDOWPLACEMENT); }
-if (!PInvoke.GetWindowPlacement(target, ref placement) || !PInvoke.GetWindowRect(target, out var rect)) throw new InvalidOperationException("Native placement query failed.");
-Console.WriteLine(JsonConvert.SerializeObject(new { state = (int)placement.showCmd, width = rect.right - rect.left, height = rect.bottom - rect.top }));
+if (!PInvoke.GetWindowPlacement(target, ref placement) || !PInvoke.GetWindowRect(target, out var rect) || !PInvoke.GetClientRect(target, out var client)) throw new InvalidOperationException("Native placement query failed.");
+Console.WriteLine(JsonConvert.SerializeObject(new { hwnd = ((nint)target).ToString(), topmost = ((long)PInvoke.GetWindowLongPtr(target, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE) & 8) != 0, state = (int)placement.showCmd, width = rect.right - rect.left, height = rect.bottom - rect.top, clientWidth = client.right - client.left, clientHeight = client.bottom - client.top }));

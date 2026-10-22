@@ -4,8 +4,8 @@
 
 1.1补齐日常排查与管理闭环：进程树、实时详情、优先级与效率模式、文件位置和属性、CSV导出、真实服务操作、逐网卡/物理磁盘/GPU曲线，以及跨页定位和偏好保留。完整桌面验收与发布状态以 [验收结果](docs/ACCEPTANCE-RESULTS.md) 为准。
 
-- [产品需求](docs/PRD.md)
-- [1.1便利性与性能需求](docs/PRODUCT-V1.1.md)
+- [当前1.1产品需求](docs/PRODUCT-V1.1.md)
+- [原始PRD与1.0历史基线](docs/PRD.md)
 - [架构与数据合同](docs/ARCHITECTURE.md)
 - [工程规范](docs/CONVENTIONS.md)
 - [设计系统与 Token](design-system/task-manager/MASTER.md)
@@ -52,4 +52,4 @@ npm run test:e2e
 
 键盘：Ctrl+F搜索、Ctrl+N运行、F5刷新、Enter/双击详情、Shift+F10/右键操作、Delete结束确认、Space冻结列表、F1帮助、Esc关闭；桌面Ctrl+= / Ctrl+- / Ctrl+0调整25%步进缩放/恢复100%。冻结列表时采集和性能曲线继续运行；设置中的自动采样开关会真正暂停采集。
 
-GPU来自Windows计数器的真实LUID/物理索引，不猜型号；磁盘I/O与进程I/O分别展示。逐进程网络吞吐、启动策略编辑与驱动级分析仍未接入，端点列表不冒充吞吐。服务动作受Windows当前账户权限约束，不自动提权或停止依赖服务；当前标准用户环境成功启停测试需保留权限限制。
+GPU使用Windows PDH真实引擎计数并以DXGI实际型号名称标识；软件适配器明确标记，不猜Windows编号；磁盘I/O与进程I/O分别展示。逐进程网络吞吐、启动策略编辑与驱动级分析仍未接入，端点列表不冒充吞吐。服务动作受Windows当前账户权限约束，不自动提权或停止依赖服务；当前标准用户环境成功启停测试需保留权限限制。

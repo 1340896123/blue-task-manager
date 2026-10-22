@@ -100,8 +100,12 @@ public sealed class TaskManagerController(SnapshotService snapshots, ProcessActi
 internal static class CurrentIdentity
 {
     // Current-user filters refer to the host account, not an arbitrary active WTS session.
-    internal static readonly string Name = ReadName();
+    internal static readonly string? Name = ReadName();
     internal static readonly uint? SessionId = ReadSession();
     private static uint? ReadSession() => Windows.Win32.PInvoke.ProcessIdToSessionId((uint)Environment.ProcessId, out var session) ? session : null;
-    private static string ReadName() { using var identity = System.Security.Principal.WindowsIdentity.GetCurrent(); return identity.Name; }
+    private static string? ReadName()
+    {
+        var buffer = new char[32768]; uint size = (uint)buffer.Length;
+        return Windows.Win32.PInvoke.GetUserNameEx(Windows.Win32.Security.Authentication.Identity.EXTENDED_NAME_FORMAT.NameSamCompatible, buffer, ref size) && size > 0 ? new string(buffer, 0, (int)size).TrimEnd('\0') : null;
+    }
 }

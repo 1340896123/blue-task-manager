@@ -55,8 +55,6 @@ SC_MANAGER_CONNECT
 SHGetFileInfoW
 DestroyIcon
 ShellExecuteExW
-ILCreateFromPathW
-ILFree
 SHOpenFolderAndSelectItems
 SEE_MASK_INVOKEIDLIST
 SEE_MASK_FLAG_NO_UI
@@ -91,3 +89,18 @@ IDXGIFactory1
 IDXGIAdapter1
 DXGI_ERROR_NOT_FOUND
 DXGI_ADAPTER_FLAG
+
+GetFileVersionInfoSizeW
+GetFileVersionInfoW
+VerQueryValueW
+GetUserNameExW
+
+
+IsWindow
+GetWindowLongPtrW
+SetWindowPos
+RegOpenKeyExW
+RegEnumValueW
+RegCloseKey
+HKEY_CURRENT_USER
+HKEY_LOCAL_MACHINE

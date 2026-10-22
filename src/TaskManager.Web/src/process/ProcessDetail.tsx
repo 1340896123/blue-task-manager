@@ -4,6 +4,7 @@ import { DataTable, MissingValue, Modal, cssNumber } from '../components';
 import { bytes, dateTime, percent, rate, reason, uptime } from '../format';
 import type { Process, ProcessDetails, ConnectionsResult, Connection } from '../types';
 import ProcessIcon from './ProcessIcon';
+const tcpStates:Record<string,string>={MIB_TCP_STATE_CLOSED:'已关闭',MIB_TCP_STATE_LISTEN:'正在侦听',MIB_TCP_STATE_SYN_SENT:'正在发起连接',MIB_TCP_STATE_SYN_RCVD:'已收到连接请求',MIB_TCP_STATE_ESTAB:'已建立',MIB_TCP_STATE_FIN_WAIT1:'等待关闭确认',MIB_TCP_STATE_FIN_WAIT2:'等待对端关闭',MIB_TCP_STATE_CLOSE_WAIT:'等待本地关闭',MIB_TCP_STATE_CLOSING:'正在关闭',MIB_TCP_STATE_LAST_ACK:'等待最后确认',MIB_TCP_STATE_TIME_WAIT:'关闭后等待',MIB_TCP_STATE_DELETE_TCB:'正在删除'};
 export default function ProcessDetail({ target, alive, connected, onClose, onAction, onLocateParent, onService }: { target: Process; alive: boolean; connected: boolean; onClose: () => void; onAction: (action: string, target: Process) => void; onLocateParent: (target: Process) => void; onService: (name: string) => void }) {
   const [tab, setTab] = useState('overview'); const [detail, setDetail] = useState<ProcessDetails | null>(null); const [connections, setConnections] = useState<ConnectionsResult | null>(null);
   const [error, setError] = useState<string | null>(null); const [exited, setExited] = useState(!alive); const [loading, setLoading] = useState(false); const [revision, setRevision] = useState(0);
@@ -53,7 +54,7 @@ export default function ProcessDetail({ target, alive, connected, onClose, onAct
         { key: 'protocol', label: '协议', width: cssNumber('--width-column-pid', 80), render: row => `${row.protocol} ${row.addressFamily}` },
         { key: 'local', label: '本地端点', width: cssNumber('--width-column-name-detail', 240), render: row => endpoint(row.localAddress, row.localPort, row.addressFamily) },
         { key: 'remote', label: '远端端点', width: cssNumber('--width-column-name-detail', 240), render: row => row.remoteAddress == null || row.remotePort == null ? <span title="UDP无固定远端">不适用（UDP）</span> : endpoint(row.remoteAddress, row.remotePort, row.addressFamily) },
-        { key: 'state', label: '状态', width: cssNumber('--width-column-text', 180), render: row => row.state ?? '不适用（UDP）' },
+        { key: 'state', label: '状态', width: cssNumber('--width-column-text', 180), render: row => row.state ? <span title={row.state}>{tcpStates[row.state] ?? row.state}</span> : '不适用（UDP）' },
       ]} emptyDescription={connections ? '该进程当前没有可读端点。' : '等待真实端点读取。'}/></>}
     </div>
     <div className="detail-actions"><button className="command-button bordered" disabled={!p.path || !writable} onClick={() => onAction('location', p)}>打开文件位置</button><button className="command-button bordered" disabled={!p.path || !writable} onClick={() => onAction('properties', p)}>Windows 属性</button><button className="command-button bordered" disabled={!writable || !p.canTerminate} onClick={() => onAction('priority', p)}>设置优先级</button><button className="command-button bordered" disabled={!writable || !p.canTerminate} onClick={() => onAction('efficiency', p)}>效率模式</button><button className="command-button" onClick={() => onAction('copyInfo', p)}>复制信息</button><button className="command-button" disabled={exited || !connected} onClick={() => setRevision(v => v + 1)}>刷新详情</button></div>

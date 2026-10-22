@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using Microsoft.Win32.SafeHandles;
@@ -73,8 +72,7 @@ internal sealed class ProcessMetadataCache : IDisposable
                         {
                             try
                             {
-                                publisher = FileVersionInfo.GetVersionInfo(item.Path).CompanyName;
-                                file = (string.IsNullOrWhiteSpace(publisher) ? null : publisher, string.IsNullOrWhiteSpace(publisher) ? new("notCollected", "文件未提供 CompanyName；该字段不是签名验证结果。") : null);
+                                file = VersionMetadata.Company(item.Path);
                             }
                             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception) { file = (null, new("error", "无法读取文件版本发布者。")); }
                             if (files.Count >= 2048) files.Remove(files.Keys.First());

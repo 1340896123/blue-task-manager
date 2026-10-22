@@ -4,6 +4,16 @@
 
 本节是本轮实施合同；以下原有章节是1.0已验收基线。可根据实际CsWin32生成类型调整DTO/路径，但必须同步前端、本文与真实E2E。继续复用JSON.NET、标准HTTP状态和同源POST令牌校验，不发明私有协议。
 
+### 最终验收修复后的实现说明
+
+- `bootstrap.currentUserName`来自CsWin32 GetUserNameEx(NameSamCompatible)，读取失败为null，UI禁用当前用户筛选；不猜账户。
+- `publisher`由CsWin32 GetFileVersionInfo/VerQueryValue按文件Translation实际语言/码页读取CompanyName，有界4MiB资源与指针边界；不是签名验证。
+- 启动注册项由CsWin32 RegOpenKeyEx/RegEnumValue只读相同Run/RunOnce 32/64视图，原命令不展开，最多单值64KiB/总4096项与4MiB；单个超大值不阻断后续值。文件夹仍为标准.NET文件枚举。
+- `slowDataCapturedAtUtc:null`与loading表示首读尚未完成，不是真实空来源；后台单任务合并刷新，失败保留原数据，暂停不发布结果，关闭有界等待。
+- 文件位置由CsWin32 ShellExecuteEx固定Windows explorer.exe + 标准/select、后端已验证路径打开；返回仅表示受理，实际窗口在桌面E2E另验。属性继续properties标准Shell verb。
+- 窗口偏好width/height统一为未最大化/未最小化客户区DIP；用GetContentBounds保存、UseContentSize创建，不扣固定边框数，避免多次重启累加隐形边框。
+- `desktop/window-state.alwaysOnTop`由可信BrowserWindow HWND的原生扩展样式读取；缩放由WebContents实际读回，不是本地变量镜像。
+
 ### 版本、偏好与详情
 
 阶段2核心已实现，实际合同与验证见[NATIVE-CORE-V1.1.md](NATIVE-CORE-V1.1.md)。`GET/POST preferences`返回`{preferences,warning:Unavailable|null}`，POST为完整UiPreferences对象而非补丁。字段精确为`version:1,density:compact|standard,sidebarCollapsed:boolean,processView:flat|tree,pages:{页面名:{query,sortKey,sortDirection:ascending|descending,visibleColumns:string[]|null,filters:{currentUser,sessionId,state:all|running|restricted}|null,scrollTop,selectedIdentity,resourceType,resourceId}},window:{width,height,zoomFactor,alwaysOnTop}|null`。query≤256、8页、40列、配置≤64KiB；进程/详情必须保留name/pid。省略window保留已有原生窗口偏好，首次为默认。保存位置为`%LOCALAPPDATA%/BlueDomainTaskManager/preferences.json`，测试必须设`TASKMANAGER_DATA_DIR`隔离。坏文件降级warning，不保存paused/frozen。

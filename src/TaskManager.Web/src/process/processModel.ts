@@ -1,3 +1,4 @@
+const textCollator = new Intl.Collator('zh-CN', { numeric: true });
 import type { Process, PageFilters } from '../types';
 import type { Sort } from '../components';
 import { matches } from '../format';
@@ -9,11 +10,11 @@ export function compareProcess(sort: Sort) {
     const x = value(a); const y = value(b);
     if (x == null) return y == null ? a.pid - b.pid : 1;
     if (y == null) return -1;
-    const n = typeof x === 'string' && typeof y === 'string' ? x.localeCompare(y, 'zh-CN', { numeric: true }) : x < y ? -1 : x > y ? 1 : 0;
+    const n = typeof x === 'string' && typeof y === 'string' ? textCollator.compare(x, y) : x < y ? -1 : x > y ? 1 : 0;
     return (sort.direction === 'ascending' ? n : -n) || a.pid - b.pid;
   };
 }
-export function processRows(processes: Process[], query: string, filters: PageFilters | null, currentUser: string | undefined, sort: Sort, tree: boolean, collapsed: Set<string>) {
+export function processRows(processes: Process[], query: string, filters: PageFilters | null, currentUser: string | null | undefined, sort: Sort, tree: boolean, collapsed: Set<string>) {
   const byPid = new Map(processes.map(p => [p.pid, p]));
   const parents = new Map<string, string>(); const children = new Map<string, Process[]>();
   for (const p of processes) {

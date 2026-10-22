@@ -17,7 +17,7 @@ const origin = `http://127.0.0.1:${port}`;
 await mkdir(output, { recursive: true });
 if (await portOpen(port) || await portOpen(cdp)) throw new Error('Desktop test ports already in use');
 const host = spawn(executable, [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences'), TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore' });
-const independent = spawn(workloadExe, [temporary, '180'], { cwd: root, windowsHide: true, stdio: 'ignore' });
+const independent = spawn(workloadExe, [temporary, '600'], { cwd: root, windowsHide: true, stdio: 'ignore' });
 let browser, target, tree = [], page;
 const screenshots = [];
 async function capture(name, nativeSurface = false) {
@@ -82,17 +82,17 @@ try {
   await until(async () => await page.locator('tbody tr[data-row-key]').count() === 1, 'real PID search');
   check(await page.locator('tbody').innerText().then(text => text.includes('TaskManager.TestWorkload')), 'A18 exact PID search finds independently spawned real test process');
   await search.fill('');
-  await page.getByRole('button', { name: '暂停采样', exact: true }).click();
-  await page.getByRole('button', { name: '继续采样', exact: true }).waitFor();
+  await page.getByRole('button', { name: '冻结显示', exact: true }).click();
+  await page.getByRole('button', { name: '继续显示', exact: true }).waitFor();
   await delay(2200);
-  await page.getByRole('button', { name: '按内存排序', exact: true }).click();
-  check(await page.getByRole('columnheader').filter({ has: page.getByRole('button', { name: '按内存排序', exact: true }) }).getAttribute('aria-sort') === 'ascending', 'A06 memory header exposes ascending numeric sort');
-  const snapshot = await (await fetch(origin + '/api/snapshot')).json();
-  const identities = await page.locator('tbody tr[data-row-key]').evaluateAll(rows => rows.map(row => row.dataset.rowKey));
-  const values = identities.map(identity => snapshot.processes.find(row => row.identity === identity)?.workingSetBytes).filter(value => value !== null && value !== undefined);
+  await page.getByRole('button', { name: '按内存（工作集）排序', exact: true }).click();
+  check(await page.getByRole('columnheader').filter({ has: page.getByRole('button', { name: '按内存（工作集）排序', exact: true }) }).getAttribute('aria-sort') === 'ascending', 'A06 memory header exposes ascending numeric sort');
+  const memoryIndex = (await page.getByRole('columnheader').allTextContents()).findIndex(text=>text.includes('内存'));
+  const displayed = await page.locator('tbody tr[data-row-key]').evaluateAll((rows,index)=>rows.map(row=>row.cells[index]?.innerText),memoryIndex);
+  const values = displayed.map(text=>{const match=/([\d.]+)\s*(B|KB|MB|GB|TB)/.exec(text??'');return match?Number(match[1])*1024**['B','KB','MB','GB','TB'].indexOf(match[2]):null;}).filter(value=>value!==null);
   check(values.length > 3 && values.every((value, index) => index === 0 || value >= values[index - 1]), 'A06 visible real working-set values sort numerically ascending');
-  await page.getByRole('button', { name: '继续采样', exact: true }).click();
-  await page.getByRole('button', { name: '暂停采样', exact: true }).waitFor();
+  await page.getByRole('button', { name: '继续显示', exact: true }).click();
+  await page.getByRole('button', { name: '冻结显示', exact: true }).waitFor();
   for (const name of ['性能', '应用历史记录', '启动应用', '用户', '详细信息', '服务', '设置', '进程']) {
     await page.getByRole('button', { name, exact: true }).click();
     check(await page.getByRole('heading', { name, exact: true, level: 1 }).isVisible(), `A18 real desktop navigation ${name}`);
@@ -108,7 +108,7 @@ try {
   check(await page.getByRole('button', { name: '运行新任务', exact: true }).evaluate(element => document.activeElement === element), 'A16 dialog Escape restores trigger focus');
   await page.getByRole('button', { name: '运行新任务', exact: true }).click();
   await dialog.getByLabel('程序名称或完整路径', { exact: true }).fill(workloadExe);
-  await dialog.getByLabel('参数 （可选）', { exact: true }).fill(`"${path.join(temporary, 'ui-created')}" 120`);
+  await dialog.getByLabel('参数（可选）', { exact: true }).fill(`"${path.join(temporary, 'ui-created')}" 120`);
   const response = page.waitForResponse(response => response.url().endsWith('/api/processes/start') && response.request().method() === 'POST');
   await dialog.getByRole('button', { name: '运行', exact: true }).click();
   target = await (await response).json();
@@ -126,6 +126,7 @@ try {
   await until(() => !alive(target.pid), 'desktop confirmed termination exits exact target');
   await until(async () => await page.locator('tbody tr[data-row-key]').count() === 0, 'terminated identity removed from real UI');
   check(!alive(target.pid) && alive(independent.pid), 'A10/A18 only selected UI-created target exits, independent workload survives');
+  await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click();
   target = undefined;
   await search.fill('');
     await page.evaluate(() => { const a = document.createElement('a'); a.href = 'https://example.com/'; a.textContent = 'test external navigation'; a.id = 'e2e-external'; Object.assign(a.style, {position: 'fixed', top:'100px',left:'300px',zIndex:'99999'}); document.body.append(a); });
