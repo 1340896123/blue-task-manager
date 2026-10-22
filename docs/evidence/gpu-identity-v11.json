@@ -1,0 +1,32 @@
+{
+  "result": "PASS",
+  "assertions": 12,
+  "checks": [
+    "basic snapshot remains available independently of deferred GPU identity",
+    "independent DXGI probe matches exact native LUID high/low bits, description and software flag",
+    "independent Windows video-controller names match actual non-software GPU descriptions",
+    "successful GPU identity has actual metadata time and no unavailable marker",
+    "adding identity preserves real process and busiest-adapter GPU telemetry",
+    "stable GPU descriptions use cached metadata instead of per-frame DXGI enumeration",
+    "real GPU 1 Windows description appears in resource selector and heading",
+    "real GPU 1 keeps its exact LUID visible for identity disambiguation",
+    "real GPU 2 Windows description appears in resource selector and heading",
+    "real GPU 2 keeps its exact LUID visible for identity disambiguation",
+    "long actual GPU names wrap without document overflow at 960px",
+    "GPU identity UI has no runtime errors"
+  ],
+  "basicReadyMs": 716.0812999999999,
+  "gpus": [
+    {
+      "description": "NVIDIA GeForce RTX 3080 Ti",
+      "adapterLuid": "luid_0x00000000_0x000103AB",
+      "isSoftware": false
+    },
+    {
+      "description": "Microsoft Basic Render Driver",
+      "adapterLuid": "luid_0x00000000_0x00012B7A",
+      "isSoftware": true
+    }
+  ],
+  "source": "production CsWin32 DXGI+PDH; independent native DXGI probe and Windows CIM; real browser UI; no mocks"
+}

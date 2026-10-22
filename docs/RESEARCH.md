@@ -24,6 +24,10 @@ UI沿既有MASTER增量。应用About Face的“目标→场景→行为→可�
 
 ## 1. TaskExplorer
 
+1.1 GPU友好身份增量：复核同一固定commit的[WinGpuMonitor.cpp](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/TaskExplorer/API/Windows/Monitors/WinGpuMonitor.cpp) `EtQueryAdapterFeatureLevel`，其CreateDXGIFactory1→EnumAdapters→GetDesc后以RtlIsEqualLuid关联，说明显示身份须按完整LUID精确匹配，不能按枚举顺序猜显卡。采用公开DXGI1.1 GetDesc1扩展读取Description与SOFTWARE标志，参照微软[EnumAdapters1](https://learn.microsoft.com/windows/win32/api/dxgi/nf-dxgi-idxgifactory1-enumadapters1)、[DXGI_ADAPTER_DESC1](https://learn.microsoft.com/windows/win32/api/dxgi/ns-dxgi-dxgi_adapter_desc1)的工厂/适配器生命周期与LUID定义；[微软DirectX-Graphics-Samples](https://github.com/microsoft/DirectX-Graphics-Samples/blob/master/Samples/Desktop/D3D12HelloWorld/src/HelloTriangle/D3D12HelloTriangle.cpp)也使用标准DXGI工厂。只借鉴公开设计，未复制GPL实现；不用QueryVideoMemoryInfo推算整机显存（该接口统计调用进程），不扩大此阶段范围。PDH与DXGI描述失败互不混为一类。
+
+该小改继续使用UI/UX Pro Max及现有MASTER。定向`readable technical labels --domain ux`只返回移动字号/表单标签/对比度等不适配本问题的结果，按合同缩窄`plain language jargon`无匹配；未把其当作已验证数据库建议。名称优先、技术ID次级来自用户明确便利性要求与项目已有桌面Token规范，无新视觉样式。
+
 仓库：[DavidXanatos/TaskExplorer](https://github.com/DavidXanatos/TaskExplorer)。本次研究 master commit：`9f3f95d22f07f759dd1e0114417529ba51decb01`，通过GitHub API读取commit和文件树、raw源码核验。
 
 | 实际源文件/符号 | 观察 | 本项目采用方式 |

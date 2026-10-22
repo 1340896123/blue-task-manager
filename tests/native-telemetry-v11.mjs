@@ -42,7 +42,7 @@ try {
   check(sample.processes.some(p => p.gpuPercent === null && p.unavailable.gpuPercent.code === 'noObservedEngine'), 'a PID with no observed GPU engine is unknown instead of a synthetic zero');
   check(sample.processes.every(p => p.networkBytesPerSecond === null), 'GPU and connections do not invent per-process network throughput');
   check(sample.gpuAdapters.every(g => Number.isFinite(g.utilizationPercent) && g.utilizationPercent >= 0 && g.utilizationPercent <= 100), 'adapter GPU is a valid busiest-engine percentage');
-  check(sample.system.gpuPercent === Math.max(...sample.gpuAdapters.map(g => g.utilizationPercent)), 'system GPU selects the busiest physical adapter engine');
+  check(sample.system.gpuPercent === Math.max(...sample.gpuAdapters.map(g => g.utilizationPercent)), 'system GPU selects the busiest adapter engine including software adapters');
   check(sample.physicalDisks.length > 0 && sample.physicalDisks.every(d => !d.isTotal && d.id !== '_Total' && Number.isFinite(d.activePercent) && d.activePercent >= 0 && d.activePercent <= 100 && Number.isFinite(d.readBytesPerSecond) && d.readBytesPerSecond >= 0 && Number.isFinite(d.writeBytesPerSecond) && d.writeBytesPerSecond >= 0), 'physical disk real instances exclude _Total and expose real valid rates/activity');
   check(sample.system.diskActivePercent === Math.max(...sample.physicalDisks.map(d => d.activePercent)), 'system disk activity is the busiest physical disk, not summed percentages');
   check(sample.system.diskReadBytesPerSecond === sample.physicalDisks.reduce((sum,d) => sum+d.readBytesPerSecond,0) && sample.system.diskWriteBytesPerSecond === sample.physicalDisks.reduce((sum,d) => sum+d.writeBytesPerSecond,0), 'system disk byte rates sum physical instances once');

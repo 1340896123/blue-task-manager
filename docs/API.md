@@ -46,11 +46,13 @@
 - `process.gpuPercent:number|null,gpuEngine:string|null,gpuCapturedAtUtc:string|null`：PDH English GPU Engine、最忙单引擎，不把多个并行引擎相加。至少两个PDH样本、有效CStatus和前后创建身份校验；新身份额外预热；无实例为`noObservedEngine`，不是0。gpuEngine为真实`luid_..._phys_.../eng_..._engtype_...`标签。详情沿用最近同身份值和独立GPU时间，不宣称实时同步读取GPU。
 - `networkAdapters[]`：`id`为UInt64 LUID十进制字符串，另有`interfaceIndex,alias,description,status,interfaceType,isHardware,isVirtual,isLoopback,isTunnel,receiveLinkSpeedBitsPerSecond,transmitLinkSpeedBitsPerSecond,receivedBytes,sentBytes,receiveBytesPerSecond,sendBytesPerSecond,unavailable`。四个累计/链路值均字符串。status为真实IfOperStatus枚举；虚拟标记为非硬件且不是回环/隧道，不猜型号；GetIfTable2包含软件过滤层，不能把所有接口相加当物理网线吞吐。非Up接口速率null/disconnected，稳定接口独立差分，重置/新接口预热。
 - `physicalDisks[]`：`id,name,isTotal:false,readBytesPerSecond,writeBytesPerSecond,activePercent,unavailable`。id/name为真实PhysicalDisk实例，如`4 C:`；使用Disk Read/Write Bytes/sec与`100 - % Idle Time`，活动有效范围0～100。排除`_Total`，避免把总量重复相加或猜其idle聚合。`system.diskReadBytesPerSecond/diskWriteBytesPerSecond`为全部非_Total物理实例之和，`system.diskActivePercent`为最忙物理磁盘；任何成员指标无效，该聚合指标null。进程I/O不参与。
-- `gpuAdapters[]`：`id,adapterLuid,physicalIndex,utilizationPercent,busiestEngine,engineCount,unavailable`。ID为计数器LUID+physical index，不虚构厂商名称；同一物理引擎先跨PID汇总再取最忙，`system.gpuPercent`为其中最大值。成员CStatus不完整时保守null/partial，不把各PID的最大值求和。
+- `gpuAdapters[]`：`id,adapterLuid,physicalIndex,description,isSoftware,identityCapturedAtUtc,utilizationPercent,busiestEngine,engineCount,unavailable`。ID为计数器LUID+phys索引；physicalIndex是PDH实例phys字段，不代表Windows GPU编号或实体硬件保证。description来自CsWin32 DXGI GetDesc1，按完整AdapterLuid高低位精确匹配，isSoftware为DXGI软件标志（均可null并有独立原因），identityCapturedAtUtc为身份读取时间，独立于PDH采样时间。UI主名称使用实际description，LUID保留次级，缺失才回退LUID。没有从厂商ID/排序推断型号或Windows GPU编号。同一适配器phys/engine标识先跨PID汇总再取最忙，`system.gpuPercent`为所有适配器中最大值，**包含软件适配器**，不能称仅物理GPU使用率。成员CStatus不完整时保守null/partial，不把各PID的最大值求和。
 - `telemetry`：`sampleId,capturedAtUtc,collectionDurationMs,gpuInstanceCount,unavailable,queryDurationMs,initializationDurationMs`。这是独立PDH时间轴，可能落后基本快照一帧；首次sampleId0、时间null/预热。collectionDurationMs含批量查询/格式化/聚合/身份确认，queryDurationMs仅PdhCollectQueryData，初始化单列。超过max(5秒,3×采样周期)无新PDH样本，下一基本快照清空旧数值并stale。能力available表示采集链已接入，当前设备/权限是否有值仍以unavailable为准。
 - `performanceHistory[]`增加`telemetryCapturedAtUtc,gpuPercent,diskActivePercent,networkAdapters[],physicalDisks[],gpuAdapters[]`。各资源点为`{id,percent,readBytesPerSecond,writeBytesPerSecond}`（网络read=receive/write=send）。GPU/磁盘曲线必须按telemetryCapturedAtUtc去重、按真实时间绘制；同一异步PDH样本可能在多次基本快照出现，不能视为新采样。网络点使用原capturedAtUtc；不为未出现的资源补0。
 
 GPU/磁盘仅后台单worker惰性初始化；每个基本样本投递一份有界最新请求，不阻塞health、首快照或settings锁；同一长寿命PDH query批量读取，不按PID另开query，不返回GPU全引擎数组。暂停后不继续启动PDH采样；正在进行的不可取消原生调用可完成，但暂停快照不因此更新。退出等待worker完成并释放query；图标句柄由独立核心层释放。
+
+DXGI描述同样在上述后台worker中惰性枚举，最多256项，成功缓存5分钟、新未知LUID最多每10秒刷新一次；每次工厂与适配器COM对象在finally释放，不长期保留。身份失败只影响description/isSoftware，不使PDH利用率失效。capability新增`gpuIdentity`，表示真实名称读取链已接入，当前字段仍以unavailable为准。没有接入实时显存数值。详情见[GPU-IDENTITY-V1.1.md](GPU-IDENTITY-V1.1.md)。
 
 ## 1.0已验收基线
 

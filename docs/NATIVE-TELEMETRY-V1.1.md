@@ -5,7 +5,7 @@
 ## 实际采集链
 
 - `PdhTelemetryCollector`是独立惰性单worker。基本Snapshot已发布后才投递最新PID/创建身份映射；队列只保留最新一份请求。初始化和PdhCollectQueryData绝不持有snapshot/settings锁。一个长寿命CsWin32 SafeHandle query、四个English wildcard counter：GPU Engine Utilization Percentage、PhysicalDisk Disk Read Bytes/sec、Disk Write Bytes/sec、% Idle Time。按基本采样节奏请求，暂停时不开始新查询，已进入的不可取消原生调用可以完成但不更新暂停快照。
-- GPU检查API返回码、每项CStatus（VALID_DATA或NEW_DATA）、有限非负值、至少两样本。实例按公开PID/LUID/physical/engine标签解析，逐PID最忙单引擎；同适配器同物理引擎先跨PID累加，再选最忙引擎，百分比限于0～100，不能把每个PID的最大值相加当整机GPU。部分实例CStatus无效，相关进程/适配器保守null并给原因，不拿已知子集冒充完整值。
+- GPU检查API返回码、每项CStatus（VALID_DATA或NEW_DATA）、有限非负值、至少两样本。实例按公开PID/LUID/phys/engine标签解析，逐PID最忙单引擎；同适配器同phys/engine先跨PID累加，再选最忙引擎，百分比限于0～100，不能把每个PID的最大值相加当整机GPU。来源包含软件适配器，phys索引不构成实体硬件保证。部分实例CStatus无效，相关进程/适配器保守null并给原因，不拿已知子集冒充完整值。
 - 每个出现GPU实例的PID每批只打开一次limited-query句柄验证GetProcessTimes；上批和本批身份必须一致，创建时间须早于上批PDH开始时间。新身份额外预热；基本快照合并仍按完整identity，不跨PID复用套用旧值。没有观察到实例为`noObservedEngine`，不表示GPU0；驱动提供有效0才显示0。此为公开用户态计数器身份关联，不能保证驱动本身错误/延迟实例的内核级消歧。
 - 物理磁盘只返回真实非_Total实例（本机如`0 D:`），读写来自独立PhysicalDisk计数器，活动为`100-% Idle Time`并限有效范围。系统读写分别对这些实例求和，系统活动为最忙物理磁盘，**不是所有磁盘同时忙的总时长**；成员缺失则对应系统聚合null。排除_Total避免重复计算，也不假设_Total idle的跨盘聚合语义。进程I/O完全不参与。
 - `NetworkCollector`每个基本样本一次GetIfTable2；按UInt64 LUID和单调间隔差分，稳定接口独立预热/回退。保留硬件、软件虚拟、回环和隧道接口，含真实Alias/Description/链路位速率/字节累计；非Up速率null/disconnected。IsVirtual是非硬件且不是回环/隧道，软件filter也可能属于该类，不靠名称猜测。现有系统网络合计保持活动非回环/非隧道口径，**可能重复经过虚拟/过滤层，不能标物理网线吞吐**。新UI应优先让用户选择具体接口。
@@ -18,7 +18,7 @@
 
 performanceHistory仍最多120个基本点。新增`telemetryCapturedAtUtc,gpuPercent,diskActivePercent,networkAdapters[],physicalDisks[],gpuAdapters[]`，资源点统一`{id,percent,readBytesPerSecond,writeBytesPerSecond}`，网络read=receive/write=send。**GPU/磁盘图表按telemetryCapturedAtUtc去重并按真实时间画点，重复基本快照不是新PDH采样；网络用基本capturedAtUtc。** 没有观察到资源的历史不能补0。暂停造成的时间缺口应显示为缺口。
 
-capability `processGpu,gpuAdapters,diskActivity,networkAdapters`的available表示采集链已接入，设备/权限/计数器当下状态仍以相应unavailable为准。逐进程网络吞吐仍未接入，TCP/UDP端点不是吞吐。适配器ID是原生LUID，不虚构GPU产品型号。
+capability `processGpu,gpuAdapters,diskActivity,networkAdapters`的available表示采集链已接入，设备/权限/计数器当下状态仍以相应unavailable为准。逐进程网络吞吐仍未接入，TCP/UDP端点不是吞吐。适配器ID是原生LUID，不虚构GPU产品型号；后续[GPU友好身份阶段](GPU-IDENTITY-V1.1.md)已通过DXGI精确匹配增加真实description/isSoftware及UI名称，并保留LUID。
 
 ## 性能与资源边界
 

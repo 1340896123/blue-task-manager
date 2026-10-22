@@ -39,7 +39,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         ["efficiency"] = new(true, "CsWin32 ProcessPowerThrottling + SetPriorityClass + 原生读回", "每个目标需按身份读取实际能力；外部效率模式不覆盖，没有恢复基线不关闭。"),
         ["processNetwork"] = new(false, "未接入", "未接入逐进程网络采集；不能从进程 I/O 推导。"),
         ["processGpu"] = new(true, "CsWin32 PDH English GPU Engine；最忙单引擎，两样本与创建身份校验", "需驱动提供有效计数器；无实例、预热或受限时null并给原因。"),
-        ["gpuAdapters"] = new(true, "CsWin32 PDH；同适配器物理引擎先跨PID汇总，再取最忙引擎", "适配器按计数器LUID/physical index标识，不猜测硬件型号。"),
+        ["gpuAdapters"] = new(true, "CsWin32 PDH；同适配器引擎先跨PID汇总，再取最忙引擎，含软件适配器", "按计数器LUID/phys索引标识；phys索引不是Windows GPU编号或实体硬件保证，真实DXGI描述单独匹配。"),
+        ["gpuIdentity"] = new(true, "CsWin32 DXGI CreateDXGIFactory1 / IDXGIAdapter1.GetDesc1，按完整AdapterLuid精确匹配", "描述/软件标志按实际读取，失败不影响PDH指标；不推断Windows GPU编号。"),
         ["networkAdapters"] = new(true, "CsWin32 GetIfTable2；按LUID逐接口差分，包含真实硬件/虚拟/回环/隧道标记"),
         ["diskActivity"] = new(true, "CsWin32 PDH English PhysicalDisk；100-% Idle Time", "系统活动百分比为最忙物理磁盘；系统读写为非_Total实例吞吐之和，进程I/O不参与。")
     };
@@ -185,7 +186,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         {
             Status = sample.Status with { Unavailable = new Dictionary<string, Unavailable> { ["gpu"] = stale, ["disk"] = stale } },
             Processes = new Dictionary<string, GpuReading>(),
-            Gpus = sample.Gpus.Select(row => row with { UtilizationPercent = null, BusiestEngine = null, Unavailable = new Dictionary<string, Unavailable> { ["utilizationPercent"] = stale } }).ToArray(),
+            Gpus = sample.Gpus.Select(row => row with { UtilizationPercent = null, BusiestEngine = null, Unavailable = new Dictionary<string, Unavailable>(row.Unavailable) { ["utilizationPercent"] = stale } }).ToArray(),
             Disks = sample.Disks.Select(row => row with { ReadBytesPerSecond = null, WriteBytesPerSecond = null, ActivePercent = null,
                 Unavailable = new Dictionary<string, Unavailable> { ["readBytesPerSecond"] = stale, ["writeBytesPerSecond"] = stale, ["activePercent"] = stale } }).ToArray()
         };

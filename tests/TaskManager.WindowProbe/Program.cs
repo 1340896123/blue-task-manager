@@ -5,6 +5,35 @@ using Windows.Win32.UI.WindowsAndMessaging;
 using Windows.Win32.System.Threading;
 using Windows.Win32.NetworkManagement.IpHelper;
 using Windows.Win32.System.ProcessStatus;
+using Windows.Win32.Graphics.Dxgi;
+
+if (args[0] == "gpu-identities")
+{
+    IDXGIFactory1? factory = null;
+    try
+    {
+        PInvoke.CreateDXGIFactory1(out factory).ThrowOnFailure();
+        if (factory is null) throw new InvalidOperationException("No DXGI factory.");
+        var descriptions = new List<object>();
+        for (uint i = 0; i < 256; i++)
+        {
+            IDXGIAdapter1? adapter = null;
+            try
+            {
+                var status = factory.EnumAdapters1(i, out adapter);
+                if (status == HRESULT.DXGI_ERROR_NOT_FOUND) break;
+                status.ThrowOnFailure();
+                var value = adapter.GetDesc1();
+                descriptions.Add(new { description = value.Description.ToString(), highPart = value.AdapterLuid.HighPart, lowPart = value.AdapterLuid.LowPart,
+                    software = (value.Flags & DXGI_ADAPTER_FLAG.DXGI_ADAPTER_FLAG_SOFTWARE) != 0 });
+            }
+            finally { if (adapter is not null) System.Runtime.InteropServices.Marshal.ReleaseComObject(adapter); }
+        }
+        Console.WriteLine(JsonConvert.SerializeObject(descriptions));
+    }
+    finally { if (factory is not null) System.Runtime.InteropServices.Marshal.ReleaseComObject(factory); }
+    return;
+}
 
 if (args[0] == "network-counters")
 {

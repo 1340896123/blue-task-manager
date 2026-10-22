@@ -16,3 +16,8 @@ FreeMibTable
 GetProcessHandleCount
 K32GetProcessMemoryInfo
 PROCESS_MEMORY_COUNTERS_EX
+CreateDXGIFactory1
+IDXGIFactory1
+IDXGIAdapter1
+DXGI_ERROR_NOT_FOUND
+DXGI_ADAPTER_FLAG

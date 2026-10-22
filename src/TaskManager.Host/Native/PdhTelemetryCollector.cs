@@ -30,6 +30,7 @@ internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> setti
     private bool _collected;
     private DateTime _previousCapture;
     private double? _initializationDurationMs;
+    private readonly GpuIdentityCache _gpuIdentity = new();
 
     public PdhSample Current { get { lock (_gate) return _current; } }
     public void Request(IReadOnlyList<ProcessDto> processes)
@@ -143,15 +144,21 @@ internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> setti
                 values[identity] = new(normalized, $"{adapter}_phys_{physical}/{engine}", null);
         }
         foreach (var pid in invalidPids) if (requested.TryGetValue(pid, out var identity) && values.ContainsKey(identity)) values[identity] = new(null, null, new("warmingUp", "本身份部分GPU引擎尚无有效CStatus，等待完整相邻样本。"));
-        if (adapterEngines.Count > 256) errors["gpu"] = new("capacity", "GPU物理适配器超过256项边界。");
+        if (adapterEngines.Count > 256) errors["gpu"] = new("capacity", "GPU适配器来源超过256项边界（含软件适配器）。");
+        var identityDescriptions = _gpuIdentity.Resolve(adapterEngines.Keys.Select(key => key.Adapter));
         var gpus = adapterEngines.Count > 256 ? [] : adapterEngines.Select(pair =>
         {
             var present = engines.Where(item => item.Key.Adapter == pair.Key.Adapter && item.Key.Physical == pair.Key.Physical).ToArray();
             var available = _collected && present.Length > 0 && !adapterErrors.Contains(pair.Key) && gpuError is null;
             var busiest = present.OrderByDescending(item => item.Value).FirstOrDefault();
+            var missing = new Dictionary<string, Unavailable>();
+            if (!available) missing["utilizationPercent"] = gpuError ?? (_collected ? new("partial", "部分GPU引擎计数器无有效CStatus；等待完整有效样本。") : NativeSupport.WarmingUp);
+            var identity = identityDescriptions[pair.Key.Adapter];
+            if (identity.Description is null) missing["description"] = identity.Error!;
+            if (identity.IsSoftware is null) missing["isSoftware"] = identity.Error!;
             return new GpuAdapterDto($"{pair.Key.Adapter}_phys_{pair.Key.Physical}", pair.Key.Adapter, pair.Key.Physical,
                 available ? Math.Clamp(busiest.Value, 0, 100) : null, available ? busiest.Key.Engine : null, pair.Value.Count,
-                available ? new Dictionary<string, Unavailable>() : new Dictionary<string, Unavailable> { ["utilizationPercent"] = gpuError ?? (_collected ? new("partial", "部分GPU引擎计数器无有效CStatus；等待完整有效样本。") : NativeSupport.WarmingUp) });
+                missing) { Description = identity.Description, IsSoftware = identity.IsSoftware, IdentityCapturedAtUtc = identity.CapturedAtUtc };
         }).OrderBy(item => item.Id, StringComparer.Ordinal).ToArray();
         var names = read.Keys.Concat(write.Keys).Concat(idle.Keys).Where(name => !name.Equals("_Total", StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.Ordinal).ToArray();
         if (names.Length > 256) { errors["disk"] = new("capacity", "物理磁盘实例超过256项边界。"); names = []; }
