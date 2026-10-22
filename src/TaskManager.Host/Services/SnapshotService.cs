@@ -22,12 +22,20 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     public static readonly IReadOnlyDictionary<string, Capability> Capabilities = new Dictionary<string, Capability>
     {
         ["processes"] = new(true, "CsWin32 Toolhelp / GetProcessTimes / PSAPI / GetProcessIoCounters"),
-        ["system"] = new(true, "CsWin32 GetSystemTimes / GlobalMemoryStatusEx / GetTickCount64"),
+        ["system"] = new(true, "CsWin32 GetSystemTimes / GlobalMemoryStatusEx / GetPerformanceInfo / GetTickCount64"),
         ["network"] = new(true, "CsWin32 GetIfTable2：活动非回环、非隧道网卡总量，可能含虚拟接口"),
         ["services"] = new(true, "CsWin32 SCM EnumServicesStatusEx"),
         ["users"] = new(true, "CsWin32 WTS + 进程令牌 SID，按明确用户/会话聚合"),
         ["startup"] = new(true, "只读 Registry Run/RunOnce + Startup 文件夹"),
         ["history"] = new(true, "本次会话相邻观测样本的 CPU/I/O 增量"),
+        ["processDetails"] = new(true, "CsWin32 身份句柄实时查询；速率来自最近成功快照"),
+        ["processConnections"] = new(true, "CsWin32 GetExtendedTcpTable/GetExtendedUdpTable IPv4/IPv6 OWNER_PID；端点不是吞吐"),
+        ["processPriority"] = new(true, "CsWin32 SetPriorityClass/GetPriorityClass，五档非实时优先级"),
+        ["processTree"] = new(true, "Toolhelp真实关系/FILETIME身份/同句柄预检/叶到根退出确认"),
+        ["processIcons"] = new(true, "CsWin32 SHGetFileInfo / DestroyIcon；独立COM STA按需PNG"),
+        ["serviceControl"] = new(true, "CsWin32 SCM；最小动作权限、同句柄状态/PID核验、15秒有界观察", "成功取决于当前用户权限，不自动提权或停止依赖服务。"),
+        ["shellLocations"] = new(true, "CsWin32 Shell公开接口/固定Windows系统入口"),
+        ["efficiency"] = new(true, "CsWin32 ProcessPowerThrottling + SetPriorityClass + 原生读回", "每个目标需按身份读取实际能力；外部效率模式不覆盖，没有恢复基线不关闭。"),
         ["processNetwork"] = new(false, "未接入", "未接入逐进程网络采集；不能从进程 I/O 推导。"),
         ["processGpu"] = new(false, "未接入", "未接入逐进程 GPU 采集。"),
         ["diskActivity"] = new(false, "未接入", "进程 I/O 不是物理磁盘吞吐或活动时间。")
@@ -43,7 +51,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
             {
                 SynchronizePreferenceWarning();
                 if (_snapshot is null) return null;
-                return _serialized ??= new($"\"{_instance}-{_revision}\"", System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(_snapshot, SnapshotJson.Settings)));
+                // Weak ETags describe the same JSON representation across negotiated gzip/identity encoding.
+                return _serialized ??= new($"W/\"{_instance}-{_revision}\"", System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(_snapshot, SnapshotJson.Settings)));
             }
         }
     }
@@ -61,9 +70,9 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     public SamplingSettings ApplySettings(SettingsRequest request)
     {
         if (request.IntervalMs is not (1000 or 2000 or 5000)) throw new ApiException(400, "invalidInterval", "采样周期只允许 1000、2000、5000 毫秒。");
-        preferences.SaveInterval(request.IntervalMs);
         lock (_gate)
         {
+            preferences.SaveInterval(request.IntervalMs);
             _settings = new(request.IntervalMs, request.Paused);
             if (_snapshot is not null) _snapshot = _snapshot with { IntervalMs = _settings.IntervalMs, Paused = _settings.Paused };
             Invalidate();

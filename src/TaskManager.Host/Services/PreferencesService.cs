@@ -35,7 +35,7 @@ public sealed class PreferencesService
     public PreferencesResult Save(UiPreferences value)
     {
         Validate(value);
-        lock (gate) { Write(persisted with { Ui = value }); return new(persisted.Ui, warning); }
+        lock (gate) { Write(persisted with { Ui = value with { Window = value.Window ?? persisted.Ui.Window } }); return new(persisted.Ui, warning); }
     }
     public void SaveInterval(int value) { lock (gate) { if (persisted.IntervalMs != value) Write(persisted with { IntervalMs = value }); } }
     public void SaveWindow(WindowPreference value) { lock (gate) { var next = persisted.Ui with { Window = value }; Validate(next); Write(persisted with { Ui = next }); } }
@@ -66,6 +66,7 @@ public sealed class PreferencesService
             var p = pair.Value;
             if (!Pages.Contains(pair.Key) || p is null || p.Query is null || p.Query.Length > 256 || p.Query.Contains('\0') || !Keys.Contains(p.SortKey) || p.SortDirection is not ("ascending" or "descending") || !double.IsFinite(p.ScrollTop) || p.ScrollTop is < 0 or > 10_000_000 || p.SelectedIdentity?.Length > 128 || p.VisibleColumns?.Count > 40 || p.VisibleColumns?.Any(key => !Keys.Contains(key)) == true || p.Filters?.State is not (null or "all" or "running" or "restricted")) Invalid();
             if (p.VisibleColumns is not null && (!p.VisibleColumns.Contains("name") || (pair.Key is "processes" or "details" && !p.VisibleColumns.Contains("pid")))) Invalid();
+            if (p.ResourceType is not (null or "system" or "cpu" or "memory" or "network" or "disk" or "gpu") || p.ResourceId?.Length > 256 || p.ResourceId?.Contains('\0') == true) Invalid();
         }
         if (ui.Window is { } window && (window.Width is < 960 or > 3840 || window.Height is < 640 or > 2160 || !double.IsFinite(window.ZoomFactor) || window.ZoomFactor is < .75 or > 2)) Invalid();
     }

@@ -1,0 +1,27 @@
+{
+  "label": "v1.1 core2a workstation GC experiment",
+  "measuredAtUtc": "2026-10-22T20:27:33.491Z",
+  "productionData": true,
+  "logicalProcessors": 28,
+  "processCount": 914,
+  "startupReadyMs": 550,
+  "snapshotBytes": 1456276,
+  "snapshotLatencyMs": {
+    "p50": 10.823899999999867,
+    "p95": 73.97209999999995
+  },
+  "host": {
+    "cpuPercentOneCore": 10.634891914056617,
+    "cpuPercentMachine": 0.37981756835916486,
+    "privateBytes": 58036224,
+    "workingSetBytes": 114556928,
+    "handles": 522
+  },
+  "renderer": {
+    "nodes": 1074,
+    "renderedRows": 28,
+    "heapUsedBytes": 17664236,
+    "taskDurationSeconds": 0.445195
+  },
+  "note": "10s actual UI polling; 12 sequential uncached snapshot reads measured separately; headless Chromium is a comparable UI baseline, not desktop total resource usage."
+}

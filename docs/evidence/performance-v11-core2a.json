@@ -1,0 +1,27 @@
+{
+  "label": "v1.1 core2a",
+  "measuredAtUtc": "2026-10-22T20:14:30.686Z",
+  "productionData": true,
+  "logicalProcessors": 28,
+  "processCount": 918,
+  "startupReadyMs": 543,
+  "snapshotBytes": 1467923,
+  "snapshotLatencyMs": {
+    "p50": 11.03189999999995,
+    "p95": 81.10289999999986
+  },
+  "host": {
+    "cpuPercentOneCore": 12.2864010690977,
+    "cpuPercentMachine": 0.4388000381820607,
+    "privateBytes": 93310976,
+    "workingSetBytes": 125673472,
+    "handles": 606
+  },
+  "renderer": {
+    "nodes": 1074,
+    "renderedRows": 28,
+    "heapUsedBytes": 17767264,
+    "taskDurationSeconds": 0.481577
+  },
+  "note": "10s actual UI polling; 12 sequential uncached snapshot reads measured separately; headless Chromium is a comparable UI baseline, not desktop total resource usage."
+}

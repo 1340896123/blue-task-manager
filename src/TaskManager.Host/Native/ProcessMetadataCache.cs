@@ -84,12 +84,17 @@ internal sealed class ProcessMetadataCache : IDisposable
                         if (file.Error is not null) errors["publisher"] = file.Error;
                     }
                     else errors["publisher"] = new("notCollected", "无法读取进程文件路径。");
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or System.ComponentModel.Win32Exception)
+                { errors["publisher"] = new("error", "文件元数据不可读；基础进程信息不受影响。"); }
+                try
+                {
                     using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, item.Pid);
                     if (!handle.IsInvalid && PInvoke.GetProcessTimes(handle, out var creation, out _, out _, out _) && item.Identity == $"{item.Pid}:{NativeSupport.FileTime(creation)}") user = ReadOwner(handle, errors);
                     else errors["userName"] = new("exited", "后台读取时该进程身份已退出或不可读。");
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or System.ComponentModel.Win32Exception)
-                { errors["publisher"] = new("error", "文件元数据不可读；基础进程信息不受影响。"); }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+                { errors["userName"] = new("accessDenied", "后台用户信息不可读；文件信息不受影响。"); }
                 if (user is null) errors.TryAdd("userName", new("notCollected", "后台用户信息尚不可读；基础进程信息不受影响。"));
                 lock (gate)
                 {

@@ -57,7 +57,12 @@ public sealed class SystemDto
     public Dictionary<string, Unavailable> Unavailable { get; init; } = new();
 }
 public sealed record ServiceDto(string Name, string DisplayName, string State, uint Pid);
-public sealed record StartupDto(string Id, string Name, string Command, string Source, string? Enabled, string EnabledReason);
+public sealed record StartupDto(string Id, string Name, string Command, string Source, string? Enabled, string EnabledReason)
+{
+    public string? LocationPath { get; init; }
+    public bool CanOpenLocation { get; init; }
+    public string? LocationReason { get; init; }
+}
 public sealed class UserDto
 {
     public uint SessionId { get; init; }
@@ -81,7 +86,7 @@ public sealed record SnapshotDto(long SampleId, DateTime CapturedAtUtc, DateTime
 public sealed record StartRequest(string Executable, string? Arguments);
 public sealed record TerminateRequest(string CreationTimeFileTime);
 public sealed record SettingsRequest(int IntervalMs, bool Paused);
-public sealed record ProcessActionResult(uint Pid, string? CreationTimeFileTime, string? Identity, string Message);
+public sealed record ProcessActionResult(uint Pid, string? CreationTimeFileTime, string? Identity, string Message, bool? Completed = null);
 public sealed record ErrorBody(string Code, string Message, int? NativeErrorCode = null);
 public sealed record ErrorEnvelope(ErrorBody Error);
 public sealed record PriorityRequest(string CreationTimeFileTime, string Priority);
@@ -93,12 +98,13 @@ public sealed record TerminateTreeRequest(string CreationTimeFileTime, IReadOnly
 public sealed record TreeActionItem(string Identity, uint Pid, string Status, string Message, int? NativeErrorCode = null);
 public sealed record TreeActionResult(bool Completed, IReadOnlyList<TreeActionItem> Results, string Message);
 public sealed record FileActionRequest(string CreationTimeFileTime, string Action);
-public sealed record ProcessDetails(ProcessDto Process, DateTime CapturedAtUtc, DateTime? StartedAtUtc, double? UptimeSeconds, uint? HandleCount, long? PrivateBytes, IReadOnlyList<ServiceDto> RelatedServices, IReadOnlyDictionary<string, Unavailable> Unavailable);
+public sealed record ProcessDetails(ProcessDto Process, DateTime CapturedAtUtc, DateTime? StartedAtUtc, double? UptimeSeconds, uint? HandleCount, long? PrivateBytes, IReadOnlyList<ServiceDto> RelatedServices, IReadOnlyDictionary<string, Unavailable> Unavailable, DateTime? SnapshotCapturedAtUtc, DateTime? RelatedServicesCapturedAtUtc);
 public sealed record ConnectionDto(string Protocol, string AddressFamily, string LocalAddress, int LocalPort, string? RemoteAddress, int? RemotePort, string? State, uint Pid);
 public sealed record ConnectionsResult(DateTime CapturedAtUtc, string Identity, IReadOnlyList<ConnectionDto> Connections, IReadOnlyDictionary<string, Unavailable> Unavailable, bool Truncated);
 public sealed record ServiceControlRequest(string Command, string ExpectedState, uint ExpectedPid);
-public sealed record ServiceControlResult(string Name, string State, uint Pid, bool Completed, bool TimedOut, string Message);
+public sealed record ServiceControlResult(string Name, string State, uint? Pid, bool Completed, bool TimedOut, string Message);
 public sealed record ServiceDetails(string Name, string DisplayName, string State, uint Pid, string? BinaryPath, string? StartType, string? Account, IReadOnlyList<string> Dependencies, bool CanStart, bool CanStop, bool CanRestart, DateTime CapturedAtUtc, IReadOnlyDictionary<string, Unavailable> Unavailable);
 public sealed record SystemLocationRequest(string Location);
+public sealed record StartupLocationRequest(string Id);
 public sealed record EfficiencyRequest(string CreationTimeFileTime, bool Enabled);
 public sealed record EfficiencyState(string Identity, bool Available, bool Enabled, bool CanRestore, string? Priority, uint? ControlMask, uint? StateMask, string? Reason);

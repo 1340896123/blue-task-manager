@@ -76,7 +76,7 @@ internal static class SlowDataReader
         finally { PInvoke.WTSFreeMemory(value.Value); }
     }
 
-    private static List<StartupDto> ReadStartup(List<Unavailable> warnings)
+    internal static List<StartupDto> ReadStartup(List<Unavailable> warnings)
     {
         var result = new List<StartupDto>();
         foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
@@ -112,6 +112,6 @@ internal static class SlowDataReader
             { warnings.Add(new("accessDenied", $"读取 {location} 启动文件夹失败。")); }
         }
         // On 64-bit Windows HKCU Run views can point to the same physical key; keep distinct actual values once.
-        return result.DistinctBy(item => (item.Source.Replace(" (Registry32)", "").Replace(" (Registry64)", ""), item.Name, item.Command)).OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        return result.DistinctBy(item => (item.Source.Replace(" (Registry32)", "").Replace(" (Registry64)", ""), item.Name, item.Command)).OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase).Select(StartupLocationResolver.Describe).ToList();
     }
 }

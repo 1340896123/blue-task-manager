@@ -60,3 +60,9 @@ ILFree
 SHOpenFolderAndSelectItems
 SEE_MASK_INVOKEIDLIST
 SEE_MASK_FLAG_NO_UI
+WaitForSingleObject
+CoInitializeEx
+CoUninitialize
+PeekMessageW
+TranslateMessage
+DispatchMessageW

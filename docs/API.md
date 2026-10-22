@@ -6,11 +6,11 @@
 
 ### 版本、偏好与详情
 
-阶段2a已实现（后续动作仍按下方合同继续实施）：`GET/POST preferences`返回`{preferences,warning:Unavailable|null}`，POST为完整UiPreferences对象而非补丁。字段精确为`version:1,density:compact|standard,sidebarCollapsed:boolean,processView:flat|tree,pages:{页面名:{query,sortKey,sortDirection:ascending|descending,visibleColumns:string[]|null,filters:{currentUser,sessionId,state:all|running|restricted}|null,scrollTop,selectedIdentity}},window:{width,height,zoomFactor,alwaysOnTop}|null`。query≤256、8页、40列、配置≤64KiB；进程/详情必须保留name/pid。省略pages/window使用默认。保存位置为`%LOCALAPPDATA%/BlueDomainTaskManager/preferences.json`，测试必须设`TASKMANAGER_DATA_DIR`隔离。坏文件降级warning，不保存paused/frozen。
+阶段2核心已实现，实际合同与验证见[NATIVE-CORE-V1.1.md](NATIVE-CORE-V1.1.md)。`GET/POST preferences`返回`{preferences,warning:Unavailable|null}`，POST为完整UiPreferences对象而非补丁。字段精确为`version:1,density:compact|standard,sidebarCollapsed:boolean,processView:flat|tree,pages:{页面名:{query,sortKey,sortDirection:ascending|descending,visibleColumns:string[]|null,filters:{currentUser,sessionId,state:all|running|restricted}|null,scrollTop,selectedIdentity,resourceType,resourceId}},window:{width,height,zoomFactor,alwaysOnTop}|null`。query≤256、8页、40列、配置≤64KiB；进程/详情必须保留name/pid。省略window保留已有原生窗口偏好，首次为默认。保存位置为`%LOCALAPPDATA%/BlueDomainTaskManager/preferences.json`，测试必须设`TASKMANAGER_DATA_DIR`隔离。坏文件降级warning，不保存paused/frozen。
 
 快照增加`samplingDurationMs`（本次原生+慢数据+聚合的单调耗时，非HTTP序列化耗时）；进程增加`privateBytes`（PROCESS_MEMORY_COUNTERS_EX.PrivateUsage，专用提交）、`handleCount,startedAtUtc,uptimeSeconds`；系统增加`commitBytes,commitLimitBytes,cacheBytes,threadCount,handleCount`（GetPerformanceInfo×PageSize）。unknown仍null并有unavailable。元数据后台有界队列初读期间为`loading`，基本路径与实时资源先可用。
 
-快照JSON.NET UTF-8表示按完整revision缓存，ETag含每次Host启动随机实例ID；暂停/周期/历史/警告变更使其失效。标准gzip Fastest按Accept-Encoding协商；默认GET仍是完整原合同，不新增私有差分协议。
+快照JSON.NET UTF-8表示按完整revision缓存，标准弱ETag含每次Host启动随机实例ID，语义在gzip/identity编码间保持一致；暂停/周期/历史/警告变更使其失效。标准gzip Fastest按Accept-Encoding协商；默认GET仍是完整原合同，不新增私有差分协议。
 
 - GET `snapshot`返回标准ETag；客户端携带`If-None-Match`，表示未变返回304且无体。ETag对应完整表示，采样、暂停/周期、警告、历史重置等变化都使其改变，不能只依赖sampleId。304不等于断线，不重建React快照对象。`bootstrap`及token继续no-store；快照即使no-store仍可用客户端内存中的手动条件请求，不使用磁盘HTTP缓存。
 - GET/POST `preferences`读写白名单UI偏好：`version`、`density`、`sidebarCollapsed`、`processView`、`pages`（已知页面各自query≤256字符、排序白名单、visibleColumns白名单、筛选）。列表数量有界且保留名称/PID；JSON.NET原子写用户本地配置。interval沿用settings并持久化；paused/frozen默认不跨重启恢复。坏文件回退默认并给可见原因；不允许持久化token/快照。
@@ -28,10 +28,14 @@
 | POST `processes/{pid}/file-action` | `{creationTimeFileTime,action:"openLocation"\|"properties"}`；后端取核验路径，Shell标准接口定位文件/属性；禁止renderer传入任意路径/脚本/verb。无路径/已退出/权限给具体错误 |
 | POST `desktop/browse-executable` | 本地exe选择，取消返回`{cancelled:true,path:null}`；成功返回规范路径，不执行；headless明确503。不自动提权，不将文件选择当作进程已启动 |
 | POST `services/{name}/control` | `{command:"start"\|"stop"\|"restart",expectedState,expectedPid}`；URL编码真实服务名；SCM最小权限、同服务句柄重验状态/PID，StartService/ControlService并QueryServiceStatusEx等待（有界≤15秒）；返回实际state/pid/completed/timedOut/message。权限403；输入400；目标变化409；超时保留最新实际状态不伪报成功。不得自动停依赖服务 |
-| POST `startup/{id}/open-location` | 服务端按已知真实条目定位其来源文件/父目录；不执行Run命令、不猜StartupApproved。无法可靠解析返回明确不支持 |
+| POST `startup/open-location` | `{id}`；注册表ID包含反斜杠，使用标准JSON请求体传递，避免路由编码歧义。服务端重读已知真实条目并定位来源文件/程序；不执行Run命令、不猜StartupApproved。无法可靠解析返回明确不支持 |
 | POST `desktop/open-system-location` | `{location:"startupSettings"\|"userStartup"\|"commonStartup"\|"services"}`固定枚举，使用`ms-settings:startupapps`、已知Startup目录、系统服务管理入口；不可接受任意URI/shell文本 |
 
-效率模式如果实现，使用单独`processes/{pid}/efficiency`：身份、enabled、Windows能力和原生节流读回，保留可恢复的原优先级/节流状态；只降优先级不能声称效率模式。复制与CSV由前端基于明确所见快照完成；不包含写token。CSV为当前筛选全部行（非虚拟窗口一屏），标记采样时刻/单位，RFC4180转义和UTF-8 BOM，文本单元防公式注入。
+效率模式使用单独`processes/{pid}/efficiency`：身份、enabled、Windows能力和原生节流读回，保留可恢复的原优先级/节流状态；只降优先级不能声称效率模式。复制与CSV由前端基于明确所见快照完成；不包含写token。CSV为当前筛选全部行（非虚拟窗口一屏），标记采样时刻/单位，RFC4180转义和UTF-8 BOM，文本单元防公式注入。
+
+效率模式已实现并以真实专用目标原生读回/恢复验证。`GET processes/{pid}/efficiency?creationTimeFileTime=...`与POST返回`{identity,available,enabled,canRestore,priority,controlMask,stateMask,reason}`；POST输入`{creationTimeFileTime,enabled}`。UI以逐目标available为准，本应用保存的原状态才允许关闭/恢复；外部已开启状态拒绝覆盖，实时优先级进程拒绝切换。`window/always-on-top`为现有窗口命令的新增toggle；GET `desktop/window-state`返回`{available,alwaysOnTop,zoomFactor}`，窗口置顶有读回确认，尺寸/缩放/置顶有界持久化。
+
+客户端超时：程序选择器是用户控制操作，不使用原9秒HTTP超时，取消请求不等于关闭系统选择器；服务动作15秒观察，客户端应至少18～20秒且禁止自动重试；树动作预检后退出确认总等待≤8秒，建议客户端20秒。单目标结束响应新增`completed:boolean|null`，terminate为真实退出确认，3秒未确认则false并明确pending；start保持原创建结果且completed为null。部分成功/超时不能显示全成功。
 
 ### 资源增量
 

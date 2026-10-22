@@ -7,3 +7,7 @@ ShowWindow
 SetWindowPos
 OpenProcess
 GetProcessTimes
+GetPriorityClass
+GetProcessInformation
+PROCESS_POWER_THROTTLING_STATE
+OpenSCManagerW

@@ -45,7 +45,7 @@ public sealed class ProcessActionService
         var processes = Win32Collector.EnumerateBaseProcesses();
         if (ProcessProtection.Family(processes).Contains(pid)) throw new ApiException(403, "protectedProcess", "系统关键进程或本应用进程族受保护。");
         // Opening once and checking/acting through this exact handle closes the PID reuse race.
-        using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_ACCESS_RIGHTS.PROCESS_TERMINATE, false, pid);
+        using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_ACCESS_RIGHTS.PROCESS_TERMINATE | PROCESS_ACCESS_RIGHTS.PROCESS_SYNCHRONIZE, false, pid);
         if (handle.IsInvalid) ThrowNative("无法打开结束目标");
         if (!PInvoke.GetProcessTimes(handle, out var creation, out var exit, out _, out _)) ThrowNative("无法确认结束目标身份");
         if (NativeSupport.FileTime(creation) != expected) throw new ApiException(409, "identityChanged", "目标创建时间已改变；该 PID 已被另一进程使用，未执行结束。");
@@ -53,7 +53,8 @@ public sealed class ProcessActionService
         if (!PInvoke.IsProcessCritical(handle, out var critical)) ThrowNative("无法确认进程关键状态，已保守拒绝结束", forceForbidden: true);
         if (critical) throw new ApiException(403, "criticalProcess", "Windows 将目标标记为关键进程，禁止结束。");
         if (!PInvoke.TerminateProcess(handle, 1)) ThrowNative("结束任务失败");
-        return new(pid, request.CreationTimeFileTime, $"{pid}:{request.CreationTimeFileTime}", "Windows 已接受结束请求。");
+        var completed = PInvoke.WaitForSingleObject(handle, 3000) == Windows.Win32.Foundation.WAIT_EVENT.WAIT_OBJECT_0;
+        return new(pid, request.CreationTimeFileTime, $"{pid}:{request.CreationTimeFileTime}", completed ? "已确认目标进程退出。" : "Windows已接受结束请求，但3秒内未确认退出；请刷新实际状态，勿盲目重试。", completed);
     }
 
     private static string ResolveExecutable(string value)

@@ -3,12 +3,14 @@ using Newtonsoft.Json.Serialization;
 using TaskManager.Host.Api;
 using TaskManager.Host.Services;
 using ElectronNET.API;
+using TaskManager.Host.Native;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 var portArgument = args.FirstOrDefault(argument => argument.StartsWith("--port=", StringComparison.OrdinalIgnoreCase))?[7..];
 var port = int.TryParse(portArgument ?? Environment.GetEnvironmentVariable("TASKMANAGER_PORT"), out var configuredPort) ? configuredPort : 5188;
 if (port is < 1024 or > 65535) throw new InvalidOperationException("TASKMANAGER_PORT must be between 1024 and 65535.");
-var desktop = new DesktopWindowService();
+var preferences = new PreferencesService();
+var desktop = new DesktopWindowService(preferences);
 if (!args.Contains("--headless", StringComparer.OrdinalIgnoreCase))
 {
     Environment.SetEnvironmentVariable("TASKMANAGER_ORIGIN", $"http://127.0.0.1:{port}");
@@ -27,7 +29,15 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
     options.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Include;
 });
 builder.Services.AddSingleton<LocalAccessGuard>();
-builder.Services.AddSingleton<PreferencesService>();
+builder.Services.AddSingleton(preferences);
+builder.Services.AddSingleton<ShellDispatcher>();
+builder.Services.AddKeyedSingleton<ShellDispatcher>("icons");
+builder.Services.AddSingleton<ProcessIconService>();
+builder.Services.AddSingleton<ProcessConnections>();
+builder.Services.AddSingleton<ProcessQueryService>();
+builder.Services.AddSingleton<ProcessManagementService>();
+builder.Services.AddSingleton<ShellActionService>();
+builder.Services.AddSingleton<ServiceActionService>();
 builder.Services.AddResponseCompression(options => options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>());
 builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options => options.Level = System.IO.Compression.CompressionLevel.Fastest);
 builder.Services.AddSingleton<SnapshotService>();

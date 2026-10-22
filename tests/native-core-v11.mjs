@@ -20,7 +20,7 @@ async function api(route, body, status = 200) {
 }
 async function start() {
   host = spawn(executable, ['--headless', `--port=${port}`], { env: { ...process.env, TASKMANAGER_DATA_DIR: directory }, windowsHide: true, stdio: 'ignore' });
-  for (let i = 0; i < 150; i++) { try { if ((await api('health')).ready) { token = (await api('bootstrap')).token; return; } } catch {} await delay(100); }
+  for (let i = 0; i < 150; i++) { try { if ((await (await fetch(origin + '/api/health')).json()).ready) { token = (await api('bootstrap')).token; return; } } catch {} await delay(100); }
   throw new Error('Host not ready');
 }
 async function stop() { if (!host || host.exitCode !== null) return; const exited = new Promise(resolve => host.once('exit', resolve)); host.kill(); await exited; }
@@ -28,7 +28,7 @@ try {
   await start();
   await api('settings', { intervalMs: 2000, paused: true }); await delay(300);
   let response = await fetch(origin + '/api/snapshot'), etag = response.headers.get('etag'), snapshot = await response.json();
-  check(etag?.startsWith('"') && snapshot.paused, 'ETag attached to actual paused representation');
+  check(etag?.startsWith('W/"') && snapshot.paused, 'standard weak ETag attached to actual paused representation across negotiated encodings');
   response = await fetch(origin + '/api/snapshot', { headers: { 'If-None-Match': etag } });
   check(response.status === 304 && (await response.text()) === '', 'unchanged representation 304 has no body');
   await api('history/reset', {});
