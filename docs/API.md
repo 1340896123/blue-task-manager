@@ -1,6 +1,6 @@
 # 实际后端 API 合同
 
-阶段2实现；C#源合同是 `src/TaskManager.Host/Models/Contracts.cs`。字段camelCase，JSON由MVC + JSON.NET输出。URL同源根 `/api`；当前无窗口验证模式默认 `http://127.0.0.1:5188`。可用 `--port=5191` 或环境变量 `TASKMANAGER_PORT` 指定端口。窗口阶段会通过Electron.NET启用桌面；当前 `bootstrap.desktop=false`。
+C#源合同是 `src/TaskManager.Host/Models/Contracts.cs`。字段camelCase，JSON由MVC + JSON.NET输出。URL同源根 `/api`，默认 `http://127.0.0.1:5188`。可用 `--port=5191` 或环境变量 `TASKMANAGER_PORT` 指定端口。正常启动由Electron.NET创建桌面；仅显式 `--headless` 为无窗口测试主机。`bootstrap.desktop` 反映当前真实窗口是否存在。
 
 ## 请求与错误
 
@@ -13,14 +13,14 @@ GET不用写令牌。所有POST带 `X-TaskManager-Token`，令牌通过GET boots
 | 方法 | 路径 | 请求与结果 |
 |---|---|---|
 | GET | health | `{platform:"Windows",version,ready,processId,nativeSource,json}`；ready为首次成功采样完成 |
-| GET | bootstrap | `{token,settings,capabilities,version,desktop:false}` |
+| GET | bootstrap | `{token,settings,capabilities,version,desktop:boolean}` |
 | GET | snapshot | 下述完整不可变快照；不触发采样 |
 | POST | processes/start | `{executable:string,arguments?:string}` → `{pid,creationTimeFileTime,identity,message}`。不通过shell拼接；程序与参数分别传入CreateProcess。可填完整路径或可从System32/Windows/PATH解析的程序名 |
 | POST | processes/{pid}/terminate | `{creationTimeFileTime:string}` → 同上。身份在同一查询/终止句柄上验证；不递归终止子树 |
 | POST | settings | `{intervalMs:1000\|2000\|5000,paused:boolean}` → 实际 `{intervalMs,paused}`。暂停立即反映在快照，sampleId不伪增长 |
 | POST | history/reset | `{}` → `{sessionStartedAtUtc,message}`；立即清空本次历史，下次采样重新建立累计基线 |
 | POST | refresh | `{}` → `{message}`；下一有效采样重读慢速列表。暂停时不会擅自继续采样 |
-| POST | window/{action} | `minimize`/`maximize`/`close`桌面动作入口，受同样token/Origin保护。阶段2无窗口时返回503 `headlessUnavailable`，阶段4接入真实窗口。前端根据bootstrap.desktop禁用无窗口动作 |
+| POST | window/{command} | `minimize`/`maximize`（最大化/还原切换）/`close` 为真实BrowserWindow动作；`zoom-in`/`zoom-out`/`zoom-reset` 对应25%步进/100%恢复（75%～200%）。受同样token/Origin保护；无窗口时503 `headlessUnavailable`。前端据desktop禁用无窗口动作。路由变量不能用MVC保留名action |
 
 ## 快照
 
@@ -67,4 +67,4 @@ dotnet build tests/TaskManager.TestWorkload -c Release
 node tests/native-api.mjs
 ```
 
-测试脚本自行创建与关闭独立端口5191的真实主机、专用负载和临时目录；仅结束自己创建并保存身份的目标，不使用mock，不保存令牌。可通过`TASKMANAGER_TEST_PORT`换端口。普通开发启动：`dotnet run --project src/TaskManager.Host -c Release -- --headless --port=5188`。阶段2尚无前端资源，API可独立工作；UI/桌面完整验收见后续阶段记录。
+测试脚本自行创建与关闭独立端口5191的真实主机、专用负载和临时目录；仅结束自己创建并保存身份的目标，不使用mock，不保存令牌。可通过`TASKMANAGER_TEST_PORT`换端口。API开发启动：`dotnet run --project src/TaskManager.Host -c Release -- --headless --port=5188`。生产UI资源随Release输出复制；完整成品用`scripts/build.ps1`生成并从`output/TaskManager-win-x64/start.cmd`启动。UI/桌面完整验收见docs/ACCEPTANCE-RESULTS.md。

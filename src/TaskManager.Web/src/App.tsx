@@ -66,6 +66,9 @@ export default function App() {
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') { event.preventDefault(); if (searchable) searchInput.current?.focus(); }
+      if (event.ctrlKey && bootstrap?.desktop && ['=', '+', '-', '0'].includes(event.key)) {
+        event.preventDefault(); void windowAction(event.key === '0' ? 'zoom-reset' : event.key === '-' ? 'zoom-out' : 'zoom-in');
+      }
       if (event.key === 'F5') { event.preventDefault(); void refresh(); }
     };
     window.addEventListener('keydown', keydown); return () => window.removeEventListener('keydown', keydown);

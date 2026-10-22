@@ -1,0 +1,9 @@
+EnumWindows
+GetWindowThreadProcessId
+IsWindowVisible
+GetWindowPlacement
+GetWindowRect
+ShowWindow
+SetWindowPos
+OpenProcess
+GetProcessTimes

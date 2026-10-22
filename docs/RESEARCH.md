@@ -23,6 +23,12 @@
 
 采用框架提供的主机生命周期，不另写Node与.NET通信私有协议；生产UI由同源ASP.NET Core提供。候选版本0.6.0须在实现阶段恢复与真实启动验证。现代Core改善.NET支持与启动方式，但其默认Electron30.4.0同样偏旧，不能直接照用；实现阶段必须核验npm，显式固定当前受支持Electron版本。实际锁定版本与启动命令由桌面阶段记录。
 
+阶段4已恢复并使用 `ElectronNET.Core` / `ElectronNET.Core.AspNet` 0.6.0，npm核验后固定Electron45.0.0。官方仓库研究commit `87cc6f98b6a9c5968d7846c0e775ea713bd0d7b2`，相关源为 `src/ElectronNET.AspNet/API/WebApplicationBuilderExtensions.cs`、`Runtime/Controllers/RuntimeControllerAspNetDotnetFirst.cs`、`src/ElectronNET.Host/main.js` 与 `docs/Using/Custom_main.md`。采用官方 `UseElectron` / `CreateWindowAsync`，显式同源URL；`custom_main.js` 的官方 `onStartup(globalThis)` hook在创建webContents前注册同步外站导航与新窗口拒绝策略。禁用Node、启用contextIsolation与sandbox；CDP只有显式测试环境变量才开启回环端口。没有修改框架源码或创建自有IPC协议。
+
+Release采用官方支持的.NET优先启动，`.electron`与主机放同目录；构建脚本复制完整输出，包含实际Electron运行时。官方框架生成的image-size1.x存在已披露解析器DoS问题，本项目不启用splash，仍通过标准npm清单升级到修复版2.0.4并保存独立锁；最终全依赖npm audit为0。框架内部Socket.IO及其序列化属于依赖内部实现，项目自有C# HTTP/错误/探针JSON全部使用JSON.NET。
+
+桌面验收发现MVC路由变量`{action}`为保留路由值，会导致窗口POST405，最终使用`{command}`。Electron CDP不支持Chromium的Browser.getWindowForTarget，因此独立CsWin32 WindowProbe根据本次PID+创建时间匹配HWND，以GetWindowPlacement验证最小化/最大化，并以SetWindowPos调整真实窗口。测试不假造窗口状态。
+
 ## 3. CsWin32
 
 核验[microsoft/CsWin32 README](https://github.com/microsoft/CsWin32/blob/main/README.md)与[Getting started](https://microsoft.github.io/CsWin32/docs/getting-started.html)。它在编译时基于Win32 metadata生成强类型P/Invoke、COM及友好SafeHandle重载；不需要手写DllImport签名。采用NativeMethods.txt最小API集，把句柄生命周期集中在原生采集层。

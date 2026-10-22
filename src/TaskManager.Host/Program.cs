@@ -2,11 +2,19 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Newtonsoft.Json.Serialization;
 using TaskManager.Host.Api;
 using TaskManager.Host.Services;
+using ElectronNET.API;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 var portArgument = args.FirstOrDefault(argument => argument.StartsWith("--port=", StringComparison.OrdinalIgnoreCase))?[7..];
 var port = int.TryParse(portArgument ?? Environment.GetEnvironmentVariable("TASKMANAGER_PORT"), out var configuredPort) ? configuredPort : 5188;
 if (port is < 1024 or > 65535) throw new InvalidOperationException("TASKMANAGER_PORT must be between 1024 and 65535.");
+var desktop = new DesktopWindowService();
+if (!args.Contains("--headless", StringComparer.OrdinalIgnoreCase))
+{
+    Environment.SetEnvironmentVariable("TASKMANAGER_ORIGIN", $"http://127.0.0.1:{port}");
+    builder.UseElectron(args, async (IServiceProvider services) => await desktop.OpenAsync($"http://127.0.0.1:{port}", services.GetRequiredService<IHostApplicationLifetime>()));
+}
+builder.Services.AddSingleton(desktop);
 builder.WebHost.ConfigureKestrel(options => options.Listen(System.Net.IPAddress.Loopback, port, listen => listen.Protocols = HttpProtocols.Http1));
 builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
 {

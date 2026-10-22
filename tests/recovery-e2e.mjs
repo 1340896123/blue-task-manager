@@ -1,0 +1,44 @@
+import { spawn } from 'node:child_process';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
+import { assertions, check, delay, until, portOpen } from './e2e-support.mjs';
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const hostExe = path.join(root, 'src/TaskManager.Host/bin/Release/net10.0-windows10.0.19041.0/TaskManager.Host.exe');
+const port = 5194, origin = `http://127.0.0.1:${port}`, output = path.join(root, 'output/playwright');
+await mkdir(output, { recursive: true });
+if (await portOpen(port)) throw new Error('Recovery test port already in use');
+const start = () => spawn(hostExe, ['--headless', `--port=${port}`], { cwd: path.dirname(hostExe), windowsHide: true, stdio: 'ignore' });
+let host = start(), browser;
+try {
+  await until(async () => (await (await fetch(origin + '/api/health')).json()).ready, 'host ready');
+  browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {}) });
+  const page = await browser.newPage({ viewport: { width: 1380, height: 860 } });
+  await page.goto(origin);
+  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
+  await page.getByRole('button', { name: '暂停采样', exact: true }).click();
+  await page.getByRole('button', { name: '继续采样', exact: true }).waitFor();
+  // Allow the settings POST and any already in-flight poll to settle. Compare
+  // the first real identity and its values, independent of virtual overscan.
+  await delay(2600);
+  const beforeKey = await page.locator('tbody tr[data-row-key]').first().getAttribute('data-row-key');
+  const before = await page.locator('tbody tr[data-row-key]').first().innerText();
+  const previousToken = (await (await fetch(origin + '/api/bootstrap')).json()).token;
+  host.kill();
+  await until(async () => !await portOpen(port), 'stopped test host releases port');
+  await page.getByText('连接中断 · 保留上次数据', { exact: true }).waitFor();
+  check(await page.locator('tbody tr[data-row-key]').first().getAttribute('data-row-key') === beforeKey && await page.locator('tbody tr[data-row-key]').first().innerText() === before, 'A15 disconnect preserves last real paused identity and metric values without zero substitution');
+  check(await page.getByText(/上次采样/).isVisible(), 'A15 last successful sampling time remains visible');
+  await page.screenshot({ path: path.join(output, 'final-recovery-disconnected.png') });
+  host = start();
+  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
+  const after = (await (await fetch(origin + '/api/bootstrap')).json()).token;
+  check(after !== previousToken, 'A15 new host rotates in-memory operation token');
+  await page.getByRole('button', { name: '暂停采样', exact: true }).click();
+  await page.getByRole('button', { name: '继续采样', exact: true }).waitFor();
+  check((await (await fetch(origin + '/api/snapshot')).json()).paused, 'A15 recovered UI rebootstrap authorizes real writes to replacement host');
+  await page.screenshot({ path: path.join(output, 'final-recovery-connected.png') });
+  console.log(JSON.stringify({ result: 'PASS', assertions: assertions.length, checks: assertions }, null, 2));
+  await writeFile(path.join(output, 'final-recovery-results.json'), JSON.stringify({ result: 'PASS', checks: assertions, checkedAtUtc: new Date().toISOString() }, null, 2));
+} finally { await browser?.close(); host.kill(); await until(async () => !await portOpen(port), 'recovery cleanup'); }

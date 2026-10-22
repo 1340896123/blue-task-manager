@@ -4,7 +4,11 @@
     "build": "npm --prefix src/TaskManager.Web run build",
     "typecheck": "npm --prefix src/TaskManager.Web run typecheck",
     "test:native": "node tests/native-api.mjs",
-    "test:ui": "node tests/ui-smoke.mjs"
+    "test:ui": "node tests/ui-smoke.mjs",
+    "build:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1",
+    "test:desktop": "node tests/desktop-e2e.mjs",
+    "test:recovery": "node tests/recovery-e2e.mjs",
+    "test:e2e": "npm run test:native && npm run test:ui && npm run test:recovery && npm run test:desktop"
   },
   "devDependencies": { "playwright": "1.64.1" }
 }
