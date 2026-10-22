@@ -1,0 +1,41 @@
+{
+  "assertions": 30,
+  "checks": [
+    "real table remains virtualized",
+    "actual table header matches virtualizer master token",
+    "visible process real Shell icon decodes with positive native dimensions",
+    "numeric PID query is exact",
+    "display freeze keeps native sampling and history advancing",
+    "freeze has visible timestamp and live sampling explanation",
+    "each page retains its own query",
+    "tree reveals actual ancestor context for child PID",
+    "real IPv6 endpoint family shown",
+    "private bytes labeled committed private memory",
+    "keyboard context menu exposes real file actions",
+    "menu End moves to final action",
+    "menu Escape closes only menu",
+    "fresh native details independently confirm priority",
+    "efficiency impact explicitly explains session restore boundary",
+    "efficiency enable/restore UI uses actual Windows state",
+    "tree includes explicit exact membership explanation",
+    "CSV has UTF-8 BOM",
+    "CSV includes explicit units",
+    "filter excludes old selection from toolbar actions",
+    "run failure preserves input and native error",
+    "successful run locates actual CreateProcess PID",
+    "960px desktop has no document overflow",
+    "single terminate UI displays actual completed result",
+    "exited detail disables native writes while retaining last information",
+    "tree UI retains successful per-member native results",
+    "conditional snapshot reads receive successful empty 304",
+    "persisted UI preference restored",
+    "no browser runtime exceptions",
+    "no content security policy violations including native icon blobs"
+  ],
+  "errors": [],
+  "cspErrors": [],
+  "screenshotPaths": [
+    "v11-process-tree.png",
+    "v11-process-960.png"
+  ]
+}

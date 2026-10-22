@@ -68,3 +68,5 @@ Release采用官方支持的.NET优先启动，`.electron`与主机放同目录�
 最终桌面设计取舍：Segoe UI Variable/微软雅黑本地字体；浅蓝灰/白色结构面；Windows蓝色强调；高密度表格；克制动效；按真实数值绘制蓝色热度；不使用截图中的固定应用logo/进程名或营销大卡片。
 
 阶段3补充：React堆栈查询 `virtualized table polling` 无命中，按合同收窄为 `virtualize` 后命中“100项以上使用windowing，优先react-virtual”的有效Performance建议，采用成熟 [TanStack Virtual](https://github.com/TanStack/virtual) 的React适配器，不自研虚拟滚动协议。Tailwind 4.2插件的Vite peer范围不含Vite8，经npm核验后采用兼容的4.3.3。按钮/搜索/表格状态按项目MASTER落实，未持久化无匹配的检索输出。
+
+1.1进程工作流补充：`virtualize lists stable keys --stack react`实际命中stable unique keys与100项以上windowing两条适用建议，继续使用TanStack Virtual，tree先扁平化且保留identity key。结合上文TaskExplorer ProcessModel的创建身份/独立字段模式，实现真实父子与按需详情，不移植其Qt组件或私有协议。按MASTER桌面范围复核pro-rules的焦点、对比度、状态、Token与reduced-motion项目，不把手机尺寸/暗色主题作为本Windows应用新需求。

@@ -13,6 +13,7 @@
 --width-column-pid: 80px;
 --width-column-number: 112px;
 --width-column-path: 420px;
+--width-column-text: 180px;
 --width-resource-list: 200px;
 --height-menu-item: 32px;
 --height-tab: 40px;
@@ -30,6 +31,13 @@
 --z-toast: 30;
 --z-modal: 40;
 --shadow-popover: 0 8px 24px rgb(15 35 60 / 16%);
+--font-size-subtitle: 20px;
+--font-size-resource: 22px;
+--font-size-large-metric: 32px;
+--height-detail-content: 420px;
+--height-popover-max: 420px;
+--width-detail-label: 172px;
+--height-controls: 44px;
 ```
 
 - 详情宽度`min(--width-detail-panel, viewport - 2×--space-6)`；内部页签、内容滚动，长路径换行/可选择。窄窗口不挤压后方列表；关闭后恢复发起行焦点与滚动。详情里普通标签用caption/body，数值用tabular-nums，不堆24px指标卡。
