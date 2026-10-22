@@ -21,10 +21,10 @@ C#准确字段、null与单位以`Models/Contracts.cs`及`Models/Preferences.cs`
 | terminate | 旧端点现等待≤3秒确认退出，结果completed=true/false；false为已提交但未确认，UI保留真实pending说明。Start动作completed=null不改变CreateProcess合同 |
 | services | GET `services/{encodedName}/details`→`{name,displayName,state,pid,binaryPath,startType,account,dependencies,canStart,canStop,canRestart,capturedAtUtc,unavailable}`。按需读SCM配置+状态+动作权限，不把权限拒绝猜成0，依赖为实际MULTI_SZ列表；禁用服务不提供启动，未知启动配置不保证重启 |
 | service control | POST`{command:start|stop|restart,expectedState,expectedPid}`→`{name,state,pid,completed,timedOut,message}`。same句柄重验，SCM最小权限；restart先检查非disabled，再stop→实际Stopped→start→实际Running；不自动停止依赖。不成功为400/403/404/409的真实Windows错误；15秒截止时返回completed=false/timedOut=true与最后实际观察状态。首次状态还未读到则state=unknown/pid=null。原生同步SCM调用若仍阻塞，其任务/句柄继续持有且保持busy；截止后不启动后续阶段，刷新状态，勿重试；部分生效失败消息保留最后状态。触发任何写后finally安排慢来源刷新 |
-| file action | POST身份+`action:openLocation|properties`，STA执行时重新核验真实路径，再SHOpenFolderAndSelectItems或ShellExecuteEx properties；仅报告Windows接受打开请求。禁止任意renderer path/verb/shell。真正窗口结果仍需桌面E2E核查 |
+| file action | POST身份+`action:openLocation|properties`，STA执行时重新核验真实路径，再ShellExecuteEx固定Windows explorer.exe标准/select或properties（最终验收修复见FINAL-FIXES-V1.1.md）；仅报告Windows接受打开请求。禁止任意renderer path/verb/shell。真正窗口结果仍需桌面E2E核查 |
 | startup/source | startup项增加`locationPath,canOpenLocation,locationReason`。解析只接受现存绝对exe token或实际Startup来源文件，不猜含空格的未引用路径。POST `startup/open-location`使用请求体`{id}`（含反斜杠ID不放路由）；重新读取来源后定位，不执行Run命令，不猜StartupApproved |
 | fixed locations | POST `desktop/open-system-location`接受`startupSettings/userStartup/commonStartup/services`，只打开固定ms-settings URI/系统目录/services.msc，不接收任意URI。POST `desktop/browse-executable`使用Electron.NET系统exe选择器，取消`{cancelled:true,path:null}`，成功仅返回路径、不执行。headless503，重复dialog409 |
-| window | 既有POST `window/{command}`新增always-on-top toggle，真实IsAlwaysOnTop读回；GET `desktop/window-state`返回available/alwaysOnTop/zoomFactor。尺寸非最大化后600ms保存，缩放/置顶按动作保存。无开机启动/隐藏托盘 |
+| window | 既有POST `window/{command}`新增always-on-top toggle，可信BrowserWindow HWND的CsWin32样式读回（最终验收修复）；GET `desktop/window-state`返回available/alwaysOnTop/zoomFactor。尺寸非最大化后600ms保存，缩放/置顶按动作保存。无开机启动/隐藏托盘 |
 
 ## 客户端与资源边界
 

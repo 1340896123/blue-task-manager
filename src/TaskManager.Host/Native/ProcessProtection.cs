@@ -30,9 +30,20 @@ internal static class ProcessProtection
         protectedIds.UnionWith(descendants);
         foreach (var process in processes)
             if (ProtectedNames.Contains(process.Name)) protectedIds.Add(process.Pid);
-        // Bound this registry to current identities; process creation time protects PID reuse.
+        // Enumeration and CreateProcess/Register can overlap. A PID absent from
+        // this earlier list is not proof that a just-registered task has exited.
+        // Remove only a natively confirmed missing/reused identity; conditional
+        // removal also preserves a newer registration under the same PID.
         var live = processes.Select(p => p.Pid).ToHashSet();
-        foreach (var pid in Launched.Keys) if (!live.Contains(pid)) Launched.TryRemove(pid, out _);
+        foreach (var pair in Launched)
+        {
+            if (live.Contains(pair.Key)) continue;
+            using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, pair.Key);
+            var remove = handle.IsInvalid
+                ? System.Runtime.InteropServices.Marshal.GetLastPInvokeError() is 87 or 1168
+                : PInvoke.GetProcessTimes(handle, out var created, out _, out _, out _) && NativeSupport.FileTime(created).ToString(System.Globalization.CultureInfo.InvariantCulture) != pair.Value;
+            if (remove) ((ICollection<KeyValuePair<uint, string>>)Launched).Remove(pair);
+        }
         return protectedIds;
     }
 

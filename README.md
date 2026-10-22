@@ -44,9 +44,9 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-包含 `test:native`、`test:ui`、`test:recovery`、`test:desktop`。桌面测试实际从便携成品启动 .NET → Electron.NET → BrowserWindow，走 UI → HTTP → CsWin32 → Windows 创建/结束专用任务；独立 CsWin32 HWND 探针验证真实窗口状态。测试默认使用 5191～5194 与 9224 端口，启动前应空闲。Chromium 可通过 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` 指定已安装路径。
+`test:e2e`按顺序运行：11组原生/静态/浏览器回归、正式Release桌面回归、真实Electron进程工作流、原生选择器/文件窗口/偏好重启、固定Windows入口，最后满120个真实历史点后的整应用性能。性能部分需要约3分钟，不用造点加速。可用 `test:regression`、`test:desktop`、`test:process-desktop`、`test:native-desktop`、`test:system-locations`、`test:performance` 分别复现。
 
-1.1分阶段真链路检查：`node tests/native-core-v11.mjs`、`node tests/native-management-v11.mjs`、`node tests/native-telemetry-v11.mjs`、`npm run test:process-ui`、`npm run test:pages-ui`。页面检查使用5194，进程工作流使用5193，按顺序运行，避免与旧桌面测试端口冲突。每个测试使用独立偏好目录，不更改日常配置。
+分项命令包括 `test:native`、`test:metadata`、`test:core`、`test:management`、`test:telemetry`、`test:gpu-identity`、`test:process-ui`、`test:pages-ui`、`test:ui`、`test:recovery`、`test:static`。测试使用5191～5202和9224～9228回环端口，应顺序执行；每项隔离TASKMANAGER_DATA_DIR，不更改日常配置。桌面由便携目录启动，cwd故意设为其他目录；独立CsWin32 HWND/ClientRect探针验证实际尺寸和窗口状态。Chromium可通过PLAYWRIGHT_CHROMIUM_EXECUTABLE指定。
 
 `TASKMANAGER_CDP_PORT` 仅供显式桌面自动化启用回环 CDP，普通启动默认关闭。验收不 mock、不截取全机进程清单、不记录任何令牌，产物在 `output/playwright/`。测试只清理本次创建并保存身份的进程与临时目录。
 

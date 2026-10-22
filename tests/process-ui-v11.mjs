@@ -20,6 +20,17 @@ let browser; let token; let created; let ownRoot; let assertions = 0; const chec
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function until(predicate, message, timeout = 20000) { const start = Date.now(); while (Date.now() - start < timeout) { try { if (await predicate()) return; } catch {} await delay(120); } throw new Error(message); }
 function check(condition, message) { assert.ok(condition, message); assertions++; checks.push(message); }
+function csvRecords(text) {
+  const rows = []; let row = [], cell = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') { if (quoted && text[i + 1] === '"') { cell += '"'; i++; } else quoted = !quoted; }
+    else if (ch === ',' && !quoted) { row.push(cell); cell = ''; }
+    else if (ch === '\n' && !quoted) { row.push(cell.endsWith('\r') ? cell.slice(0, -1) : cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  return rows;
+}
 const get = async route => (await fetch(`${origin}/api/${route}`)).json();
 const post = async (route, body) => (await fetch(`${origin}/api/${route}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-TaskManager-Token': token }, body: JSON.stringify(body) })).json();
 try {
@@ -28,7 +39,7 @@ try {
   ownRoot = (await get('snapshot')).processes.find(p => p.pid === workload.pid);
   const children = (await readFile(path.join(temporary, 'tree/children.txt'), 'utf8')).trim().split(/\r?\n/).map(line => line.split(':'));
   if (desktopMode) await until(() => portOpen(cdp), 'actual Electron CDP ready');
-  browser = desktopMode ? await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`) : await chromium.launch({ headless: true }); const context = desktopMode ? browser.contexts()[0] : await browser.newContext({ viewport: { width: 1380, height: 860 }, reducedMotion: 'reduce', permissions: ['clipboard-read', 'clipboard-write'] }); const page = desktopMode ? context.pages()[0] : await context.newPage();
+  browser = desktopMode ? await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`) : await chromium.launch({ headless: true }); if(desktopMode) await until(()=>browser.contexts()[0]?.pages().length>0,'real Electron BrowserWindow page attached'); const context = desktopMode ? browser.contexts()[0] : await browser.newContext({ viewport: { width: 1380, height: 860 }, reducedMotion: 'reduce', permissions: ['clipboard-read', 'clipboard-write'] }); const page = desktopMode ? context.pages()[0] : await context.newPage();
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (/content.security.policy|violates.*directive|refused to load.*blob:/i.test(message.text())) cspErrors.push(message.text()); });
   const snapshotResponses = []; page.on('response', response => { if (response.url() === `${origin}/api/snapshot`) snapshotResponses.push(response.status()); });
@@ -73,8 +84,17 @@ try {
   await search.fill(String(workload.pid)); await row.click(); await page.getByRole('button', { name: '更多进程操作', exact: true }).click(); await page.getByRole('menuitem', { name: '结束进程树…', exact: true }).click();
   await until(async () => await page.locator('.tree-preview [role="listitem"]').count() >= 3, 'actual tree preview has children');
   check((await dialog.innerText()).includes('完整成员'), 'tree includes explicit exact membership explanation'); await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  await search.fill(''); await page.getByRole('button', { name: '冻结显示', exact: true }).click();
+  const expectedCsvRows = Number((await page.locator('.control-summary').innerText()).match(/^\d+/)[0]);
+  await until(async()=>{if(await row.count())return true;await page.locator('[data-testid="table-scroll"]').evaluate(element=>{element.scrollTop+=element.clientHeight*.8;});await delay(30);return false;},'scroll actual virtual tree to owned root for collapse');
+  await row.locator('.tree-toggle').click();
+  check(Number(await page.getByRole('treegrid').getAttribute('aria-rowcount')) - 1 < expectedCsvRows, 'actual owned tree collapses while the full filtered set remains known');
   const download = page.waitForEvent('download'); await page.getByRole('button', { name: '导出 CSV', exact: true }).click(); const csv = await readFile(await (await download).path());
   check(csv.subarray(0, 3).equals(Buffer.from([239, 187, 191])), 'CSV has UTF-8 BOM'); check(csv.toString('utf8').includes('工作集 (bytes)'), 'CSV includes explicit units');
+  const exported = csvRecords(csv.toString('utf8'));
+  check(exported.length === expectedCsvRows + 1 && exported.length > await page.locator('tbody tr[data-row-key]').count(), 'CSV exports every real filtered row beyond the virtual viewport');
+  check(children.every(([pid]) => exported.slice(1).some(record => record[4] === pid)), 'CSV includes actual children hidden by collapsed tree nodes');
+  await page.getByRole('button', { name: '继续显示', exact: true }).click(); await search.fill(String(workload.pid));
   await page.screenshot({ path: path.join(output, 'v11-process-tree.png') });
   await search.fill('no-such-task-unique-query'); check(await page.getByRole('button', { name: '结束任务', exact: true }).isDisabled(), 'filter excludes old selection from toolbar actions');
   await page.keyboard.press('Control+n'); await dialog.getByLabel('程序名称或完整路径', { exact: true }).fill(path.join(temporary, 'confirmed-absent', 'missing.exe')); await dialog.getByRole('button', { name: '运行', exact: true }).click(); await dialog.locator('.form-error').waitFor();
@@ -83,6 +103,7 @@ try {
   const response = page.waitForResponse(r => r.url() === `${origin}/api/processes/start` && r.request().method() === 'POST'); await dialog.getByRole('button', { name: '运行', exact: true }).click(); created = await (await response).json();
   await until(async () => await page.locator(`tr[data-row-key="${created.identity}"]`).count() === 1, 'created actual identity located');
   check(await search.inputValue() === String(created.pid), 'successful run locates actual CreateProcess PID');
+  const creationSample=(await get('snapshot')).sampleId; await until(async()=>{const s=await get('snapshot');return s.sampleId>creationSample&&s.processes.some(p=>p.identity===created.identity&&p.canTerminate);},'registered Run task stays actionable after subsequent real sampling'); check(true,'new Run identity remains terminable after a later native snapshot');
   await page.getByRole('button', { name: '平铺', exact: true }).click(); await page.setViewportSize({ width: 960, height: 640 });
   check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), '960px desktop has no document overflow');
   await page.screenshot({ path: path.join(output, 'v11-process-960.png') });

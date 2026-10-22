@@ -15,3 +15,6 @@
 Playwright默认CDP会启用焦点模拟。交互结束后先断开CDP并确认真实窗口仍活，再用官方noDefaults:true重连测原生最小化/visibility，避免把模拟焦点误判为产品不节流。隐藏状态仍由Windows最小化与document.hidden共同确认，未替换浏览器属性或业务API。
 
 服务成功启停/重启、超时与部分生效分支仍受本机标准用户SC_MANAGER_CREATE_SERVICE错误5限制；禁止触碰用户业务服务补覆盖率。逐进程网络吞吐仍明确未接入；连接、进程I/O不冒充吞吐或物理磁盘数据。
+
+
+后续完整CSV验收（真实1000余行、折叠自有父进程、RFC4180解析全量与隐藏两个子进程）在Electron与浏览器均33项通过。该检查偶发揭示实际Run保护竞态：新进程可在旧Toolhelp快照取得后注册，旧快照缺席PID不应直接删除启动白名单。ProcessProtection现仅在CsWin32确认PID不存在/创建身份复用时按原pair条件移除，访问拒绝/未知保留，不为每个当前活跃注册重复查询。最终回归额外检查Run身份在后续真实采样仍可结束；最终结果见ACCEPTANCE-RESULTS。

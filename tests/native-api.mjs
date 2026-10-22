@@ -87,6 +87,7 @@ try {
   check(fresh.name === 'TaskManager.TestWorkload.exe' && fresh.cpuPercent === null && fresh.unavailable.cpuPercent.code === 'warmingUp', 'new identity starts at warmup');
   sampled = await snapshotWhere(value => value.processes.some(row => row.identity === target.identity && row.cpuPercent > 0 && row.ioWriteBytesPerSecond > 0));
   const row = sampled.processes.find(row => row.identity === target.identity);
+  check(row.canTerminate, 'registered real Run identity remains actionable after later native sampling');
   const independent = spawnSync('powershell.exe', ['-NoProfile', '-Command', `$p=Get-Process -Id ${target.pid}; Write-Output $p.Id; Write-Output $p.ProcessName; Write-Output $p.WorkingSet64`], { windowsHide: true, encoding: 'utf8' });
   check(independent.status === 0, 'independent Get-Process succeeded');
   const independentFields = independent.stdout.trim().split(/\r?\n/);
