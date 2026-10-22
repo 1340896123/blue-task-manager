@@ -31,7 +31,7 @@ export function useTelemetry() {
       }
     }
     wake.current = () => { clearTimeout(timer); void poll(); };
-    const visibility = () => { if (!document.hidden) wake.current(); };
+    const visibility = () => { if (!document.hidden) wake.current(); else if (!running) { clearTimeout(timer); timer = window.setTimeout(poll, Math.max(5000, settings.current.intervalMs)); } };
     document.addEventListener('visibilitychange', visibility);
     // The clock only publishes a changed health state. A 304 must not repaint the whole app each second.
     const clock = window.setInterval(() => { const current = latest.current; setStale(Boolean(current && !current.paused && Date.now() - Date.parse(current.capturedAtUtc) > Math.max(3 * current.intervalMs, 5000))); }, 1000); void poll();

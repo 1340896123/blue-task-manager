@@ -38,6 +38,35 @@
 --height-popover-max: 420px;
 --width-detail-label: 172px;
 --height-controls: 44px;
+--font-weight-medium: 500;
+--space-7: 28px;
+--space-8: 32px;
+--space-half: 2px;
+--radius-small: 3px;
+--width-settings: 950px;
+--width-setting-control: 130px;
+--width-dialog: 480px;
+--height-switch: 24px;
+--width-switch: 44px;
+--size-switch-thumb: 14px;
+--size-process-icon-frame: 21px;
+--width-selection-edge: 3px;
+--height-empty-state: 240px;
+--width-readable: 470px;
+--width-search: 460px;
+--width-window-control: 46px;
+--stroke-chart: 1.8px;
+--dash-chart-secondary: 6 4;
+--line-height-relaxed: 1.6;
+--shadow-selection: inset 3px 0 var(--color-accent);
+--width-brand: 280px;
+--width-brand-min: 224px;
+--width-brand-compact: 208px;
+--width-brand-small: 160px;
+--width-search-compact: 420px;
+--width-action-min: 88px;
+--width-toast: 660px;
+--size-status-dot: 6px;
 ```
 
 - 详情宽度`min(--width-detail-panel, viewport - 2×--space-6)`；内部页签、内容滚动，长路径换行/可选择。窄窗口不挤压后方列表；关闭后恢复发起行焦点与滚动。详情里普通标签用caption/body，数值用tabular-nums，不堆24px指标卡。

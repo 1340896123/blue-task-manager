@@ -17,11 +17,11 @@ export type Column<T> = {
 };
 export type Sort = { key: string; direction: 'ascending' | 'descending' };
 export const cssNumber = (token: string, fallback: number) => Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(token)) || fallback;
-export function DataTable<T>({ rows, columns, rowKey, label, rowHeight, sort, onSort, selected, onSelect, emptyDescription, onActivate, onContextMenu, onRowKey, initialScrollTop = 0, onScrollTop, revealKey, getHierarchy }: {
+export function DataTable<T>({ rows, columns, rowKey, label, rowHeight, sort, onSort, selected, onSelect, emptyDescription, onActivate, onContextMenu, onRowKey, initialScrollTop = 0, onScrollTop, revealKey, scrollResetKey, getHierarchy }: {
   rows: T[]; columns: Column<T>[]; rowKey: (row: T) => string; label: string; rowHeight: number;
   sort?: Sort; onSort?: (key: string) => void; selected?: string | null; onSelect?: (row: T) => void; emptyDescription?: string;
   onActivate?: (row: T) => void; onContextMenu?: (row: T, event: MouseEvent | KeyboardEvent) => void; onRowKey?: (row: T, event: KeyboardEvent) => void;
-  initialScrollTop?: number; onScrollTop?: (top: number) => void; revealKey?: string | null;
+  initialScrollTop?: number; onScrollTop?: (top: number) => void; revealKey?: string | null; scrollResetKey?: string;
   getHierarchy?: (row: T) => { level: number; expanded?: boolean };
 }) {
   const scroll = useRef<HTMLDivElement>(null);
@@ -32,6 +32,8 @@ export function DataTable<T>({ rows, columns, rowKey, label, rowHeight, sort, on
   const first = items[0]; const last = items[items.length - 1];
   const width = columns.reduce((total, column) => total + column.width, 0);
   useEffect(() => { if (!restored.current) { scroll.current?.scrollTo({ top: initialScrollTop }); restored.current = true; } }, [initialScrollTop]);
+  const priorReset = useRef(scrollResetKey);
+  useEffect(() => { if (priorReset.current !== scrollResetKey) { priorReset.current = scrollResetKey; scroll.current?.scrollTo({ top: 0 }); } }, [scrollResetKey]);
   useEffect(() => { if (!revealKey) return; const index = rows.findIndex(row => rowKey(row) === revealKey); if (index >= 0) virtual.scrollToIndex(index, { align: 'center' }); }, [revealKey, rows.length]);
   return <div ref={scroll} className="table-scroll" data-testid="table-scroll" tabIndex={0} aria-label={`${label}可滚动数据区`} onScroll={event => onScrollTop?.(event.currentTarget.scrollTop)}>
     <table className="data-table" role={getHierarchy ? 'treegrid' : undefined} aria-label={label} aria-rowcount={rows.length + 1} style={{ minWidth: width }}>
@@ -44,8 +46,8 @@ export function DataTable<T>({ rows, columns, rowKey, label, rowHeight, sort, on
       </th>)}</tr></thead>
       <tbody>
         {first && first.start > headerHeight && <tr aria-hidden="true"><td colSpan={columns.length} style={{ height: first.start - headerHeight, padding: 0, border: 0 }}/></tr>}
-        {items.map(item => { const row = rows[item.index]; const key = rowKey(row); const hierarchy = getHierarchy?.(row); return <tr key={key} data-row-key={key} aria-rowindex={item.index + 2} aria-level={hierarchy?.level} aria-expanded={hierarchy?.expanded} aria-selected={onSelect ? key === selected : undefined} tabIndex={onSelect ? (key === selected || (!selected && item.index === 0) ? 0 : -1) : undefined} className={key === selected ? 'selected' : ''} style={{ height: rowHeight }} onClick={() => onSelect?.(row)} onDoubleClick={() => onActivate?.(row)} onContextMenu={event => { if (onContextMenu) { event.preventDefault(); onSelect?.(row); onContextMenu(row, event); } }} onKeyDown={event => {
-          if (!onSelect) return;
+        {items.map(item => { const row = rows[item.index]; const key = rowKey(row); const hierarchy = getHierarchy?.(row); return <tr key={key} data-row-key={key} aria-rowindex={item.index + 2} aria-level={hierarchy?.level} aria-expanded={hierarchy?.expanded} aria-selected={onSelect ? key === selected : undefined} tabIndex={onSelect ? (key === selected || (!selected && item.index === 0) ? 0 : -1) : undefined} className={key === selected ? 'selected' : ''} style={{ height: rowHeight }} onClick={() => onSelect?.(row)} onDoubleClick={event => { if (!(event.target instanceof Element && event.target.closest('button,a,input,select,textarea,[role="button"]'))) onActivate?.(row); }} onContextMenu={event => { if (onContextMenu) { event.preventDefault(); onSelect?.(row); onContextMenu(row, event); } }} onKeyDown={event => {
+          if (!onSelect || (event.target !== event.currentTarget && event.target instanceof Element && event.target.closest('button,a,input,select,textarea,[role="button"],[role="menuitem"]'))) return;
           onRowKey?.(row, event); if (event.defaultPrevented) return;
           if (event.key === 'Enter') { event.preventDefault(); onSelect(row); onActivate?.(row); }
           if ((event.key === 'F10' && event.shiftKey) || event.key === 'ContextMenu') { event.preventDefault(); onContextMenu?.(row, event); }

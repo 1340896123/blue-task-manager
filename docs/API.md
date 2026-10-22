@@ -15,6 +15,8 @@
 - GET `snapshot`返回标准ETag；客户端携带`If-None-Match`，表示未变返回304且无体。ETag对应完整表示，采样、暂停/周期、警告、历史重置等变化都使其改变，不能只依赖sampleId。304不等于断线，不重建React快照对象。`bootstrap`及token继续no-store；快照即使no-store仍可用客户端内存中的手动条件请求，不使用磁盘HTTP缓存。
 - GET/POST `preferences`读写白名单UI偏好：`version`、`density`、`sidebarCollapsed`、`processView`、`pages`（已知页面各自query≤256字符、排序白名单、visibleColumns白名单、筛选）。列表数量有界且保留名称/PID；JSON.NET原子写用户本地配置。interval沿用settings并持久化；paused/frozen默认不跨重启恢复。坏文件回退默认并给可见原因；不允许持久化token/快照。
 - GET `processes/{pid}/details?creationTimeFileTime=...`按身份实时读取，返回`process`、`capturedAtUtc`、`startedAtUtc`、`uptimeSeconds`、`handleCount`、`privateBytes`（PrivateUsage，UI称“专用提交”）、`relatedServices[]`和`unavailable`。退出404，身份变化409；未知仍null。可在现有ProcessDto增加低成本字段，不能因此每帧拉取所有服务配置/网络端点。
+
+  关联服务只允许慢来源观察时刻晚于或等于已验证进程创建时刻；若`startedAtUtc > relatedServicesCapturedAtUtc`、观察时间缺失或创建时间不可确认，则`relatedServices:[]`并返回`unavailable.relatedServices.code:stale`及可见原因，避免PID复用关联旧服务。服务页定位按新GET服务详情获得的PID和capturedAtUtc，在最新已知快照中找创建早于观察的完整identity，再GET进程details核验；不因PID相同直接定位。
 - GET `processes/{pid}/connections?creationTimeFileTime=...`返回`capturedAtUtc,identity,connections[],unavailable,truncated`。连接含`protocol`（TCP/UDP）、`addressFamily`、`localAddress/localPort`、`remoteAddress/remotePort`（UDP可null）、`state`、`pid`，IPv4/IPv6均覆盖。CsWin32 GetExtendedTcpTable/GetExtendedUdpTable OWNER_PID，枚举前后核验身份，不做自动反向DNS；按需短TTL，最多5000条并显式截断。连接不是流量吞吐。
 - GET `processes/{pid}/icon?creationTimeFileTime=...`按身份取路径，返回标准image/png或明确无图标响应；SHGetFileInfo等公开Shell接口，有界路径+mtime缓存；前端仅可见行请求并保留通用图标，不把base64塞进快照。
 

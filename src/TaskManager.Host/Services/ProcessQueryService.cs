@@ -47,6 +47,8 @@ public sealed class ProcessQueryService(SnapshotService snapshots)
         ProcessAccess.Validate(handle, creation);
         var errors = new Dictionary<string, Unavailable>(row.Unavailable);
         if (current is null) errors["relatedServices"] = NativeSupport.WarmingUp;
-        return new(row, DateTime.UtcNow, row.StartedAtUtc, row.UptimeSeconds, row.HandleCount, row.PrivateBytes, current?.Services.Where(s => s.Pid == pid && s.Pid != 0).ToArray() ?? [], errors, current?.CapturedAtUtc, current?.SlowDataCapturedAtUtc);
+        var serviceObservationTooOld = current?.SlowDataCapturedAtUtc is not { } observed || row.StartedAtUtc is not { } created || created > observed;
+        if (serviceObservationTooOld) errors["relatedServices"] = new("stale", "服务观察早于此进程身份，或创建时间不可确认；请刷新服务来源后再查关联。");
+        return new(row, DateTime.UtcNow, row.StartedAtUtc, row.UptimeSeconds, row.HandleCount, row.PrivateBytes, serviceObservationTooOld ? [] : current?.Services.Where(s => s.Pid == pid && s.Pid != 0).ToArray() ?? [], errors, current?.CapturedAtUtc, current?.SlowDataCapturedAtUtc);
     }
 }

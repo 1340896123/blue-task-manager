@@ -2,9 +2,10 @@
 
 面向 Windows 的真实系统任务管理器，技术栈为 React、Tailwind CSS、Electron.NET、ASP.NET Core 与 CsWin32。界面采用参考图的标题搜索区、固定侧栏、命令栏和高密度数据表，以 Fluent 蓝色 Token 统一视觉。
 
-已完成需求规范、真实 Win32 后端、React 界面、Electron.NET 桌面四个顺序阶段。实际验收以 [验收结果](docs/ACCEPTANCE-RESULTS.md) 为准。
+1.1补齐日常排查与管理闭环：进程树、实时详情、优先级与效率模式、文件位置和属性、CSV导出、真实服务操作、逐网卡/物理磁盘/GPU曲线，以及跨页定位和偏好保留。完整桌面验收与发布状态以 [验收结果](docs/ACCEPTANCE-RESULTS.md) 为准。
 
 - [产品需求](docs/PRD.md)
+- [1.1便利性与性能需求](docs/PRODUCT-V1.1.md)
 - [架构与数据合同](docs/ARCHITECTURE.md)
 - [工程规范](docs/CONVENTIONS.md)
 - [设计系统与 Token](design-system/task-manager/MASTER.md)
@@ -45,6 +46,10 @@ npm run test:e2e
 
 包含 `test:native`、`test:ui`、`test:recovery`、`test:desktop`。桌面测试实际从便携成品启动 .NET → Electron.NET → BrowserWindow，走 UI → HTTP → CsWin32 → Windows 创建/结束专用任务；独立 CsWin32 HWND 探针验证真实窗口状态。测试默认使用 5191～5194 与 9224 端口，启动前应空闲。Chromium 可通过 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` 指定已安装路径。
 
+1.1分阶段真链路检查：`node tests/native-core-v11.mjs`、`node tests/native-management-v11.mjs`、`node tests/native-telemetry-v11.mjs`、`npm run test:process-ui`、`npm run test:pages-ui`。页面检查使用5194，进程工作流使用5193，按顺序运行，避免与旧桌面测试端口冲突。每个测试使用独立偏好目录，不更改日常配置。
+
 `TASKMANAGER_CDP_PORT` 仅供显式桌面自动化启用回环 CDP，普通启动默认关闭。验收不 mock、不截取全机进程清单、不记录任何令牌，产物在 `output/playwright/`。测试只清理本次创建并保存身份的进程与临时目录。
 
-键盘：Ctrl+F 搜索、F5 刷新、Tab 导航、Esc 关闭对话框；桌面 Ctrl+= / Ctrl+- / Ctrl+0 调整 25% 步进缩放/恢复 100%。逐进程 GPU/网络、服务启停、启动项编辑、驱动级分析不在本版范围，界面明确说明。
+键盘：Ctrl+F搜索、Ctrl+N运行、F5刷新、Enter/双击详情、Shift+F10/右键操作、Delete结束确认、Space冻结列表、F1帮助、Esc关闭；桌面Ctrl+= / Ctrl+- / Ctrl+0调整25%步进缩放/恢复100%。冻结列表时采集和性能曲线继续运行；设置中的自动采样开关会真正暂停采集。
+
+GPU来自Windows计数器的真实LUID/物理索引，不猜型号；磁盘I/O与进程I/O分别展示。逐进程网络吞吐、启动策略编辑与驱动级分析仍未接入，端点列表不冒充吞吐。服务动作受Windows当前账户权限约束，不自动提权或停止依赖服务；当前标准用户环境成功启停测试需保留权限限制。

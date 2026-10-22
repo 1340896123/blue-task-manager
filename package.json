@@ -1,11 +1,12 @@
 {
-  "name": "blue-task-manager", "private": true, "version": "1.0.0",
+  "name": "blue-task-manager", "private": true, "version": "1.1.0",
   "scripts": {
     "build": "npm --prefix src/TaskManager.Web run build",
     "typecheck": "npm --prefix src/TaskManager.Web run typecheck",
     "test:native": "node tests/native-api.mjs",
     "test:ui": "node tests/ui-smoke.mjs",
     "test:process-ui": "node tests/process-ui-v11.mjs",
+    "test:pages-ui": "node tests/pages-ui-v11.mjs",
     "build:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1",
     "test:desktop": "node tests/desktop-e2e.mjs",
     "test:recovery": "node tests/recovery-e2e.mjs",
