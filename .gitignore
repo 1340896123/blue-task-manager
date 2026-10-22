@@ -1,0 +1,27 @@
+# Frontend / Electron
+node_modules/
+dist/
+.vite/
+.electron/
+artifacts/
+coverage/
+test-results/
+playwright-report/
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Local state and secrets
+.env
+.env.*
+!.env.example
+*.log
+*.pid
+.DS_Store
+Thumbs.db
+
+# Keep reviewed acceptance evidence intentionally checked in under docs/evidence.
