@@ -63,9 +63,10 @@ try {
   check(typeof token === 'string' && token.length >= 64, 'in-memory token');
   let first = await request('snapshot');
   check(first.processes.some(row => row.pid === health.processId), 'actual host PID present');
-  check(first.services.length > 0 && first.users.length > 0, 'SCM and WTS real rows');
+  if(first.slowDataCapturedAtUtc===null)check(first.warnings.some(w=>w.code==='loading'),'first slow sources explicitly warm while basic snapshot is ready');
   if (first.sampleId === 1) check(first.system.cpuPercent === null && first.system.unavailable.cpuPercent.code === 'warmingUp', 'first CPU warmup');
-  const second = await snapshotWhere(value => value.sampleId > first.sampleId);
+  const second = await snapshotWhere(value => value.sampleId > first.sampleId && value.slowDataCapturedAtUtc !== null);
+  check(second.services.length > 0 && second.users.length > 0, 'SCM and WTS real rows after actual deferred source read');
   check(second.capturedAtUtc > first.capturedAtUtc && second.system.cpuPercent >= 0 && second.system.cpuPercent <= 100, 'advancing valid sample');
   check(second.processes.every(row => row.networkBytesPerSecond === null && (row.gpuPercent === null ? !!row.unavailable.gpuPercent : row.gpuPercent >= 0 && row.gpuPercent <= 100)), 'network remains unavailable; real GPU is valid or has an explicit reason');
   check(second.processes.every(row => row.ioReadBytesPerSecond === null || row.ioReadBytesPerSecond >= 0), 'I/O never negative');
