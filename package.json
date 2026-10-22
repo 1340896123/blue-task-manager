@@ -1,0 +1,10 @@
+{
+  "name": "blue-task-manager", "private": true, "version": "1.0.0",
+  "scripts": {
+    "build": "npm --prefix src/TaskManager.Web run build",
+    "typecheck": "npm --prefix src/TaskManager.Web run typecheck",
+    "test:native": "node tests/native-api.mjs",
+    "test:ui": "node tests/ui-smoke.mjs"
+  },
+  "devDependencies": { "playwright": "1.64.1" }
+}

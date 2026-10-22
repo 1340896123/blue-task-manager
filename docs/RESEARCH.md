@@ -38,3 +38,5 @@
 5. `focus not obscured --domain ux` 命中WCAG2.2 AA最小可见与AAA增强规则；采用可见焦点和sticky滚动留白，不把AAA要求宣称为AA。
 
 最终桌面设计取舍：Segoe UI Variable/微软雅黑本地字体；浅蓝灰/白色结构面；Windows蓝色强调；高密度表格；克制动效；按真实数值绘制蓝色热度；不使用截图中的固定应用logo/进程名或营销大卡片。
+
+阶段3补充：React堆栈查询 `virtualized table polling` 无命中，按合同收窄为 `virtualize` 后命中“100项以上使用windowing，优先react-virtual”的有效Performance建议，采用成熟 [TanStack Virtual](https://github.com/TanStack/virtual) 的React适配器，不自研虚拟滚动协议。Tailwind 4.2插件的Vite peer范围不含Vite8，经npm核验后采用兼容的4.3.3。按钮/搜索/表格状态按项目MASTER落实，未持久化无匹配的检索输出。

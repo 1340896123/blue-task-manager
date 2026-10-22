@@ -19,7 +19,7 @@
 | --color-surface-subtle | #F7FAFE | 列头、空态区域 |
 | --color-text | #152A43 | 主要文字 |
 | --color-text-secondary | #4B617B | 次要文字 |
-| --color-text-disabled | #687C91 | 禁用解释（非交互） |
+| --color-text-disabled | #61758A | 禁用解释（非交互）；白底对比度4.75:1 |
 | --color-border | #D5E0EE | 普通分割线 |
 | --color-control-border | #778BA3 | 需要明确边界的输入/控件 |
 | --color-accent | #0067C0 | 主操作、选中条、链接 |

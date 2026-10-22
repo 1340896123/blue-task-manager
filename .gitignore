@@ -7,6 +7,8 @@ artifacts/
 coverage/
 test-results/
 playwright-report/
+output/
+src/TaskManager.Host/wwwroot/
 
 # .NET
 bin/
