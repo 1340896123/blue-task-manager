@@ -67,9 +67,9 @@ try {
   if (first.sampleId === 1) check(first.system.cpuPercent === null && first.system.unavailable.cpuPercent.code === 'warmingUp', 'first CPU warmup');
   const second = await snapshotWhere(value => value.sampleId > first.sampleId);
   check(second.capturedAtUtc > first.capturedAtUtc && second.system.cpuPercent >= 0 && second.system.cpuPercent <= 100, 'advancing valid sample');
-  check(second.processes.every(row => row.networkBytesPerSecond === null && row.gpuPercent === null), 'unsupported metrics stay null');
+  check(second.processes.every(row => row.networkBytesPerSecond === null && (row.gpuPercent === null ? !!row.unavailable.gpuPercent : row.gpuPercent >= 0 && row.gpuPercent <= 100)), 'network remains unavailable; real GPU is valid or has an explicit reason');
   check(second.processes.every(row => row.ioReadBytesPerSecond === null || row.ioReadBytesPerSecond >= 0), 'I/O never negative');
-  passed.push('A02 real snapshots, A03 native PID, A04 warmup and deltas, A08 unsupported metrics');
+  passed.push('A02 real snapshots, A03 native PID, A04 warmup and deltas, A08 explicit unavailable network and valid/partial GPU');
 
   await request('settings', { method: 'POST', body: { intervalMs: 1000, paused: false }, status: 403 });
   await write('settings', { intervalMs: 1000, paused: false }, 403, { 'X-TaskManager-Token': 'wrong' });

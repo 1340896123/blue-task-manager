@@ -39,10 +39,16 @@
 
 ### 资源增量
 
-- `process.gpuPercent:number|null`来自PDH English GPU Engine；两有效采样、有效CStatus才可取值。按PID最忙引擎而非各引擎求和；计数器实例PID还须关联当前创建身份，不跨PID复用沿用。缺实例/无权限/未就绪语义明确，不填假0。可附`gpuEngine`与不可用原因。
-- `networkAdapters[]`包含稳定LUID/接口ID、alias/description、hardware/virtual说明、linkSpeed、receive/sendBytesPerSecond与unavailable；来自GetIfTable2。用户可选择具体接口，原总量保留“包含虚拟接口”的提示，不能宣称所有接口相加就是物理网卡吞吐。
-- `disks[]`包含真实PhysicalDisk实例、read/writeBytesPerSecond及activityPercent/其明确PDH语义、capturedAtUtc/unavailable；无计数器/预热保留null，不能用进程I/O代填。
-- 系统可增加commitBytes/commitLimitBytes/cacheBytes/threadCount/handleCount，来源GetPerformanceInfo；页内标明提交与工作集不同。GPU/磁盘初始化异步后置，查询长寿命复用；新的原生query和图标句柄在退出释放。
+阶段3实际合同详见[NATIVE-TELEMETRY-V1.1.md](NATIVE-TELEMETRY-V1.1.md)，准确大小写见Contracts.cs。默认快照额外字段为`networkAdapters[],physicalDisks[],gpuAdapters[],telemetry`，没有`disks`别名。
+
+- `process.gpuPercent:number|null,gpuEngine:string|null,gpuCapturedAtUtc:string|null`：PDH English GPU Engine、最忙单引擎，不把多个并行引擎相加。至少两个PDH样本、有效CStatus和前后创建身份校验；新身份额外预热；无实例为`noObservedEngine`，不是0。gpuEngine为真实`luid_..._phys_.../eng_..._engtype_...`标签。详情沿用最近同身份值和独立GPU时间，不宣称实时同步读取GPU。
+- `networkAdapters[]`：`id`为UInt64 LUID十进制字符串，另有`interfaceIndex,alias,description,status,interfaceType,isHardware,isVirtual,isLoopback,isTunnel,receiveLinkSpeedBitsPerSecond,transmitLinkSpeedBitsPerSecond,receivedBytes,sentBytes,receiveBytesPerSecond,sendBytesPerSecond,unavailable`。四个累计/链路值均字符串。status为真实IfOperStatus枚举；虚拟标记为非硬件且不是回环/隧道，不猜型号；GetIfTable2包含软件过滤层，不能把所有接口相加当物理网线吞吐。非Up接口速率null/disconnected，稳定接口独立差分，重置/新接口预热。
+- `physicalDisks[]`：`id,name,isTotal:false,readBytesPerSecond,writeBytesPerSecond,activePercent,unavailable`。id/name为真实PhysicalDisk实例，如`4 C:`；使用Disk Read/Write Bytes/sec与`100 - % Idle Time`，活动有效范围0～100。排除`_Total`，避免把总量重复相加或猜其idle聚合。`system.diskReadBytesPerSecond/diskWriteBytesPerSecond`为全部非_Total物理实例之和，`system.diskActivePercent`为最忙物理磁盘；任何成员指标无效，该聚合指标null。进程I/O不参与。
+- `gpuAdapters[]`：`id,adapterLuid,physicalIndex,utilizationPercent,busiestEngine,engineCount,unavailable`。ID为计数器LUID+physical index，不虚构厂商名称；同一物理引擎先跨PID汇总再取最忙，`system.gpuPercent`为其中最大值。成员CStatus不完整时保守null/partial，不把各PID的最大值求和。
+- `telemetry`：`sampleId,capturedAtUtc,collectionDurationMs,gpuInstanceCount,unavailable,queryDurationMs,initializationDurationMs`。这是独立PDH时间轴，可能落后基本快照一帧；首次sampleId0、时间null/预热。collectionDurationMs含批量查询/格式化/聚合/身份确认，queryDurationMs仅PdhCollectQueryData，初始化单列。超过max(5秒,3×采样周期)无新PDH样本，下一基本快照清空旧数值并stale。能力available表示采集链已接入，当前设备/权限是否有值仍以unavailable为准。
+- `performanceHistory[]`增加`telemetryCapturedAtUtc,gpuPercent,diskActivePercent,networkAdapters[],physicalDisks[],gpuAdapters[]`。各资源点为`{id,percent,readBytesPerSecond,writeBytesPerSecond}`（网络read=receive/write=send）。GPU/磁盘曲线必须按telemetryCapturedAtUtc去重、按真实时间绘制；同一异步PDH样本可能在多次基本快照出现，不能视为新采样。网络点使用原capturedAtUtc；不为未出现的资源补0。
+
+GPU/磁盘仅后台单worker惰性初始化；每个基本样本投递一份有界最新请求，不阻塞health、首快照或settings锁；同一长寿命PDH query批量读取，不按PID另开query，不返回GPU全引擎数组。暂停后不继续启动PDH采样；正在进行的不可取消原生调用可完成，但暂停快照不因此更新。退出等待worker完成并释放query；图标句柄由独立核心层释放。
 
 ## 1.0已验收基线
 
@@ -74,7 +80,7 @@ GET不用写令牌。所有POST带 `X-TaskManager-Token`，令牌通过GET boots
 
 时间全部ISO8601 UTC。`capturedAtUtc`是最近成功采样时间，不是HTTP响应时间。服务/启动项/WTS用户名称默认缓存15秒，慢速时间单列标明；进程动态数值每周期真实读取。路径、文件版本CompanyName、令牌用户按进程身份缓存；CompanyName不是签名认证。
 
-`unavailable`是字段名到 `{code,message,nativeErrorCode?}` 的字典。常见code：`warmingUp/accessDenied/exited/error/notCollected/protected/partial`。不存在对应错误项表示该字段读取成功；null不允许转0。逐进程网络/GPU恒null且有notCollected原因。
+`unavailable`是字段名到 `{code,message,nativeErrorCode?}` 的字典。常见code：`warmingUp/accessDenied/exited/error/notCollected/protected/partial/noObservedEngine/disconnected/stale`。不存在对应错误项表示该字段读取成功；null不允许转0。逐进程网络仍null/notCollected；1.1的GPU真实链与独立时间见上文。
 
 ### system
 
@@ -89,7 +95,7 @@ GET不用写令牌。所有POST带 `X-TaskManager-Token`，令牌通过GET boots
 - 元数据：`path/publisher/userName/priority:string|null`、`sessionId:number|null`、`state:"running"|"restricted"`。
 - 动态：`cpuPercent:number|null`（按整机逻辑处理器归一化）、`workingSetBytes:number|null`、`ioReadBytesPerSecond/ioWriteBytesPerSecond:number|null`。
 - 累计64位：`totalCpuTime100ns/ioReadBytes/ioWriteBytes:string|null`，十进制字符串，不能直接无损转JS number；前端需BigInt或换算展示。
-- 能力：`networkBytesPerSecond/gpuPercent:null`、`canTerminate:boolean`、`unavailable`。`canTerminate=true`只表示身份/关键状态/保护检查满足；执行时仍可能因权限变化返回403。
+- 能力：`networkBytesPerSecond:null`、`gpuPercent:number|null`（1.1真实PDH）、`canTerminate:boolean`、`unavailable`。`canTerminate=true`只表示身份/关键状态/保护检查满足；执行时仍可能因权限变化返回403。
 
 ### services[] / startupItems[] / users[]
 

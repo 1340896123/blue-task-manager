@@ -16,7 +16,8 @@ public sealed class ProcessQueryService(SnapshotService snapshots)
         var previous = current?.Processes.FirstOrDefault(p => p.Identity == $"{pid}:{creation}");
         var row = new ProcessDto { Identity = $"{pid}:{creation}", Pid = pid, ParentPid = basic.ParentPid, CreationTimeFileTime = creation, Name = basic.Name, ThreadCount = basic.ThreadCount,
             Publisher = previous?.Publisher, UserName = previous?.UserName, SessionId = previous?.SessionId, CanTerminate = previous?.CanTerminate ?? false,
-            CpuPercent = previous?.CpuPercent, IoReadBytesPerSecond = previous?.IoReadBytesPerSecond, IoWriteBytesPerSecond = previous?.IoWriteBytesPerSecond };
+            CpuPercent = previous?.CpuPercent, IoReadBytesPerSecond = previous?.IoReadBytesPerSecond, IoWriteBytesPerSecond = previous?.IoWriteBytesPerSecond,
+            GpuPercent = previous?.GpuPercent, GpuCapturedAtUtc = previous?.GpuCapturedAtUtc, GpuEngine = previous?.GpuEngine };
         row.Path = ProcessAccess.Path(handle);
         if (PInvoke.ProcessIdToSessionId(pid, out var session)) row.SessionId = session; else row.Unavailable["sessionId"] = NativeSupport.LastError("读取会话失败");
         if (PInvoke.GetProcessTimes(handle, out var started, out _, out var kernel, out var user))
@@ -32,13 +33,13 @@ public sealed class ProcessQueryService(SnapshotService snapshots)
         if (priority != 0) row.Priority = ProcessAccess.PriorityLabel(priority); else row.Unavailable["priority"] = NativeSupport.LastError("读取优先级失败");
         if (PInvoke.GetProcessIoCounters(handle, out var io)) { row.IoReadBytes = io.ReadTransferCount.ToString(CultureInfo.InvariantCulture); row.IoWriteBytes = io.WriteTransferCount.ToString(CultureInfo.InvariantCulture); }
         else row.Unavailable["ioReadBytes"] = row.Unavailable["ioWriteBytes"] = NativeSupport.LastError("读取I/O计数失败");
-        foreach (var field in new[] { "publisher", "userName", "cpuPercent", "ioReadBytesPerSecond", "ioWriteBytesPerSecond", "terminate" })
+        foreach (var field in new[] { "publisher", "userName", "cpuPercent", "ioReadBytesPerSecond", "ioWriteBytesPerSecond", "gpuPercent", "terminate" })
             if (previous?.Unavailable.TryGetValue(field, out var reason) == true) row.Unavailable[field] = reason;
         if (row.Publisher is null) row.Unavailable.TryAdd("publisher", new("loading", "文件版本信息正在后台读取。"));
         if (row.UserName is null) row.Unavailable.TryAdd("userName", new("loading", "账户信息正在后台读取。"));
         if (previous is null) foreach (var field in new[] { "cpuPercent", "ioReadBytesPerSecond", "ioWriteBytesPerSecond" }) row.Unavailable[field] = NativeSupport.WarmingUp;
         row.Unavailable["networkBytesPerSecond"] = NativeSupport.NotCollected;
-        row.Unavailable["gpuPercent"] = NativeSupport.NotCollected;
+        if (previous is null) row.Unavailable["gpuPercent"] = NativeSupport.WarmingUp;
         if (ProcessProtection.Family(processes).Contains(pid)) { row.CanTerminate = false; row.Unavailable["terminate"] = new("protected", "系统关键进程或本应用进程族受保护。"); }
         else if (!PInvoke.IsProcessCritical(handle, out var critical)) { row.CanTerminate = false; row.Unavailable["terminate"] = NativeSupport.LastError("无法确认进程关键状态"); }
         else if (critical) { row.CanTerminate = false; row.Unavailable["terminate"] = new("protected", "Windows关键进程受保护。"); }

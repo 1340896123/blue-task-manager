@@ -11,3 +11,8 @@ GetPriorityClass
 GetProcessInformation
 PROCESS_POWER_THROTTLING_STATE
 OpenSCManagerW
+GetIfTable2
+FreeMibTable
+GetProcessHandleCount
+K32GetProcessMemoryInfo
+PROCESS_MEMORY_COUNTERS_EX

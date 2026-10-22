@@ -3,7 +3,26 @@ namespace TaskManager.Host.Models;
 public sealed record Unavailable(string Code, string Message, int? NativeErrorCode = null);
 public sealed record Capability(bool Available, string Source, string? Reason = null);
 public sealed record SamplingSettings(int IntervalMs = 1000, bool Paused = false);
-public sealed record HistoryPoint(DateTime CapturedAtUtc, double? CpuPercent, double? MemoryPercent, double? NetworkReceiveBytesPerSecond, double? NetworkSendBytesPerSecond);
+public sealed record ResourceHistoryPoint(string Id, double? Percent, double? ReadBytesPerSecond, double? WriteBytesPerSecond);
+public sealed record HistoryPoint(DateTime CapturedAtUtc, double? CpuPercent, double? MemoryPercent, double? NetworkReceiveBytesPerSecond, double? NetworkSendBytesPerSecond)
+{
+    public DateTime? TelemetryCapturedAtUtc { get; init; }
+    public double? GpuPercent { get; init; }
+    public double? DiskActivePercent { get; init; }
+    public IReadOnlyList<ResourceHistoryPoint> NetworkAdapters { get; init; } = [];
+    public IReadOnlyList<ResourceHistoryPoint> PhysicalDisks { get; init; } = [];
+    public IReadOnlyList<ResourceHistoryPoint> GpuAdapters { get; init; } = [];
+}
+public sealed record NetworkAdapterDto(string Id, uint InterfaceIndex, string Alias, string Description, string Status, uint InterfaceType,
+    bool IsHardware, bool IsVirtual, bool IsLoopback, bool IsTunnel, string ReceiveLinkSpeedBitsPerSecond, string TransmitLinkSpeedBitsPerSecond,
+    string ReceivedBytes, string SentBytes, double? ReceiveBytesPerSecond, double? SendBytesPerSecond, IReadOnlyDictionary<string, Unavailable> Unavailable);
+public sealed record PhysicalDiskDto(string Id, string Name, bool IsTotal, double? ReadBytesPerSecond, double? WriteBytesPerSecond, double? ActivePercent, IReadOnlyDictionary<string, Unavailable> Unavailable);
+public sealed record GpuAdapterDto(string Id, string AdapterLuid, uint PhysicalIndex, double? UtilizationPercent, string? BusiestEngine, int EngineCount, IReadOnlyDictionary<string, Unavailable> Unavailable);
+public sealed record TelemetryStatusDto(long SampleId, DateTime? CapturedAtUtc, double? CollectionDurationMs, int GpuInstanceCount, IReadOnlyDictionary<string, Unavailable> Unavailable)
+{
+    public double? QueryDurationMs { get; init; }
+    public double? InitializationDurationMs { get; init; }
+}
 
 public sealed class ProcessDto
 {
@@ -30,7 +49,9 @@ public sealed class ProcessDto
     public string? IoReadBytes { get; set; }
     public string? IoWriteBytes { get; set; }
     public double? NetworkBytesPerSecond => null;
-    public double? GpuPercent => null;
+    public double? GpuPercent { get; set; }
+    public DateTime? GpuCapturedAtUtc { get; set; }
+    public string? GpuEngine { get; set; }
     public bool CanTerminate { get; set; }
     public string State { get; set; } = "running";
     public Dictionary<string, Unavailable> Unavailable { get; init; } = new();
@@ -51,6 +72,10 @@ public sealed class SystemDto
     public double? NetworkReceiveBytesPerSecond { get; set; }
     public double? NetworkSendBytesPerSecond { get; set; }
     public int NetworkInterfaceCount { get; set; }
+    public double? GpuPercent { get; set; }
+    public double? DiskActivePercent { get; set; }
+    public double? DiskReadBytesPerSecond { get; set; }
+    public double? DiskWriteBytesPerSecond { get; set; }
     public int ProcessCount { get; set; }
     public int LogicalProcessorCount { get; init; } = Environment.ProcessorCount;
     public double UptimeSeconds { get; init; }
@@ -82,6 +107,10 @@ public sealed record SnapshotDto(long SampleId, DateTime CapturedAtUtc, DateTime
     IReadOnlyDictionary<string, Capability> Capabilities, IReadOnlyList<Unavailable> Warnings, DateTime? SlowDataCapturedAtUtc)
 {
     public double SamplingDurationMs { get; init; }
+    public IReadOnlyList<NetworkAdapterDto> NetworkAdapters { get; init; } = [];
+    public IReadOnlyList<PhysicalDiskDto> PhysicalDisks { get; init; } = [];
+    public IReadOnlyList<GpuAdapterDto> GpuAdapters { get; init; } = [];
+    public TelemetryStatusDto? Telemetry { get; init; }
 }
 public sealed record StartRequest(string Executable, string? Arguments);
 public sealed record TerminateRequest(string CreationTimeFileTime);

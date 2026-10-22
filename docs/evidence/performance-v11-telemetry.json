@@ -1,0 +1,72 @@
+{
+  "result": "PASS",
+  "assertions": 24,
+  "checks": [
+    "basic snapshot ready while deferred PDH initializes",
+    "PDH timeline is explicit and independent of the basic snapshot",
+    "real GPU wildcard instances reduce to adapters instead of full engine payload",
+    "process GPU has valid source, engine label and timestamp or an explicit unavailable reason",
+    "a PID with no observed GPU engine is unknown instead of a synthetic zero",
+    "GPU and connections do not invent per-process network throughput",
+    "adapter GPU is a valid busiest-engine percentage",
+    "system GPU selects the busiest physical adapter engine",
+    "physical disk real instances exclude _Total and expose real valid rates/activity",
+    "system disk activity is the busiest physical disk, not summed percentages",
+    "system disk byte rates sum physical instances once",
+    "per-adapter LUID, alias, counters and link speeds preserve UInt64 strings",
+    "independent CsWin32 probe matches adapter identity, hardware, link and monotonic raw byte counters",
+    "disconnected, warming and reset adapter rates have reasons, never a fallback zero",
+    "on-demand process details preserve real sampled GPU and its independent timestamp",
+    "independent Get-Counter confirms GPU provider and instance scale",
+    "independent Get-Counter confirms actual PhysicalDisk instance names",
+    "non-GPU test workload does not receive a made-up zero GPU",
+    "30-second basic and deferred PDH samples remain serial with bounded cadence",
+    "bounded real resource history keeps separate PDH timestamps and adapter IDs",
+    "conditional GET repeatedly avoids retransmitting the full resource history",
+    "query and array/native resource handles remain bounded during sustained sampling",
+    "settings stays responsive without waiting for the PDH worker",
+    "paused sampling does not keep publishing PDH/background history"
+  ],
+  "source": "production CsWin32 PDH/GetIfTable2; independent Get-Counter and native probe; no mocks",
+  "performance": {
+    "scope": "headless host with real WriteThrough test workload; 500ms reads; no renderer",
+    "startupMs": 490.4827,
+    "measurementMs": 30039.801,
+    "logicalProcessors": 28,
+    "processCount": {
+      "min": 949,
+      "max": 953
+    },
+    "samples": 27,
+    "pdhSamples": 27,
+    "samplingMs": {
+      "p50": 44.9719,
+      "p95": 60.126
+    },
+    "pdhCollectionMs": {
+      "p50": 4.3796,
+      "p95": 17.9392
+    },
+    "pdhQueryMs": {
+      "p50": 0.9077,
+      "p95": 1.5712
+    },
+    "pdhInitializationMs": 389.7124,
+    "cpuOneCorePercent": 8.94646405946564,
+    "cpuMachinePercent": 0.3195165735523443,
+    "privateBytes": 63774720,
+    "workingSetBytes": 127619072,
+    "handles": {
+      "before": 639,
+      "after": 629
+    },
+    "totalSnapshotBytes": 102290326,
+    "lastSnapshotBytes": 1853539,
+    "maxSnapshotBytes": 1853539,
+    "conditional304": 57,
+    "gpuInstanceCount": 1675,
+    "gpuAdapters": 2,
+    "physicalDisks": 5,
+    "networkAdapters": 54
+  }
+}

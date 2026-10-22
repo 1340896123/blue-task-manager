@@ -16,15 +16,14 @@ namespace TaskManager.Host.Native;
 
 internal sealed record ProcessCounters(ulong? Cpu, ulong? Read, ulong? Write, long Tick);
 internal sealed record ProcessMetadata(string? Path, string? Publisher, string? UserName, Dictionary<string, Unavailable> Unavailable);
-internal sealed record RawCollection(SystemDto System, List<ProcessDto> Processes, Dictionary<string, ProcessCounters> Counters);
+internal sealed record RawCollection(SystemDto System, List<ProcessDto> Processes, Dictionary<string, ProcessCounters> Counters, IReadOnlyList<NetworkAdapterDto> NetworkAdapters);
 
 internal sealed class Win32Collector : IDisposable
 {
     private readonly ProcessMetadataCache _metadata = new();
     private Dictionary<string, ProcessCounters> _previous = new();
     private (ulong Idle, ulong Total)? _systemPrevious;
-    private Dictionary<ulong, (ulong Receive, ulong Send)>? _networkPrevious;
-    private long _networkTick;
+    private readonly NetworkCollector _network = new();
 
     internal static unsafe List<ProcessDto> EnumerateBaseProcesses()
     {
@@ -63,7 +62,7 @@ internal sealed class Win32Collector : IDisposable
         _metadata.Retain(identities);
         var system = ReadSystem(tick);
         system.ProcessCount = processes.Count;
-        return new(system, processes, counters);
+        return new(system, processes, counters, _network.Collect(system, Stopwatch.GetTimestamp()));
     }
 
     private ProcessDto ReadProcess(ProcessDto basic, long tick, Dictionary<string, ProcessCounters> counters)
@@ -72,7 +71,6 @@ internal sealed class Win32Collector : IDisposable
         var openError = handle.IsInvalid ? Marshal.GetLastPInvokeError() : 0;
         var unavailable = basic.Unavailable;
         unavailable["networkBytesPerSecond"] = NativeSupport.NotCollected;
-        unavailable["gpuPercent"] = NativeSupport.NotCollected;
         if (PInvoke.ProcessIdToSessionId(basic.Pid, out var sessionId)) basic.SessionId = sessionId;
         else unavailable["sessionId"] = NativeSupport.LastError("读取会话失败");
         if (handle.IsInvalid)
@@ -208,39 +206,6 @@ internal sealed class Win32Collector : IDisposable
             system.HandleCount = performance.HandleCount;
         }
         else foreach (var field in new[] { "commitBytes", "commitLimitBytes", "cacheBytes", "threadCount", "handleCount" }) system.Unavailable[field] = NativeSupport.LastError("读取系统提交/缓存/句柄失败");
-        ReadNetwork(system, tick);
         return system;
-    }
-
-    private unsafe void ReadNetwork(SystemDto system, long tick)
-    {
-        var error = PInvoke.GetIfTable2(out MIB_IF_TABLE2* table);
-        if (error != 0)
-        {
-            system.Unavailable["networkReceiveBytesPerSecond"] = system.Unavailable["networkSendBytesPerSecond"] = NativeSupport.Error((int)error, "读取网卡计数失败");
-            _networkPrevious = null;
-            return;
-        }
-        try
-        {
-            var current = new Dictionary<ulong, (ulong Receive, ulong Send)>();
-            for (var i = 0; i < table->NumEntries; i++)
-            {
-                var row = table->Table[i];
-                if ((int)row.OperStatus != 1 || row.Type == 24 || row.Type == 131) continue; // Up, excluding loopback and tunnels to avoid obvious double counting.
-                current[row.InterfaceLuid.Value] = (row.InOctets, row.OutOctets);
-            }
-            system.NetworkInterfaceCount = current.Count;
-            var seconds = Stopwatch.GetElapsedTime(_networkTick, tick).TotalSeconds;
-            if (_networkPrevious is not null && seconds > 0 && current.Count > 0 && current.Count == _networkPrevious.Count && current.All(pair => _networkPrevious.TryGetValue(pair.Key, out var before) && pair.Value.Receive >= before.Receive && pair.Value.Send >= before.Send))
-            {
-                system.NetworkReceiveBytesPerSecond = current.Sum(pair => (double)(pair.Value.Receive - _networkPrevious[pair.Key].Receive)) / seconds;
-                system.NetworkSendBytesPerSecond = current.Sum(pair => (double)(pair.Value.Send - _networkPrevious[pair.Key].Send)) / seconds;
-            }
-            else system.Unavailable["networkReceiveBytesPerSecond"] = system.Unavailable["networkSendBytesPerSecond"] = current.Count == 0 ? new("notCollected", "未发现活动的非回环、非隧道网络接口。") : NativeSupport.WarmingUp;
-            _networkPrevious = current;
-            _networkTick = tick;
-        }
-        finally { PInvoke.FreeMibTable(table); }
     }
 }

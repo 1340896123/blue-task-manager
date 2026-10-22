@@ -20,6 +20,8 @@ UI沿既有MASTER增量。应用About Face的“目标→场景→行为→可�
 
 核验日期：2026-10-23。只借鉴架构、计数语义和公开Win32实践，不直接复制TaskExplorer的C++实现、驱动代码或远程协议。
 
+1.1遥测阶段复核固定commit的[GpuCounters.c](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/TaskExplorer/API/Windows/ProcessHacker/GpuCounters.c)：GPU实例按ProcessId/AdapterLuid/EngineId区分，当前实现使用perflib并保留PDH批量查询参考。采用其“进程与物理引擎分开聚合”的设计思路，本项目独立用CsWin32生成PDH English API，未复制GPL源代码。微软[PdhCollectQueryData](https://learn.microsoft.com/windows/win32/api/pdh/nf-pdh-pdhcollectquerydata)明确wildcard配合格式化数组；[PdhGetFormattedCounterArrayW](https://learn.microsoft.com/windows/win32/api/pdh/nf-pdh-pdhgetformattedcounterarrayw)规定两次有界缓冲查询；每项CStatus验证，不因API整体成功便信任所有实例。公开[GetIfTable2/MIB_IF_ROW2](https://learn.microsoft.com/windows/win32/api/netioapi/ns-netioapi-mib_if_row2)提供LUID、Alias、HardwareInterface、链路速度和字节累计，硬件/虚拟/过滤层不靠名称猜测。PhysicalDisk使用原生Disk Read/Write Bytes/sec及100-% Idle Time；排除_Total，不重复合计或假设总idle代表整机活动。各资源真实时间与UI规则见NATIVE-TELEMETRY-V1.1.md。
+
 ## 1. TaskExplorer
 
 仓库：[DavidXanatos/TaskExplorer](https://github.com/DavidXanatos/TaskExplorer)。本次研究 master commit：`9f3f95d22f07f759dd1e0114417529ba51decb01`，通过GitHub API读取commit和文件树、raw源码核验。

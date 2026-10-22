@@ -8,6 +8,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
 {
     private readonly object _gate = new();
     private readonly Win32Collector _collector = new();
+    private PdhTelemetryCollector? _telemetry;
     private SamplingSettings _settings = new(preferences.IntervalMs, false);
     private readonly string _instance = Guid.NewGuid().ToString("N");
     private long _revision;
@@ -37,8 +38,10 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         ["shellLocations"] = new(true, "CsWin32 Shell公开接口/固定Windows系统入口"),
         ["efficiency"] = new(true, "CsWin32 ProcessPowerThrottling + SetPriorityClass + 原生读回", "每个目标需按身份读取实际能力；外部效率模式不覆盖，没有恢复基线不关闭。"),
         ["processNetwork"] = new(false, "未接入", "未接入逐进程网络采集；不能从进程 I/O 推导。"),
-        ["processGpu"] = new(false, "未接入", "未接入逐进程 GPU 采集。"),
-        ["diskActivity"] = new(false, "未接入", "进程 I/O 不是物理磁盘吞吐或活动时间。")
+        ["processGpu"] = new(true, "CsWin32 PDH English GPU Engine；最忙单引擎，两样本与创建身份校验", "需驱动提供有效计数器；无实例、预热或受限时null并给原因。"),
+        ["gpuAdapters"] = new(true, "CsWin32 PDH；同适配器物理引擎先跨PID汇总，再取最忙引擎", "适配器按计数器LUID/physical index标识，不猜测硬件型号。"),
+        ["networkAdapters"] = new(true, "CsWin32 GetIfTable2；按LUID逐接口差分，包含真实硬件/虚拟/回环/隧道标记"),
+        ["diskActivity"] = new(true, "CsWin32 PDH English PhysicalDisk；100-% Idle Time", "系统活动百分比为最忙物理磁盘；系统读写为非_Total实例吞吐之和，进程I/O不参与。")
     };
 
     public SamplingSettings Settings { get { lock (_gate) return _settings; } }
@@ -84,6 +87,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _telemetry = new(() => Settings);
         SlowData? slow = null;
         long sampleId = 0;
         long nextSample = 0;
@@ -96,6 +100,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
                 {
                     var started = Stopwatch.GetTimestamp();
                     var raw = _collector.Collect();
+                    var telemetry = FreshTelemetry(_telemetry.Current, settings.IntervalMs);
+                    ApplyTelemetry(raw, telemetry, settings.IntervalMs);
                     var capturedAt = DateTime.UtcNow;
                     bool refreshSlow;
                     lock (_gate) { refreshSlow = _forceSlowRefresh; _forceSlowRefresh = false; }
@@ -105,14 +111,22 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
                     {
                         if (_resetHistory) { _history.Clear(); _historyPrevious.Clear(); _resetHistory = false; }
                         Accumulate(raw, capturedAt);
-                        _performance.Enqueue(new(capturedAt, raw.System.CpuPercent, raw.System.MemoryPercent, raw.System.NetworkReceiveBytesPerSecond, raw.System.NetworkSendBytesPerSecond));
+                        _performance.Enqueue(new(capturedAt, raw.System.CpuPercent, raw.System.MemoryPercent, raw.System.NetworkReceiveBytesPerSecond, raw.System.NetworkSendBytesPerSecond)
+                        {
+                            TelemetryCapturedAtUtc = telemetry.Status.CapturedAtUtc, GpuPercent = raw.System.GpuPercent, DiskActivePercent = raw.System.DiskActivePercent,
+                            NetworkAdapters = raw.NetworkAdapters.Where(row => row.ReceiveBytesPerSecond.HasValue || row.SendBytesPerSecond.HasValue).Select(row => new ResourceHistoryPoint(row.Id, null, row.ReceiveBytesPerSecond, row.SendBytesPerSecond)).ToArray(),
+                            PhysicalDisks = telemetry.Disks.Select(row => new ResourceHistoryPoint(row.Id, row.ActivePercent, row.ReadBytesPerSecond, row.WriteBytesPerSecond)).ToArray(),
+                            GpuAdapters = telemetry.Gpus.Select(row => new ResourceHistoryPoint(row.Id, row.UtilizationPercent, null, null)).ToArray()
+                        });
                         while (_performance.Count > 120) _performance.Dequeue();
                         _snapshot = new(++sampleId, capturedAt, _sessionStartedAt, _settings.IntervalMs, _settings.Paused, raw.System, raw.Processes,
                             slow.Services, slow.StartupItems, users, _history.Values.Select(item => item.ToDto()).OrderByDescending(item => item.IsRunning).ThenBy(item => item.Name).ToArray(),
                             _performance.ToArray(), Capabilities, preferences.Warning is { } warning ? slow.Warnings.Append(warning).ToArray() : slow.Warnings, slow.CapturedAtUtc)
-                        { SamplingDurationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds };
+                        { SamplingDurationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds, NetworkAdapters = raw.NetworkAdapters,
+                            PhysicalDisks = telemetry.Disks, GpuAdapters = telemetry.Gpus, Telemetry = telemetry.Status };
                         Invalidate();
                     }
+                    _telemetry.Request(raw.Processes);
                     nextSample = Stopwatch.GetTimestamp() + settings.IntervalMs * Stopwatch.Frequency / 1000;
                 }
                 catch (Exception exception)
@@ -127,7 +141,55 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         }
     }
 
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await base.StopAsync(cancellationToken);
+        if (_telemetry is not null) await _telemetry.DisposeAsync();
+    }
     public override void Dispose() { base.Dispose(); _collector.Dispose(); }
+
+    private static void ApplyTelemetry(RawCollection raw, PdhSample sample, int intervalMs)
+    {
+        var stale = sample.Status.CapturedAtUtc is { } captured && DateTime.UtcNow - captured > TimeSpan.FromMilliseconds(Math.Max(5000, intervalMs * 3));
+        var staleReason = new Unavailable("stale", "PDH最新有效采样已过期，等待后台查询恢复。");
+        foreach (var process in raw.Processes)
+        {
+            process.GpuCapturedAtUtc = sample.Status.CapturedAtUtc;
+            if (!stale && sample.Processes.TryGetValue(process.Identity, out var gpu))
+            {
+                process.GpuPercent = gpu.Percent; process.GpuEngine = gpu.Engine;
+                if (gpu.Unavailable is { } reason) process.Unavailable["gpuPercent"] = reason;
+            }
+            else process.Unavailable["gpuPercent"] = stale ? staleReason : sample.Status.Unavailable.GetValueOrDefault("gpu")
+                ?? (sample.Status.SampleId < 2 ? NativeSupport.WarmingUp : new("noObservedEngine", "本身份在相邻有效PDH样本中没有可安全关联的GPU Engine；无实例不等于0。"));
+        }
+        var gpuReason = stale ? staleReason : sample.Status.Unavailable.GetValueOrDefault("gpu")
+            ?? sample.Gpus.Select(row => row.Unavailable.GetValueOrDefault("utilizationPercent")).FirstOrDefault(reason => reason is not null) ?? NativeSupport.WarmingUp;
+        if (!stale && sample.Gpus.Count > 0 && sample.Gpus.All(row => row.UtilizationPercent.HasValue)) raw.System.GpuPercent = sample.Gpus.Max(row => row.UtilizationPercent!.Value);
+        else raw.System.Unavailable["gpuPercent"] = gpuReason;
+        foreach (var field in new[] { "diskActivePercent", "diskReadBytesPerSecond", "diskWriteBytesPerSecond" })
+            raw.System.Unavailable[field] = stale ? staleReason : sample.Status.Unavailable.GetValueOrDefault("disk") ?? new("partial", "部分物理磁盘计数器不可用。");
+        if (!stale && sample.Disks.Count > 0)
+        {
+            if (sample.Disks.All(row => row.ActivePercent.HasValue)) { raw.System.DiskActivePercent = sample.Disks.Max(row => row.ActivePercent!.Value); raw.System.Unavailable.Remove("diskActivePercent"); }
+            if (sample.Disks.All(row => row.ReadBytesPerSecond.HasValue)) { raw.System.DiskReadBytesPerSecond = sample.Disks.Sum(row => row.ReadBytesPerSecond!.Value); raw.System.Unavailable.Remove("diskReadBytesPerSecond"); }
+            if (sample.Disks.All(row => row.WriteBytesPerSecond.HasValue)) { raw.System.DiskWriteBytesPerSecond = sample.Disks.Sum(row => row.WriteBytesPerSecond!.Value); raw.System.Unavailable.Remove("diskWriteBytesPerSecond"); }
+        }
+    }
+
+    private static PdhSample FreshTelemetry(PdhSample sample, int intervalMs)
+    {
+        if (sample.Status.CapturedAtUtc is not { } captured || DateTime.UtcNow - captured <= TimeSpan.FromMilliseconds(Math.Max(5000, intervalMs * 3))) return sample;
+        var stale = new Unavailable("stale", "PDH最新采样已过期，等待后台查询恢复。");
+        return sample with
+        {
+            Status = sample.Status with { Unavailable = new Dictionary<string, Unavailable> { ["gpu"] = stale, ["disk"] = stale } },
+            Processes = new Dictionary<string, GpuReading>(),
+            Gpus = sample.Gpus.Select(row => row with { UtilizationPercent = null, BusiestEngine = null, Unavailable = new Dictionary<string, Unavailable> { ["utilizationPercent"] = stale } }).ToArray(),
+            Disks = sample.Disks.Select(row => row with { ReadBytesPerSecond = null, WriteBytesPerSecond = null, ActivePercent = null,
+                Unavailable = new Dictionary<string, Unavailable> { ["readBytesPerSecond"] = stale, ["writeBytesPerSecond"] = stale, ["activePercent"] = stale } }).ToArray()
+        };
+    }
 
     private void Accumulate(RawCollection raw, DateTime capturedAt)
     {

@@ -3,6 +3,45 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using Windows.Win32.System.Threading;
+using Windows.Win32.NetworkManagement.IpHelper;
+using Windows.Win32.System.ProcessStatus;
+
+if (args[0] == "network-counters")
+{
+    unsafe
+    {
+        var status = PInvoke.GetIfTable2(out MIB_IF_TABLE2* table);
+        if (status != 0) throw new InvalidOperationException("GetIfTable2 failed: " + status);
+        try
+        {
+            var rows = new List<object>();
+            for (var i = 0; i < table->NumEntries; i++)
+            {
+                var row = table->Table[i];
+                rows.Add(new { id = row.InterfaceLuid.Value.ToString(), alias = row.Alias.ToString(), hardware = row.InterfaceAndOperStatusFlags.HardwareInterface,
+                    receivedBytes = row.InOctets.ToString(), sentBytes = row.OutOctets.ToString(), receiveLinkSpeed = row.ReceiveLinkSpeed.ToString(), transmitLinkSpeed = row.TransmitLinkSpeed.ToString() });
+            }
+            Console.WriteLine(JsonConvert.SerializeObject(rows));
+        }
+        finally { PInvoke.FreeMibTable(table); }
+    }
+    return;
+}
+if (args[0] == "process-resources")
+{
+    using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, uint.Parse(args[1]));
+    if (handle.IsInvalid || !PInvoke.GetProcessTimes(handle, out var creation, out _, out var kernel, out var user)) throw new InvalidOperationException("Test process unavailable.");
+    var actual = ((ulong)(uint)creation.dwHighDateTime << 32) | (uint)creation.dwLowDateTime;
+    if (actual != ulong.Parse(args[2])) throw new InvalidOperationException("Test process identity changed.");
+    unsafe
+    {
+        var memory = new PROCESS_MEMORY_COUNTERS_EX { cb = (uint)sizeof(PROCESS_MEMORY_COUNTERS_EX) };
+        if (!PInvoke.K32GetProcessMemoryInfo(new HANDLE(handle.DangerousGetHandle()), (PROCESS_MEMORY_COUNTERS*)&memory, (uint)sizeof(PROCESS_MEMORY_COUNTERS_EX)) || !PInvoke.GetProcessHandleCount(handle, out var handles)) throw new InvalidOperationException("Resource probe failed.");
+        var cpu = (((ulong)(uint)kernel.dwHighDateTime << 32) | (uint)kernel.dwLowDateTime) + (((ulong)(uint)user.dwHighDateTime << 32) | (uint)user.dwLowDateTime);
+        Console.WriteLine(JsonConvert.SerializeObject(new { cpuTime100ns = cpu.ToString(), privateBytes = (ulong)memory.PrivateUsage, workingSetBytes = (ulong)memory.WorkingSetSize, handles }));
+    }
+    return;
+}
 
 if (args[0] == "process-state")
 {
