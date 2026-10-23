@@ -46,6 +46,7 @@ $report = [ordered]@{
     ifeoFingerprints = [ordered]@{}
     headlessRuns = [Collections.Generic.List[object]]::new()
     desktopAssertions = 0
+    shortcuts = [Collections.Generic.List[object]]::new()
     screenshots = [Collections.Generic.List[string]]::new()
     installationRetainedOnFailure = $false
     error = $null
@@ -155,8 +156,34 @@ function Assert-Shortcut([string]$Path) {
     $shortcut = $null
     try {
         $shortcut = $shell.CreateShortcut($Path)
-        $target = [IO.Path]::GetFullPath($shortcut.TargetPath)
-        Assert-Condition ($target.Equals($hostExecutable, [StringComparison]::OrdinalIgnoreCase) -and [string]::IsNullOrEmpty($shortcut.Arguments)) 'Shortcut directly targets this installation Host without extra arguments'
+        $target = [string]$shortcut.TargetPath
+        $arguments = [string]$shortcut.Arguments
+        $reader = 'WScript.Shell'
+        if ([string]::IsNullOrWhiteSpace($target)) {
+            # The Shell automation link object independently resolves the real
+            # .lnk. Keep the same exact target/arguments requirement when WSH
+            # cannot resolve a freshly installed shortcut on a hosted desktop.
+            $application = New-Object -ComObject Shell.Application
+            $folder = $null; $item = $null; $link = $null
+            try {
+                $folder = $application.NameSpace([IO.Path]::GetDirectoryName($Path))
+                if ($null -ne $folder) { $item = $folder.ParseName([IO.Path]::GetFileName($Path)) }
+                if ($null -ne $item) { $link = $item.GetLink }
+                if ($null -ne $link) {
+                    $target = [string]$link.Path
+                    $arguments = [string]$link.Arguments
+                    $reader = 'Shell.Application GetLink'
+                }
+            } finally {
+                foreach ($com in @($link, $item, $folder, $application)) {
+                    if ($null -ne $com -and [Runtime.InteropServices.Marshal]::IsComObject($com)) { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($com) }
+                }
+            }
+        }
+        $report.shortcuts.Add([ordered]@{ name = [IO.Path]::GetFileName($Path); bytes = (Get-Item -LiteralPath $Path).Length; reader = $reader; target = $target; arguments = $arguments })
+        Assert-Condition (-not [string]::IsNullOrWhiteSpace($target)) "Windows Shell resolves the installed shortcut target ($reader)"
+        $resolved = [IO.Path]::GetFullPath($target)
+        Assert-Condition ($resolved.Equals($hostExecutable, [StringComparison]::OrdinalIgnoreCase) -and [string]::IsNullOrEmpty($arguments)) 'Shortcut directly targets this installation Host without extra arguments'
     } finally {
         if ($null -ne $shortcut) { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($shortcut) }
         [void][Runtime.InteropServices.Marshal]::ReleaseComObject($shell)
