@@ -1,6 +1,6 @@
 # 蓝域任务管理器
 
-[手动构建 Windows 安装包](https://github.com/1340896123/blue-task-manager/actions/workflows/manual-windows-installer.yml)：进入Actions，点击 **Run workflow** 并选择`main`。成功后从该次运行的Artifacts下载NSIS安装包、SHA256和真实验收报告，详见[使用说明](docs/MANUAL-INSTALLER-BUILD.md)。
+[手动构建并发布 Windows 安装包](https://github.com/1340896123/blue-task-manager/actions/workflows/manual-windows-installer.yml)：进入Actions，点击 **Run workflow** 并选择`main`。安装E2E通过后会创建Git tag和附带NSIS安装包、SHA256及真实验收报告的[Release](https://github.com/1340896123/blue-task-manager/releases)。`release_tag`留空默认预览标签`v<Host版本>-build.<运行序号>`，填写`v1.1.1`可发布匹配Host版本的正式版；已有标签拒绝覆盖。Release附件长期提供，Actions artifacts保留14天，详见[使用说明](docs/MANUAL-INSTALLER-BUILD.md)。
 
 面向 Windows 的真实系统任务管理器，技术栈为 React、Tailwind CSS、Electron.NET、ASP.NET Core 与 CsWin32。界面采用参考图的标题搜索区、固定侧栏、命令栏和高密度数据表，以 Fluent 蓝色 Token 统一视觉。
 

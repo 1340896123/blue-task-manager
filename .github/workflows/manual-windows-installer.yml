@@ -2,6 +2,12 @@ name: Build Windows installer manually
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Optional SemVer tag matching the Host version; blank creates v<version>-build.<run number>'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -15,6 +21,13 @@ jobs:
     name: Windows x64 installer and real acceptance
     runs-on: windows-2025
     timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      release_tag: ${{ steps.metadata.outputs.release_tag }}
+      package_version: ${{ steps.metadata.outputs.package_version }}
+      delivery_artifact: ${{ steps.metadata.outputs.delivery_artifact }}
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
     defaults:
       run:
         shell: pwsh
@@ -56,10 +69,46 @@ jobs:
           $actualSdk = (dotnet --version).Trim()
           Write-Host "Selected .NET SDK: $actualSdk (expected $expectedSdk)"
           if ($actualSdk -ne $expectedSdk) { throw "Unexpected .NET SDK version: $actualSdk" }
+
+      - name: Validate the release tag and package version
+        id: metadata
+        env:
+          REQUESTED_RELEASE_TAG: ${{ inputs.release_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
           [xml]$project = Get-Content -LiteralPath src/TaskManager.Host/TaskManager.Host.csproj -Raw
           $version = [string]$project.Project.PropertyGroup.Version
-          if ($version -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Invalid Host version.' }
+          $identifier = '(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
+          $semver = '^(?<core>(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-(?<pre>' + $identifier + '(?:\.' + $identifier + ')*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$'
+          $package = [regex]::Match($version, $semver)
+          if (-not $package.Success) { throw 'Host version is not valid SemVer.' }
+          $tag = ([string]$env:REQUESTED_RELEASE_TAG).Trim()
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            $prefix = if ($package.Groups['pre'].Success) { $package.Groups['pre'].Value + '.' } else { '' }
+            $tag = 'v' + $package.Groups['core'].Value + '-' + $prefix + 'build.' + $env:GITHUB_RUN_NUMBER
+          }
+          $tagVersion = if ($tag.StartsWith('v', [StringComparison]::Ordinal)) { [regex]::Match($tag.Substring(1), $semver) } else { $null }
+          if ($null -eq $tagVersion -or -not $tagVersion.Success -or $tag.Length -gt 128) { throw 'release_tag must be a valid v-prefixed SemVer tag of at most 128 characters.' }
+          if ($tagVersion.Groups['core'].Value -cne $package.Groups['core'].Value) { throw 'Release tag base version must match the Host project version.' }
+          $encodedTag = [Uri]::EscapeDataString($tag)
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
+          $response = Invoke-WebRequest -Uri "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/git/ref/tags/$encodedTag" -Headers $headers -SkipHttpErrorCheck -TimeoutSec 30
+          if ($response.StatusCode -eq 200) { throw 'The requested tag already exists. Choose a new tag.' }
+          if ($response.StatusCode -ne 404) { throw "GitHub could not confirm tag availability: HTTP $($response.StatusCode)" }
+          $repository = $env:GITHUB_REPOSITORY.Split('/', 2)
+          $query = 'query($owner:String!,$name:String!,$tag:String!){repository(owner:$owner,name:$name){release(tagName:$tag){databaseId isDraft}}}'
+          $body = @{ query = $query; variables = @{ owner = $repository[0]; name = $repository[1]; tag = $tag } } | ConvertTo-Json -Depth 5
+          $lookup = Invoke-RestMethod -Uri $env:GITHUB_GRAPHQL_URL -Method Post -Headers $headers -ContentType 'application/json' -Body $body -TimeoutSec 30
+          if (($lookup.PSObject.Properties.Name -contains 'errors') -or $null -eq $lookup.data.repository) { throw 'GitHub could not confirm Release availability.' }
+          if ($null -ne $lookup.data.repository.release) { throw 'A published or draft Release already uses this tag. Choose a new tag.' }
+          $artifact = "BlueDomainTaskManager-v$version-win-x64-$env:GITHUB_RUN_NUMBER-$env:GITHUB_RUN_ATTEMPT"
           "TASKMANAGER_PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
+          "release_tag=$tag" >> $env:GITHUB_OUTPUT
+          "package_version=$version" >> $env:GITHUB_OUTPUT
+          "delivery_artifact=$artifact" >> $env:GITHUB_OUTPUT
+          "prerelease=$($tagVersion.Groups['pre'].Success.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          Write-Host "Package $version; new release tag $tag"
 
       - name: Install the standard NSIS compiler
         run: |
@@ -99,7 +148,7 @@ jobs:
       - name: Upload the verified installer, checksums, and acceptance evidence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: BlueDomainTaskManager-v${{ env.TASKMANAGER_PACKAGE_VERSION }}-win-x64-${{ github.run_number }}
+          name: ${{ steps.metadata.outputs.delivery_artifact }}
           path: |
             output/installer-ci/delivery/
           if-no-files-found: error
@@ -109,7 +158,7 @@ jobs:
       - name: Upload application screenshots
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: installer-screenshots-${{ github.run_number }}
+          name: installer-screenshots-${{ github.run_number }}-${{ github.run_attempt }}
           path: output/installer-ci/screenshots/*.png
           if-no-files-found: error
           retention-days: 14
@@ -118,10 +167,140 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: installer-diagnostics-${{ github.run_number }}
+          name: installer-diagnostics-${{ github.run_number }}-${{ github.run_attempt }}
           path: |
             output/installer-ci/acceptance.json
             output/installer-ci/acceptance.md
             output/installer-ci/screenshots/*.png
           if-no-files-found: ignore
           retention-days: 14
+
+  publish:
+    name: Publish the verified installer and Git tag
+    needs: installer
+    runs-on: windows-2025
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RELEASE_TAG: ${{ needs.installer.outputs.release_tag }}
+      PACKAGE_VERSION: ${{ needs.installer.outputs.package_version }}
+      RELEASE_PRERELEASE: ${{ needs.installer.outputs.prerelease }}
+      SOURCE_SHA: ${{ github.sha }}
+    steps:
+      - name: Download only this run's verified delivery
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ needs.installer.outputs.delivery_artifact }}
+          path: ${{ runner.temp }}/verified-delivery
+
+      - name: Independently verify the executable and acceptance report
+        id: verified
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          if ($env:SOURCE_SHA -cnotmatch '^[0-9a-f]{40}$') { throw 'Source commit must be the complete workflow commit SHA.' }
+          $delivery = Join-Path $env:RUNNER_TEMP 'verified-delivery'
+          $installerName = "BlueDomainTaskManager-v$env:PACKAGE_VERSION-win-x64-setup.exe"
+          $expected = @($installerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md')
+          $entries = @(Get-ChildItem -LiteralPath $delivery -Force)
+          if ($entries.Count -ne $expected.Count) { throw 'The delivery must contain exactly the four expected release files.' }
+          foreach ($entry in $entries) {
+            if ($entry.PSIsContainer -or ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) -or $expected -cnotcontains $entry.Name -or $entry.Length -eq 0) {
+              throw 'Unexpected or empty content in the release delivery.'
+            }
+          }
+          $installer = Join-Path $delivery $installerName
+          $actualHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          $checksums = Get-Content -LiteralPath (Join-Path $delivery 'SHA256SUMS') -Raw
+          $pattern = '\A(?<hash>[0-9a-f]{64})  ' + [regex]::Escape($installerName) + '\r?\n?\z'
+          $checksum = [regex]::Match($checksums, $pattern)
+          if (-not $checksum.Success -or $checksum.Groups['hash'].Value -cne $actualHash) { throw 'Setup.exe does not match the single SHA256SUMS entry.' }
+          $acceptance = Get-Content -LiteralPath (Join-Path $delivery 'acceptance.json') -Raw | ConvertFrom-Json
+          if ($acceptance.result -cne 'PASS' -or $acceptance.sourceCommit -cne $env:SOURCE_SHA -or $acceptance.desktopAssertions -lt 42) {
+            throw 'Acceptance must pass at least 42 desktop assertions against this exact workflow commit.'
+          }
+          if ($acceptance.installer.filename -cne $installerName -or $acceptance.installer.version -cne $env:PACKAGE_VERSION -or $acceptance.installer.sha256 -cne $actualHash -or $acceptance.installer.bytes -ne (Get-Item -LiteralPath $installer).Length) {
+            throw 'The independently hashed executable differs from the accepted installer.'
+          }
+          "installer_sha256=$actualHash" >> $env:GITHUB_OUTPUT
+          Write-Host "Verified $installerName, SHA256 $actualHash, source $env:SOURCE_SHA"
+
+      - name: Create a draft with all assets, then publish it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_INSTALLER_SHA256: ${{ steps.verified.outputs.installer_sha256 }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $identifier = '(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
+          $semver = '^(?<core>(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-(?<pre>' + $identifier + '(?:\.' + $identifier + ')*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$'
+          $package = [regex]::Match($env:PACKAGE_VERSION, $semver)
+          $tag = $env:RELEASE_TAG
+          $tagVersion = if ($tag.StartsWith('v', [StringComparison]::Ordinal)) { [regex]::Match($tag.Substring(1), $semver) } else { $null }
+          if (-not $package.Success -or $null -eq $tagVersion -or -not $tagVersion.Success -or $tag.Length -gt 128 -or $tagVersion.Groups['core'].Value -cne $package.Groups['core'].Value) { throw 'Release metadata failed independent SemVer and Host base-version validation.' }
+          $isPrerelease = $tagVersion.Groups['pre'].Success.ToString().ToLowerInvariant()
+          if ($isPrerelease -cne $env:RELEASE_PRERELEASE) { throw 'Release prerelease classification changed between jobs.' }
+          $encodedTag = [Uri]::EscapeDataString($tag)
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
+          $response = Invoke-WebRequest -Uri "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/git/ref/tags/$encodedTag" -Headers $headers -SkipHttpErrorCheck -TimeoutSec 30
+          if ($response.StatusCode -eq 200) { throw 'The target tag was created while this build ran; publication stopped.' }
+          if ($response.StatusCode -ne 404) { throw "GitHub could not recheck the release tag: HTTP $($response.StatusCode)" }
+          $repository = $env:GITHUB_REPOSITORY.Split('/', 2)
+          $query = 'query($owner:String!,$name:String!,$tag:String!){repository(owner:$owner,name:$name){release(tagName:$tag){databaseId isDraft}}}'
+          $body = @{ query = $query; variables = @{ owner = $repository[0]; name = $repository[1]; tag = $tag } } | ConvertTo-Json -Depth 5
+          $lookup = Invoke-RestMethod -Uri $env:GITHUB_GRAPHQL_URL -Method Post -Headers $headers -ContentType 'application/json' -Body $body -TimeoutSec 30
+          if (($lookup.PSObject.Properties.Name -contains 'errors') -or $null -eq $lookup.data.repository) { throw 'GitHub could not recheck published and draft releases.' }
+          if ($null -ne $lookup.data.repository.release) { throw 'The target published or draft Release already exists; publication stopped.' }
+          $delivery = Join-Path $env:RUNNER_TEMP 'verified-delivery'
+          $installerName = "BlueDomainTaskManager-v$env:PACKAGE_VERSION-win-x64-setup.exe"
+          $files = @($installerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md') | ForEach-Object { Join-Path $delivery $_ }
+          $runUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+          $notes = @(
+            "Windows x64 NSIS installer, package version $env:PACKAGE_VERSION.",
+            '',
+            'Includes .NET 10, ASP.NET Core and Electron. Installation and application startup require administrator permission. The installer is unsigned.',
+            '',
+            'The disposable Windows runner verified complete installed-file hashes, real Windows collection and local coreclr loading, at least 42 Electron desktop assertions, same-path reinstall, and uninstall with user-file preservation. IFEO configuration remained unchanged.',
+            '',
+            "Source commit: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/commit/$env:SOURCE_SHA",
+            "Build and acceptance: $runUrl",
+            "Installer SHA256: $env:VERIFIED_INSTALLER_SHA256",
+            '',
+            'Assets: Setup.exe, its SHA256SUMS, acceptance.json and acceptance.md. Application screenshots remain available in the workflow artifacts for 14 days.'
+          )
+          $notesPath = Join-Path $env:RUNNER_TEMP 'installer-release-notes.md'
+          [IO.File]::WriteAllLines($notesPath, $notes, [Text.UTF8Encoding]::new($false))
+          # Atomically reserve a new tag. GitHub refuses an existing ref, so a
+          # concurrent publisher cannot make this job reuse or overwrite its tag.
+          gh api --method POST "repos/$env:GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/$tag" -f "sha=$env:SOURCE_SHA" --silent
+          if ($LASTEXITCODE -ne 0) { throw 'Creating the new source tag failed; no existing tag is overwritten.' }
+          $reference = Invoke-RestMethod -Uri "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/git/ref/tags/$encodedTag" -Headers $headers -TimeoutSec 30
+          if ($reference.object.type -cne 'commit' -or $reference.object.sha -cne $env:SOURCE_SHA) { throw 'The new tag does not point to the verified workflow commit.' }
+          "Reserved tag $tag at source commit $env:SOURCE_SHA. If publication fails, this tag and any draft are retained; rerun with a new tag." >> $env:GITHUB_STEP_SUMMARY
+          gh release create $tag @files --repo $env:GITHUB_REPOSITORY --verify-tag --target $env:SOURCE_SHA --draft --prerelease=$isPrerelease --title "BlueDomainTaskManager $tag" --notes-file $notesPath
+          if ($LASTEXITCODE -ne 0) { throw 'Draft creation or asset upload failed; any created draft is retained for inspection.' }
+          # The REST release-by-tag endpoint cannot find drafts. The official CLI
+          # resolves the draft through GraphQL; then pin every operation to its ID.
+          $draftJson = gh release view $tag --repo $env:GITHUB_REPOSITORY --json databaseId,isDraft,tagName
+          if ($LASTEXITCODE -ne 0) { throw 'The created draft could not be resolved through the official CLI.' }
+          $draftIdentity = $draftJson | ConvertFrom-Json
+          if (-not $draftIdentity.isDraft -or $draftIdentity.tagName -cne $tag -or $draftIdentity.databaseId -le 0) { throw 'The created release is not the expected draft.' }
+          $releaseId = [long]$draftIdentity.databaseId
+          $releaseApi = "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/releases/$releaseId"
+          $draft = Invoke-RestMethod -Uri $releaseApi -Headers $headers -TimeoutSec 30
+          $expectedAssets = @($installerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md')
+          if ($draft.id -ne $releaseId -or $draft.tag_name -cne $tag -or $draft.target_commitish -cne $env:SOURCE_SHA -or -not $draft.draft -or $draft.assets.Count -ne $expectedAssets.Count) { throw 'The fixed draft does not match this commit and the complete expected delivery.' }
+          foreach ($asset in $draft.assets) {
+            if ($expectedAssets -cnotcontains $asset.name -or $asset.size -le 0) { throw 'Unexpected or empty uploaded release asset.' }
+          }
+          $reference = Invoke-RestMethod -Uri "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/git/ref/tags/$encodedTag" -Headers $headers -TimeoutSec 30
+          if ($reference.object.type -cne 'commit' -or $reference.object.sha -cne $env:SOURCE_SHA) { throw 'The tag changed before publication; the draft remains unpublished.' }
+          $publishBody = @{ draft = $false; prerelease = ($isPrerelease -ceq 'true'); make_latest = $(if ($isPrerelease -ceq 'true') { 'false' } else { 'true' }) } | ConvertTo-Json
+          [void](Invoke-RestMethod -Uri $releaseApi -Method Patch -Headers $headers -ContentType 'application/json' -Body $publishBody -TimeoutSec 30)
+          $published = Invoke-RestMethod -Uri $releaseApi -Headers $headers -TimeoutSec 30
+          if ($published.id -ne $releaseId -or $published.tag_name -cne $tag -or $published.draft -or $published.prerelease.ToString().ToLowerInvariant() -cne $isPrerelease) { throw 'The fixed release publication status could not be confirmed.' }
+          "Published [$tag]($($published.html_url)) from source commit $env:SOURCE_SHA with the verified installer and acceptance evidence." >> $env:GITHUB_STEP_SUMMARY
