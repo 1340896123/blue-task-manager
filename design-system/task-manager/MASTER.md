@@ -182,6 +182,8 @@
 
 ## 5. 组件状态
 
+全页网格交互增量（2026-10-23）：列宽默认值继续使用现有列Token；允许用户调宽时覆盖默认几何量。新增 `--width-column-min:64px`、`--width-column-max:1600px`、`--width-column-resizer:8px`、`--width-column-resizer-line:2px`、`--step-column-resize:16px`、`--step-column-resize-large:64px`。语义列可提高最小宽度，调整柄不占用排序按钮区域。柄默认边界沿用control-border，hover/调整中沿用accent，键盘焦点沿用focus；不新增颜色。宽度变化直接反馈，不做width动画；排序与列宽控件分别聚焦，表头/数据按同一像素列宽对齐。完整行为见 `docs/GRID-INTERACTIONS.md`。
+
 | 组件 | 默认/悬浮/选中 | 键盘/忙/错误 |
 |---|---|---|
 | 导航 | 平面，hover浅蓝；选中selection底+accent竖条 | aria-current=page，焦点outline不被选中态覆盖 |

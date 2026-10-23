@@ -1,5 +1,7 @@
 # 产品需求：蓝域任务管理器
 
+网格交互增量（2026-10-23）：所有已有数据网格支持列宽拖动和全部列头排序，含进程详情 TCP/UDP 表；逐页覆盖、持久偏好和验收见 [GRID-INTERACTIONS.md](GRID-INTERACTIONS.md)。
+
 手动安装包增量：GitHub Actions提供workflow_dispatch构建Windows x64安装器，内置.NET10与Electron、标准快捷方式和安全卸载，产物/校验/验收报告可下载。完整合同及成熟来源见[手动安装包构建](MANUAL-INSTALLER-BUILD.md)。
 
 版本：1.1实施增量 / 2026-10-23。目标平台：Windows 10/11 x64，当前要求以管理员权限运行；受保护操作仍按实际 Win32 结果反馈。语言：简体中文。

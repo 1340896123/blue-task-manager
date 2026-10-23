@@ -1,5 +1,13 @@
 # 开源实现研究与技术决策
 
+## 全页网格列宽与排序（2026-10-23）
+
+通过 GitHub API 实际读取 TanStack/table `v8.21.3`，固定提交 `c66b60aa6a6eac930ba8b8e26b7164679ea4feb5` 的 [列宽指南](https://github.com/TanStack/table/blob/c66b60aa6a6eac930ba8b8e26b7164679ea4feb5/docs/guide/column-sizing.md) 与 [React列宽示例](https://github.com/TanStack/table/blob/c66b60aa6a6eac930ba8b8e26b7164679ea4feb5/examples/react/column-sizing/src/main.tsx)。成熟模式包括独立columnSizing状态、minSize/maxSize约束、标题与单元格共用getSize像素值、独立调整柄及双击resetSize；指南区分onChange即时反馈和onEnd提交以避免React拖动卡顿。采用这些交互/状态原则，在现有DataTable与TanStack Virtual中接入，不为少量交互迁移到新依赖；拖动临时状态与持久保存分离。
+
+另实际读取官方main固定提交 `c14e0221b1e656c7bb35e7b3d4cdf188719a3599` 的 [React排序指南](https://github.com/TanStack/table/blob/c14e0221b1e656c7bb35e7b3d4cdf188719a3599/docs/framework/react/guide/sorting.md)：显式sorting状态、可配置首次方向、nullable值排序与禁止移除排序均为公开能力。借鉴显式状态和缺失值策略，继续项目既有单列升/降序，不引入v9 atom架构；数值/BigInt/时间用原始值，未知在两方向始终末尾，树按兄弟节点排序。
+
+`ui-ux-pro-max` 精确查询 `dragging movements --domain ux` 命中Accessibility/Dragging Movements，要求拖动有单指针替代并保留键盘操作；已读quick-reference与pro-rules适用桌面范围，因此规格增加可点击列宽设置、键盘调整与可见焦点。无新页面/视觉方向，沿用MASTER Windows蓝色，未生成营销模板。完整覆盖、偏好边界与G系列验收见 [GRID-INTERACTIONS.md](GRID-INTERACTIONS.md)。
+
 ## 管理员运行与 NSIS 安装（2026-10-23 增量）
 
 实际获取并核验 Microsoft requireAdministrator/TokenElevation/CreateProcess/.NET self-contained 官方源码文档、Electron.NET 固定提交 Host-first controller、electron-builder v26.0.12 的 NSIS installer/uninstaller/winOptions 及 NSIS v3.11 MUI2 Basic 示例。URL、采用理由与边界集中记于 [ADMIN-INSTALLER.md](ADMIN-INSTALLER.md) 第4节。选择标准 NSIS/MUI2 打包既有 Host-first 自包含目录；不把 electron-builder 的 Electron 入口权限选项误当作 .NET Host 权限，不新增安装协议。用户最新要求覆盖旧普通用户运行/不做安装器范围，历史结果不改写。
