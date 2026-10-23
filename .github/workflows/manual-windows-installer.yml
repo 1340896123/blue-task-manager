@@ -36,7 +36,7 @@ jobs:
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: '10.0.401'
+          global-json-file: global.json
 
       - name: Verify toolchain and hosted administrator token
         run: |
@@ -52,7 +52,10 @@ jobs:
             }
           } finally { $identity.Dispose() }
           if ((node --version) -ne 'v24.16.0') { throw 'Unexpected Node.js version.' }
-          if ((dotnet --version) -ne '10.0.401') { throw 'Unexpected .NET SDK version.' }
+          $expectedSdk = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          $actualSdk = (dotnet --version).Trim()
+          Write-Host "Selected .NET SDK: $actualSdk (expected $expectedSdk)"
+          if ($actualSdk -ne $expectedSdk) { throw "Unexpected .NET SDK version: $actualSdk" }
           [xml]$project = Get-Content -LiteralPath src/TaskManager.Host/TaskManager.Host.csproj -Raw
           $version = [string]$project.Project.PropertyGroup.Version
           if ($version -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Invalid Host version.' }
