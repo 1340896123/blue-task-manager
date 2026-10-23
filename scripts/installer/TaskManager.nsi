@@ -75,8 +75,15 @@ Var HashActual
 ; a dedicated leaf. Do not allow a drive root or arbitrary existing directory.
 !macro DefineValidateDirectory Prefix
 Function ${Prefix}ValidateDirectory
-    GetFullPathName $INSTDIR "$INSTDIR"
-    StrCpy $0 $INSTDIR 3
+    ; NSIS GetFullPathName also expands the filesystem's long path and can
+    ; return empty when a new parent does not exist. Win32 normalizes lexical
+    ; absolute paths without requiring an existing installation directory.
+    System::Call 'kernel32::GetFullPathNameW(w "$INSTDIR", i ${NSIS_MAX_STRLEN}, w .r0, p 0) i .r1'
+    ${If} $1 == 0
+    ${OrIf} $1 >= ${NSIS_MAX_STRLEN}
+        !insertmacro Fail "安装路径无效或过长。"
+    ${EndIf}
+    StrCpy $INSTDIR $0
     StrCpy $1 $INSTDIR 2 1
     ${If} $1 != ":\"
         !insertmacro Fail "请选择本地磁盘上的专用 BlueDomainTaskManager 文件夹。"
@@ -143,11 +150,12 @@ FunctionEnd
 
 Function .onInit
     !insertmacro PlatformCheck
-    ${GetParameters} $0
+    ; NSIS consumes /D before exposing $CMDLINE. Inspect the original Windows
+    ; command line only to detect that switch; retain NSIS's own parsed path.
+    System::Call 'kernel32::GetCommandLineW() w .r0'
     ClearErrors
     ${GetOptions} "$0" "/D=" $1
     ${IfNot} ${Errors}
-        StrCpy $INSTDIR $1
         Return
     ${EndIf}
     ${If} $RegisteredDirectory != ""
