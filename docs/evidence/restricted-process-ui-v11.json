@@ -1,0 +1,28 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-23T00:18:18.352Z",
+  "assertions": 9,
+  "checks": [
+    "all independently observed real SGuard processes remain in the native snapshot",
+    "restricted process is visible by its real executable name",
+    "restricted process is visible by its actual PID",
+    "unknown creation identity never removes a row from the real process tree",
+    "the row explains access restriction while preserving process existence",
+    "unreadable creation identity keeps the actual native error rather than fabricating a value",
+    "information availability filter does not mislabel restricted running processes as stopped",
+    "unavailable file-description search explains how to find the executable",
+    "all exact test application identities exit without modifying the observed protected processes"
+  ],
+  "observed": [
+    {
+      "name": "SGuardSvc64.exe",
+      "pid": 92984
+    },
+    {
+      "name": "SGuard64.exe",
+      "pid": 13216
+    }
+  ],
+  "scope": "read-only observation of real Windows processes; no termination, priority, efficiency, or protected-process write requests",
+  "screenshot": "guard-process-visible.png"
+}

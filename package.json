@@ -23,7 +23,8 @@
     "test:native-desktop": "node tests/native-desktop-v11.mjs",
     "test:system-locations": "node tests/system-locations-v11.mjs",
     "test:performance": "node tests/desktop-performance-v11.mjs",
-    "test:process-desktop": "node tests/process-desktop-v11.mjs"
+    "test:process-desktop": "node tests/process-desktop-v11.mjs",
+    "test:restricted-ui": "node tests/restricted-process-ui-v11.mjs"
   },
   "devDependencies": {
     "playwright": "1.64.1"
