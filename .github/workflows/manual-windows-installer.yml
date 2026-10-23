@@ -1,0 +1,124 @@
+name: Build Windows installer manually
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-windows-installer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  installer:
+    name: Windows x64 installer and real acceptance
+    runs-on: windows-2025
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+      NUGET_XMLDOC_MODE: skip
+    steps:
+      - name: Check out the selected ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.16.0'
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.401'
+
+      - name: Verify toolchain and hosted administrator token
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') {
+            throw 'Installer acceptance requires a disposable GitHub-hosted runner.'
+          }
+          $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+          try {
+            $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+            if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+              throw 'The runner token is not elevated; administrator acceptance cannot run.'
+            }
+          } finally { $identity.Dispose() }
+          if ((node --version) -ne 'v24.16.0') { throw 'Unexpected Node.js version.' }
+          if ((dotnet --version) -ne '10.0.401') { throw 'Unexpected .NET SDK version.' }
+          [xml]$project = Get-Content -LiteralPath src/TaskManager.Host/TaskManager.Host.csproj -Raw
+          $version = [string]$project.Project.PropertyGroup.Version
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Invalid Host version.' }
+          "TASKMANAGER_PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Install the standard NSIS compiler
+        run: |
+          $ErrorActionPreference = 'Stop'
+          choco install nsis --version=3.12.0 --yes --no-progress --limit-output
+          if ($LASTEXITCODE -ne 0) { throw "NSIS installation failed: $LASTEXITCODE" }
+          $compiler = Join-Path ${env:ProgramFiles(x86)} 'NSIS/makensis.exe'
+          if (-not (Test-Path -LiteralPath $compiler -PathType Leaf)) { throw 'NSIS compiler is missing.' }
+          $compilerVersion = & $compiler /VERSION
+          if ($LASTEXITCODE -ne 0 -or $compilerVersion -ne 'v3.12') { throw 'Unexpected NSIS compiler version.' }
+          Write-Host "NSIS $compilerVersion"
+          "TASKMANAGER_NSIS_COMPILER=$compiler" >> $env:GITHUB_ENV
+
+      - name: Build the locked self-contained installer
+        run: ./scripts/build-installer.ps1 -MakeNsisPath $env:TASKMANAGER_NSIS_COMPILER
+
+      - name: Verify the installed application and uninstall
+        run: |
+          ./scripts/test-installer-ci.ps1 `
+            -InstallerPath "output/releases/BlueDomainTaskManager-v$env:TASKMANAGER_PACKAGE_VERSION-win-x64-setup.exe" `
+            -PayloadDirectory output/TaskManager-win-x64
+
+      - name: Require the complete delivery set
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $required = @(
+            "output/installer-ci/delivery/BlueDomainTaskManager-v$env:TASKMANAGER_PACKAGE_VERSION-win-x64-setup.exe",
+            'output/installer-ci/delivery/SHA256SUMS',
+            'output/installer-ci/delivery/acceptance.json',
+            'output/installer-ci/delivery/acceptance.md'
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Required artifact is missing: $file" }
+            if ((Get-Item -LiteralPath $file).Length -eq 0) { throw "Required artifact is empty: $file" }
+          }
+
+      - name: Upload the verified installer, checksums, and acceptance evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: BlueDomainTaskManager-v${{ env.TASKMANAGER_PACKAGE_VERSION }}-win-x64-${{ github.run_number }}
+          path: |
+            output/installer-ci/delivery/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+      - name: Upload application screenshots
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: installer-screenshots-${{ github.run_number }}
+          path: output/installer-ci/screenshots/*.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload available acceptance diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: installer-diagnostics-${{ github.run_number }}
+          path: |
+            output/installer-ci/acceptance.json
+            output/installer-ci/acceptance.md
+            output/installer-ci/screenshots/*.png
+          if-no-files-found: ignore
+          retention-days: 14
