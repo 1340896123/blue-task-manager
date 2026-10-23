@@ -1,12 +1,12 @@
 # 1.1 真实链路验收记录
 
+日期：2026-10-23（Asia/Shanghai）。最新业务基线 `251897e`，包含受限进程说明、产品图标和任务栏入口设置。独立发布复验 **480 项断言通过，本机短期性能三项目标通过**；系统入口部分确认，管理员服务及任务栏成功注册/取消、长时压力等未执行，按预览范围交付。
+
+11 组静态/原生/Chromium 回归对应同一最终业务代码；之后顺序执行正式桌面、Electron进程、原生窗口、任务栏入口、图标和受限进程六组复验。新证据替换对应旧版归档，旧 `21ebffd` 和首次专项结果可通过 Git 历史追溯，不以旧报告代替发布测量。
+
 ## 任务栏任务管理器入口增量
 
-2026-10-23新增设置接管卡片、标准HKLM64 IFEO保护写入与原生命令entry复用。专项23项、图标回归16项、静态3项通过；全局配置保持未接管，当前账户注册实际返回Windows5/HTTP403，默认值、其他值及子键前后不变，成功注册/取消链路未执行。entry以本产品专用实例+真实系统路径+/7验证，同HWND最小化恢复且foreground=true，无重复Host/HTTP/CDP，已精确清理。未改变此前最终性能尚未完成的结论。命令、证据和限制见[TASKBAR-INTEGRATION.md](TASKBAR-INTEGRATION.md)。
-
-日期：2026-10-23（Asia/Shanghai）。结论：核心原生、浏览器和正式 Electron 工作流已通过；系统入口部分确认；**最终性能验收未完成，不能宣称 1.1 全部验收通过或性能预算已达成。** 管理员服务成功链路和长时压力项目也未计为通过。
-
-完整功能回归对应业务基线 `21ebffd`；`a49a7bf`、`f8725e2`、`ed275a6` 只调整测试观察器和性能测量前提。发布阶段受限进程说明小修 `4ca01bd` 另有真实 Electron 专项 9 项通过；它不等于小修后重新执行全部回归。后续产品图标调整也不自动继承未经重跑的专项结论。
+设置提供接管卡片、标准HKLM64 IFEO保护写入和原生命令entry复用。全局配置保持未接管；当前账户注册实际返回Windows5/HTTP403，默认值、其他值及子键前后不变，成功注册/取消链路未执行。entry以本产品专用实例+真实系统路径+/7验证，同HWND最小化恢复且foreground=true，无重复Host/HTTP/CDP。命令、证据和限制见[TASKBAR-INTEGRATION.md](TASKBAR-INTEGRATION.md)。
 
 环境：Windows 11 企业版 x64，10.0.26200 / build 26200；.NET SDK 10.0.401；Node 24.16.0；Electron 45.0.0；ElectronNET.Core / Core.AspNet 0.6.0；Playwright 1.64.1。界面版本 1.1.0；需求与视觉依据为 [PRODUCT-V1.1](PRODUCT-V1.1.md)、[验收矩阵](ACCEPTANCE.md) 和 [MASTER Token](../design-system/task-manager/MASTER.md)。
 
@@ -18,6 +18,9 @@ npm run test:regression
 npm run test:desktop
 npm run test:process-desktop
 npm run test:native-desktop
+npm run test:taskbar-integration
+npm run test:icon
+npm run test:restricted-ui
 npm run test:system-locations
 npm run test:performance
 ```
@@ -41,12 +44,14 @@ npm run test:performance
 | process-desktop-v11 | 通过 | 34 | [Electron 进程工作流](evidence/process-desktop-v11-results.json) |
 | native-desktop-v11 | 通过 | 22 | [原生窗口与重启](evidence/native-desktop-v11-results.json) |
 | system-locations-v11 | 部分确认 | 6 | [Windows 入口](evidence/system-locations-v11-results.json)；4 项受理，3 项实际窗口确认 |
-| restricted-process-ui-v11 | 通过（专项） | 9 | [受限进程结果](evidence/restricted-process-ui-v11.json)，对应 `4ca01bd` |
-| desktop-performance-v11 | 未通过验收 | — | 三次尝试均未形成满足前提的最终测量 |
+| restricted-process-ui-v11 | 通过 | 9 | [受限进程结果](evidence/restricted-process-ui-v11.json) |
+| taskbar-integration | 通过（已测范围） | 23 | [真实状态/权限拒绝/entry复用](evidence/taskbar-integration-results.json) |
+| product-icon | 通过 | 16 | [EXE、Web与原生窗口图标](evidence/product-icon-results.json) |
+| desktop-performance-v11 | 通过（本机短期目标） | — | [满历史性能测量](evidence/desktop-performance-release.json) |
 
-11 组回归共 334 项，于当地 07:31 完成；桌面 42 项于 07:32、Electron 进程 34 项随后、原生桌面 22 项于 07:33 完成。系统入口于 07:45 形成部分确认结果。438 项成功断言不等于 438 个独立功能全部完成；受限进程专项 9 项单列，也不包含性能预算。
+11 组回归共 334 项于当地09:22完成；另外六组146项于09:29完成，共480项，见[发布复验汇总](evidence/release-functional-results.json)。性能于09:33形成有效PASS。480是断言数，不代表480个独立功能；系统入口保留07:45的部分确认结果，本轮未重复该外部Windows窗口专项。
 
-各组按顺序运行，使用 5191～5202 / 9224～9228 回环端口与隔离的 `TASKMANAGER_DATA_DIR`。桌面从便携目录启动，cwd 故意设为系统临时目录。`test:e2e` 可顺序组织上述常规项目；本次最终性能未完成，不能将总入口记为全部成功。
+各组按顺序运行，使用5191～5204 / 9224～9232回环端口与隔离的`TASKMANAGER_DATA_DIR`。桌面从便携目录启动，cwd故意设为系统临时目录。`test:e2e`已包含新增三组专项；本次分项执行，不把未重跑的系统入口专项计入480或声称总入口全部通过。
 
 测试使用真实 Windows 进程、端点、服务权限与 PDH 计数器，无 API mock、固定业务行或预造历史点。结束 / 优先级 / 效率模式操作仅针对测试创建且保存 PID + 创建 FILETIME 的专用目标。令牌只在内存使用，不归档完整机器快照或全机进程清单。
 
@@ -93,10 +98,10 @@ npm run test:performance
 | B13 | 部分确认 | 真来源 / 完整命令 / 复制和定位；4 官方入口均受理，公共 Startup / 启动设置 / Services 实际窗口确认，当前用户 Startup 前台可见性未确认 |
 | B14 | 通过（本机） | 真 PDH GPU / PhysicalDisk 和逐网卡 LUID 对照。RTX 3080 Ti 为实体显卡，Microsoft Basic Render Driver 为软件适配器，不称第二实体 GPU、不猜 Windows 编号；热插拔未测 |
 | B15 | 通过 | 相同表示 ETag→304 空体，设置 / 历史变化后新表示；UI 不清空，前台请求串行 |
-| B16 | 未通过验收 | 最新同版满历史、≥30 秒、真实可见窗口的有效性能报告未形成；CPU / p95 / 内存预算不得引用旧数据宣称达成 |
+| B16 | 通过（本机短期目标） | 120真实点、窗口全程可见、约34秒/30个UI样本；Host整机CPU0.207%、采样p95 56.52ms、搜索至rAF p95 25.6ms；不推广为所有机器或长时保证 |
 | B17 | 通过（已测范围） | MASTER Token、多尺寸、125%、详情 / 菜单、reduced-motion、焦点与文字状态；不含完整读屏认证 |
 | B18 | 通过 | 正式 Electron 树 / 详情 / 优先级 / 效率 / 冻结 / 文件 / 导航 / 生命周期；原生 22 项还验证重启偏好与应用关闭后独立任务继续运行 |
-| B19 | 部分覆盖 | 真 Shell 图标、按需加载、通用回退、GetPerformanceInfo 来源与短期滚动 / 详情通过；最终整应用性能和长时内存 / 句柄压力未完成，不宣称无泄漏 |
+| B19 | 部分覆盖 | 真Shell图标、按需加载、通用回退、GetPerformanceInfo及整应用短期性能已测；长时内存/句柄压力未完成，不宣称无泄漏 |
 
 效率模式有专用目标的 ProcessPowerThrottling 与优先级实际读回 / 恢复，不仅是降优先级。恢复依赖本应用会话保存的基线，不覆盖未知外部效率状态。
 
@@ -113,21 +118,27 @@ npm run test:performance
 
 结果为 `PARTIAL_WINDOWS_OBSERVABILITY`，不是总 PASS。Windows 自身保留的外部工具进程不计本应用泄漏，清理针对便携 Host / Electron 的确切身份。
 
-## 最终性能：未完成
+## 最终性能：本机短期目标通过
 
 目标：Host 整机平均 CPU ≤1%、采样 p95 ≤500ms、搜索交互目标 <100ms；需同时记录整套 Electron 资源与测量前提。
 
-最新基线后三次尝试均未形成有效报告：
+最新报告为[desktop-performance-release.json](evidence/desktop-performance-release.json)，UTC 2026-10-23T01:33:03.696Z。观测器新增实际周期、paused、历史点数、采样耗时和可见性诊断；预热按1秒观察，不再额外每150ms获取完整快照；允许最多300秒但本次约137秒已满120点。未修改业务采集器、未造点、未伪造document.hidden或启用CDP焦点模拟。
 
-1. 满 120 点后，32 秒内有效 UI 样本不足 20，稳定测量断言失败。
-2. 起始原生前台且 `document.hidden=false`，末尾变 hidden，可见性断言失败，不能混合前后台样本。
-3. 使用真实临时置顶并原生读回后，160 秒内未填满 120 点，预热超时；未留足诊断确定原因，不据此断言已证实性能退化或预算通过。
+正式1380×860桌面、28逻辑处理器、本机1083～1089进程、5个本应用进程，默认平铺。使用真实临时置顶偏好并原生读回，开始/结束可见、测量期无hidden事件；约34.23秒收集30个实际UI样本和30个PDH样本，期间无额外wire基准请求。
 
-三次均精确清理。当前测试保留置顶读回、开始 / 结束可见与隐藏事件检查，不使用焦点模拟或覆盖 document.hidden；本次没有继续无结论重试。
+| 指标 | 实测 | 目标 |
+|---|---:|---:|
+| Host平均整机CPU | 0.207% | ≤1% |
+| Host+Electron平均整机CPU | 0.520% | 完整记录 |
+| 采样耗时p50 / p95 | 43.19 / 56.52 ms | p95≤500 ms |
+| 搜索至下一rAF p50 / p95 | 19.9 / 25.6 ms | p95<100 ms |
+| 整应用私有提交（结束时） | 534,380,544 bytes（约510 MiB） | 完整记录 |
+| Host私有提交（结束时） | 70,799,360 bytes（约68 MiB） | 完整记录 |
+| DOM / 挂载进程行 | 706 / 27 | 列表保持虚拟化 |
 
-本地 `output/performance/desktop-v11.json` 仍是 **06:39（UTC 2026-10-22T22:39:02.027Z）** 的旧版定位结果，旧 PASS / 数字不属于最新 `21ebffd` 最终验收。已有性能材料仅供 [历史阶段追溯](evidence/README.md)，不能冒充最新报告或严格同条件 A/B。
+CPU同时保留单核口径，整机百分比除以28逻辑处理器。工作集求和会重复计算共享页面，不能当私有内存；约34秒观测不能证明长时无泄漏。采样耗时不含HTTP序列化/传输。搜索方法含Playwright协议时间，rAF在paint前，不能称实际像素上屏延迟。随后12组HTTP实测条件304均为空体，gzip约247KB，对应原文约2.39MB。
 
-交互方法为“Playwright 填写搜索至下一 requestAnimationFrame 回调，含协议时间”；rAF 在 paint 前，不能称实际像素上屏。当前无有效最终 CPU、私有内存 / 工作集或 p50 / p95 指标可交付。
+早先三次未满足前提的尝试和06:39的`output/performance/desktop-v11.json`保留为历史，不作为本次依据，也不用于严格同条件A/B。最新报告文件名独立，避免旧PASS误用。
 
 ## 受限进程专项
 
@@ -147,8 +158,8 @@ npm run test:performance
 
 ## 清理与边界
 
-功能测试按保存身份关闭 Host / Electron、释放本次端口，清理自有负载 / 临时目录；未按 exe 名批量杀用户程序。三次性能失败也已清理，之后只读复查无性能测试 Node，5196 / 9226 无监听。后续发布实例的清理由发布阶段另记，不提前声称全机端口为空。
+功能/性能测试按保存身份关闭Host/Electron、释放本次端口，清理自有负载/临时目录；未按exe名批量杀用户程序。本轮结束后5191～5204及9224～9232没有测试监听。压缩包复验和哈希另记于[发布说明](RELEASE-V1.1.0-PREVIEW.md)。
 
 逐进程网络吞吐、StartupApproved / 启动策略编辑、内核分析和保护绕过未接入；端点不是吞吐，CompanyName 版本资源不是数字签名认证。无权限字段不等于进程不存在，搜索只能匹配实际已读字段。
 
-未执行：管理员服务成功 / 超时链、非常态树部分执行、最终性能预算、热插拔、长时泄漏、其他 Windows 版本、安装器 / 自动提权、完整读屏认证。不能用旧报告或生产构建代替这些验收。
+未执行：管理员服务成功/超时链、全局任务栏接管成功注册/取消、非常态树部分执行、热插拔、长时泄漏、其他Windows版本、安装器/自动提权、完整读屏认证。不能用本机短时性能或生产构建代替这些验收。

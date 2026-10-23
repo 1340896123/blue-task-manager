@@ -4,7 +4,9 @@
 
 1.1 提供进程树、实时详情与 TCP/UDP 端点、优先级与效率模式、文件位置和属性、全量筛选 CSV 导出、服务操作、逐网卡 / 物理磁盘 / GPU 曲线，以及跨页定位和偏好保留。界面由统一设计 Token 实现 Windows 蓝色风格。
 
-核心真实链路及正式 Electron 工作流已验收；**最终性能测量未完成，尚不能宣称全部验收通过或性能预算达成**。服务成功启停受本次账户权限限制，当前用户 Startup 文件夹前台可见性也未确认。完整状态见 [1.1 验收记录](docs/ACCEPTANCE-RESULTS.md)。
+最新业务版本已通过480项真实链路断言和本机短期性能目标：Host整机CPU约0.21%、整应用约0.52%，采样p95 56.5ms，搜索至下一rAF p95 25.6ms。管理员服务及任务栏成功注册/取消、长时压力等保留未执行范围，当前用户Startup文件夹前台可见性也未确认。完整状态见[1.1验收记录](docs/ACCEPTANCE-RESULTS.md)。
+
+[下载 Windows x64 预览版](https://github.com/1340896123/blue-task-manager/releases/tag/v1.1.0-preview.1) · [公开源码](https://github.com/1340896123/blue-task-manager) · [发布说明](docs/RELEASE-V1.1.0-PREVIEW.md)
 
 - [当前1.1产品需求](docs/PRODUCT-V1.1.md)
 - [原始PRD与1.0历史基线](docs/PRD.md)
@@ -21,7 +23,7 @@
 
 ## 运行成品
 
-双击 `output/TaskManager-win-x64/start.cmd`，或直接运行同目录的 `TaskManager.Host.exe`。该便携目录已经包含生产 UI、Electron 45.0.0、Electron.NET 桥接依赖，可以移动整个目录到其他位置运行；不要只复制 exe。
+下载ZIP后完整解压，双击`TaskManager-win-x64/start.cmd`，或直接运行同目录的`TaskManager.Host.exe`；源码构建对应`output/TaskManager-win-x64`。目录包含生产UI、Electron45.0.0和Electron.NET桥接依赖，可以移动整个目录运行；不要只复制exe。启用了任务栏接管时，移动前须先在原目录取消。
 
 目标为 Windows 10/11 x64。框架依赖运行时为 **Microsoft.NETCore.App 10.0** 与 **Microsoft.AspNetCore.App 10.0**（兼容后续 10.0 补丁），已安装 .NET 10 SDK 的开发机满足要求；不要求 Microsoft.WindowsDesktop.App。成品运行不需要 Node/npm，不需要联网。首次源码构建需要下载 NuGet/npm/Electron 依赖。
 
@@ -48,11 +50,11 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-`test:e2e` 按顺序运行 11 组原生 / 静态 / 浏览器回归、正式 Release 桌面、Electron 进程工作流、原生窗口 / 偏好重启、固定 Windows 入口，最后运行满 120 个真实历史点后的整应用性能。可用 `test:regression`、`test:desktop`、`test:process-desktop`、`test:native-desktop`、`test:system-locations`、`test:performance` 分别复现。性能预热通常需要数分钟，不造点加速，窗口须真实可见。
+`test:e2e`按顺序运行11组原生/静态/浏览器回归、正式Release桌面、Electron进程工作流、原生窗口/偏好重启、固定Windows入口、受限进程、图标、任务栏入口，最后运行满120个真实历史点后的整应用性能。性能预热按实际1秒周期观察，最多等300秒并记录诊断；不造点加速，窗口须真实可见。
 
-现有完整业务基线的 11 组共 334 项、正式桌面 42 项、Electron 进程 34 项、原生桌面 22 项通过。系统入口 4 项受理、3 项实际窗口确认；受限进程说明小修另有正式 Electron 9 项通过。最终性能三次尝试均未形成有效报告，旧 06:39 文件仅作历史定位。
+最终业务基线`251897e`已独立复验：11组334项、正式桌面42项、Electron进程34项、原生桌面22项、任务栏入口23项、图标16项、受限进程9项，共480项。性能实测覆盖满120点、约34秒、1083～1089进程；三项短期目标通过，不推广为其他机器或长时保证。系统入口保留4项受理/3项实际窗口确认的部分结果，本轮未重跑。旧06:39报告和此前失败尝试不作为最新性能依据。
 
-分项命令包括 `test:native`、`test:metadata`、`test:core`、`test:management`、`test:telemetry`、`test:gpu-identity`、`test:process-ui`、`test:pages-ui`、`test:ui`、`test:recovery`、`test:static`。测试使用5191～5202和9224～9228回环端口，应顺序执行；每项隔离TASKMANAGER_DATA_DIR，不更改日常配置。桌面由便携目录启动，cwd故意设为其他目录；独立CsWin32 HWND/ClientRect探针验证实际尺寸和窗口状态。Chromium可通过PLAYWRIGHT_CHROMIUM_EXECUTABLE指定。
+分项命令包括`test:regression`、`test:desktop`、`test:process-desktop`、`test:native-desktop`、`test:system-locations`、`test:restricted-ui`、`test:icon`、`test:taskbar-integration`和`test:performance`。测试使用5191～5204和9224～9232回环端口，应顺序执行；每项隔离TASKMANAGER_DATA_DIR，不更改日常配置。桌面由便携目录启动，cwd故意设为其他目录；独立CsWin32 HWND/ClientRect探针验证实际尺寸和窗口状态。Chromium可通过PLAYWRIGHT_CHROMIUM_EXECUTABLE指定。`TASKMANAGER_RELEASE_DIRECTORY`可给`test:desktop`指定另一个已解压的完整程序目录。
 
 `TASKMANAGER_CDP_PORT` 仅供显式桌面自动化启用回环 CDP，普通启动默认关闭。验收不 mock、不截取全机进程清单、不记录任何令牌，产物在 `output/playwright/`。测试只清理本次创建并保存身份的进程与临时目录。
 
@@ -61,3 +63,13 @@ npm run test:e2e
 GPU使用Windows PDH真实引擎计数并以DXGI实际型号名称标识；软件适配器明确标记，不猜Windows编号；磁盘I/O与进程I/O分别展示。逐进程网络吞吐、启动策略编辑与驱动级分析仍未接入，端点列表不冒充吞吐。服务动作受Windows当前账户权限约束，不自动提权或停止依赖服务；当前标准用户环境成功启停测试需保留权限限制。
 
 查找受限进程时先清空搜索和筛选，按实际 exe 名或 PID 定位；CPU、路径或发布者读取失败不等于进程不存在。系统任务管理器显示的文件说明可能与 exe 名不同，当前搜索不承诺匹配尚未读取的文件说明。
+
+## 打包
+
+完成构建、验收并把最新README/docs/design-system同步到便携目录后运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-release.ps1 -Version 1.1.0-preview.1
+```
+
+输出`output/releases/BlueDomainTaskManager-v1.1.0-preview.1-win-x64.zip`和`SHA256SUMS`。脚本包含隐藏的`.electron`目录与依赖许可，拒绝目录链接/本地偏好/环境文件，并逐文件核对压缩包内SHA256；不会覆盖已有同名ZIP。

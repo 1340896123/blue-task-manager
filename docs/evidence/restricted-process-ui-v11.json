@@ -1,6 +1,6 @@
 {
   "result": "PASS",
-  "checkedAtUtc": "2026-10-23T00:18:18.352Z",
+  "checkedAtUtc": "2026-10-23T01:29:53.132Z",
   "assertions": 9,
   "checks": [
     "all independently observed real SGuard processes remain in the native snapshot",

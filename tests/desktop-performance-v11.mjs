@@ -14,6 +14,9 @@ if (await portOpen(port) || await portOpen(cdp)) throw new Error('Performance po
 const temporary = await mkdtemp(path.join(tmpdir(), 'blue-performance-'));
 const host = spawn(path.join(root, 'output/TaskManager-win-x64/TaskManager.Host.exe'), [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: temporary, TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore' });
 const started = performance.now(); let browser, page, tree = [], last;
+const output = path.join(root, 'output/performance');
+await mkdir(output, { recursive: true });
+const warmupDiagnostics = []; let warmupError = null;
 const percentile = (values, q) => [...values].sort((a,b) => a-b)[Math.min(values.length-1,Math.floor(values.length*q))];
 function resources(entries) { return entries.map(p => ({ pid: p.pid, ...probe('process-resources', p.pid, p.fileTime) })); }
 function summary(rows) { return { privateBytes: rows.reduce((n,r)=>n+r.privateBytes,0), workingSetBytes: rows.reduce((n,r)=>n+r.workingSetBytes,0), handles: rows.reduce((n,r)=>n+r.handles,0) }; }
@@ -26,7 +29,25 @@ try {
   // uses the product's genuine temporary preference, never visibility spoofing.
   await page.getByRole('button',{name:'设置',exact:true}).click();await page.getByRole('switch',{name:'始终置顶',exact:true}).click();await until(()=>probe(tree.map(p=>`${p.pid}:${p.fileTime}`).join(',')).topmost,'performance native topmost readback');await page.getByRole('button',{name:'进程',exact:true}).click();
   await page.getByText('已连接 · 实时采样',{exact:true}).waitFor(); await page.keyboard.press('Control+0');
-  await until(async()=>{last=await (await fetch(origin+'/api/snapshot')).json(); return last.performanceHistory.length===120;},'fill120 actual one-second history points',160000);
+  const warmupStarted = performance.now(); let nextDiagnostic = 0;
+  while (true) {
+    try {
+      const response = await fetch(origin+'/api/snapshot', { signal: AbortSignal.timeout(10000) });
+      if (!response.ok) throw new Error('snapshot HTTP '+response.status);
+      last = await response.json(); warmupError = null;
+    } catch (error) { warmupError = String(error.message); }
+    const elapsedMs = performance.now()-warmupStarted;
+    if (elapsedMs >= nextDiagnostic) {
+      const row = { elapsedMs: Math.round(elapsedMs), sampleId: last?.sampleId, points: last?.performanceHistory?.length, intervalMs: last?.intervalMs, paused: last?.paused, samplingMs: last?.samplingDurationMs, visible: await page.evaluate(()=>!document.hidden), error: warmupError };
+      warmupDiagnostics.push(row); console.log('warmup '+JSON.stringify(row)); nextDiagnostic = elapsedMs+10000;
+    }
+    if (last?.paused || (last && last.intervalMs !== 1000)) throw new Error('Performance requires actual unpaused 1000ms sampling');
+    if (!warmupError && last?.performanceHistory?.length === 120) break;
+    if (elapsedMs > 300000) throw new Error('120-point warmup timed out; see measured cadence diagnostics');
+    // Warmup observes at the configured sampling cadence, without imposing a
+    // second 150ms full-snapshot consumer on the production desktop.
+    await delay(1000);
+  }
   check(last.performanceHistory.length===120,'history fully warmed'); console.log('120 real history points warmed');
   check(await page.evaluate(()=>!document.hidden),'full-history performance surface is actually visible');
   await page.evaluate(()=>{globalThis.__bluePerfHiddenTransitions=0;document.addEventListener('visibilitychange',()=>{if(document.hidden)globalThis.__bluePerfHiddenTransitions++;});});
@@ -56,6 +77,10 @@ try {
   const report={result:targetsMet?'PASS':'TARGETS_EXCEEDED',budgetResults,checkedAtUtc:new Date().toISOString(),scope:'production portable Electron + Host + all exact descendant identities, visible default flat processes; genuine topmost preference enabled to prevent automation app occlusion; no CDP focus emulation; no test workload descendants; 120 real history points; resource window only normal UI polls (wire benchmark follows)',startupMs,warmupMs:measureStarted-started,measurementMs:elapsedMs,logicalProcessors:availableParallelism(),appProcessCount:tree.length,processCount:{min:Math.min(...measurements.map(s=>s.processCount)),max:Math.max(...measurements.map(s=>s.processCount))},samples:measurements.length,pdhSamples:pdh.size,samplingMs:{p50:percentile(measurements.map(s=>s.samplingMs),.5),p95:percentile(measurements.map(s=>s.samplingMs),.95),excludes:'HTTP serialization/transfer'},pdhCollectionMs:{p50:percentile([...pdh.values()].map(s=>s.collectionDurationMs),.5),p95:percentile([...pdh.values()].map(s=>s.collectionDurationMs),.95)},pdhQueryMs:{p50:percentile([...pdh.values()].map(s=>s.queryDurationMs),.5),p95:percentile([...pdh.values()].map(s=>s.queryDurationMs),.95)},cpu:{hostOneCorePercent:hostCpu,hostMachinePercent:hostCpu/availableParallelism(),wholeAppOneCorePercent:appCpu,wholeAppMachinePercent:appCpu/availableParallelism()},resources:{before:summary(before),after:summary(after),host:after.find(p=>p.pid===host.pid),semantics:'privateBytes sums private committed memory; workingSet sum includes shared pages multiple times; handles sum is process handles'},renderer:nativeMetrics,interactionMs:{method:'Playwright search fill to next requestAnimationFrame callback, includes automation protocol; callback precedes paint and does not measure pixel presentation',p50:percentile(interactions,.5),p95:percentile(interactions,.95),samples:interactions.length},http:{uiResponses:httpCounts,benchmarkSamples:payloads.length,latencyMs:{p50:percentile(payloads.map(s=>s.latencyMs),.5),p95:percentile(payloads.map(s=>s.latencyMs),.95)},representations:payloads,conditional304:{requests:12,wireBodyBytes:0}},boundaries:{serviceSuccess:'SCM create permission denied5; no user services changed',processNetwork:'not collected; TCP/UDP endpoints are not throughput'},cleanup:'native close verified below; no token/full machine process list saved'};
   // Do not archive per-app PIDs/CPU FILETIME counters; only aggregate resource fields.
   delete report.resources.host.pid; delete report.resources.host.cpuTime100ns;
-  const output=path.join(root,'output/performance');await mkdir(output,{recursive:true});await writeFile(path.join(output,'desktop-v11.json'),JSON.stringify(report,null,2));
+  report.warmupDiagnostics = warmupDiagnostics;
+  await writeFile(path.join(output,'desktop-v11-release.json'),JSON.stringify(report,null,2));
   await page.getByRole('button',{name:'关闭窗口',exact:true}).click(); await until(()=>host.exitCode!==null,'performance native close',20000); await until(async()=>!await portOpen(port)&&!await portOpen(cdp),'performance ports released');check(tree.every(p=>!ownedAlive(p)),'all performance app identities cleaned'); console.log(JSON.stringify(report,null,2)); if(!targetsMet)process.exitCode=1;
+} catch (error) {
+  await writeFile(path.join(output,'desktop-v11-release-failure.json'),JSON.stringify({result:'NOT_ACCEPTED',checkedAtUtc:new Date().toISOString(),message:String(error.message),warmupDiagnostics,lastObservation:last?{sampleId:last.sampleId,points:last.performanceHistory.length,intervalMs:last.intervalMs,paused:last.paused,samplingMs:last.samplingDurationMs,capturedAtUtc:last.capturedAtUtc}:null},null,2));
+  throw error;
 } finally { if(host.exitCode===null)for(const p of processTree(host.pid).reverse())if(ownedAlive(p)){try{process.kill(p.pid);}catch{}} await browser?.close().catch(()=>{});await delay(400);await rm(temporary,{recursive:true,force:true}); }

@@ -15,7 +15,7 @@
     "long actual GPU names wrap without document overflow at 960px",
     "GPU identity UI has no runtime errors"
   ],
-  "basicReadyMs": 646.5453,
+  "basicReadyMs": 589.5679,
   "gpus": [
     {
       "description": "NVIDIA GeForce RTX 3080 Ti",

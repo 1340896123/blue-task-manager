@@ -15,7 +15,7 @@
     "build:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1",
     "test:desktop": "node tests/desktop-e2e.mjs",
     "test:recovery": "node tests/recovery-e2e.mjs",
-    "test:e2e": "npm run test:regression && npm run test:desktop && npm run test:process-desktop && npm run test:native-desktop && npm run test:system-locations && npm run test:performance",
+    "test:e2e": "npm run test:regression && npm run test:desktop && npm run test:process-desktop && npm run test:native-desktop && npm run test:system-locations && npm run test:restricted-ui && npm run test:icon && npm run test:taskbar-integration && npm run test:performance",
     "test:core": "node tests/native-core-v11.mjs",
     "test:management": "node tests/native-management-v11.mjs",
     "test:telemetry": "node tests/native-telemetry-v11.mjs",

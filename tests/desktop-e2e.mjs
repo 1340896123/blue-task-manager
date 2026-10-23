@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 import { assertions, check, delay, until, alive, processTree, ownedAlive, portOpen } from './e2e-support.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const directory = path.join(root, 'output/TaskManager-win-x64');
+const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/TaskManager-win-x64'));
 const executable = path.join(directory, 'TaskManager.Host.exe');
 const workloadExe = path.join(root, 'tests/TaskManager.TestWorkload/bin/Release/net10.0-windows10.0.19041.0/TaskManager.TestWorkload.exe');
 const probeExe = path.join(root, 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe');

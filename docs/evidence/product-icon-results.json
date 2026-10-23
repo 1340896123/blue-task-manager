@@ -1,0 +1,63 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-23T01:29:36.083Z",
+  "assertions": 16,
+  "checks": [
+    "ICO contains all seven standard Windows image sizes",
+    "portable .electron/task-manager.ico matches canonical generated ICO",
+    "portable wwwroot/favicon.ico matches canonical generated ICO",
+    "Host EXE embedded large icon independently extracted with blue/white/transparent product pixels",
+    "Host EXE embedded small icon independently extracted with blue/white/transparent product pixels",
+    "React brand loads and decodes the canonical SVG",
+    "icon.svg serves HTTP 200 with image content type",
+    "favicon.ico serves HTTP 200 with image content type",
+    "icon-256.png serves HTTP 200 with image content type",
+    "icon-512.png serves HTTP 200 with image content type",
+    "document declares standard ICO fallback and SVG favicon",
+    "branding preserves isolated renderer without Node globals",
+    "independent Win32 query identifies the test-owned native product window",
+    "WM_GETICON large native window/taskbar icon is the blue/white product image",
+    "WM_GETICON small native window/taskbar icon is the blue/white product image",
+    "closing branded desktop leaves no test-owned host or Electron descendants"
+  ],
+  "exeIcons": {
+    "large": {
+      "width": 32,
+      "height": 32,
+      "bluePixels": 448,
+      "whitePixels": 50,
+      "transparentCorner": true
+    },
+    "small": {
+      "width": 16,
+      "height": 16,
+      "bluePixels": 92,
+      "whitePixels": 4,
+      "transparentCorner": true
+    }
+  },
+  "nativeIcons": {
+    "large": {
+      "width": 32,
+      "height": 32,
+      "bluePixels": 448,
+      "whitePixels": 50,
+      "transparentCorner": true
+    },
+    "small": {
+      "width": 16,
+      "height": 16,
+      "bluePixels": 92,
+      "whitePixels": 4,
+      "transparentCorner": true
+    }
+  },
+  "evidence": [
+    "product-desktop.png",
+    "product-native-window.png",
+    "product-exe-large.png",
+    "product-exe-small.png",
+    "product-window-large.png",
+    "product-window-small.png"
+  ]
+}

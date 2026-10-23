@@ -50,3 +50,5 @@ npm run test:icon
 本地证据：`output/product-icon/results.json`、`product-desktop.png`、`product-native-window.png`、`product-exe-large.png`、`product-exe-small.png`、`product-window-large.png`、`product-window-small.png`。独立原生窗口截图只捕获目标应用，不采集整个桌面。这里验证的是窗口/任务栏提供的原生图标及 EXE 图标资源，未改写用户已经固定在任务栏上的旧快捷方式或 Windows 图标缓存。
 
 接入依据：本机 Electron 45 类型定义中的 [BrowserWindow icon](https://www.electronjs.org/docs/latest/api/browser-window) 与 [app.setAppUserModelId](https://www.electronjs.org/docs/latest/api/app#appsetappusermodelidid-windows)，以及 Electron.NET 0.6.0 的 `ElectronIcon` / `ElectronPackageId` 官方构建属性。
+
+包含任务栏设置的最终业务版本已独立重跑16项。公开归档：[图标结果](evidence/product-icon-results.json)、[实际应用](evidence/product-desktop.png)；最终发布状态见[验收记录](ACCEPTANCE-RESULTS.md)。

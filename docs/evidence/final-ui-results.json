@@ -1,7 +1,7 @@
 {
   "result": "PASS",
   "assertions": 36,
-  "checkedAtUtc": "2026-10-22T23:31:24.302Z",
+  "checkedAtUtc": "2026-10-23T01:22:29.186Z",
   "checks": [
     "dedicated real workload appears in native snapshot",
     "virtual table bounds rendered rows",

@@ -1,0 +1,43 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-23T01:29:53.460Z",
+  "businessCommit": "251897ef2cc78f7abff3e3ee3806cdd51a100883",
+  "suites": [
+    {
+      "suite": "desktop-e2e",
+      "result": "PASS",
+      "assertions": 42,
+      "durationMs": 23373
+    },
+    {
+      "suite": "process-desktop-v11",
+      "result": "PASS",
+      "assertions": 34,
+      "durationMs": 29968
+    },
+    {
+      "suite": "native-desktop-v11",
+      "result": "PASS",
+      "assertions": 22,
+      "durationMs": 74387
+    },
+    {
+      "suite": "taskbar-integration",
+      "result": "PASS",
+      "assertions": 23,
+      "durationMs": 20267
+    },
+    {
+      "suite": "product-icon",
+      "result": "PASS",
+      "assertions": 16,
+      "durationMs": 15545
+    },
+    {
+      "suite": "restricted-process-ui-v11",
+      "result": "PASS",
+      "assertions": 9,
+      "durationMs": 11283
+    }
+  ]
+}

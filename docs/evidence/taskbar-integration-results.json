@@ -1,6 +1,6 @@
 {
   "result": "PASS",
-  "checkedAtUtc": "2026-10-23T01:14:57.484Z",
+  "checkedAtUtc": "2026-10-23T01:29:20.272Z",
   "assertions": 23,
   "checks": [
     "first entry creates the real Electron desktop after removing the original system taskmgr path and /7 arguments",

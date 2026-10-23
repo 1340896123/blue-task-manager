@@ -1,72 +1,72 @@
 {
   "result": "PASS",
-  "checkedAtUtc": "2026-10-22T23:31:31.736Z",
+  "checkedAtUtc": "2026-10-23T01:22:36.141Z",
   "suites": [
     {
       "suite": "static-v11",
       "result": "PASS",
       "assertions": 3,
-      "durationMs": 169.1748
+      "durationMs": 99.6656
     },
     {
       "suite": "native-api",
       "result": "PASS",
       "assertions": 77,
-      "durationMs": 8296.0944
+      "durationMs": 8018.521299999999
     },
     {
       "suite": "native-metadata-v11",
       "result": "PASS",
       "assertions": 5,
-      "durationMs": 5850.4887
+      "durationMs": 5410.177699999999
     },
     {
       "suite": "native-core-v11",
       "result": "PASS",
       "assertions": 25,
-      "durationMs": 2845.6142
+      "durationMs": 2308.9562000000005
     },
     {
       "suite": "native-management-v11",
       "result": "PASS",
       "assertions": 64,
-      "durationMs": 4633.304499999998
+      "durationMs": 4057.1096000000016
     },
     {
       "suite": "native-telemetry-v11",
       "result": "PASS",
       "assertions": 24,
-      "durationMs": 63022.335600000006
+      "durationMs": 56020.8005
     },
     {
       "suite": "gpu-identity-v11",
       "result": "PASS",
       "assertions": 12,
-      "durationMs": 8774.113500000007
+      "durationMs": 8277.7022
     },
     {
       "suite": "process-ui-v11",
       "result": "PASS",
       "assertions": 34,
-      "durationMs": 21791.757299999997
+      "durationMs": 22326.3183
     },
     {
       "suite": "pages-ui-v11",
       "result": "PASS",
       "assertions": 50,
-      "durationMs": 12633.294299999994
+      "durationMs": 12516.525799999989
     },
     {
       "suite": "ui-smoke",
       "result": "PASS",
       "assertions": 36,
-      "durationMs": 8430.415899999993
+      "durationMs": 7456.659299999999
     },
     {
       "suite": "recovery-e2e",
       "result": "PASS",
       "assertions": 4,
-      "durationMs": 6964.31660000002
+      "durationMs": 6501.889999999999
     }
   ]
 }
