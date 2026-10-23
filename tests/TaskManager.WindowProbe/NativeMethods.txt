@@ -51,3 +51,7 @@ IsIconic
 OpenProcessToken
 GetTokenInformation
 TOKEN_ELEVATION
+CreateProcessW
+WaitForSingleObject
+GetExitCodeProcess
+CloseHandle

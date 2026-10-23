@@ -1,0 +1,356 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-23T12:15:36.246Z",
+  "testWorkspaceCommit": "af82ff8c541b41dd28c18092f845bf2b46e5672d",
+  "releaseCodeCommit": "53e290610845b9effe1f43686178d4ac6e796bc3",
+  "productVersion": "1.1.1+53e290610845b9effe1f43686178d4ac6e796bc3",
+  "directory": "C:\\Program Files\\BlueDomainTaskManager",
+  "hostSha256": "b2d4d1c3cc3d80df7af49722aeed2b6e4156501997854cf20be0932356bc4d2f",
+  "launcherSha256": "6d33639d0a8f820d37872beb503e8aa1eeed1c922150d018eac1f0374b8e5e59",
+  "assertions": 69,
+  "checks": [
+    "controller is a real non-elevated Medium process",
+    "initial HKLM64 key is independently saved and contains no third-party configuration",
+    "independent mt.exe verifies host requireAdministrator/uiAccess=false",
+    "independent mt.exe verifies launcher asInvoker/uiAccess=false",
+    "Medium CreateProcess of requireAdministrator Host returns native Windows 740",
+    "Medium DLL startup rejects before business setup (normal)",
+    "Medium DLL startup rejects before business setup (--headless)",
+    "Medium DLL startup rejects before business setup (--task-manager-entry)",
+    "Medium DLL startup rejects before business setup (--uninstall-task-manager-integration)",
+    "Launcher rejects untrusted entry with native exit 87: []",
+    "Launcher rejects untrusted entry with native exit 87: [\"--headless\"]",
+    "Launcher rejects untrusted entry with native exit 87: [\"--task-manager-entry\",\"C:\\\\untrusted\\\\taskmgr.exe\"]",
+    "Launcher rejects untrusted entry with native exit 87: [\"--task-manager-entry\",\"C:\\\\WINDOWS\\\\System32\\\\taskmgr.exe\",\"--port=5263\"]",
+    "Launcher rejects untrusted entry with native exit 87: [\"--task-manager-entry\",\"C:\\\\WINDOWS\\\\System32\\\\taskmgr.exe\",\"--headless\"]",
+    "Launcher rejects untrusted entry with native exit 87: [\"--task-manager-entry\",\"--task-manager-entry\"]",
+    "Launcher rejects untrusted entry with native exit 87: [\"--task-manager-entry\",\"C:\\\\WINDOWS\\\\System32\\\\taskmgr.exe\",\"--uninstall-task-manager-integration\"]",
+    "Launcher rejects untrusted entry with native exit 87: [\"--task-manager-entry\",\"C:\\\\WINDOWS\\\\System32\\\\taskmgr.exe\",\"/contains space\"]",
+    "Launcher rejects untrusted entry with native exit 87: [\"--task-manager-entry\",\"C:\\\\WINDOWS\\\\System32\\\\taskmgr.exe\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\",\"/7\"]",
+    "Medium denial and invalid Launcher inputs create no HTTP/CDP listeners",
+    "RunAs worker confirms actual TokenIsElevated and identical complete initial key",
+    "real Medium System32 taskmgr.exe reproduces native 740 through exact legacy IFEO Host command",
+    "repair UI belongs to the dedicated elevated test Host",
+    "production elevated Electron renderer has sandboxed no-Node globals over real CDP",
+    "production CsWin32 read identifies exact legacy REG_SZ and exposes explicit repair",
+    "implicit migration, stale revision, missing token and foreign Origin all refuse with the full key unchanged",
+    "real repair confirmation explains explicit migration before writing",
+    "canceling repair confirmation leaves the old full registry state unchanged",
+    "independent HKLM64 read confirms UI migrated to the exact fixed Launcher command",
+    "production cancel deletes only the exact new owned Debugger",
+    "production cancel also recognizes the exact legacy owned Debugger",
+    "production ownership rejects other directory",
+    "API and fixed uninstall maintenance preserve the complete other directory configuration",
+    "production ownership rejects additional argument",
+    "API and fixed uninstall maintenance preserve the complete additional argument configuration",
+    "production ownership rejects different command casing",
+    "API and fixed uninstall maintenance preserve the complete different command casing configuration",
+    "production ownership rejects REG_EXPAND_SZ",
+    "API and fixed uninstall maintenance preserve the complete REG_EXPAND_SZ configuration",
+    "production ownership rejects REG_DWORD",
+    "API and fixed uninstall maintenance preserve the complete REG_DWORD configuration",
+    "production ownership rejects embedded null",
+    "API and fixed uninstall maintenance preserve the complete embedded null configuration",
+    "special UseFilter/default/binary/multi-string/nested-key config blocks enable/repair but preserves strict ownership",
+    "fixed production maintenance exits successfully for exact owned old/new command",
+    "maintenance removes only owned Debugger and retains every other value/type/nested child",
+    "special UseFilter/default/binary/multi-string/nested-key config blocks enable/repair but preserves strict ownership",
+    "fixed production maintenance exits successfully for exact owned old/new command",
+    "maintenance removes only owned Debugger and retains every other value/type/nested child",
+    "production enable registers the new fixed Launcher entry from a clean key",
+    "real Medium System32 taskmgr.exe creates the asInvoker Launcher and it exits after Shell runas",
+    "real default-port API belongs to the exact test Launcher child; runas environment isolation is respected",
+    "real IFEO chain produces elevated Host and official Electron browser tokens",
+    "real IFEO renderer command line explicitly enables sandbox; production repair UI also has no Node globals",
+    "production Windows collector contains the exact actual test Host",
+    "native telemetry advances through the production HTTP/JSON.NET/UI chain",
+    "independent CsWin32 HWND query finds the visible test-owned product window",
+    "real dedicated new-task process inherits the elevated token",
+    "identity mismatch and own Host protection remain enforced on the real IFEO instance",
+    "real repeated C:\\WINDOWS\\System32\\taskmgr.exe Launcher exits successfully",
+    "repeated system entry restores the same HWND and preserves the original Host PID",
+    "repeated entry opens neither another HTTP host nor another CDP listener",
+    "real repeated C:\\WINDOWS\\SysWOW64\\taskmgr.exe Launcher exits successfully",
+    "repeated system entry restores the same HWND and preserves the original Host PID",
+    "repeated entry opens neither another HTTP host nor another CDP listener",
+    "real repeated bare taskmgr.exe Launcher exits successfully",
+    "repeated system entry restores the same HWND and preserves the original Host PID",
+    "repeated entry opens neither another HTTP host nor another CDP listener",
+    "real repair and IFEO Electron pages emit no renderer errors",
+    "repair and real IFEO desktops release all HTTP and CDP listeners"
+  ],
+  "launches": [
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Host.exe",
+      "arguments": [
+        "--headless"
+      ],
+      "success": false,
+      "nativeErrorCode": 740
+    },
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Launcher.exe",
+      "arguments": [],
+      "success": true,
+      "pid": 36536,
+      "fileTime": "134372312817137454",
+      "exited": true,
+      "exitCode": 87
+    },
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Launcher.exe",
+      "arguments": [
+        "--headless"
+      ],
+      "success": true,
+      "pid": 33652,
+      "fileTime": "134372312819370247",
+      "exited": true,
+      "exitCode": 87
+    },
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Launcher.exe",
+      "arguments": [
+        "--task-manager-entry",
+        "C:\\untrusted\\taskmgr.exe"
+      ],
+      "success": true,
+      "pid": 34176,
+      "fileTime": "134372312821421117",
+      "exited": true,
+      "exitCode": 87
+    },
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Launcher.exe",
+      "arguments": [
+        "--task-manager-entry",
+        "C:\\WINDOWS\\System32\\taskmgr.exe",
+        "--port=5263"
+      ],
+      "success": true,
+      "pid": 123672,
+      "fileTime": "134372312823613689",
+      "exited": true,
+      "exitCode": 87
+    },
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Launcher.exe",
+      "arguments": [
+        "--task-manager-entry",
+        "C:\\WINDOWS\\System32\\taskmgr.exe",
+        "--headless"
+      ],
+      "success": true,
+      "pid": 102952,
+      "fileTime": "134372312825981865",
+      "exited": true,
+      "exitCode": 87
+    },
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Launcher.exe",
+      "arguments": [
+        "--task-manager-entry",
+        "--task-manager-entry"
+      ],
+      "success": true,
+      "pid": 5276,
+      "fileTime": "134372312828597732",
+      "exited": true,
+      "exitCode": 87
+    },
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Launcher.exe",
+      "arguments": [
+        "--task-manager-entry",
+        "C:\\WINDOWS\\System32\\taskmgr.exe",
+        "--uninstall-task-manager-integration"
+      ],
+      "success": true,
+      "pid": 83884,
+      "fileTime": "134372312830672402",
+      "exited": true,
+      "exitCode": 87
+    },
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Launcher.exe",
+      "arguments": [
+        "--task-manager-entry",
+        "C:\\WINDOWS\\System32\\taskmgr.exe",
+        "/contains space"
+      ],
+      "success": true,
+      "pid": 122284,
+      "fileTime": "134372312832657717",
+      "exited": true,
+      "exitCode": 87
+    },
+    {
+      "target": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Launcher.exe",
+      "arguments": [
+        "--task-manager-entry",
+        "C:\\WINDOWS\\System32\\taskmgr.exe",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7",
+        "/7"
+      ],
+      "success": true,
+      "pid": 21720,
+      "fileTime": "134372312834748965",
+      "exited": true,
+      "exitCode": 87
+    },
+    {
+      "target": "C:\\WINDOWS\\System32\\taskmgr.exe",
+      "arguments": [
+        "/7"
+      ],
+      "success": false,
+      "nativeErrorCode": 740
+    },
+    {
+      "target": "C:\\WINDOWS\\System32\\taskmgr.exe",
+      "arguments": [
+        "/7"
+      ],
+      "success": true,
+      "pid": 74816,
+      "fileTime": "134372313061609711",
+      "exited": true,
+      "exitCode": 0
+    },
+    {
+      "target": "C:\\WINDOWS\\System32\\taskmgr.exe",
+      "arguments": [
+        "/7"
+      ],
+      "success": true,
+      "pid": 98248,
+      "fileTime": "134372313166120854",
+      "exited": true,
+      "exitCode": 0
+    },
+    {
+      "target": "C:\\WINDOWS\\SysWOW64\\taskmgr.exe",
+      "arguments": [
+        "/7"
+      ],
+      "success": true,
+      "pid": 96504,
+      "fileTime": "134372313176105903",
+      "exited": true,
+      "exitCode": 0
+    },
+    {
+      "target": "taskmgr.exe",
+      "arguments": [
+        "/7"
+      ],
+      "success": true,
+      "pid": 66180,
+      "fileTime": "134372313184429983",
+      "exited": true,
+      "exitCode": 0
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    "legacy-repair-settings.png",
+    "legacy-repair-confirmation.png",
+    "repaired-settings.png",
+    "real-ifeo-first-window.png",
+    "real-ifeo-restored-window.png"
+  ],
+  "testSession": "C:\\Users\\jieok\\AppData\\Local\\Temp\\taskmanager-ifeo-p1yQFG",
+  "finalRegistryRestored": true,
+  "preferencesRestored": true,
+  "registryBeforeSha256": "8c42a23deef901a418b779b8fd37db235b4527ac88b53e252a0b327ddb68849c",
+  "registryAfterSha256": "8c42a23deef901a418b779b8fd37db235b4527ac88b53e252a0b327ddb68849c",
+  "trackedIdentities": [
+    {
+      "pid": 40016,
+      "fileTime": "134372312870814980",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\.electron\\node_modules\\electron\\dist\\electron.exe"
+    },
+    {
+      "pid": 78388,
+      "fileTime": "134372312874862120",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\.electron\\node_modules\\electron\\dist\\electron.exe"
+    },
+    {
+      "pid": 95624,
+      "fileTime": "134372312870767720",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\.electron\\node_modules\\electron\\dist\\electron.exe"
+    },
+    {
+      "pid": 68480,
+      "fileTime": "134372312863098260",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Host.exe"
+    },
+    {
+      "pid": 89860,
+      "fileTime": "134372312866249540",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\.electron\\node_modules\\electron\\dist\\electron.exe"
+    },
+    {
+      "pid": 47420,
+      "fileTime": "134372313067096410",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\.electron\\node_modules\\electron\\dist\\electron.exe"
+    },
+    {
+      "pid": 111376,
+      "fileTime": "134372313063509150",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\TaskManager.Host.exe"
+    },
+    {
+      "pid": 114212,
+      "fileTime": "134372313070363910",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\.electron\\node_modules\\electron\\dist\\electron.exe"
+    },
+    {
+      "pid": 117904,
+      "fileTime": "134372313075193460",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\.electron\\node_modules\\electron\\dist\\electron.exe"
+    },
+    {
+      "pid": 67660,
+      "fileTime": "134372313070413780",
+      "imagePath": "C:\\Program Files\\BlueDomainTaskManager\\.electron\\node_modules\\electron\\dist\\electron.exe"
+    }
+  ],
+  "notExecuted": [
+    "real UAC cancellation",
+    "wrong administrator credentials",
+    "token-query failure injection",
+    "actual NSIS lifecycle (separate installer acceptance)"
+  ]
+}

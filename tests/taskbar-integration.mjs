@@ -10,7 +10,7 @@ import { alive, delay, ownedAlive, portOpen, processTree, until } from './e2e-su
 import { nativeUi, probe, windows } from './native-ui-support.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const directory = path.join(root, 'output/TaskManager-win-x64'), output = path.join(root, 'output/taskbar-integration');
+const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/TaskManager-win-x64')), output = path.join(root, 'output/taskbar-integration');
 const executable = path.join(directory, 'TaskManager.Host.exe');
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-entry-'));
 const port = 5203, cdp = 9231, forwardPort = 5204, forwardCdp = 9232, origin = `http://127.0.0.1:${port}`;
@@ -49,7 +49,7 @@ try {
   const actualDebugger = before.values.find(row => row.name === 'Debugger');
   const actualFilter = before.values.find(row => row.name === 'UseFilter');
   check(state.canRead && state.currentDebugger === (actualDebugger?.data ?? null) && state.useFilter === (actualFilter?.data ?? null), 'CsWin32 Debugger and UseFilter status match independent HKLM64 read');
-  check(state.registrationCommand === `"${executable}" --task-manager-entry` && state.executableAvailable, 'registration command is the quoted trusted portable EXE plus fixed marker');
+  check(state.registrationCommand === `"${path.join(directory, 'TaskManager.Launcher.exe')}" --task-manager-entry` && state.executableAvailable, 'registration command is the quoted trusted portable Launcher plus fixed marker');
   check(state.scope === 'machine' && typeof state.canWrite === 'boolean', 'readability and actual machine-wide write permission are reported separately');
   const badRevision = state.revision === '0'.repeat(64) ? '1'.repeat(64) : '0'.repeat(64);
   await api('desktop/task-manager-integration', { enabled: true, expectedRevision: badRevision }, 409);

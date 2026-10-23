@@ -8,6 +8,7 @@
     "test:administrator": "node tests/admin-desktop.mjs",
     "test:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File tests/installer-e2e.ps1",
     "test:taskbar-integration": "node tests/taskbar-integration.mjs",
+    "test:ifeo-elevation": "node tests/ifeo-elevation-e2e.mjs",
     "build": "npm --prefix src/TaskManager.Web run build",
     "typecheck": "npm --prefix src/TaskManager.Web run typecheck",
     "test:native": "node tests/native-api.mjs",

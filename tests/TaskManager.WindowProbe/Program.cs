@@ -11,6 +11,7 @@ using Windows.Win32.Graphics.Dxgi;
 Console.OutputEncoding = new System.Text.UTF8Encoding(false);
 
 if (ProductIconProbe.TryRun(args)) return;
+if (ProcessLaunchProbe.TryRun(args)) return;
 if (NativeUi.TryRun(args)) return;
 
 if (args[0] == "process-elevation")

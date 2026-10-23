@@ -79,6 +79,18 @@ internal static class NativeUi
             PInvoke.PostMessage(target, 0x0111, new WPARAM(1), default);
             Console.WriteLine(JsonConvert.SerializeObject(new { submitted = true })); return true;
         }
+        if (command == "capture-visible")
+        {
+            if (!PInvoke.IsWindowVisible(target) || PInvoke.IsIconic(target) || PInvoke.GetForegroundWindow() != target) throw new InvalidOperationException("Visible foreground test window required for clipped screenshot.");
+            if (!PInvoke.GetWindowRect(target, out var rect)) throw new InvalidOperationException("Window bounds unavailable.");
+            // Exclude DWM's transparent resize border and rounded corner pixels.
+            const int inset = 8;
+            using var bitmap = new Bitmap(rect.right - rect.left - inset * 2, rect.bottom - rect.top - inset * 2);
+            using var graphics = Graphics.FromImage(bitmap);
+            graphics.CopyFromScreen(rect.left + inset, rect.top + inset, 0, 0, bitmap.Size);
+            bitmap.Save(args[5], ImageFormat.Png);
+            Console.WriteLine(JsonConvert.SerializeObject(new { captured = true })); return true;
+        }
         if (command == "capture")
         {
             if (!PInvoke.GetWindowRect(target, out var rect)) throw new InvalidOperationException("Window bounds unavailable.");
