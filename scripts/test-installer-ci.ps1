@@ -386,7 +386,9 @@ function Copy-DesktopScreenshots([DateTime]$Since) {
 
 function Invoke-DesktopAcceptance {
     $started = [DateTime]::UtcNow
-    $node = (Get-Command node -CommandType Application).Source
+    # Hosted runners can expose several node.exe applications on PATH. Select
+    # the first (the setup-node version) instead of stringifying every match.
+    $node = (Get-Command node -CommandType Application | Select-Object -First 1).Source
     $start = [Diagnostics.ProcessStartInfo]::new($node)
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $true
@@ -408,6 +410,12 @@ function Invoke-DesktopAcceptance {
         while (-not $child.WaitForExit(800)) {
             Update-OwnedDescendants
             if ([DateTime]::UtcNow -ge $deadline) { throw 'The installed Electron acceptance exceeded its time limit.' }
+        }
+        if ($child.ExitCode -ne 0) {
+            # This test prints assertion names and standard exception stacks,
+            # never bootstrap credentials or complete Windows snapshots.
+            Write-Host ($stdout.GetAwaiter().GetResult())
+            Write-Host ($stderr.GetAwaiter().GetResult())
         }
         Assert-Condition ($child.ExitCode -eq 0) 'Existing real Electron desktop acceptance exits successfully against the installed directory'
         $resultPath = Join-Path $projectRoot 'output/playwright/final-desktop-results.json'
