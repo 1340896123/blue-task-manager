@@ -6,6 +6,43 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { assertions, check, delay, until, alive, processTree, ownedAlive, portOpen } from './e2e-support.mjs';
 
+// Keep only bounded, redacted startup facts. Electron.NET forwards its socket
+// authentication token to stdout, so raw process output must never be persisted.
+const DIAGNOSTIC_LINE_LIMIT = 80, DIAGNOSTIC_LINE_LENGTH = 1800;
+function redactDiagnostic(value) {
+  return String(value)
+    .replace(/\u001b\[[0-9;]*[A-Za-z]/g, '')
+    .replace(/((?:electronAuthToken|authToken|X-TaskManager-Token|authorization|token|secret)["']?\s*[=:]\s*)(?:"[^"]*"|'[^']*'|[^\s,;&]+)/gi, '$1[REDACTED]')
+    .replace(/(Electron Socket:[^\r\n]*?\busing\s+)\S+/gi, '$1[REDACTED]')
+    .replace(/\b(?:https?|wss?):\/\/[^\s<>"']+/gi, value => {
+      try { const url = new URL(value); return `${url.protocol}//${url.host}${url.pathname}${url.search || url.hash ? '?[REDACTED]' : ''}`; }
+      catch { return '[REDACTED URL]'; }
+    })
+    .replace(/\b[a-f0-9]{32,}\b/gi, '[REDACTED HEX]');
+}
+function diagnosticError(error) { return { name: String(error?.name ?? 'Error'), message: redactDiagnostic(error?.message ?? error).slice(0, 3000) }; }
+function captureStartupStream(stream, source, lines) {
+  let pending = '', dropping = false;
+  const append = value => { lines.push({ source, line: redactDiagnostic(value).slice(0, DIAGNOSTIC_LINE_LENGTH) }); if (lines.length > DIAGNOSTIC_LINE_LIMIT) lines.shift(); };
+  stream.setEncoding('utf8');
+  stream.on('data', chunk => {
+    // Redact only complete lines so a token split across chunks cannot escape.
+    const pieces = (pending + chunk).split(/\r?\n/); pending = pieces.pop();
+    for (const line of pieces) {
+      if (dropping || line.length > 16384) append('[oversized startup line omitted]'); else append(line);
+      dropping = false;
+    }
+    if (pending.length > 16384) { pending = ''; dropping = true; }
+  });
+  stream.on('end', () => { if (dropping) append('[oversized startup line omitted]'); else if (pending) append(pending); });
+  stream.on('error', error => append(`startup stream error: ${error.message}`));
+}
+async function boundedDiagnostic(promise, label, timeout = 2500) {
+  let timer;
+  try { return await Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} timed out`)), timeout); })]); }
+  finally { clearTimeout(timer); }
+}
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/TaskManager-win-x64'));
 const executable = path.join(directory, 'TaskManager.Host.exe');
@@ -16,10 +53,57 @@ const port = Number(process.env.TASKMANAGER_DESKTOP_PORT ?? 5193), cdp = Number(
 const origin = `http://127.0.0.1:${port}`;
 await mkdir(output, { recursive: true });
 if (await portOpen(port) || await portOpen(cdp)) throw new Error('Desktop test ports already in use');
-const host = spawn(executable, [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences'), TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore' });
+const startup = { startedAtUtc: new Date().toISOString(), phase: 'spawn', environment: { platform: process.platform, architecture: process.arch, node: process.version, ci: process.env.CI === 'true', githubActions: process.env.GITHUB_ACTIONS === 'true' }, facts: [], logs: [] };
+const host = spawn(executable, [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences'), TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+captureStartupStream(host.stdout, 'stdout', startup.logs); captureStartupStream(host.stderr, 'stderr', startup.logs);
+host.on('error', error => { startup.spawnError = diagnosticError(error); });
 const independent = spawn(workloadExe, [temporary, '600'], { cwd: root, windowsHide: true, stdio: 'ignore' });
-let browser, target, tree = [], page;
+let browser, target, tree = [], page, diagnosticSession;
 const screenshots = [];
+function applicationPage() {
+  return browser?.contexts().flatMap(context => context.pages()).find(candidate => { try { return new URL(candidate.url()).origin === origin; } catch { return false; } });
+}
+async function collectStartupFacts(phase) {
+  const fact = { phase, elapsedMs: Date.now() - Date.parse(startup.startedAtUtc), host: { pid: host.pid, exitCode: host.exitCode, signalCode: host.signalCode }, browserConnected: browser?.isConnected() ?? false, contexts: browser?.contexts().slice(0, 4).map(context => ({ pages: context.pages().slice(0, 10).map(candidate => ({ url: redactDiagnostic(candidate.url()).slice(0, 512), closed: candidate.isClosed() })) })) ?? [] };
+  try {
+    const response = await fetch(origin + '/api/health', { signal: AbortSignal.timeout(2500) });
+    const health = await response.json();
+    fact.health = { status: response.status, ready: health.ready, processId: health.processId, platform: health.platform, nativeSource: health.nativeSource, json: health.json };
+  } catch (error) { fact.healthError = diagnosticError(error); }
+  if (browser?.isConnected()) {
+    try {
+      diagnosticSession ??= await boundedDiagnostic(browser.newBrowserCDPSession(), 'CDP diagnostic session');
+      const version = await boundedDiagnostic(diagnosticSession.send('Browser.getVersion'), 'Browser.getVersion');
+      fact.cdpVersion = { protocolVersion: version.protocolVersion, product: version.product, revision: version.revision, jsVersion: version.jsVersion };
+      const targets = await boundedDiagnostic(diagnosticSession.send('Target.getTargets'), 'Target.getTargets');
+      fact.targets = targets.targetInfos.slice(0, 20).map(info => ({ targetId: info.targetId, type: info.type, attached: info.attached, url: redactDiagnostic(info.url).slice(0, 512) }));
+    } catch (error) { fact.cdpError = diagnosticError(error); }
+  }
+  startup.facts.push(fact); if (startup.facts.length > 12) startup.facts.shift();
+}
+async function waitForApplicationPage() {
+  // Electron.NET's actual socket-bridge startup allows 120 seconds. Health and
+  // CDP may be ready before that bridge calls CreateWindowAsync on a cold runner.
+  // Wait for an existing real app target; never create or navigate a substitute.
+  const deadline = Date.now() + 130000; let nextFactsAt = 0;
+  while (Date.now() < deadline) {
+    const existing = applicationPage(); if (existing) return existing;
+    if (startup.spawnError || host.exitCode !== null || !browser.isConnected()) throw new Error('Electron host exited or CDP disconnected before the real application page appeared');
+    if (Date.now() >= nextFactsAt) { await collectStartupFacts('waiting-for-application-page'); nextFactsAt = Date.now() + 15000; }
+    await delay(150);
+  }
+  throw new Error('official Electron.NET creates BrowserWindow: no existing page at the application origin within 130 seconds');
+}
+async function saveStartupDiagnostics(error) {
+  await collectStartupFacts(startup.phase);
+  // Reuse identities already collected for acceptance; don't add an unbounded
+  // synchronous CIM query to the failure-diagnostic path.
+  startup.ownedProcesses = tree.slice(0, 24).map(entry => ({ pid: entry.pid, created: entry.created, image: path.basename(entry.imagePath ?? '') }));
+  startup.failure = diagnosticError(error);
+  const diagnosticPath = path.join(output, 'final-desktop-startup.json');
+  await writeFile(diagnosticPath, JSON.stringify(startup, null, 2));
+  console.error(JSON.stringify({ startupDiagnostics: diagnosticPath, phase: startup.phase, failure: startup.failure, facts: startup.facts.slice(-2), logs: startup.logs.slice(-16) }, null, 2));
+}
 async function capture(name, nativeSurface = false) {
   if (nativeSurface) {
     const session = await page.context().newCDPSession(page);
@@ -29,10 +113,14 @@ async function capture(name, nativeSurface = false) {
   screenshots.push(name);
 }
 try {
-  await until(async () => (await (await fetch(origin + '/api/health')).json()).ready && await portOpen(cdp), 'real Release Electron host becomes ready', 45000);
-  browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`);
-  await until(() => browser.contexts()[0]?.pages().length > 0, 'official Electron.NET creates BrowserWindow');
-  page = browser.contexts()[0].pages()[0];
+  startup.phase = 'waiting-for-host-and-cdp';
+  await until(async () => (await (await fetch(origin + '/api/health', { signal: AbortSignal.timeout(2500) })).json()).ready && await portOpen(cdp), 'real Release Electron host becomes ready', 45000);
+  startup.phase = 'connecting-to-cdp';
+  browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`, { timeout: 15000 });
+  startup.phase = 'waiting-for-application-page';
+  page = await waitForApplicationPage();
+  await collectStartupFacts('real-application-page-discovered');
+  startup.phase = 'real-desktop-acceptance';
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
   const bootstrap = await (await fetch(origin + '/api/bootstrap')).json();
@@ -160,10 +248,14 @@ try {
   const report = { result: 'PASS', assertions: assertions.length, checkedAtUtc: new Date().toISOString(), hostPid: host.pid, checks: assertions, screenshots, source: 'Release .NET -> official Electron.NET -> React -> HTTP -> CsWin32 -> Windows; no mocks' };
   await writeFile(path.join(output, 'final-desktop-results.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
-} catch (error) { await page?.screenshot({ path: path.join(output, 'final-desktop-failure.png') }).catch(() => {}); throw error; }
+} catch (error) {
+  await saveStartupDiagnostics(error).catch(diagnosticFailure => console.error('Could not save startup diagnostics:', diagnosticError(diagnosticFailure)));
+  await page?.screenshot({ path: path.join(output, 'final-desktop-failure.png'), timeout: 5000 }).catch(() => {});
+  const safeError = new Error(redactDiagnostic(error?.message ?? error)); safeError.stack = redactDiagnostic(error?.stack ?? safeError.stack); throw safeError;
+}
 finally {
   if (target && alive(target.pid)) { try { process.kill(target.pid); } catch {} }
-  if (host.exitCode === null) {
+  if (host.pid && host.exitCode === null) {
     // Exact test-owned identities only; these are never selected by executable name.
     for (const entry of processTree(host.pid).reverse()) { if (ownedAlive(entry)) { try { process.kill(entry.pid); } catch {} } }
     host.kill();
