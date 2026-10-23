@@ -47,3 +47,4 @@ BringWindowToTop
 GetClientRect
 ExtractIconExW
 DestroyIcon
+IsIconic

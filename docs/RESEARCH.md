@@ -1,5 +1,13 @@
 # 开源实现研究与技术决策
 
+## 任务栏原任务管理器入口接管（本轮增量）
+
+固定研究版本[TaskExplorer 9f3f95d22f07f759dd1e0114417529ba51decb01 的 CustomSetupTool/util.c](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/ProcessHacker/tools/CustomSetupTool/util.c)，核验`SetupHasTaskMgrDebuggerIfeo`（755行附近）和`SetupCreateTaskMgrDebuggerIfeo`（790行附近）：成熟任务管理器通过HKLM 64位IFEO taskmgr.exe Debugger与正确引用的程序路径接管系统入口。Windows没有面向普通桌面应用、通用新增任意任务栏右键菜单项的接口，本项目明确采用“接管原任务管理器入口”的实际行为，同时说明Ctrl+Shift+Esc等入口影响。
+
+不复制GPL实现，使用CsWin32的RegOpenKeyEx/RegEnumValue/RegEnumKeyEx/RegCreateKeyEx/RegSetValueEx/RegDeleteValue独立实现。比参考安装器更保守：不覆盖其他命令或特殊过滤配置，读/写权限分开，预期版本重验，只取消精确自有值。首次entry参数在ASP.NET配置前清理；已有同路径、同SID/会话、可信Host祖先的Electron主窗口用标准EnumWindows/ShowWindow/SetForegroundWindow复用，不增加私有IPC或任意renderer启动能力。
+
+专项诊断另核验[Electron.NET当前官方RuntimeControllerAspNetDotnetFirst](https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.AspNet/Runtime/Controllers/RuntimeControllerAspNetDotnetFirst.cs)：StartCore把Environment.CommandLine传给ElectronProcessActive。合成`--headless`启动参数会污染Chromium可见性，不能据此归咎ready事件时序。本轮恢复真实taskmgr系统路径+/7后，独立HWND首次visible=true、复用后foreground=true；未保留未经证实的生命周期补丁。
+
 ## 1.1日常闭环增量核验（2026-10-23）
 
 本轮先查成熟源码，再约束实现；只借鉴公开接口和交互模型，不复制GPL实现或私有协议。GitHub API/raw在线核验TaskExplorer仍为`9f3f95d22f07f759dd1e0114417529ba51decb01`；SystemInformer当前master为`83d559622c4582358c3cbc23ba9f128b47f17e47`。

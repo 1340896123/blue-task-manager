@@ -1,0 +1,45 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-23T01:14:57.484Z",
+  "assertions": 23,
+  "checks": [
+    "first entry creates the real Electron desktop after removing the original system taskmgr path and /7 arguments",
+    "CsWin32 Debugger and UseFilter status match independent HKLM64 read",
+    "registration command is the quoted trusted portable EXE plus fixed marker",
+    "readability and actual machine-wide write permission are reported separately",
+    "stale expected revision rejects before any registry mutation",
+    "integration writes require the real same-origin operation token",
+    "standard-user registration attempt returns real Windows access denied 5; no UAC or pretend success",
+    "permission and conflict tests leave all target-key values, default value and subkeys unchanged",
+    "settings states shortcut, machine-wide scope, permission and move-directory consequences",
+    "no-write-permission UI disables actual registration and explains the observed permission",
+    "confirmation explains real takeover and safe restoration before moving the program",
+    "permission explanation cannot bypass the disabled native write action",
+    "canceling the impact dialog sends no write request",
+    "independent HWND query identifies only this test-owned visible product window",
+    "integration settings preserve page bounds at 960×640",
+    "integration settings preserve page bounds at 960×640 and 125%",
+    "second marked entry exits after reusing existing product window",
+    "entry restores the existing HWND while preserving the original host PID",
+    "forwarded entry creates neither a duplicate HTTP host nor another Electron CDP listener",
+    "same-directory repeated entry retains exactly one test-owned native product window",
+    "unrecognized appended executable is rejected before ASP.NET startup",
+    "UI/entry E2E changes no global IFEO value and raises no renderer runtime error",
+    "closing the test desktop leaves no test-owned host or Electron descendants"
+  ],
+  "canWrite": false,
+  "nativeWriteDenied": 5,
+  "globalRegistryUnchanged": true,
+  "registrationSuccessChain": "not executed: global takeover remains explicitly opt-in; current machine was not modified",
+  "foregroundState": {
+    "foreground": true,
+    "minimized": false,
+    "visible": true
+  },
+  "errors": [],
+  "evidence": [
+    "taskbar-integration-settings.png",
+    "taskbar-integration-confirmation.png",
+    "taskbar-integration-settings-960.png"
+  ]
+}

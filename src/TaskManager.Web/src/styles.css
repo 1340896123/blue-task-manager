@@ -302,6 +302,13 @@ select { min-width: var(--width-setting-control); min-height: var(--height-contr
 .setting-row > div:first-child { min-width:0; }
 .setting-row p { overflow-wrap:anywhere; }
 .setting-row select { flex-shrink:0; }
+.integration-setting { align-items: flex-start; flex-wrap: wrap; }
+.integration-setting > div:first-child { flex: 1; min-width: min(100%, var(--width-readable)); }
+.integration-setting .setting-buttons { align-items: flex-start; flex-direction: column; }
+.integration-path { overflow-wrap: anywhere; user-select: text; }
+.integration-confirmation { display: grid; gap: var(--space-3); font-size: var(--font-size-control); line-height: var(--line-height-relaxed); }
+.integration-confirmation > p:first-child { display: flex; align-items: flex-start; gap: var(--space-2); }
+.integration-confirmation svg { flex-shrink: 0; color: var(--color-accent); }
 .connection-banner { flex-wrap:wrap; }
 @media (max-width:1100px) {
   .resource-content { padding:var(--space-4); }

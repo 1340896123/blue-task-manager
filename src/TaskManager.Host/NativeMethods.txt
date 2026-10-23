@@ -104,3 +104,16 @@ RegEnumValueW
 RegCloseKey
 HKEY_CURRENT_USER
 HKEY_LOCAL_MACHINE
+RegCreateKeyExW
+RegSetValueExW
+RegDeleteValueW
+RegEnumKeyExW
+EnumWindows
+IsWindowVisible
+GetWindowThreadProcessId
+GetClassNameW
+GetWindowTextW
+IsIconic
+ShowWindow
+SetForegroundWindow
+GetForegroundWindow

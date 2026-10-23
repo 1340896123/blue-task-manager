@@ -1,5 +1,11 @@
 # 后端 API 合同
 
+## 任务栏右键任务管理器入口增量
+
+详见[TASKBAR-INTEGRATION.md](TASKBAR-INTEGRATION.md)。GET `desktop/task-manager-integration`实时查询HKLM64 IFEO，返回`{status:disabled|enabled|conflict|unavailable,enabled:boolean|null,ownsDebugger,canRead,canWrite:boolean|null,canEnable,canDisable,executableAvailable,scope:machine,executablePath,registrationCommand,currentDebugger:string|null,useFilter:uint|null,revision,checkedAtUtc,conflictReason,readError,writeError}`。无读取权限/未知不当作未接管；实际SET_VALUE或父键CREATE_SUB_KEY权限独立探测，GET不写注册表。
+
+POST同路径输入仅`{enabled:boolean,expectedRevision:string}`，沿用token/Origin校验。revision为JSON.NET输入的SHA256不透明版本，覆盖本目录固定命令、配置及实际写权限；不接受renderer命令、路径、注册表位置或菜单文字。返回`{state:上述实际状态,changed:boolean,message}`；400缺版本，403实际权限拒绝含Windows码5，409预期变化/其他工具/特殊配置冲突，503读取或写后核验不可用。读前/同写句柄写前均重验，写后读回；只有未接管的空Debugger才写固定引号路径+`--task-manager-entry`，取消只删精确自有Debugger，不删键或其他配置，不自动UAC。注册表无通用CAS，因此不声称跨其他工具的原子事务；检测到的变化拒绝，写后异常提示可能生效并要求刷新。
+
 ## 1.1实施增量
 
 本节是本轮实施合同；以下原有章节是1.0已验收基线。可根据实际CsWin32生成类型调整DTO/路径，但必须同步前端、本文与真实E2E。继续复用JSON.NET、标准HTTP状态和同源POST令牌校验，不发明私有协议。

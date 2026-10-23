@@ -8,7 +8,7 @@ namespace TaskManager.Host.Api;
 [ApiController]
 [Route("api")]
 public sealed class TaskManagerController(SnapshotService snapshots, ProcessActionService actions, LocalAccessGuard guard, DesktopWindowService desktop, PreferencesService preferences,
-    ProcessQueryService queries, ProcessConnections connections, ProcessIconService icons, ProcessManagementService management, ShellActionService shell, ServiceActionService services) : ControllerBase
+    ProcessQueryService queries, ProcessConnections connections, ProcessIconService icons, ProcessManagementService management, ShellActionService shell, ServiceActionService services, TaskManagerIntegrationService integration) : ControllerBase
 {
     [HttpGet("health")]
     public IActionResult Health() => Ok(new { platform = "Windows", version = "1.1.0", ready = snapshots.Current is not null, processId = Environment.ProcessId, nativeSource = "Microsoft.Windows.CsWin32", json = "Newtonsoft.Json" });
@@ -31,6 +31,12 @@ public sealed class TaskManagerController(SnapshotService snapshots, ProcessActi
 
     [HttpPost("preferences")]
     public IActionResult Preferences(UiPreferences request) => Ok(preferences.Save(request));
+
+    [HttpGet("desktop/task-manager-integration")]
+    public IActionResult TaskManagerIntegration() => Ok(integration.Read());
+
+    [HttpPost("desktop/task-manager-integration")]
+    public IActionResult TaskManagerIntegration(TaskManagerIntegrationRequest request) => Ok(integration.Apply(request));
 
     [HttpPost("processes/start")]
     public IActionResult Start(StartRequest request) => Ok(actions.Start(request));

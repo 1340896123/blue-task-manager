@@ -5,6 +5,7 @@
   "scripts": {
     "icons:generate": "node scripts/generate-product-icon.mjs",
     "test:icon": "node tests/product-icon.mjs",
+    "test:taskbar-integration": "node tests/taskbar-integration.mjs",
     "build": "npm --prefix src/TaskManager.Web run build",
     "typecheck": "npm --prefix src/TaskManager.Web run typecheck",
     "test:native": "node tests/native-api.mjs",

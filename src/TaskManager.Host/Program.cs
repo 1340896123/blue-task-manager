@@ -5,6 +5,14 @@ using TaskManager.Host.Services;
 using ElectronNET.API;
 using TaskManager.Host.Native;
 
+try
+{
+    var entry = TaskManagerEntry.Prepare(args);
+    if (entry.Forwarded) { Console.WriteLine(entry.Message); return; }
+    args = entry.Arguments;
+}
+catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
+
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 var portArgument = args.FirstOrDefault(argument => argument.StartsWith("--port=", StringComparison.OrdinalIgnoreCase))?[7..];
 var port = int.TryParse(portArgument ?? Environment.GetEnvironmentVariable("TASKMANAGER_PORT"), out var configuredPort) ? configuredPort : 5188;
@@ -38,6 +46,7 @@ builder.Services.AddSingleton<ProcessQueryService>();
 builder.Services.AddSingleton<ProcessManagementService>();
 builder.Services.AddSingleton<ShellActionService>();
 builder.Services.AddSingleton<ServiceActionService>();
+builder.Services.AddSingleton<TaskManagerIntegrationService>();
 builder.Services.AddResponseCompression(options => options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>());
 builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options => options.Level = System.IO.Compression.CompressionLevel.Fastest);
 builder.Services.AddSingleton<SnapshotService>();

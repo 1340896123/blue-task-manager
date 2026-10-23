@@ -53,6 +53,10 @@ internal static class NativeUi
         PInvoke.GetWindowThreadProcessId(target, out var actualPid);
         if (actualPid != expectedPid || Creation(actualPid) != expectedTime) throw new InvalidOperationException("Native window identity changed.");
         var command = args[4];
+        if (command == "state")
+        {
+            Console.WriteLine(JsonConvert.SerializeObject(new { foreground = PInvoke.GetForegroundWindow() == target, minimized = (bool)PInvoke.IsIconic(target), visible = (bool)PInvoke.IsWindowVisible(target) })); return true;
+        }
         if (command == "foreground")
         {
             var currentThread = PInvoke.GetCurrentThreadId(); var foreground = PInvoke.GetForegroundWindow(); var foregroundThread = PInvoke.GetWindowThreadProcessId(foreground, out _);
