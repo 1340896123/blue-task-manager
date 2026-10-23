@@ -1,7 +1,7 @@
 {
   "name": "blue-task-manager",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "scripts": {
     "icons:generate": "node scripts/generate-product-icon.mjs",
     "test:icon": "node tests/product-icon.mjs",

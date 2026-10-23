@@ -8,11 +8,18 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace TaskManager.Host.Native;
 
-internal sealed record TaskManagerEntryPreparation(string[] Arguments, bool Forwarded, string? Message);
+internal sealed record TaskManagerEntryPreparation(string[] Arguments, bool Forwarded, string? Message, bool MaintenanceRequested = false);
 internal static class TaskManagerEntry
 {
     internal static TaskManagerEntryPreparation Prepare(string[] args)
     {
+        // Must precede entry parsing/window reuse, maintenance, preferences and server setup.
+        AdministratorPrivilege.EnsureElevated();
+        if (args.Any(argument => argument.StartsWith(TaskManagerIntegrationService.UninstallFlag, StringComparison.OrdinalIgnoreCase)))
+        {
+            if (args.Length != 1 || args[0] != TaskManagerIntegrationService.UninstallFlag) throw new ArgumentException("卸载维护入口只接受固定参数 --uninstall-task-manager-integration，不接受其他选项、路径或命令。");
+            return new(args, false, null, true);
+        }
         var index = Array.IndexOf(args, TaskManagerIntegrationService.EntryFlag);
         if (index < 0) return new(args, false, null);
         if (Array.LastIndexOf(args, TaskManagerIntegrationService.EntryFlag) != index) throw new ArgumentException("任务管理器入口标记不能重复。");

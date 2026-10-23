@@ -11,10 +11,10 @@ public sealed class TaskManagerController(SnapshotService snapshots, ProcessActi
     ProcessQueryService queries, ProcessConnections connections, ProcessIconService icons, ProcessManagementService management, ShellActionService shell, ServiceActionService services, TaskManagerIntegrationService integration) : ControllerBase
 {
     [HttpGet("health")]
-    public IActionResult Health() => Ok(new { platform = "Windows", version = "1.1.0", ready = snapshots.Current is not null, processId = Environment.ProcessId, nativeSource = "Microsoft.Windows.CsWin32", json = "Newtonsoft.Json" });
+    public IActionResult Health() => Ok(new { platform = "Windows", version = "1.1.1", ready = snapshots.Current is not null, processId = Environment.ProcessId, nativeSource = "Microsoft.Windows.CsWin32", json = "Newtonsoft.Json" });
 
     [HttpGet("bootstrap")]
-    public IActionResult Bootstrap() => Ok(new { token = guard.Token, settings = snapshots.Settings, capabilities = SnapshotService.Capabilities, version = "1.1.0", desktop = desktop.Available, hostPid = Environment.ProcessId, currentUserName = CurrentIdentity.Name, currentSessionId = CurrentIdentity.SessionId });
+    public IActionResult Bootstrap() => Ok(new { token = guard.Token, settings = snapshots.Settings, capabilities = SnapshotService.Capabilities, version = "1.1.1", desktop = desktop.Available, hostPid = Environment.ProcessId, currentUserName = CurrentIdentity.Name, currentSessionId = CurrentIdentity.SessionId });
 
     [HttpGet("snapshot")]
     public IActionResult Snapshot()

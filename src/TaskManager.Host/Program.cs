@@ -8,9 +8,16 @@ using TaskManager.Host.Native;
 try
 {
     var entry = TaskManagerEntry.Prepare(args);
+    if (entry.MaintenanceRequested)
+    {
+        Console.WriteLine(new TaskManagerIntegrationService().RemoveOwnedForUninstall().Message);
+        return;
+    }
     if (entry.Forwarded) { Console.WriteLine(entry.Message); return; }
     args = entry.Arguments;
 }
+catch (StartupPrivilegeException error) { Console.Error.WriteLine($"{error.Code} ({error.ExitCode}): {error.Message}"); Environment.ExitCode = error.ExitCode; return; }
+catch (ApiException error) { Console.Error.WriteLine($"{error.Code}: {error.Message} 卸载维护失败，必须保留程序文件。"); Environment.ExitCode = 1; return; }
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });

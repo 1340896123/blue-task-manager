@@ -17,11 +17,25 @@ public sealed class TaskManagerIntegrationService
     internal const string ParentPath = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options";
     internal const string KeyPath = ParentPath + @"\taskmgr.exe";
     internal const string EntryFlag = "--task-manager-entry";
+    internal const string UninstallFlag = "--uninstall-task-manager-integration";
     private const REG_SAM_FLAGS ReadRights = REG_SAM_FLAGS.KEY_QUERY_VALUE | REG_SAM_FLAGS.KEY_ENUMERATE_SUB_KEYS | REG_SAM_FLAGS.KEY_WOW64_64KEY;
     private readonly object gate = new();
     private static readonly UnicodeEncoding Unicode = new(false, false, true);
     public static string ExecutablePath => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "TaskManager.Host.exe"));
     public static string RegistrationCommand => $"\"{ExecutablePath}\" {EntryFlag}";
+
+    // Fixed local maintenance entry: never accepts a hive, path, value or command.
+    // Reuse the same REG_SZ ownership, revision, write-handle re-read and readback as the UI.
+    internal TaskManagerIntegrationResult RemoveOwnedForUninstall()
+    {
+        lock (gate)
+        {
+            var before = Read();
+            if (!before.CanRead) throw Error(before.ReadError ?? new("error", "无法确认任务管理器入口所有权，卸载必须中止并保留程序文件。"));
+            if (!before.OwnsDebugger) return new(before, false, "没有精确属于本安装目录的REG_SZ Debugger，未修改Windows入口配置。");
+            return Apply(new(false, before.Revision));
+        }
+    }
 
     public TaskManagerIntegrationState Read()
     {

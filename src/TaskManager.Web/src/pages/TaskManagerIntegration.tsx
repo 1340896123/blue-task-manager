@@ -37,7 +37,7 @@ export default function TaskManagerIntegration({ connected, notify }: { connecte
     } finally { setBusy(false); }
   };
   const label = state ? ({ disabled: '未接管', enabled: '已由本目录程序接管', conflict: '存在其他或特殊配置', unavailable: '实际状态不可读取' })[state.status] : '正在读取实际状态';
-  const adminReason = state?.writeError?.message ?? '注册和取消需要当前计算机的管理员写权限；请以管理员身份运行本程序后重新读取，不会自动提权。';
+  const adminReason = state?.writeError?.message ?? '本程序已要求管理员启动；Windows仍拒绝或无法确认此入口的写权限，请检查实际错误后重新读取。';
   const allowWrite = Boolean(state?.canWrite && connected && !busy);
   return <>
     <section className="settings-section" aria-labelledby="task-manager-integration-title">
@@ -46,7 +46,7 @@ export default function TaskManagerIntegration({ connected, notify }: { connecte
         <div>
           <strong>接管原“任务管理器”入口</strong>
           <p>这会让屏幕底部任务栏右键菜单中的“任务管理器”打开蓝域，同时影响 Ctrl+Shift+Esc 等启动系统任务管理器的方式，不是新增一个任意菜单项。</p>
-          <p>范围：当前计算机（所有用户） · 注册和取消需要管理员写权限 · 默认关闭，不自动提权。</p>
+          <p>范围：当前计算机（所有用户） · 程序启动需要管理员权限 · 注册和取消无需再次提权 · 默认关闭。</p>
           <p><span className={`status-badge ${state?.status === 'enabled' ? 'success' : state?.status === 'conflict' || state?.status === 'unavailable' ? 'warning' : ''}`}><ShieldCheck aria-hidden="true"/>{label}</span></p>
           {state && <p>最近核验：{dateTime(state.checkedAtUtc)} · {state.canWrite === true ? '当前账户具有实际写权限' : state.canWrite === false ? '当前账户没有写权限' : '写权限未能确认'}</p>}
           {state?.conflictReason && <p className="metric-reasons">{state.conflictReason}</p>}
@@ -68,7 +68,7 @@ export default function TaskManagerIntegration({ connected, notify }: { connecte
     {confirmation && <Modal title={confirmation.enabled ? '启用任务管理器入口接管？' : '取消任务管理器入口接管？'} description="此操作改变的是Windows原有任务管理器入口，不是新增菜单项。" onClose={() => { setConfirmation(null); setDialogError(null); }} busy={busy} wide>
       <div className="integration-confirmation">
         <p><Info aria-hidden="true"/>{confirmation.enabled ? '任务栏右键中的“任务管理器”、Ctrl+Shift+Esc 等入口将打开本目录中的蓝域任务管理器。' : '仅撤销本目录程序的接管；其余Windows与其他工具配置保持不变，实际入口以刷新结果为准。'}</p>
-        <p>影响当前计算机的所有用户，需要管理员写权限；不会自动请求UAC或覆盖其他工具。</p>
+        <p>影响当前计算机的所有用户；本程序已要求管理员启动，此操作无需再次请求UAC。不会覆盖其他工具。</p>
         <p>启用前请把完整目录放在固定、且其他需要使用的账户可读取的位置。移动或删除程序目录前，务必先在原目录取消接管；仅撤销本程序的Debugger，保留其他配置。</p>
         <p className="integration-path">{confirmation.target.executablePath}</p>
         {state?.canWrite !== true && <p className="metric-reasons">{adminReason}</p>}
