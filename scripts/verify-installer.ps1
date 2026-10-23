@@ -22,13 +22,13 @@ New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 & $SevenZipPath 'x' '-y' "-o$extracted" $installer | Out-File -LiteralPath (Join-Path $evidence '7z-extract.txt') -Encoding utf8
 if ($LASTEXITCODE -ne 0) { throw "7-Zip extraction failed: $LASTEXITCODE" }
 $manifests = [ordered]@{}
-foreach ($target in @(@{ Name='host'; Path=(Join-Path $payload 'TaskManager.Host.exe') }, @{ Name='installer'; Path=$installer })) {
+foreach ($target in @(@{ Name='host'; Path=(Join-Path $payload 'TaskManager.Host.exe'); Level='requireAdministrator' }, @{ Name='launcher'; Path=(Join-Path $payload 'TaskManager.Launcher.exe'); Level='asInvoker' }, @{ Name='installer'; Path=$installer; Level='requireAdministrator' })) {
     $manifest = Join-Path $evidence ($target.Name + '.manifest.xml')
     & $ManifestToolPath "-inputresource:$($target.Path);#1" "-out:$manifest" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Manifest extraction failed: $($target.Name)" }
     [xml]$document = Get-Content -LiteralPath $manifest -Raw
     $level = $document.SelectSingleNode('//*[local-name()="requestedExecutionLevel"]')
-    if ($level.level -ne 'requireAdministrator' -or $level.uiAccess -ne 'false') { throw "Administrator manifest missing: $($target.Name)" }
+    if ($level.level -ne $target.Level -or $level.uiAccess -ne 'false') { throw "Execution manifest mismatch: $($target.Name), expected $($target.Level) / uiAccess=false" }
     $manifests[$target.Name] = $level.level
 }
 $files = @(Get-ChildItem -LiteralPath $payload -Recurse -Force -File)

@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskManager.TestWorkload", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskManager.WindowProbe", "tests\TaskManager.WindowProbe\TaskManager.WindowProbe.csproj", "{33E49009-F25B-45C9-B070-AC6BE589BDA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskManager.Launcher", "src\TaskManager.Launcher\TaskManager.Launcher.csproj", "{3680BF7B-B697-4131-9147-92BD4E660744}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,6 +61,18 @@ Global
 		{33E49009-F25B-45C9-B070-AC6BE589BDA9}.Release|x64.Build.0 = Release|Any CPU
 		{33E49009-F25B-45C9-B070-AC6BE589BDA9}.Release|x86.ActiveCfg = Release|Any CPU
 		{33E49009-F25B-45C9-B070-AC6BE589BDA9}.Release|x86.Build.0 = Release|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Debug|x64.Build.0 = Debug|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Debug|x86.Build.0 = Debug|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Release|x64.ActiveCfg = Release|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Release|x64.Build.0 = Release|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Release|x86.ActiveCfg = Release|Any CPU
+		{3680BF7B-B697-4131-9147-92BD4E660744}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,5 +81,6 @@ Global
 		{724EB2FF-5194-417F-905A-C1B6DEEF1782} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{35286F73-4238-4524-ABBF-0B972BC82DF5} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{33E49009-F25B-45C9-B070-AC6BE589BDA9} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{3680BF7B-B697-4131-9147-92BD4E660744} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

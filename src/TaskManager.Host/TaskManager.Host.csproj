@@ -34,7 +34,14 @@
     <PackageReference Include="System.Drawing.Common" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../TaskManager.Launcher/TaskManager.Launcher.csproj" ReferenceOutputAssembly="false" />
     <Content Update="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Electron\custom_main.js" CopyToOutputDirectory="PreserveNewest" TargetPath=".electron\custom_main.js" />
   </ItemGroup>
+  <Target Name="CopyTaskManagerLauncher" AfterTargets="Build">
+    <ItemGroup>
+      <LauncherArtifact Include="$(MSBuildThisFileDirectory)..\TaskManager.Launcher\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\TaskManager.Launcher.exe;$(MSBuildThisFileDirectory)..\TaskManager.Launcher\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\TaskManager.Launcher.dll;$(MSBuildThisFileDirectory)..\TaskManager.Launcher\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\TaskManager.Launcher.deps.json;$(MSBuildThisFileDirectory)..\TaskManager.Launcher\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\TaskManager.Launcher.runtimeconfig.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(LauncherArtifact)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

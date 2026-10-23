@@ -1,0 +1,10 @@
+ShellExecuteExW
+SEE_MASK_NOCLOSEPROCESS
+SEE_MASK_NOASYNC
+SEE_MASK_FLAG_NO_UI
+CoInitializeEx
+CoUninitialize
+CloseHandle
+GetSystemDirectoryW
+GetWindowsDirectoryW
+MessageBoxW

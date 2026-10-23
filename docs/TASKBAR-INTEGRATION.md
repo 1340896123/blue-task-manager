@@ -1,5 +1,7 @@
 # 任务栏右键中的任务管理器入口
 
+> 当前740修复见 [IFEO-ELEVATION-FIX.md](IFEO-ELEVATION-FIX.md)。新IFEO命令指向同目录asInvoker Launcher，Launcher使用CsWin32 ShellExecuteEx runas请求管理员Host；Host实际提升检查不变。下文“IFEO直接Host”“不自动触发UAC”等旧启动描述由此覆盖。旧同目录精确REG_SZ Host命令显示“旧接管需要修复”，设置中可明确修复或取消；升级保留状态且不静默迁移。正式卸载可严格清理同目录新旧两种自有命令。
+
 > 最新要求见 [ADMIN-INSTALLER.md](ADMIN-INSTALLER.md)：所有正式启动改为系统 UAC 管理员入口并验证真实提升令牌；本页“不自动提权/标准用户写拒绝”描述的是此前基线。IFEO仍默认关闭、启用需明确用户动作；同目录升级保留，正式卸载删除文件前只取消严格属于安装目录的 REG_SZ Debugger，失败中止。下文历史测试记录保持原样，当前补验采用 R 系列。
 
 本功能沿用成熟任务管理器的标准 Windows IFEO Debugger 方案，不新增任意任务栏菜单项。它接管原“任务管理器”入口，同时影响 Ctrl+Shift+Esc 等启动 taskmgr.exe 的方式。默认关闭，只能由用户在设置中确认后启用，范围为当前计算机，需要 HKLM 64位注册表写权限；不自动触发 UAC 或后台提权。

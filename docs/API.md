@@ -2,9 +2,9 @@
 
 ## 任务栏右键任务管理器入口增量
 
-详见[TASKBAR-INTEGRATION.md](TASKBAR-INTEGRATION.md)。GET `desktop/task-manager-integration`实时查询HKLM64 IFEO，返回`{status:disabled|enabled|conflict|unavailable,enabled:boolean|null,ownsDebugger,canRead,canWrite:boolean|null,canEnable,canDisable,executableAvailable,scope:machine,executablePath,registrationCommand,currentDebugger:string|null,useFilter:uint|null,revision,checkedAtUtc,conflictReason,readError,writeError}`。无读取权限/未知不当作未接管；实际SET_VALUE或父键CREATE_SUB_KEY权限独立探测，GET不写注册表。
+详见[IFEO提升修复](IFEO-ELEVATION-FIX.md)。GET `desktop/task-manager-integration`实时查询HKLM64 IFEO，返回`{status:disabled|enabled|migrationRequired|conflict|unavailable,enabled:boolean|null,ownsDebugger,migrationRequired,canRepair,canRead,canWrite:boolean|null,canEnable,canDisable,executableAvailable,scope:machine,executablePath,registrationCommand,currentDebugger:string|null,useFilter:uint|null,revision,checkedAtUtc,conflictReason,readError,writeError}`。无读取权限/未知不当作未接管；实际SET_VALUE或父键CREATE_SUB_KEY权限独立探测，GET不写注册表。executablePath为同目录Launcher；Host的原生窗口复用验证仍使用Host路径。executableAvailable同时要求Launcher与Host存在。
 
-POST同路径输入仅`{enabled:boolean,expectedRevision:string}`，沿用token/Origin校验。revision为JSON.NET输入的SHA256不透明版本，覆盖本目录固定命令、配置及实际写权限；不接受renderer命令、路径、注册表位置或菜单文字。返回`{state:上述实际状态,changed:boolean,message}`；400缺版本，403实际权限拒绝含Windows码5，409预期变化/其他工具/特殊配置冲突，503读取或写后核验不可用。读前/同写句柄写前均重验，写后读回；只有未接管的空Debugger才写固定引号路径+`--task-manager-entry`，取消只删精确自有Debugger，不删键或其他配置，不自动UAC。注册表无通用CAS，因此不声称跨其他工具的原子事务；检测到的变化拒绝，写后异常提示可能生效并要求刷新。
+POST同路径输入仅`{enabled:boolean,expectedRevision:string,repair?:boolean}`，沿用token/Origin校验。revision为JSON.NET输入的SHA256不透明版本，覆盖本目录固定命令、配置及实际写权限；不接受renderer命令、路径、注册表位置或菜单文字。返回`{state:上述实际状态,changed:boolean,message}`；400缺版本/非法修复组合，403实际权限拒绝含Windows码5，409预期变化/其他工具/特殊配置冲突，503读取或写后核验不可用。读前/同写句柄写前均重验，写后读回；新注册写入`"<同目录>\TaskManager.Launcher.exe" --task-manager-entry`。精确REG_SZ旧Host命令以migrationRequired呈现（enabled为null），ownsDebugger与canDisable仍正确；只有用户确认且`enabled:true,repair:true`才迁移，特殊配置不迁移。取消/正式卸载可删除同目录精确新旧自有命令，不删键或其他配置。配置操作不另行UAC；系统启动经asInvoker Launcher的Shell runas请求管理员Host。注册表无通用CAS，因此不声称跨其他工具的原子事务；检测到的变化拒绝，写后异常提示可能生效并要求刷新。
 
 ## 1.1实施增量
 

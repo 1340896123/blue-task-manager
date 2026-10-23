@@ -20,6 +20,17 @@ $destination = Join-Path $root 'output/TaskManager-win-x64'
 # This directory was freshly recreated by build.ps1. Replace the managed output
 # with publish output without deleting or relocating the Electron runtime.
 Get-ChildItem -LiteralPath $runtime -Force | Where-Object { $_.Name -ne '.electron' } | Copy-Item -Destination $destination -Recurse -Force
+$launcherProject = Join-Path $root 'src/TaskManager.Launcher/TaskManager.Launcher.csproj'
+$launcherPublish = (Join-Path $root 'output/publish-launcher-win-x64') + [IO.Path]::DirectorySeparatorChar
+Invoke-Checked { dotnet restore $launcherProject -r win-x64 --locked-mode }
+Invoke-Checked { dotnet publish $launcherProject -c Release -r win-x64 --self-contained true --no-restore -o $launcherPublish -p:UseAppHost=true -p:PublishTrimmed=false -p:PublishSingleFile=false -p:PublishAot=false }
+# Both executables use this exact pinned runtime; retain the Host's complete
+# .NET/ASP.NET tree and add the Launcher's own self-contained application files.
+foreach ($name in @('TaskManager.Launcher.exe','TaskManager.Launcher.dll','TaskManager.Launcher.deps.json','TaskManager.Launcher.runtimeconfig.json')) {
+    Copy-Item -LiteralPath (Join-Path $launcherPublish $name) -Destination $destination -Force
+}
+$launcherConfig = Get-Content -LiteralPath (Join-Path $destination 'TaskManager.Launcher.runtimeconfig.json') -Raw | ConvertFrom-Json
+if ($launcherConfig.runtimeOptions.framework -or $launcherConfig.runtimeOptions.frameworks -or @($launcherConfig.runtimeOptions.includedFrameworks).Count -ne 1 -or $launcherConfig.runtimeOptions.includedFrameworks[0].version -ne '10.0.12') { throw 'Launcher must use the pinned self-contained runtime.' }
 Get-ChildItem -LiteralPath $destination -File -Filter '*.pdb' | Remove-Item -Force
 [xml]$projectXml = Get-Content -LiteralPath $project -Raw
 $runtimeVersion = [string]$projectXml.Project.PropertyGroup.DesktopRuntimeVersion

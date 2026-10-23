@@ -178,6 +178,7 @@ Section "蓝域任务管理器（必需）" MainSection
     ${EndIf}
     !include "${GENERATED_DIR}\check-paths.nsh"
     !insertmacro CheckImageLock "TaskManager.Host.exe"
+    !insertmacro CheckImageLock "TaskManager.Launcher.exe"
     !insertmacro CheckImageLock ".electron\node_modules\electron\dist\electron.exe"
     SetOverwrite on
     ClearErrors
@@ -299,6 +300,7 @@ Section "Uninstall"
     !insertmacro ValidateMarker
     !include "${GENERATED_DIR}\check-paths.nsh"
     !insertmacro CheckImageLock "TaskManager.Host.exe"
+    !insertmacro CheckImageLock "TaskManager.Launcher.exe"
     !insertmacro CheckImageLock ".electron\node_modules\electron\dist\electron.exe"
     !include "${GENERATED_DIR}\verify-maintenance.nsh"
     ClearErrors

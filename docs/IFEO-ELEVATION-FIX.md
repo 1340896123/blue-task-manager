@@ -30,7 +30,7 @@
 
 增加同目录 `TaskManager.Launcher.exe`，manifest 为 `asInvoker` / `uiAccess=false`，以 CsWin32 生成 `ShellExecuteExW` 等实际使用的绑定。Launcher 无 HTTP、采集、偏好、Electron 或后台业务逻辑；唯一启动目标为 `AppContext.BaseDirectory` 中固定 `TaskManager.Host.exe`，工作目录为同一完整目录，传入固定 `--task-manager-entry`。
 
-IFEO 注册值改为 `"<目录>\TaskManager.Launcher.exe" --task-manager-entry`。仅接受此固定入口形态及 Windows 追加的可信系统 taskmgr 路径/原始参数；不能把原始命令行、可执行路径、`--port`、`--headless`、维护开关或环境外部参数直接转交为 Host 配置。必须在任何提升请求前拒绝异常入口。系统附加的 `/7` 等 taskmgr 参数无业务含义，无需传给管理员 Host。
+IFEO 注册值改为 `"<目录>\TaskManager.Launcher.exe" --task-manager-entry`。仅接受此固定入口形态及 Windows 追加的可信系统 taskmgr 路径/原始参数；兼容精确basename `taskmgr.exe`，完整路径只接受真实Windows System32/SysWOW64。最多34项，原始开关只接受有界的`/`形式ASCII字母数字及`:=-`；不能把原始命令行、可执行路径、`--port`、`--headless`、维护开关或环境外部参数直接转交为 Host 配置。必须在任何提升请求前拒绝异常入口并返回87。系统附加的 `/7` 等 taskmgr 参数无业务含义，无需传给管理员 Host。
 
 使用 Shell `runas` 请求管理员 Host；无递归启动 Launcher，无 740 后无界重试，无低权限回退。取消返回真实 1223，不创建 Host/HTTP/Electron 或写偏好。路径不存在或启动失败给出明确 Windows 原因。短命 launcher 完成 Shell 调用后退出并释放句柄；不得等待整段桌面应用生命周期。
 

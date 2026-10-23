@@ -2,10 +2,12 @@
 
 日期：2026-10-23。用户要求“调整权限，要求为管理员权限运行。并且制作 nsis 的安装包”。本增量覆盖旧文档的“普通用户运行”“无需安装器”要求；原验收结果保留为历史事实，新行为按 R 系列重新验收。
 
+> IFEO 740修复以 [IFEO-ELEVATION-FIX.md](IFEO-ELEVATION-FIX.md) 为当前专项合同，覆盖本页“唯一入口/IFEO直接Host/不另建launcher”旧描述。Host继续requireAdministrator与实际TokenElevation校验；仅系统IFEO先创建同目录asInvoker Launcher，由CsWin32 ShellExecuteEx runas固定Host与固定entry参数。Launcher取消1223不重试，不启动HTTP/Electron。新旧自有命令均可严格取消/卸载；旧Host值必须用户明确修复，不因升级自动迁移。
+
 ## 1. 交付与启动合同
 
 - Windows 10/11 x64；沿用 React/Tailwind/Electron.NET、JSON.NET、CsWin32 与同源 HTTP，不增加服务、驱动、提权代理或私有协议。
-- `TaskManager.Host.exe` 是唯一正式入口，嵌入 `requestedExecutionLevel level="requireAdministrator" uiAccess="false"`。直接双击、开始菜单、桌面快捷方式、便携 `start.cmd` 和 IFEO 都必须进入同一个管理员主机。Windows 的 UAC 同意/凭据由系统处理，取消后不启动应用、不循环重试。
+- `TaskManager.Host.exe` 是业务主机入口，嵌入 `requestedExecutionLevel level="requireAdministrator" uiAccess="false"`。直接双击、开始菜单、桌面快捷方式和便携 `start.cmd` 直接启动Host；IFEO经同目录 `TaskManager.Launcher.exe`（asInvoker）使用标准runas启动同一个管理员Host。Windows 的 UAC 同意/凭据由系统处理，取消后不启动应用、不循环重试。
 - 在任务栏 entry 解析/窗口复用、偏好读写、Kestrel 与 Electron 初始化之前，使用 CsWin32 `OpenProcessToken` / `GetTokenInformation(TokenElevation)` 验证实际进程令牌。不是提升令牌或查询失败即明确拒绝、返回非零；管理员组 deny-only 不能当作已提升。`dotnet TaskManager.Host.dll`、`dotnet run`、`--headless`、安装器维护参数均不能绕过检查。
 - 保留 Host-first 模式：管理员 Host 启动官方 Electron.NET Electron browser 主进程，子进程继承相应安全上下文。Chromium renderer 的 sandbox 限制继续有效，不能为提权关闭 sandbox、contextIsolation 或打开 nodeIntegration；不能把“每个 renderer 都是高完整性”作为验收要求。
 - 管理员权限不等于 SYSTEM/PPL/内核权限，不自动启用 SeDebugPrivilege；关键进程保护、PID+创建时间核验、最小句柄权限、Origin/写令牌检查全部保留。新任务由管理员 Host 的标准 CreateProcess 创建，默认继承提升权限，运行对话框说明同步反映真实行为。
@@ -24,7 +26,7 @@
 
 ## 3. IFEO 升级与卸载
 
-任务栏接管默认关闭；本轮不把“安装”视为启用全机接管的请求。固定 HKLM64 `Image File Execution Options\taskmgr.exe` 的所有权仍为 **REG_SZ 类型且完整值精确等于** `"<当前安装目录>\TaskManager.Host.exe" --task-manager-entry`。其他工具、其他目录、类型或参数差异均不拥有；不删除整键。
+任务栏接管默认关闭；本轮不把“安装”视为启用全机接管的请求。固定 HKLM64 `Image File Execution Options\taskmgr.exe` 的所有权为 **REG_SZ 类型且完整值精确等于** `"<当前安装目录>\TaskManager.Launcher.exe" --task-manager-entry` 或旧 `"<当前安装目录>\TaskManager.Host.exe" --task-manager-entry`。新注册使用Launcher；旧值明确修复才迁移。其他工具、其他目录、类型或参数差异均不拥有；不删除整键。
 
 同路径升级保留原自有 Debugger，因为入口路径不变；拒绝运行中覆盖。若升级涉及删除原目录或换路径，必须先在原目录通过生产 CsWin32 所有权逻辑取消精确自有值，读回确认后才删除文件，不自动转移/启用新路径。其他便携目录的接管不属于安装器，保持原样并说明。
 
