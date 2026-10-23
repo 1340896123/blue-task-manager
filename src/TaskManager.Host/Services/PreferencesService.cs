@@ -70,6 +70,7 @@ public sealed class PreferencesService
     private static void Validate(UiPreferences ui)
     {
         if (ui is null || ui.Version != 1 || ui.Density is not ("compact" or "standard") || ui.ProcessView is not ("flat" or "tree") || ui.Pages?.Count > 8) Invalid();
+        if (ui!.SearchQuery?.Length > 256 || ui.SearchQuery?.Contains('\0') == true) Invalid();
         foreach (var pair in ui!.Pages ?? new Dictionary<string, PagePreference>())
         {
             var p = pair.Value;

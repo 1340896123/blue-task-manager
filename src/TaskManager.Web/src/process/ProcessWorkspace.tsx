@@ -11,9 +11,9 @@ import ProcessDetail from './ProcessDetail';
 import ProcessActionDialog from './ProcessActionDialog';
 import { exportProcesses, processIo, processRows, type ProcessRow } from './processModel';
 export type LocateRequest = { identity: string; sequence: number } | null;
-export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstrap, preferences, connected, frozen, toggleFrozen, onRun, refresh, notify, onService, locateRequest }: {
+export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstrap, preferences, connected, frozen, toggleFrozen, onRun, refresh, notify, onService, locateRequest, onLocateConsumed }: {
   page: Page; snapshot: Snapshot; liveSnapshot: Snapshot; bootstrap: Bootstrap | null; preferences: PreferencesController; connected: boolean; frozen: boolean; toggleFrozen: () => void; onRun: () => void; refresh: () => void;
-  notify: (text: string, error?: boolean) => void; onService: (name: string) => void; locateRequest: LocateRequest;
+  notify: (text: string, error?: boolean) => void; onService: (name: string) => void; locateRequest: LocateRequest; onLocateConsumed: (sequence: number) => void;
 }) {
   const pref = preferences.page(page); const filters: PageFilters = pref.filters ?? { currentUser: false, sessionId: null, state: 'all' };
   const searching = Boolean(pref.query.trim() || filters.currentUser || filters.sessionId != null || filters.state !== 'all');
@@ -27,16 +27,16 @@ export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstr
   const liveIds = useMemo(() => new Set(liveSnapshot.processes.map(p => p.identity)), [liveSnapshot.processes]);
   useEffect(() => { const identities = new Set(snapshot.processes.map(p => p.identity)); setCollapsed(previous => { const retained = [...previous].filter(id => identities.has(id)).slice(0, 20000); return retained.length === previous.size ? previous : new Set(retained); }); }, [snapshot.processes]);
   const patch = (value: Parameters<PreferencesController['updatePage']>[1]) => preferences.updatePage(page, value);
-  const locate = (identity: string) => {
+  const locate = (identity: string, search = false) => {
     const target = snapshot.processes.find(p => p.identity === identity);
     if (!target) { notify('该进程尚未进入当前显示快照，或已退出。请继续显示最新数据后重试。', true); return; }
-    patch({ query: '', filters: null, selectedIdentity: identity }); setCollapsed(new Set()); setReveal(`${identity}`);
+    patch({ query: search ? String(target.pid) : '', filters: null, selectedIdentity: identity, scrollTop: 0 }); setCollapsed(new Set()); setReveal(`${identity}`);
   };
-  useEffect(() => { if (locateRequest) { patch({ query: String(Number(locateRequest.identity.split(':')[0])), filters: null, selectedIdentity: locateRequest.identity, scrollTop: 0 }); setCollapsed(new Set()); setReveal(locateRequest.identity); } }, [locateRequest?.sequence]);
+  useEffect(() => { if (locateRequest) { patch({ query: String(Number(locateRequest.identity.split(':')[0])), filters: null, selectedIdentity: locateRequest.identity, scrollTop: 0 }); setCollapsed(new Set()); setReveal(locateRequest.identity); onLocateConsumed(locateRequest.sequence); } }, [locateRequest?.sequence]);
   const locateParent = (target: Process) => {
     const full = processRows(snapshot.processes, '', null, bootstrap?.currentUserName, sort, false, new Set());
     const parent = full.parents.get(target.identity);
-    if (parent) { setDetailTarget(null); locate(parent); } else notify('父进程已退出或创建身份无法确认，无法可靠定位。', true);
+    if (parent) { setDetailTarget(null); locate(parent, true); } else notify('父进程已退出或创建身份无法确认，无法可靠定位。', true);
   };
   const runAction = async (command: string, target: Process) => {
     if (command.startsWith('copy')) {

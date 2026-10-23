@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { Activity, Cpu, HardDrive, MemoryStick, Network, CircuitBoard } from 'lucide-react';
-import { bytes, dateTime, percent, rate, time, uptime } from './format';
-import { MissingValue } from './components';
+import { bytes, dateTime, matches, percent, rate, time, uptime } from './format';
+import { Empty, MissingValue } from './components';
 import type { Availability, PagePreference, Snapshot } from './types';
 type Point = { timestamp: string; values: (number | null)[] };
 type Series = { label: string; color: string };
@@ -31,12 +31,21 @@ function Reasons({ unavailable }: { unavailable: Availability }) { const message
 function Facts({ values }: { values: [string,ReactNode][] }) { return <dl className="resource-fact-grid">{values.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>; }
 const linkSpeed=(raw:string)=>{const n=Number(BigInt(raw)); return `${(n>=1e9?n/1e9:n/1e6).toFixed(1)} ${n>=1e9?'Gbit/s':'Mbit/s'}`;};
 export default function Performance({ snapshot, pref, patch }: { snapshot: Snapshot; pref: PagePreference; patch: (patch:Partial<PagePreference>,silent?:boolean)=>void }) {
-  const type = pref.resourceType && pref.resourceType !== 'system' ? pref.resourceType : 'cpu';
   const network = snapshot.networkAdapters;
-  const choices = type==='network' ? network.map(a=>({id:a.id,name:a.alias,description:`${a.isHardware?'硬件':a.isLoopback?'回环':a.isTunnel?'隧道':'虚拟 / 软件'} · ${a.status==='IfOperStatusUp'?'已连接':a.status}`})) : type==='disk' ? snapshot.physicalDisks.map(d=>({id:d.id,name:d.name,description:'PhysicalDisk 原始实例'})) : type==='gpu' ? snapshot.gpuAdapters.map(g=>({id:g.id,name:g.description??`LUID ${g.adapterLuid}`,description:`${g.isSoftware===true?'软件适配器 · ':''}LUID ${g.adapterLuid} · phys 索引 ${g.physicalIndex} · ${g.engineCount} 个引擎`})) : [];
+  const searching = Boolean(pref.query.trim());
+  const categories = resourceTypes.map(resource => {
+    const all = resource.id==='network' ? network.map(a=>({id:a.id,name:a.alias,description:`${a.isHardware?'硬件':a.isLoopback?'回环':a.isTunnel?'隧道':'虚拟 / 软件'} · ${a.status==='IfOperStatusUp'?'已连接':a.status}`, searchText:`${a.description} ${a.id} ${a.interfaceIndex}`})) : resource.id==='disk' ? snapshot.physicalDisks.map(d=>({id:d.id,name:d.name,description:'PhysicalDisk 原始实例',searchText:d.id})) : resource.id==='gpu' ? snapshot.gpuAdapters.map(g=>({id:g.id,name:g.description??`LUID ${g.adapterLuid}`,description:`${g.isSoftware===true?'软件适配器 · ':''}LUID ${g.adapterLuid} · phys 索引 ${g.physicalIndex} · ${g.engineCount} 个引擎`,searchText:g.id})) : [];
+    const categoryMatch = matches(pref.query, resource.label, resource.id, resource.id==='cpu'?'中央处理器':resource.id==='memory'?'物理内存':resource.id==='network'?'网络适配器':resource.id==='disk'?'物理磁盘':'显卡适配器');
+    const choices = categoryMatch ? all : all.filter(choice => matches(pref.query, choice.name, choice.description, choice.searchText));
+    return { ...resource, choices, visible: categoryMatch || choices.length > 0 };
+  }).filter(resource => resource.visible);
+  const savedType = pref.resourceType && pref.resourceType !== 'system' ? pref.resourceType : 'cpu';
+  const resource = categories.find(resource => resource.id === savedType) ?? categories[0];
+  const type = resource?.id ?? savedType;
+  const choices = resource?.choices ?? [];
   const preferredNetwork=network.find(a=>a.isHardware&&a.status==='IfOperStatusUp')??network.find(a=>a.status==='IfOperStatusUp')??network[0];
-  const savedMissing=Boolean(pref.resourceId&&!choices.some(c=>c.id===pref.resourceId));
-  const selectedId=choices.find(c=>c.id===pref.resourceId)?.id??(type==='network'?preferredNetwork?.id:choices[0]?.id)??null;
+  const savedMissing=Boolean(!searching&&pref.resourceId&&!choices.some(c=>c.id===pref.resourceId));
+  const selectedId=choices.find(c=>c.id===pref.resourceId)?.id??(type==='network'?choices.find(c=>c.id===preferredNetwork?.id)?.id:undefined)??choices[0]?.id??null;
   const adapter=network.find(a=>a.id===selectedId), disk=snapshot.physicalDisks.find(d=>d.id===selectedId), gpu=snapshot.gpuAdapters.find(g=>g.id===selectedId);
   const sys=snapshot.system; const isPdh=type==='disk'||type==='gpu';
   const points = useMemo(()=>{ const output:Point[]=[]; const seen=new Set<string>(); for(const p of snapshot.performanceHistory.slice(-120)) { const timestamp=isPdh?p.telemetryCapturedAtUtc:p.capturedAtUtc; if(!timestamp||seen.has(timestamp))continue;seen.add(timestamp);
@@ -46,9 +55,10 @@ export default function Performance({ snapshot, pref, patch }: { snapshot: Snaps
   const sourceTime=isPdh?snapshot.telemetry?.capturedAtUtc:snapshot.capturedAtUtc;
   const title=type==='cpu'?'CPU 使用率':type==='memory'?'物理内存':type==='network'?(adapter?.alias??'网络适配器'):type==='disk'?`磁盘 ${disk?.name??'等待来源'}`:`GPU · ${gpu?(gpu.description??`LUID ${gpu.adapterLuid}`):'等待来源'}`;
   const value=type==='cpu'?percent(sys.cpuPercent):type==='memory'?percent(sys.memoryPercent):type==='network'?rate(adapter?.receiveBytesPerSecond??null):type==='disk'?percent(disk?.activePercent??null):percent(gpu?.utilizationPercent??null);
-  return <div className="performance-workspace"><div className="resource-tabs" role="group" aria-label="资源类别">{resourceTypes.map(({id,label,Icon})=><button key={id} className="command-button" aria-pressed={type===id} onClick={()=>patch({resourceType:id,resourceId:null,scrollTop:0})}><Icon size={16} aria-hidden="true"/>{label}</button>)}</div><div className={`resource-layout ${['network','disk','gpu'].includes(type)?'has-resource-list':''}`}>
-    {['network','disk','gpu'].includes(type)&&<aside className="resource-picker" aria-label="选择实际资源">{choices.length?choices.map(c=><button key={c.id} aria-pressed={selectedId===c.id} onClick={()=>patch({resourceId:c.id,scrollTop:0})}><strong>{c.name}</strong><small>{c.description}</small></button>):<p className="detail-note">等待真实资源枚举</p>}</aside>}
-    <section key={`${type}:${selectedId}`} className="resource-content page-scroll" onScroll={event=>patch({scrollTop:event.currentTarget.scrollTop},true)} ref={node=>{if(node&&node.dataset.restored!=='true'){node.scrollTop=pref.scrollTop;node.dataset.restored='true';}}}>
+  if (!resource) return <Empty title="没有匹配的性能资源" description="请修改或清空顶部共用搜索，查看资源类别与本机实际设备。"/>;
+  return <div className="performance-workspace"><div className="resource-tabs" role="group" aria-label="资源类别">{categories.map(({id,label,Icon})=><button key={id} className="command-button" aria-pressed={type===id} onClick={()=>patch({resourceType:id,resourceId:null,scrollTop:0})}><Icon size={16} aria-hidden="true"/>{label}</button>)}</div><div className={`resource-layout ${['network','disk','gpu'].includes(type)?'has-resource-list':''}`}>
+    {['network','disk','gpu'].includes(type)&&<aside className="resource-picker" aria-label="选择实际资源">{choices.length?choices.map(c=><button key={c.id} aria-pressed={selectedId===c.id} onClick={()=>patch({resourceType:type,resourceId:c.id,scrollTop:0})}><strong>{c.name}</strong><small>{c.description}</small></button>):<p className="detail-note">等待真实资源枚举</p>}</aside>}
+    <section key={`${type}:${selectedId}:${pref.query}`} className="resource-content page-scroll" onScroll={event=>patch({scrollTop:event.currentTarget.scrollTop},true)} ref={node=>{if(node&&node.dataset.restored!=='true'){node.scrollTop=pref.scrollTop;node.dataset.restored='true';}}}>
       <div className="performance-heading"><div><h2>{title}</h2><p>{sourceTime?`来源时刻 ${dateTime(sourceTime)}`:'计数器正在初始化 / 预热'} · 最多120个真实点</p></div><strong className="resource-current">{value}</strong></div>
       {savedMissing&&<p className="page-note" role="status">原选资源已不在当前枚举中，暂显示可用资源；重新选择可保存新偏好。</p>}
       {unavailable&&<Reasons unavailable={unavailable}/>}{isPdh&&snapshot.telemetry&&<Reasons unavailable={snapshot.telemetry.unavailable}/>}
