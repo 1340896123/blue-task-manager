@@ -72,7 +72,7 @@ function Assert-NoLinks([string]$Path) {
     $current = Get-Item -LiteralPath $Path -Force
     while ($null -ne $current) {
         if ($current.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Filesystem links are not allowed in installer acceptance paths.' }
-        $current = if ($current.PSIsContainer) { $current.Parent } else { $current.Directory }
+        $current = if ($current -is [IO.DirectoryInfo]) { $current.Parent } else { $current.Directory }
     }
 }
 
