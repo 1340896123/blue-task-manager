@@ -171,6 +171,7 @@ jobs:
           path: |
             output/installer-ci/acceptance.json
             output/installer-ci/acceptance.md
+            output/installer-ci/desktop-startup.json
             output/installer-ci/screenshots/*.png
           if-no-files-found: ignore
           retention-days: 14

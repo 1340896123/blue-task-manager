@@ -426,6 +426,10 @@ function Invoke-DesktopAcceptance {
         Assert-NoInstalledProcess 'after the desktop close flow'
     } finally {
         Copy-DesktopScreenshots $started
+        $startupDiagnostic = Join-Path $projectRoot 'output/playwright/final-desktop-startup.json'
+        if ((Test-Path -LiteralPath $startupDiagnostic -PathType Leaf) -and (Get-Item -LiteralPath $startupDiagnostic).LastWriteTimeUtc -ge $started) {
+            Copy-Item -LiteralPath $startupDiagnostic -Destination (Join-Path $output 'desktop-startup.json') -Force
+        }
         if (-not $child.HasExited) {
             Update-OwnedDescendants
             foreach ($entry in @($ownedProcesses | Sort-Object -Property Depth -Descending)) { Stop-OwnedIdentity $entry }
