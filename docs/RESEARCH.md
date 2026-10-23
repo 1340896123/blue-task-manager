@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 管理员运行与 NSIS 安装（2026-10-23 增量）
+
+实际获取并核验 Microsoft requireAdministrator/TokenElevation/CreateProcess/.NET self-contained 官方源码文档、Electron.NET 固定提交 Host-first controller、electron-builder v26.0.12 的 NSIS installer/uninstaller/winOptions 及 NSIS v3.11 MUI2 Basic 示例。URL、采用理由与边界集中记于 [ADMIN-INSTALLER.md](ADMIN-INSTALLER.md) 第4节。选择标准 NSIS/MUI2 打包既有 Host-first 自包含目录；不把 electron-builder 的 Electron 入口权限选项误当作 .NET Host 权限，不新增安装协议。用户最新要求覆盖旧普通用户运行/不做安装器范围，历史结果不改写。
+
 ## 任务栏原任务管理器入口接管（本轮增量）
 
 固定研究版本[TaskExplorer 9f3f95d22f07f759dd1e0114417529ba51decb01 的 CustomSetupTool/util.c](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/ProcessHacker/tools/CustomSetupTool/util.c)，核验`SetupHasTaskMgrDebuggerIfeo`（755行附近）和`SetupCreateTaskMgrDebuggerIfeo`（790行附近）：成熟任务管理器通过HKLM 64位IFEO taskmgr.exe Debugger与正确引用的程序路径接管系统入口。Windows没有面向普通桌面应用、通用新增任意任务栏右键菜单项的接口，本项目明确采用“接管原任务管理器入口”的实际行为，同时说明Ctrl+Shift+Esc等入口影响。

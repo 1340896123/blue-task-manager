@@ -1,5 +1,7 @@
 # 架构与数据合同
 
+> 最新管理员/安装增量见 [ADMIN-INSTALLER.md](ADMIN-INSTALLER.md)：Host-first 入口嵌入 requireAdministrator，并在 entry/HTTP/Electron 初始化前使用 CsWin32 验证实际 TokenElevation，DLL/headless 不能绕过。以自包含 win-x64 publish 完整目录交给标准 NSIS/MUI2 每机安装；不改变官方 Electron.NET 生命周期和 renderer sandbox。下文“无需安装器/验收无需管理员”保留为历史基线，当前以增量及 R 系列验收为准。
+
 > 1.1实施增量见 `PRODUCT-V1.1.md` 与 `API.md` 的1.1合同。新增能力沿用同源HTTP/JSON.NET/CsWin32，不新增私有传输协议；以下原始架构继续适用，服务只读等1.0范围由本轮增量覆盖。
 
 最终1.1补充：慢服务/启动/会话来源的首读与15秒更新均在单个合并后台任务，初次时间为null并明确loading，失败保留旧来源并退避，关闭最多等2秒。版本CompanyName、当前账户与启动注册表均已切换为CsWin32生成接口；常规文件枚举/时间/PNG编码保留.NET。

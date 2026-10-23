@@ -1,5 +1,23 @@
 # 真实链路验收矩阵
 
+## 管理员与 NSIS 增量（R系列）
+
+当前规范见 [ADMIN-INSTALLER.md](ADMIN-INSTALLER.md)。旧 A/B/T 结果是旧权限模式的历史证据，不能直接证明新包通过；新包适用业务链在提升 worker 中回归。Medium 会话允许验证明确拒绝，不能写“管理员成功”。服务测试按实际权限分支，仅操作测试自建服务。
+
+| ID | 真实场景 | 通过条件 |
+|---|---|---|
+| R01 | Release 构建、win-x64 自包含 publish、实际 mt.exe 提取 Host/安装器/卸载器 manifest | Host requireAdministrator/uiAccess=false；NSIS admin；实际包版本/图标正确；运行时、生产 UI、完整 .electron/许可存在，锁文件一致 |
+| R02 | Medium 令牌下 CreateProcess 运行 Host EXE；dotnet Host.dll/headless/entry/维护入口 | EXE 真实740；DLL自身非零明确拒绝；无HTTP/CDP/采集/Electron/偏好副作用，不能凭管理员组成员身份放行 |
+| R03 | 标准系统 UAC 启动专用管理员 worker，再运行便携 Host 与安装版快捷方式 | 实际 Host 和 Electron browser token 已提升，生产页面/真实采样/专用进程动作成立；renderer sandbox 保留；关闭无本实例残留。UAC未完成时标未执行 |
+| R04 | UAC取消、错误凭据/令牌查询失败，端口冲突 | 无低权限回退/循环提权/虚假成功；失败原因明确；未创建可用低权限服务 |
+| R05 | NSIS 完整安装到专用路径（含空格），静默模式/安装完成启动选项 | 无运行时/网络预装依赖；每机64位卸载记录、快捷方式正确指向Host；默认不启用IFEO；静默不自动开应用；记录包SHA256 |
+| R06 | 同版本重装/同路径升级，测试应用运行时尝试升级 | 原目录/偏好保留；运行中拒绝覆盖且不广杀进程；同路径自有IFEO保留、其他工具/其他目录值不变；不创建重复卸载条目 |
+| R07 | 卸载：无自有IFEO/严格自有REG_SZ/其他值与类型/清理失败 | 先以生产CsWin32清理严格自有值并读回才删文件；不删整键/其他值；失败中止并保留应用；成功删除本安装文件/快捷方式/卸载记录，默认保留账户偏好 |
+| R08 | 自包含/包内容与 ZIP/NSIS 同源核对；无预装.NET条件验证 | runtimeconfig及coreclr/hostfxr/ASP.NET依赖真实齐全，实际启动不依赖全局.NET/Node/npm；不能只凭“本机装有SDK时能启动”声明离线成功 |
+| R09 | 新包回归正式桌面核心、图标、entry和服务权限分支 | 真实 UI→HTTP→JSON.NET→CsWin32→Windows；仅测试身份/专用服务，Token/Origin/关键进程保护仍有效；旧低权限SCM硬断言已调整；记录未执行项与截图 |
+
+安装/卸载生命周期若受UAC限制，先交付已编译并静态核验的安装器、拒绝测试和可复现提升worker命令，明确缺少的实际成功证据。不得用启动请求受理、安装器编译成功或旧480项结果冒充R03/R05～R09全部通过。全局IFEO测试不为凑通过自动接管当前系统入口。
+
 ## 任务栏入口接管增量（T系列）
 
 | ID | 真实场景 | 通过条件 |
