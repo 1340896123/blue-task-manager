@@ -25,7 +25,9 @@
 
 下载ZIP后完整解压，双击`TaskManager-win-x64/start.cmd`，或直接运行同目录的`TaskManager.Host.exe`；源码构建对应`output/TaskManager-win-x64`。目录包含生产UI、Electron45.0.0和Electron.NET桥接依赖，可以移动整个目录运行；不要只复制exe。启用了任务栏接管时，移动前须先在原目录取消。
 
-目标为 Windows 10/11 x64。框架依赖运行时为 **Microsoft.NETCore.App 10.0** 与 **Microsoft.AspNetCore.App 10.0**（兼容后续 10.0 补丁），已安装 .NET 10 SDK 的开发机满足要求；不要求 Microsoft.WindowsDesktop.App。成品运行不需要 Node/npm，不需要联网。首次源码构建需要下载 NuGet/npm/Electron 依赖。
+目标为 Windows 10（19041）/11 x64。1.1.1 安装包和配套 ZIP 已内置 **Microsoft.NETCore.App / Microsoft.AspNetCore.App 10.0.12** 与 Electron 45.0.0，运行无需预装 .NET、Node/npm 或联网。首次源码构建需要下载 NuGet/npm/Electron 依赖。
+
+运行 `BlueDomainTaskManager-v1.1.1-win-x64-setup.exe`，由 Windows UAC 请求管理员权限，默认每机安装到 `Program Files\BlueDomainTaskManager`，创建直接启动管理员 Host 的开始菜单和可选桌面快捷方式。安装完成不自动启动，也不启用任务栏入口接管。运行中的本安装应用会阻止覆盖；重装/升级使用原目录，更换目录须先卸载。通过 Windows“已安装的应用”卸载；卸载先验证维护文件并由生产 CsWin32 链路清理本目录精确自有任务栏接管，不能确认成功即中止。额外文件及各账户 LocalAppData 偏好保留。安装器尚未数字签名。
 
 默认端口 `127.0.0.1:5188`；如被其他实例占用，可执行 `TaskManager.Host.exe --port=5189`。关闭窗口会退出本实例的主机、采集器、Electron 子进程与监听端口。本程序必须以管理员权限运行：EXE通过Windows UAC请求提升，启动时还会验证实际提升令牌；直接运行DLL、无窗口模式和卸载维护入口也不能绕过检查。管理员仍可能无法访问SYSTEM/PPL等受保护数据，界面保留实际原因。新任务默认继承管理员权限。以其他管理员账户提供凭据时，偏好保存在该账户的LocalAppData，不迁移其他账户配置。
 
@@ -66,10 +68,14 @@ GPU使用Windows PDH真实引擎计数并以DXGI实际型号名称标识；软�
 
 ## 打包
 
-完成构建、验收并把最新README/docs/design-system同步到便携目录后运行：
+安装包使用标准 Unicode NSIS 3/MUI2，先安装 NSIS 并将 `makensis.exe` 加入 PATH，再运行：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-release.ps1 -Version 1.1.0-preview.1
+npm run build:installer
+# 复用已发布且验证版本/运行时的完整目录：
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer.ps1 -SkipBuild -MakeNsisPath C:\nsis\makensis.exe
+# 独立静态提取和逐文件核验，需要7-Zip与Windows SDK mt.exe：
+npm run verify:installer
 ```
 
-输出`output/releases/BlueDomainTaskManager-v1.1.0-preview.1-win-x64.zip`和`SHA256SUMS`。脚本包含隐藏的`.electron`目录与依赖许可，拒绝目录链接/本地偏好/环境文件，并逐文件核对压缩包内SHA256；不会覆盖已有同名ZIP。
+公共入口先执行 `publish-desktop.ps1`，真实 `dotnet publish -r win-x64 --self-contained true` 后按 Host-first 方式组装，再从同一完整目录生成 `output/releases/BlueDomainTaskManager-v1.1.1-win-x64-setup.exe`、同版本 ZIP 和 `SHA256SUMS`。版本必须与 csproj、实际 Host 和 Electron 桥接一致；`-Version` 不能只修改文件标签。重复打包仅替换同版本文件，保留其他版本 ZIP。安装/删除清单和逐文件 SHA256 位于 `output/nsis/`；脚本包含隐藏 `.electron` 与许可，拒绝链接/本地偏好/环境文件，ZIP 逐文件校验。`npm run build:desktop` 继续生成依赖 .NET 10 的开发/测试目录；`npm run publish:desktop` 生成最终自包含目录。

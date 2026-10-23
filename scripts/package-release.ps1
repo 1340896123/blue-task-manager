@@ -1,15 +1,19 @@
 param(
-    [string]$Version = '1.1.0-preview.1',
+    [string]$Version,
     [string]$OutputDirectory
 )
 $ErrorActionPreference = 'Stop'
-if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Invalid release version.' }
 $projectRoot = Split-Path -Parent $PSScriptRoot
+[xml]$project = Get-Content -LiteralPath (Join-Path $projectRoot 'src/TaskManager.Host/TaskManager.Host.csproj') -Raw
+if (-not $Version) { $Version = [string]$project.Project.PropertyGroup.Version }
+if ($Version -ne [string]$project.Project.PropertyGroup.Version) { throw 'Release version must match the project.' }
+if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Invalid release version.' }
 $source = [IO.Path]::GetFullPath((Join-Path $projectRoot 'output/TaskManager-win-x64'))
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $projectRoot 'output/releases' }
 $destination = [IO.Path]::GetFullPath($OutputDirectory)
 if ($destination -eq $source -or $destination.StartsWith($source + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Archive output must be outside the portable directory.' }
 if (-not (Test-Path -LiteralPath $source -PathType Container)) { throw 'Build the portable directory first.' }
+if ([Reflection.AssemblyName]::GetAssemblyName((Join-Path $source 'TaskManager.Host.dll')).Version.ToString() -ne "$Version.0") { throw 'Actual Host payload version differs from release version.' }
 $entries = @(Get-ChildItem -LiteralPath $source -Recurse -Force)
 if ($entries | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'Portable tree contains a filesystem link.' }
 if ($entries | Where-Object { $_.Name -eq '.git' -or $_.Name -eq 'preferences.json' -or $_.Name -match '^\.env(?:\.|$)' }) { throw 'Portable tree contains local repository/configuration state.' }
@@ -60,7 +64,8 @@ try {
     }
 } finally { $archive.Dispose() }
 $hash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
-[IO.File]::WriteAllText((Join-Path $destination 'SHA256SUMS'), "$hash  $([IO.Path]::GetFileName($archivePath))`n", [Text.UTF8Encoding]::new($false))
+$releaseSums = @(Get-ChildItem -LiteralPath $destination -File | Where-Object { $_.Extension -in @('.exe','.zip') } | Sort-Object Name | ForEach-Object { (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + $_.Name })
+[IO.File]::WriteAllLines((Join-Path $destination 'SHA256SUMS'), $releaseSums, [Text.UTF8Encoding]::new($false))
 Write-Host "Verified $($files.Count) files, including .electron and dependency licenses."
 Write-Host $archivePath
 Write-Host "SHA256 $hash"

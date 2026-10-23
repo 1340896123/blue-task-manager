@@ -32,7 +32,7 @@ if (Test-Path -LiteralPath $destination) {
 }
 New-Item -ItemType Directory -Path $destination -Force | Out-Null
 # Copy dotfiles as well: .electron contains the official Electron.NET runtime.
-Get-ChildItem -LiteralPath $release -Force | Copy-Item -Destination $destination -Recurse -Force
+Get-ChildItem -LiteralPath $release -Force | Where-Object { $_.Name -ne 'win-x64' } | Copy-Item -Destination $destination -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'start.cmd') -Destination $destination -Force
 Copy-Item -LiteralPath (Join-Path $root 'README.md') -Destination $destination -Force
 Copy-Item -LiteralPath (Join-Path $root 'docs') -Destination $destination -Recurse -Force
