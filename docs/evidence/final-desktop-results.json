@@ -1,8 +1,8 @@
 {
   "result": "PASS",
   "assertions": 42,
-  "checkedAtUtc": "2026-10-22T19:31:32.768Z",
-  "hostPid": 106060,
+  "checkedAtUtc": "2026-10-22T23:32:03.496Z",
+  "hostPid": 82992,
   "checks": [
     "A18 production Release bootstrap reports actual Electron BrowserWindow",
     "A18 actual desktop controls enabled",

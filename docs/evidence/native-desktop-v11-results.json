@@ -1,0 +1,38 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-22T23:33:44.869Z",
+  "assertions": 22,
+  "checks": [
+    "B11 actual Electron-owned common file dialog has native Edit controls",
+    "B11 native picker stays open beyond 9 seconds without client timeout",
+    "B11 actual native cancel preserves executable input",
+    "B11 native exe selection returns exact owned path including comma",
+    "B11 chosen file creates independently live exact Windows process",
+    "B07 actual Electron CSV preserves comma path and neutralizes real formula-prefixed executable name with BOM/units",
+    "B06 standard Windows Explorer select command visibly selects unique test executable",
+    "B06 actual Windows property sheet identifies owned filename",
+    "B10 actual WS_EX_TOPMOST matches enabled UI readback",
+    "B17 native 960px width and actual Electron 125% zoom combined",
+    "B17 960 native window at125% has no document horizontal overflow",
+    "B17 live details fit 960 window at125%",
+    "B17 keyboard menu fits combined minimum native window and125%",
+    "CDP disconnect preserves actual Electron window",
+    "B09 actual minimized Electron throttles snapshot polling to >=5s",
+    "B09 visible restore immediately resumes real polling",
+    "B10 persisted JSON.NET preferences contain no token/snapshots/pause/freeze",
+    "native close removes every exact app PID/creation identity",
+    "desktop close does not terminate independently running user task",
+    "B10 restart restores native size/topmost and actual zoom preferences",
+    "native desktop workflow has zero renderer exceptions/CSP errors",
+    "native close removes every exact app PID/creation identity"
+  ],
+  "screenshots": [
+    "v11-native-picker.png",
+    "v11-native-file-location.png",
+    "v11-native-properties.png",
+    "v11-desktop-960-125-settings.png",
+    "v11-desktop-960-125-details.png"
+  ],
+  "nativeSources": "CsWin32 common-dialog controls/UI Automation/PrintWindow/extended style/placement",
+  "cleanup": "exact app identities and ports released; only new exact test Shell HWNDs closed; unique owned workload cleaned in finally"
+}

@@ -1,14 +1,14 @@
 {
   "result": "PASS",
   "assertions": 36,
-  "checkedAtUtc": "2026-10-22T19:15:35.074Z",
+  "checkedAtUtc": "2026-10-22T23:31:24.302Z",
   "checks": [
     "dedicated real workload appears in native snapshot",
     "virtual table bounds rendered rows",
     "headless desktop controls explicitly disabled",
     "PID search finds correct real process name",
     "actual terminable identity selected",
-    "GPU and network unavailable reasons accessible",
+    "unavailable process metrics expose actual reasons",
     "identity information dialog shows selected native PID",
     "modal Escape restores triggering focus",
     "CPU header exposes numeric sort direction",

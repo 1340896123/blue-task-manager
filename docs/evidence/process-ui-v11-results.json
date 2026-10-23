@@ -1,5 +1,6 @@
 {
-  "assertions": 30,
+  "runtime": "real Chromium",
+  "assertions": 34,
   "checks": [
     "real table remains virtualized",
     "actual table header matches virtualizer master token",
@@ -18,11 +19,15 @@
     "efficiency impact explicitly explains session restore boundary",
     "efficiency enable/restore UI uses actual Windows state",
     "tree includes explicit exact membership explanation",
+    "actual owned tree collapses while the full filtered set remains known",
     "CSV has UTF-8 BOM",
     "CSV includes explicit units",
+    "CSV exports every real filtered row beyond the virtual viewport",
+    "CSV includes actual children hidden by collapsed tree nodes",
     "filter excludes old selection from toolbar actions",
     "run failure preserves input and native error",
     "successful run locates actual CreateProcess PID",
+    "new Run identity remains terminable after a later native snapshot",
     "960px desktop has no document overflow",
     "single terminate UI displays actual completed result",
     "exited detail disables native writes while retaining last information",

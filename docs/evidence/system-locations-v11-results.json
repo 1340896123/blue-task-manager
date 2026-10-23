@@ -1,0 +1,40 @@
+{
+  "result": "PARTIAL_WINDOWS_OBSERVABILITY",
+  "checkedAtUtc": "2026-10-22T23:45:41.017Z",
+  "assertions": 6,
+  "checks": [
+    "当前用户启动文件夹 accepted by real Windows Shell",
+    "公共启动文件夹 accepted by real Windows Shell",
+    "official ms-settings startupapps URI accepted",
+    "fixed Windows services.msc accepted",
+    "exact portable host/Electron identities observed for cleanup",
+    "system entry test app identities cleaned"
+  ],
+  "locations": [
+    {
+      "location": "当前用户启动文件夹",
+      "accepted": true,
+      "actualWindowVerified": false,
+      "evidence": "Shell accepted; exact Windows address not independently exposed in this run"
+    },
+    {
+      "location": "公共启动文件夹",
+      "accepted": true,
+      "actualWindowVerified": true,
+      "evidence": "Visible Explorer HWND matches exact official Startup path through standard Shell automation LocationURL"
+    },
+    {
+      "location": "Windows启动应用设置",
+      "accepted": true,
+      "actualWindowVerified": true,
+      "evidence": "Actual Windows Settings UI contains Startup heading"
+    },
+    {
+      "location": "Windows服务管理器",
+      "accepted": true,
+      "actualWindowVerified": true,
+      "evidence": "Actual Services MMC native window title/class verified; no service operations"
+    }
+  ],
+  "cleanup": "only newly created exact verified Shell/Settings/MMC windows closed; prior windows preserved; no service changed"
+}
