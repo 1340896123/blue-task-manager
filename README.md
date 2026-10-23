@@ -1,5 +1,7 @@
 # 蓝域任务管理器
 
+[手动构建 Windows 安装包](https://github.com/1340896123/blue-task-manager/actions/workflows/manual-windows-installer.yml)：进入Actions，点击 **Run workflow** 并选择`main`。成功后从该次运行的Artifacts下载NSIS安装包、SHA256和真实验收报告，详见[使用说明](docs/MANUAL-INSTALLER-BUILD.md)。
+
 面向 Windows 的真实系统任务管理器，技术栈为 React、Tailwind CSS、Electron.NET、ASP.NET Core 与 CsWin32。界面采用参考图的标题搜索区、固定侧栏、命令栏和高密度数据表，以 Fluent 蓝色 Token 统一视觉。
 
 1.1 提供进程树、实时详情与 TCP/UDP 端点、优先级与效率模式、文件位置和属性、全量筛选 CSV 导出、服务操作、逐网卡 / 物理磁盘 / GPU 曲线，以及跨页定位和偏好保留。界面由统一设计 Token 实现 Windows 蓝色风格。

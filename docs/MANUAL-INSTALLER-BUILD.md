@@ -1,5 +1,11 @@
 # 手动构建 Windows 安装包
 
+## 在 GitHub 上运行
+
+打开[手动构建工作流](https://github.com/1340896123/blue-task-manager/actions/workflows/manual-windows-installer.yml)，点击 **Run workflow**，选择`main`并启动。它只在手动触发时运行，普通提交不会自动构建或发布Release。
+
+运行成功后，在该次运行的 **Artifacts** 下载`BlueDomainTaskManager-v<版本>-win-x64-<运行序号>`。解压即可得到Setup.exe、SHA256SUMS、acceptance.json和acceptance.md；应用截图单独提供。附件保留14天，过期后可以重新手动构建。安装包包含运行时，安装后的应用按当前管理员权限合同运行。
+
 ## 本轮交付合同
 
 GitHub Actions仅由`workflow_dispatch`手动触发Windows x64 Release安装包构建。安装器和权限以用户后续明确要求的[管理员与NSIS合同](ADMIN-INSTALLER.md)为准：使用标准NSIS/MUI2和.NET self-contained发布，包含.NET10、ASP.NET Core与完整`.electron`；使用者无需另装Node/npm或.NET。历史Release保持原义；当前便携包与安装包遵循管理员合同。
