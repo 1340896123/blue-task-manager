@@ -50,3 +50,22 @@ GitHub Actions仅由`workflow_dispatch`手动触发Windows x64 Release安装包�
 此入口只允许在一次性GitHub-hosted Windows runner且真实提升的64位PowerShell中执行；不要在开发机伪造CI环境。它创建RUNNER_TEMP内独立且带空格的测试目录，依次验证静默安装、完整payload哈希和快捷方式/卸载记录、无全局.NET目录的真实Host/API/coreclr、现有42项Electron桌面验收、同路径重装后真实启动和卸载。测试自建note必须在卸载后保持原哈希，以证明没有通配删除用户文件。全程独立读取HKLM64 IFEO全键和子键，原始临时导出取哈希后立即删除，报告不保存注册表值、写令牌或全机快照。
 
 `output/installer-ci/acceptance.json`和`acceptance.md`记录实际通过项、失败状态和限制；失败时只清理测试保存的PID+创建时间身份，保留失败安装目录供一次性runner诊断。`output/installer-ci/delivery`平铺Setup.exe、只引用这个EXE的`SHA256SUMS`及两份报告；应用截图单独上传。工作流要求完整交付集全部非空，不能把缺少报告的构建当作已验收安装包。
+
+## 已完成的云端发布验收
+
+2026-10-23，手动运行[第6次工作流](https://github.com/1340896123/blue-task-manager/actions/runs/39926387661)的构建/安装验收与独立发布job均成功。生成的新tag为`v1.1.1-build.6`，精确指向本次构建源码`63e4e763f223fbaf94629596d5dfadffbb735a48`；[公开Release与NSIS安装包](https://github.com/1340896123/blue-task-manager/releases/tag/v1.1.1-build.6)已确认不是draft，按默认规则标为prerelease。
+
+- 安装生命周期53项检查、真实Electron桌面42项断言通过；首次安装与同路径重装均核对全部3066个payload文件的长度和SHA256。
+- 两次安装后均以无效全局DOTNET_ROOT实际启动，确认本安装目录的coreclr、JSON.NET和CsWin32真实采样。卸载删除包文件、快捷方式和卸载记录，保留测试自建用户文件；全程IFEO全键指纹不变，专用实例均已退出。
+- Release四个附件均已发布并实际下载复核：Setup.exe、SHA256SUMS、acceptance.json、acceptance.md。四个文件的长度和SHA256均与GitHub服务端asset digest一致，报告源SHA、运行ID和安装包哈希一致。
+- 六张真实桌面截图保存在该次运行的`installer-screenshots-6-1` artifact；已人工查看1380×860截图。运行产物按14天保留策略提供，Release附件独立保留。
+
+实际安装器为`BlueDomainTaskManager-v1.1.1-win-x64-setup.exe`，161032867字节，SHA256：
+
+```text
+e52eb2c42b931314da6ecd88ea9235636210bc3577a2ca3f8af5c1f16e7fa91c
+```
+
+本轮同步通过actionlint、PowerShell语法检查和12个标签输入案例。桌面启动等待按照官方Electron.NET内部120秒预算设置有界等待，并只发现应用自己创建的同源页面；全部42项真实桌面断言保留。启动失败时，仅保存有界且脱敏的Host/只读CDP诊断，不记录接口令牌或整机快照。
+
+边界：安装包未签名；hosted验收使用实际已提升令牌，未覆盖交互式UAC同意或标准用户桌面。这些限制同样写入发布的acceptance报告，不以CI通过代替交互式权限验收。
