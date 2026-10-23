@@ -31,7 +31,7 @@ $output = Join-Path $projectRoot 'output/installer-ci'
 $runnerTemporary = [IO.Path]::GetFullPath($env:RUNNER_TEMP)
 if (-not (Test-Path -LiteralPath $runnerTemporary -PathType Container)) { throw 'RUNNER_TEMP is missing.' }
 $testRoot = Join-Path $runnerTemporary ('Blue Domain Installer Acceptance ' + [Guid]::NewGuid().ToString('N'))
-$installDirectory = Join-Path $testRoot 'Installed App'
+$installDirectory = Join-Path $testRoot 'BlueDomainTaskManager'
 $ownedProcesses = [Collections.Generic.List[object]]::new()
 $report = [ordered]@{
     result = 'RUNNING'
