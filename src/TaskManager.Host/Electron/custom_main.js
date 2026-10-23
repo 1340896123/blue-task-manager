@@ -1,6 +1,8 @@
 // Official Electron.NET startup hook; all application data stays on same-origin HTTP.
 module.exports.onStartup = function () {
   const { app } = require('electron');
+  // Preserve Electron.NET's existing package identity for Windows taskbar grouping.
+  app.setAppUserModelId('taskmanager-host');
   const origin = process.env.TASKMANAGER_ORIGIN;
   if (!origin || !/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) return false;
   const cdpPort = process.env.TASKMANAGER_CDP_PORT;

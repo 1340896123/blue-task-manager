@@ -45,3 +45,5 @@ GetCurrentThreadId
 AttachThreadInput
 BringWindowToTop
 GetClientRect
+ExtractIconExW
+DestroyIcon

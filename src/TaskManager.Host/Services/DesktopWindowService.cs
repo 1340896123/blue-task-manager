@@ -23,6 +23,7 @@ public sealed class DesktopWindowService(PreferencesService preferences)
             Width = saved.Width, Height = saved.Height, UseContentSize = true, MinWidth = 960, MinHeight = 640,
             Frame = false, Show = false, AutoHideMenuBar = true,
             Title = "蓝域任务管理器", BackgroundColor = "#F3F7FC",
+            Icon = Path.Combine(AppContext.BaseDirectory, ".electron", "task-manager.ico"),
             WebPreferences = new WebPreferences { ContextIsolation = true, NodeIntegration = false, Sandbox = true, BackgroundThrottling = true }
         }, origin);
         window.OnReadyToShow += () => window?.Show();

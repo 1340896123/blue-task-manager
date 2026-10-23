@@ -4,6 +4,9 @@
     <OutputType>WinExe</OutputType>
     <ElectronVersion>45.0.0</ElectronVersion>
     <ElectronSingleInstance>false</ElectronSingleInstance>
+    <ApplicationIcon>../../assets/branding/task-manager.ico</ApplicationIcon>
+    <ElectronIcon>../../assets/branding/task-manager.ico</ElectronIcon>
+    <ElectronPackageId>taskmanager-host</ElectronPackageId>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
