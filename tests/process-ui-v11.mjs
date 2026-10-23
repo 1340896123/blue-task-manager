@@ -56,7 +56,7 @@ try {
   check(await page.getByText('显示已冻结 ·', { exact: false }).first().isVisible(), 'freeze has visible timestamp and live sampling explanation');
   await page.getByRole('button', { name: '继续显示', exact: true }).click();
   await page.getByRole('button', { name: '服务', exact: true }).click(); await search.fill('Windows'); await page.getByRole('button', { name: '进程', exact: true }).click();
-  check(await search.inputValue() === String(workload.pid), 'each page retains its own query');
+  check(await search.inputValue() === 'Windows', 'all pages immediately share the latest search query');
   await page.getByRole('button', { name: '进程树', exact: true }).click(); await search.fill(children[0][0]);
   await until(async () => await page.locator('.context-tag').count() >= 1, 'tree query includes real ancestors');
   check(await page.locator('tbody tr[data-row-key]').count() >= 2, 'tree reveals actual ancestor context for child PID');
@@ -114,7 +114,7 @@ try {
   check(await dialog.getByRole('button', { name: '设置优先级', exact: true }).isDisabled(), 'exited detail disables native writes while retaining last information'); await page.keyboard.press('Escape');
   await search.fill(String(workload.pid)); await row.click(); await page.getByRole('button', { name: '更多进程操作', exact: true }).click(); await page.getByRole('menuitem', { name: '结束进程树…', exact: true }).click(); await page.getByRole('button', { name: '结束完整进程树', exact: true }).click();
   await until(async () => await dialog.locator('[aria-label="树结束逐项结果"]').count() > 0, 'tree native results displayed'); check(!(await dialog.locator('[aria-label="树结束逐项结果"]').innerText()).includes('失败'), 'tree UI retains successful per-member native results'); await dialog.getByRole('button', { name: '关闭', exact: true }).click();
-  await page.getByRole('button', { name: '设置', exact: true }).click(); await page.getByRole('switch', { name: '自动采样', exact: true }).click(); await until(async () => (await get('snapshot')).paused, 'settings pauses true collector'); await delay(2300);
+  await search.fill(''); await page.getByRole('button', { name: '设置', exact: true }).click(); await page.getByRole('switch', { name: '自动采样', exact: true }).click(); await until(async () => (await get('snapshot')).paused, 'settings pauses true collector'); await delay(2300);
   check(snapshotResponses.includes(304), 'conditional snapshot reads receive successful empty 304');
   await page.getByRole('button', { name: '标准', exact: true }).click(); await delay(800); await page.reload(); await until(async () => (await page.locator('.app-shell').getAttribute('data-density')) === 'standard', 'JSON.NET preferences restore density after reload');
   check(true, 'persisted UI preference restored'); check(errors.length === 0, 'no browser runtime exceptions'); check(cspErrors.length === 0, 'no content security policy violations including native icon blobs');
