@@ -12,7 +12,16 @@ public sealed class PreferencesService
     private Unavailable? warning;
     private static readonly JsonSerializerSettings Json = new() { ContractResolver = new CamelCasePropertyNamesContractResolver(), MaxDepth = 12, MissingMemberHandling = MissingMemberHandling.Error, TypeNameHandling = TypeNameHandling.None };
     private static readonly HashSet<string> Pages = ["processes", "details", "performance", "history", "startup", "users", "services", "settings"];
-    private static readonly HashSet<string> Keys = ["name", "pid", "parentPid", "sessionId", "threadCount", "handleCount", "priority", "cpuPercent", "workingSetBytes", "privateBytes", "io", "ioReadBytesPerSecond", "ioWriteBytesPerSecond", "gpuPercent", "gpuEngine", "path", "publisher", "userName", "state", "startedAtUtc", "uptimeSeconds", "networkBytesPerSecond", "cpu", "memory", "source", "display", "session", "station", "count", "last", "observedCpuTime100ns", "observedIoReadBytes", "observedIoWriteBytes", "firstObservedAtUtc", "lastObservedAtUtc", "isRunning", "command", "enabled"];
+    private static readonly HashSet<string> Keys = ["name", "pid", "parentPid", "sessionId", "threadCount", "handleCount", "priority", "cpuPercent", "workingSetBytes", "privateBytes", "io", "ioReadBytesPerSecond", "ioWriteBytesPerSecond", "gpuPercent", "gpuEngine", "path", "publisher", "userName", "state", "startedAtUtc", "uptimeSeconds", "networkBytesPerSecond", "cpu", "memory", "source", "display", "session", "station", "count", "last", "observedCpuTime100ns", "observedIoReadBytes", "observedIoWriteBytes", "firstObservedAtUtc", "lastObservedAtUtc", "isRunning", "command", "enabled", "location"];
+    private static readonly HashSet<string> ProcessColumns = ["name", "pid", "state", "parentPid", "sessionId", "threadCount", "handleCount", "priority", "cpuPercent", "workingSetBytes", "privateBytes", "io", "networkBytesPerSecond", "gpuPercent", "gpuEngine", "userName", "publisher", "path"];
+    private static readonly IReadOnlyDictionary<string, HashSet<string>> Columns = new Dictionary<string, HashSet<string>>
+    {
+        ["processes"] = ProcessColumns, ["details"] = ProcessColumns,
+        ["history"] = ["name", "pid", "state", "cpu", "observedIoReadBytes", "observedIoWriteBytes", "last"],
+        ["startup"] = ["name", "source", "enabled", "command", "location"],
+        ["users"] = ["name", "session", "station", "state", "count", "cpu", "memory"],
+        ["services"] = ["name", "display", "state", "pid"]
+    };
     public PreferencesService()
     {
         var directory = Environment.GetEnvironmentVariable("TASKMANAGER_DATA_DIR") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlueDomainTaskManager");
@@ -66,6 +75,7 @@ public sealed class PreferencesService
             var p = pair.Value;
             if (!Pages.Contains(pair.Key) || p is null || p.Query is null || p.Query.Length > 256 || p.Query.Contains('\0') || !Keys.Contains(p.SortKey) || p.SortDirection is not ("ascending" or "descending") || !double.IsFinite(p.ScrollTop) || p.ScrollTop is < 0 or > 10_000_000 || p.SelectedIdentity?.Length > 128 || p.VisibleColumns?.Count > 40 || p.VisibleColumns?.Any(key => !Keys.Contains(key)) == true || p.Filters?.State is not (null or "all" or "running" or "restricted")) Invalid();
             if (p.VisibleColumns is not null && (!p.VisibleColumns.Contains("name") || (pair.Key is "processes" or "details" && !p.VisibleColumns.Contains("pid")))) Invalid();
+            if (p.ColumnWidths is { } widths && (widths.Count > 40 || widths.Any(width => !Columns.TryGetValue(pair.Key, out var allowed) || !allowed.Contains(width.Key) || !double.IsFinite(width.Value) || width.Value is < 64 or > 1600))) Invalid();
             if (p.ResourceType is not (null or "system" or "cpu" or "memory" or "network" or "disk" or "gpu") || p.ResourceId?.Length > 256 || p.ResourceId?.Contains('\0') == true) Invalid();
         }
         if (ui.Window is { } window && (window.Width is < 960 or > 3840 || window.Height is < 640 or > 2160 || !double.IsFinite(window.ZoomFactor) || window.ZoomFactor is < .75 or > 2)) Invalid();

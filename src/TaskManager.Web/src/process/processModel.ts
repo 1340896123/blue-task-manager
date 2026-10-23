@@ -1,17 +1,20 @@
-const textCollator = new Intl.Collator('zh-CN', { numeric: true });
 import type { Process, PageFilters } from '../types';
 import type { Sort } from '../components';
 import { matches } from '../format';
+import { compareValues, textCollator, type SortValue } from '../sorting';
 export type ProcessRow = { process: Process; depth: number; context: boolean; parent: string | null; hasChildren: boolean };
 export const processIo = (p: Process) => p.ioReadBytesPerSecond === null || p.ioWriteBytesPerSecond === null ? null : p.ioReadBytesPerSecond + p.ioWriteBytesPerSecond;
 export function compareProcess(sort: Sort) {
-  const value = (p: Process) => sort.key === 'io' ? processIo(p) : p[sort.key as keyof Process];
+  const priorities: Record<string, number> = { '空闲': 0, '低于正常': 1, '正常': 2, '高于正常': 3, '高': 4, '实时': 5 };
+  const value = (p: Process): SortValue => {
+    if (sort.key === 'io') return processIo(p);
+    if (sort.key === 'state') return p.state === 'restricted' ? '访问受限' : '运行中';
+    if (sort.key === 'priority') return p.priority == null ? null : priorities[p.priority] ?? null;
+    return p[sort.key as keyof Process] as SortValue;
+  };
   return (a: Process, b: Process) => {
     const x = value(a); const y = value(b);
-    if (x == null) return y == null ? a.pid - b.pid : 1;
-    if (y == null) return -1;
-    const n = typeof x === 'string' && typeof y === 'string' ? textCollator.compare(x, y) : x < y ? -1 : x > y ? 1 : 0;
-    return (sort.direction === 'ascending' ? n : -n) || a.pid - b.pid;
+    return compareValues(x, y, sort.direction) || a.pid - b.pid || textCollator.compare(a.identity, b.identity);
   };
 }
 export function processRows(processes: Process[], query: string, filters: PageFilters | null, currentUser: string | null | undefined, sort: Sort, tree: boolean, collapsed: Set<string>) {

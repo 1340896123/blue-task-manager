@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { api, ApiError, errorMessage, identityRoute } from '../api';
-import { DataTable, MissingValue, Modal, cssNumber } from '../components';
+import { DataTable, MissingValue, Modal, cssNumber, type Sort } from '../components';
+import { compareValues } from '../sorting';
 import { bytes, dateTime, percent, rate, reason, uptime } from '../format';
 import type { Process, ProcessDetails, ConnectionsResult, Connection } from '../types';
 import ProcessIcon from './ProcessIcon';
@@ -8,6 +9,8 @@ const tcpStates:Record<string,string>={MIB_TCP_STATE_CLOSED:'已关闭',MIB_TCP_
 export default function ProcessDetail({ target, alive, connected, onClose, onAction, onLocateParent, onService }: { target: Process; alive: boolean; connected: boolean; onClose: () => void; onAction: (action: string, target: Process) => void; onLocateParent: (target: Process) => void; onService: (name: string) => void }) {
   const [tab, setTab] = useState('overview'); const [detail, setDetail] = useState<ProcessDetails | null>(null); const [connections, setConnections] = useState<ConnectionsResult | null>(null);
   const [error, setError] = useState<string | null>(null); const [exited, setExited] = useState(!alive); const [loading, setLoading] = useState(false); const [revision, setRevision] = useState(0);
+  const [connectionSort, setConnectionSort] = useState<Sort>({ key: 'protocol', direction: 'ascending' });
+  const [connectionWidths, setConnectionWidths] = useState<Record<string, number>>({});
   useEffect(() => { if (!alive) setExited(true); }, [alive]);
   useEffect(() => {
     if (!target.creationTimeFileTime || exited || !connected) return;
@@ -32,6 +35,13 @@ export default function ProcessDetail({ target, alive, connected, onClose, onAct
   const value = (key: keyof Process, display?: ReactNode) => p[key] == null ? <MissingValue reason={reason(p.unavailable, key)}/> : display ?? String(p[key]);
   const serviceTooOld = detail?.relatedServicesCapturedAtUtc && p.startedAtUtc && Date.parse(p.startedAtUtc) > Date.parse(detail.relatedServicesCapturedAtUtc);
   const endpoint = (address: string, port: number, family: string) => `${family === 'IPv6' ? `[${address}]` : address}:${port}`;
+  const connectionRows = [...connections?.connections ?? []].sort((a, b) => {
+    const compare = (x: string | number | null, y: string | number | null) => compareValues(x, y, connectionSort.direction);
+    if (connectionSort.key === 'local') return compare(a.localAddress, b.localAddress) || compare(a.localPort, b.localPort);
+    if (connectionSort.key === 'remote') return compare(a.remoteAddress, b.remoteAddress) || compare(a.remotePort, b.remotePort);
+    if (connectionSort.key === 'state') return compare(a.state ? tcpStates[a.state] ?? a.state : null, b.state ? tcpStates[b.state] ?? b.state : null);
+    return compare(a.protocol, b.protocol) || compare(a.addressFamily, b.addressFamily);
+  });
   return <Modal title="进程信息" wide onClose={onClose}><div className="detail-identity"><ProcessIcon process={p}/><strong>{p.name}</strong><span className="status-badge">PID {p.pid}</span><span className={`status-badge ${!exited ? 'success' : 'warning'}`}>{exited ? '已退出 / 身份已变化' : '运行中'}</span></div>
     <p className="detail-note">{exited ? '已保留最后成功信息；所有写操作已停用。' : '此详情按固定进程身份刷新，不随列表排序改变目标。'} {loading && '正在读取…'}</p>
     {error && <div className="form-error" role="alert">{error}</div>}
@@ -50,7 +60,7 @@ export default function ProcessDetail({ target, alive, connected, onClose, onAct
         ] as [string, ReactNode][]).map(([label, content]) => <div key={label}><dt>{label}</dt><dd>{content}</dd></div>)}
       </dl><p className="detail-note">原生字段：{detail ? dateTime(detail.capturedAtUtc) : '选中快照'} · CPU/I/O速率及元数据：{detail?.snapshotCapturedAtUtc ? dateTime(detail.snapshotCapturedAtUtc) : '选中快照'}<br/>GPU：{p.gpuCapturedAtUtc ? dateTime(p.gpuCapturedAtUtc) : '尚无有效GPU样本'}。专用提交不是专用工作集；I/O不是物理磁盘吞吐；发布者来自文件信息，未验证数字签名。</p></>}
       {tab === 'services' && <><p className="detail-note">服务来源：{detail?.relatedServicesCapturedAtUtc ? dateTime(detail.relatedServicesCapturedAtUtc) : '尚未读取'}；服务为慢来源，关联状态以该时刻为准。</p>{serviceTooOld || detail?.unavailable.relatedServices ? <p className="page-note">{detail?.unavailable.relatedServices?.message ?? '服务采样早于此进程创建，暂不关联旧PID；请刷新慢来源后再查看。'}</p> : detail?.relatedServices.length ? <div className="related-list">{detail.relatedServices.map(service => <button key={service.name} className="command-button bordered" onClick={() => onService(service.name)}>{service.displayName} · {service.name} · {service.state} →</button>)}</div> : <p className="page-note">此来源时刻没有关联到该身份的服务。</p>}</>}
-      {tab === 'connections' && <><p className="detail-note">IP Helper 所属PID端点；连接数不是网络吞吐，不执行DNS。{connections ? `读取于 ${dateTime(connections.capturedAtUtc)}` : '正在按需读取…'} {connections?.truncated && '条目已达到上限，结果已截断。'}</p>{connections && Object.entries(connections.unavailable).map(([key, missing]) => <p key={key} className="form-error">{key}：{missing.message}</p>)}<DataTable<Connection> rows={connections?.connections ?? []} label="进程TCP UDP连接" rowHeight={cssNumber('--height-row-compact', 32)} rowKey={row => [row.protocol, row.addressFamily, row.localAddress, row.localPort, row.remoteAddress, row.remotePort].join('|')} columns={[
+      {tab === 'connections' && <><p className="detail-note">IP Helper 所属PID端点；连接数不是网络吞吐，不执行DNS。{connections ? `读取于 ${dateTime(connections.capturedAtUtc)}` : '正在按需读取…'} {connections?.truncated && '条目已达到上限，结果已截断。'}</p>{connections && Object.entries(connections.unavailable).map(([key, missing]) => <p key={key} className="form-error">{key}：{missing.message}</p>)}<DataTable<Connection> rows={connectionRows} sort={connectionSort} onSort={key => setConnectionSort(previous => ({ key, direction: previous.key === key && previous.direction === 'ascending' ? 'descending' : 'ascending' }))} columnWidths={connectionWidths} onColumnWidthsChange={setConnectionWidths} label="进程TCP UDP连接" rowHeight={cssNumber('--height-row-compact', 32)} rowKey={row => [row.protocol, row.addressFamily, row.localAddress, row.localPort, row.remoteAddress, row.remotePort].join('|')} columns={[
         { key: 'protocol', label: '协议', width: cssNumber('--width-column-pid', 80), render: row => `${row.protocol} ${row.addressFamily}` },
         { key: 'local', label: '本地端点', width: cssNumber('--width-column-name-detail', 240), render: row => endpoint(row.localAddress, row.localPort, row.addressFamily) },
         { key: 'remote', label: '远端端点', width: cssNumber('--width-column-name-detail', 240), render: row => row.remoteAddress == null || row.remotePort == null ? <span title="UDP无固定远端">不适用（UDP）</span> : endpoint(row.remoteAddress, row.remotePort, row.addressFamily) },
