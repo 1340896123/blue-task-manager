@@ -51,7 +51,9 @@ try {
   const next = await until(s => s.sampleId > sample.sampleId, 'next real network sample');
   check(independent.some(a => { const before = sample.networkAdapters.find(v => v.id === a.id), after = next.networkAdapters.find(v => v.id === a.id); return before && after && before.alias === a.alias && before.isHardware === a.hardware && before.receiveLinkSpeedBitsPerSecond === a.receiveLinkSpeed && BigInt(before.receivedBytes) <= BigInt(a.receivedBytes) && BigInt(a.receivedBytes) <= BigInt(after.receivedBytes); }), 'independent CsWin32 probe matches adapter identity, hardware, link and monotonic raw byte counters');
   check(sample.networkAdapters.every(a => a.receiveBytesPerSecond === null ? !!a.unavailable.receiveBytesPerSecond : a.receiveBytesPerSecond >= 0), 'disconnected, warming and reset adapter rates have reasons, never a fallback zero');
-  const representative = sample.processes.find(p => p.gpuPercent !== null && p.creationTimeFileTime);
+  // Elevated snapshots can read System's creation time; PID 4 is deliberately
+  // excluded by the production on-demand process contract.
+  const representative = sample.processes.find(p => p.pid > 4 && p.gpuPercent !== null && p.creationTimeFileTime);
   const details = await api(`processes/${representative.pid}/details?creationTimeFileTime=${representative.creationTimeFileTime}`);
   check(details.process.gpuPercent !== null && details.process.gpuEngine && details.process.gpuCapturedAtUtc && !details.process.unavailable.gpuPercent, 'on-demand process details preserve real sampled GPU and its independent timestamp');
 

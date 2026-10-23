@@ -1,0 +1,273 @@
+{
+  "version": "1.1.1",
+  "checkedAtUtc": "2026-10-23T07:27:46.2083110Z",
+  "result": "PASS_WITH_EXPLICIT_UNEXECUTED_BOUNDARIES",
+  "installer": {
+    "sha256": "93dee5f63ef5aec359cc50181535b29ebab5cff91bc8870388cbaba42f3897e0",
+    "signature": "NotSigned",
+    "bytes": 160823149,
+    "filename": "BlueDomainTaskManager-v1.1.1-win-x64-setup.exe"
+  },
+  "portableAdministrator": {
+    "result": "PASS",
+    "checkedAtUtc": "2026-10-23T06:42:41.12Z",
+    "assertions": 9,
+    "checks": [
+      "production host reports version and exact test PID",
+      "independent CsWin32 probe confirms Host TokenIsElevated",
+      "official Electron browser child inherits the elevated token",
+      "Host loads coreclr from its own directory with invalid global DOTNET_ROOT",
+      "renderer retains sandbox and no Node globals",
+      "real Windows collector includes the actual elevated host",
+      "dedicated new-task workload inherits administrator privileges",
+      "settings describes actual administrator requirement and task inheritance",
+      "native window close releases the exact host tree and both listeners"
+    ],
+    "directory": "C:\\Users\\jieok\\.codex\\worktrees\\admin-nsis\\taskManager\\output\\TaskManager-win-x64",
+    "coreclr": "C:\\Users\\jieok\\.codex\\worktrees\\admin-nsis\\taskManager\\output\\TaskManager-win-x64\\coreclr.dll",
+    "screenshot": "administrator-desktop.png",
+    "serviceSuccessChain": "not executed: no dedicated test service provisioned",
+    "globalIfeoMutation": false
+  },
+  "installedAdministrator": {
+    "result": "PASS",
+    "checkedAtUtc": "2026-10-23T07:25:26.382Z",
+    "assertions": 9,
+    "checks": [
+      "production host reports version and exact test PID",
+      "independent CsWin32 probe confirms Host TokenIsElevated",
+      "official Electron browser child inherits the elevated token",
+      "Host loads coreclr from its own directory with invalid global DOTNET_ROOT",
+      "renderer retains sandbox and no Node globals",
+      "real Windows collector includes the actual elevated host",
+      "dedicated new-task workload inherits administrator privileges",
+      "settings describes actual administrator requirement and task inheritance",
+      "native window close releases the exact host tree and both listeners"
+    ],
+    "directory": "C:\\Users\\jieok\\AppData\\Local\\Temp\\Blue Domain NSIS Test 076838c27aa34b45a8844bf322db50e5\\BlueDomainTaskManager",
+    "coreclr": "C:\\Users\\jieok\\AppData\\Local\\Temp\\Blue Domain NSIS Test 076838c27aa34b45a8844bf322db50e5\\BlueDomainTaskManager\\coreclr.dll",
+    "screenshot": "installed-administrator-desktop.png",
+    "serviceSuccessChain": "not executed: no dedicated test service provisioned",
+    "globalIfeoMutation": false
+  },
+  "installerLifecycle": {
+    "checks": [
+      "silent NSIS installation succeeds in a dedicated path containing spaces",
+      "installed payload contains the real Host and local .NET runtime",
+      "HKLM64 uninstall entry records the exact installed directory and version",
+      "all-users shortcut targets the actual administrator Host",
+      "all-users shortcut targets the actual administrator Host",
+      "actual installed uninstaller manifest requires administrator privileges",
+      "every installed payload file matches the build SHA256 inventory",
+      "installation leaves the complete actual taskmgr IFEO key unchanged",
+      "installed production Electron desktop passes real elevated token, local coreclr, workload and close checks",
+      "same-version installation repairs the existing dedicated installation",
+      "reinstallation preserves an extra file outside the package inventory",
+      "an explicit alternate installation path is refused while an installation is registered",
+      "test-owned installed headless instance starts with the required administrator token",
+      "running installed Host blocks reinstallation without terminating the test process",
+      "running installed Host blocks uninstall without terminating the test process",
+      "uninstall refuses a modified maintenance runtime configuration",
+      "failed maintenance verification preserves the application and uninstall entry",
+      "verified uninstall executes the fixed production maintenance command successfully",
+      "uninstall removes its HKLM record and packaged Host",
+      "uninstall removes product shortcuts while preserving the extra file",
+      "normal NSIS uninstall removes its own executable and all package files, leaving only the extra file",
+      "install, repair and uninstall preserve the complete actual taskmgr IFEO key"
+    ],
+    "globalIfeoOwnershipVariants": "not executed: no real global takeover written",
+    "assertions": 22,
+    "actualIfeoMutation": false,
+    "checkedAtUtc": "2026-10-23T07:26:35.1420507Z",
+    "testInstallation": "C:\\Users\\jieok\\AppData\\Local\\Temp\\Blue Domain NSIS Test 076838c27aa34b45a8844bf322db50e5\\BlueDomainTaskManager",
+    "runs": [
+      {
+        "exitCode": 0,
+        "arguments": "/S /D=C:\\Users\\jieok\\AppData\\Local\\Temp\\Blue Domain NSIS Test 076838c27aa34b45a8844bf322db50e5\\BlueDomainTaskManager",
+        "executable": "BlueDomainTaskManager-v1.1.1-win-x64-setup.exe"
+      },
+      {
+        "exitCode": 0,
+        "arguments": "/S /D=C:\\Users\\jieok\\AppData\\Local\\Temp\\Blue Domain NSIS Test 076838c27aa34b45a8844bf322db50e5\\BlueDomainTaskManager",
+        "executable": "BlueDomainTaskManager-v1.1.1-win-x64-setup.exe"
+      },
+      {
+        "exitCode": 2,
+        "arguments": "/S /D=C:\\Users\\jieok\\AppData\\Local\\Temp\\Blue Domain NSIS Test 076838c27aa34b45a8844bf322db50e5\\Other\\BlueDomainTaskManager",
+        "executable": "BlueDomainTaskManager-v1.1.1-win-x64-setup.exe"
+      },
+      {
+        "exitCode": 2,
+        "arguments": "/S /D=C:\\Users\\jieok\\AppData\\Local\\Temp\\Blue Domain NSIS Test 076838c27aa34b45a8844bf322db50e5\\BlueDomainTaskManager",
+        "executable": "BlueDomainTaskManager-v1.1.1-win-x64-setup.exe"
+      },
+      {
+        "exitCode": 2,
+        "arguments": "/S _?=C:\\Users\\jieok\\AppData\\Local\\Temp\\Blue Domain NSIS Test 076838c27aa34b45a8844bf322db50e5\\BlueDomainTaskManager",
+        "executable": "Uninstall.exe"
+      },
+      {
+        "exitCode": 2,
+        "arguments": "/S _?=C:\\Users\\jieok\\AppData\\Local\\Temp\\Blue Domain NSIS Test 076838c27aa34b45a8844bf322db50e5\\BlueDomainTaskManager",
+        "executable": "Uninstall.exe"
+      },
+      {
+        "exitCode": 0,
+        "arguments": "/S",
+        "executable": "Uninstall.exe"
+      }
+    ],
+    "olderVersionUpgrade": "not executed: no older NSIS installer exists",
+    "installerSha256": "93dee5f63ef5aec359cc50181535b29ebab5cff91bc8870388cbaba42f3897e0",
+    "result": "PASS",
+    "payloadFiles": 3061
+  },
+  "uninstallerManifest": {
+    "level": "requireAdministrator",
+    "uiAccess": "false"
+  },
+  "firstFiveRegressionSuites": [
+    {
+      "result": "PASS",
+      "assertions": 3,
+      "suite": "static-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 77,
+      "suite": "native-api"
+    },
+    {
+      "result": "PASS",
+      "assertions": 5,
+      "suite": "native-metadata-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 25,
+      "suite": "native-core-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 90,
+      "suite": "native-management-v11"
+    }
+  ],
+  "remainingFunctionalSuites": [
+    {
+      "result": "PASS",
+      "assertions": 9,
+      "suite": "administrator-desktop"
+    },
+    {
+      "result": "PASS",
+      "assertions": 24,
+      "suite": "native-telemetry-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 12,
+      "suite": "gpu-identity-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 34,
+      "suite": "process-ui-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 49,
+      "suite": "pages-ui-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 36,
+      "suite": "ui-smoke"
+    },
+    {
+      "result": "PASS",
+      "assertions": 4,
+      "suite": "recovery-e2e"
+    },
+    {
+      "result": "PASS",
+      "assertions": 42,
+      "suite": "desktop-e2e"
+    },
+    {
+      "result": "PASS",
+      "assertions": 34,
+      "suite": "process-desktop-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 22,
+      "suite": "native-desktop-v11"
+    },
+    {
+      "result": "PARTIAL_WINDOWS_OBSERVABILITY",
+      "assertions": 6,
+      "suite": "system-locations-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 7,
+      "suite": "restricted-process-ui-v11"
+    },
+    {
+      "result": "PASS",
+      "assertions": 16,
+      "suite": "product-icon"
+    },
+    {
+      "result": "PASS",
+      "assertions": 20,
+      "suite": "taskbar-integration"
+    }
+  ],
+  "performance": {
+    "result": "PASS",
+    "cpu": {
+      "hostOneCorePercent": 8.912468052060941,
+      "hostMachinePercent": 0.3183024304307479,
+      "wholeAppOneCorePercent": 26.152242112360643,
+      "wholeAppMachinePercent": 0.9340086468700229
+    },
+    "budgetResults": {
+      "hostMachineCpuPercent": {
+        "target": 1,
+        "actual": 0.3183024304307479
+      },
+      "samplingP95Ms": {
+        "target": 500,
+        "actual": 77.8309
+      },
+      "interactionP95Ms": {
+        "target": 100,
+        "actual": 36.59999990463257
+      }
+    },
+    "samplingMs": {
+      "p50": 66.6484,
+      "p95": 77.8309,
+      "excludes": "HTTP serialization/transfer"
+    },
+    "interactionMs": {
+      "method": "Playwright search fill to next requestAnimationFrame callback, includes automation protocol; callback precedes paint and does not measure pixel presentation",
+      "p50": 27.800000071525574,
+      "p95": 36.59999990463257,
+      "samples": 10
+    }
+  },
+  "limitations": [
+    "Current-user Startup folder: Shell accepted, exact foreground window not independently confirmed; other three system entries confirmed.",
+    "No dedicated test service provisioned; administrator service start/stop success not executed.",
+    "No global IFEO takeover enabled; ownership/type mutation variants not executed on the real taskmgr key.",
+    "No older NSIS release available for an older-version upgrade test; same-version repair was tested.",
+    "Interactive UAC cancellation/credential failure not exercised because existing machine policy elevates the administrator account without a prompt."
+  ],
+  "cleanup": {
+    "registeredInstallationExists": false,
+    "temporaryInstallationExists": false
+  }
+}

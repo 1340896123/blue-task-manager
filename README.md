@@ -6,7 +6,7 @@
 
 1.1 提供进程树、实时详情与 TCP/UDP 端点、优先级与效率模式、文件位置和属性、全量筛选 CSV 导出、服务操作、逐网卡 / 物理磁盘 / GPU 曲线，以及跨页定位和偏好保留。界面由统一设计 Token 实现 Windows 蓝色风格。
 
-最新业务版本已通过480项真实链路断言和本机短期性能目标：Host整机CPU约0.21%、整应用约0.52%，采样p95 56.5ms，搜索至下一rAF p95 25.6ms。管理员服务及任务栏成功注册/取消、长时压力等保留未执行范围，当前用户Startup文件夹前台可见性也未确认。完整状态见[1.1验收记录](docs/ACCEPTANCE-RESULTS.md)。
+1.1.1 已强制管理员运行，并提供内置 .NET/ASP.NET 与 Electron 的 NSIS 安装包。实际安装生命周期22项、便携与安装后管理员桌面各9项通过；原有19套检查18套通过，系统入口可见性保留部分结果。本机Host整机CPU约0.32%，采样p95约78ms。签名、管理员服务成功链与全局接管等边界见[1.1.1实际验收](docs/evidence/admin-installer-results.md)；原480项为[1.1.0历史基线](docs/ACCEPTANCE-RESULTS.md)。
 
 [下载 Windows x64 预览版](https://github.com/1340896123/blue-task-manager/releases/tag/v1.1.0-preview.1) · [公开源码](https://github.com/1340896123/blue-task-manager) · [发布说明](docs/RELEASE-V1.1.0-PREVIEW.md)
 

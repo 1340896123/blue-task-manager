@@ -75,24 +75,26 @@ try {
   await api(`processes/${target.pid}/file-action`, { creationTimeFileTime: String(BigInt(target.creationTimeFileTime) + 1n), action: 'properties' }, 409);
   await api('startup/open-location', { id: 'missing-not-a-real-source' }, 404);
   const createPermission = probe('service-create-permission');
-  check(!createPermission.available && createPermission.nativeErrorCode === 5, 'SCM denies create-service permission; success chain cannot safely run in this standard-user session');
+  check(createPermission.available ? createPermission.nativeErrorCode === 0 : createPermission.nativeErrorCode === 5, 'SCM create-service permission reflects the actual elevated or restricted token');
   const snapshot = await api('snapshot'); let forbiddenService;
   for (const service of snapshot.services) {
     const detail = await api(`services/${encodeURIComponent(service.name)}/details`);
     if (detail.unavailable.stop?.code === 'accessDenied') { forbiddenService = detail; break; }
   }
-  check(forbiddenService && typeof forbiddenService.binaryPath === 'string', 'SCM service details expose configuration and real action-permission limits');
+  if (forbiddenService) {
+  check(typeof forbiddenService.binaryPath === 'string', 'SCM service details expose configuration and real action-permission limits');
   // A deliberately impossible expected PID also prevents mutation if ACLs change after the probe.
   await api(`services/${encodeURIComponent(forbiddenService.name)}/control`, { command: 'stop', expectedState: forbiddenService.state, expectedPid: 4294967295 }, 403);
   const after = await api(`services/${encodeURIComponent(forbiddenService.name)}/details`);
   check(after.state === forbiddenService.state && after.pid === forbiddenService.pid, 'permission rejection leaves user service state unchanged');
+  } else check(createPermission.available, 'elevated SCM query exposes no stop-denied service; no user service action is attempted');
   await api('services/not-a-real-service-management-test/control', { command: 'start', expectedState: 'SERVICE_STOPPED', expectedPid: 0 }, 404);
   const terminated = await api(`processes/${target.pid}/terminate-tree`, { creationTimeFileTime: target.creationTimeFileTime, members });
   check(terminated.completed && terminated.results.length === preview.members.length && terminated.results.at(-1).pid === target.pid, 'validated complete tree terminates leaf-to-root with actual exit confirmation');
   await until(async () => [...owned.keys()].every(pid => !alive(pid)), 'test tree exits');
   await api(detailsRoute, undefined, 404);
   owned.clear();
-  console.log(JSON.stringify({ result: 'PASS', assertions, checks, source: 'real Win32 / independent native probe; no mocks', serviceSuccessChain: 'not executed: SCM CREATE_SERVICE denied (5)' }, null, 2));
+  console.log(JSON.stringify({ result: 'PASS', assertions, checks, source: 'real Win32 / independent native probe; no mocks', serviceSuccessChain: createPermission.available ? 'not executed: no dedicated test service provisioned; no user services changed' : 'not executed: SCM CREATE_SERVICE denied (5)' }, null, 2));
 } catch (error) { console.error(error); throw error; } finally {
   for (const [pid, creationTimeFileTime] of owned) { try { if (alive(pid)) await api(`processes/${pid}/terminate`, { creationTimeFileTime }); } catch {} }
   const exited = new Promise(resolve => host.once('exit', resolve)); if (host.exitCode === null) { host.kill(); await exited; }

@@ -48,3 +48,6 @@ GetClientRect
 ExtractIconExW
 DestroyIcon
 IsIconic
+OpenProcessToken
+GetTokenInformation
+TOKEN_ELEVATION

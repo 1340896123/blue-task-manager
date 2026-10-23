@@ -13,6 +13,22 @@ Console.OutputEncoding = new System.Text.UTF8Encoding(false);
 if (ProductIconProbe.TryRun(args)) return;
 if (NativeUi.TryRun(args)) return;
 
+if (args[0] == "process-elevation")
+{
+    using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, uint.Parse(args[1]));
+    if (handle.IsInvalid || !PInvoke.OpenProcessToken(handle, Windows.Win32.Security.TOKEN_ACCESS_MASK.TOKEN_QUERY, out var token)) throw new InvalidOperationException("Test process token unavailable.");
+    using (token)
+    {
+        unsafe
+        {
+            Windows.Win32.Security.TOKEN_ELEVATION elevation = default;
+            if (!PInvoke.GetTokenInformation(token, Windows.Win32.Security.TOKEN_INFORMATION_CLASS.TokenElevation, &elevation, (uint)sizeof(Windows.Win32.Security.TOKEN_ELEVATION), out var size) || size != sizeof(Windows.Win32.Security.TOKEN_ELEVATION)) throw new InvalidOperationException("Test process elevation unavailable.");
+            Console.WriteLine(JsonConvert.SerializeObject(new { pid = uint.Parse(args[1]), elevated = elevation.TokenIsElevated != 0 }));
+        }
+    }
+    return;
+}
+
 if (args[0] == "gpu-identities")
 {
     IDXGIFactory1? factory = null;
