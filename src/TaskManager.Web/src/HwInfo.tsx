@@ -27,15 +27,15 @@ export default function HwInfo({ summary, intervalMs, pref, patch, rowHeight }: 
   };
   const textWidth = cssNumber('--width-column-text', 180), nameWidth = cssNumber('--width-column-name-detail', 240), numericWidth = cssNumber('--width-column-number', 112);
   const columns: Column<SensorRow>[] = [
-    { key: 'sensor', label: '传感器分组 / 用户名称', width: nameWidth, render: row => <span title={`分组 ${row.sensor.id}`}>{row.sensor.name}</span> },
-    { key: 'originalSensor', label: '分组原名', width: nameWidth, render: row => <span title={row.sensor.originalName}>{row.sensor.originalName}</span> },
+    { key: 'sensor', label: '传感器分组 / 用户名称', width: textWidth, render: row => <span title={`分组 ${row.sensor.id}`}>{row.sensor.name}</span> },
     { key: 'name', label: '读取项 / 用户名称', width: nameWidth, render: row => <span title={row.label}>{row.label}</span> },
-    { key: 'originalName', label: '读取项原名', width: nameWidth, render: row => <span title={row.originalLabel}>{row.originalLabel}</span> },
-    { key: 'unit', label: '单位', width: numericWidth, render: row => row.unit || <span title="HWiNFO 来源的单位字段为空">无单位</span> },
     { key: 'value', label: '当前', width: numericWidth, numeric: true, render: row => metric(row, 'value') },
+    { key: 'unit', label: '单位', width: numericWidth, render: row => row.unit || <span title="HWiNFO 来源的单位字段为空">无单位</span> },
     { key: 'minimum', label: '会话最小', title: 'HWiNFO 监控会话最小值', width: numericWidth, numeric: true, render: row => metric(row, 'minimum') },
     { key: 'maximum', label: '会话最大', title: 'HWiNFO 监控会话最大值', width: numericWidth, numeric: true, render: row => metric(row, 'maximum') },
     { key: 'average', label: '会话平均', title: 'HWiNFO 监控会话平均值', width: numericWidth, numeric: true, render: row => metric(row, 'average') },
+    { key: 'originalSensor', label: '分组原名', width: nameWidth, render: row => <span title={row.sensor.originalName}>{row.sensor.originalName}</span> },
+    { key: 'originalName', label: '读取项原名', width: nameWidth, render: row => <span title={row.originalLabel}>{row.originalLabel}</span> },
     { key: 'type', label: '原始类型', width: numericWidth, numeric: true, title: 'HWiNFO 原始 type，保留未知类型编号', render: row => row.type },
     { key: 'identity', label: '来源身份', width: textWidth, title: 'sensorId:sensorInstance:readingId', render: row => <span title={row.id}>{row.id}</span> },
   ];
