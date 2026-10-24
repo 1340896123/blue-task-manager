@@ -1,0 +1,75 @@
+{
+  "result": "FAIL",
+  "mode": "desktop",
+  "assertions": 6,
+  "checks": [
+    "dedicated network UI ports are free",
+    "production CsWin32 and JSON.NET chain",
+    "isolated preferences load without recovery and dismiss the first-launch prompt",
+    "bootstrap identifies the actual runtime",
+    "isolated preferences dismiss the unrelated first-launch prompt",
+    "fixture cleanup revalidates its original creation identity"
+  ],
+  "screenshots": [
+    "desktop-failure.png"
+  ],
+  "errors": [],
+  "failure": {
+    "message": "real ETW HTTP fixture throughput",
+    "stack": "Error: real ETW HTTP fixture throughput\n    at until (file:///E:/taskManager/tests/e2e-support.mjs:9:9)\n    at async sampledTarget (file:///E:/taskManager/tests/network-throughput-ui.mjs:31:53)\n    at async file:///E:/taskManager/tests/network-throughput-ui.mjs:51:64"
+  },
+  "socketBytes": {
+    "sent": 26214400,
+    "received": 26214400
+  },
+  "source": {},
+  "cadences": [],
+  "diagnostics": [
+    {
+      "sampleId": 43,
+      "source": {
+        "capturedAtUtc": "2026-10-24T17:04:33.9599151Z",
+        "status": "capacity",
+        "eventsLost": 0,
+        "buffersLost": 0,
+        "collectionDurationMs": 0.2785,
+        "unavailable": {
+          "source": {
+            "code": "capacity",
+            "message": "Windows系统ETW会话/缓冲资源不足；没有停止其他采集器。",
+            "nativeErrorCode": 1450
+          }
+        },
+        "windowDurationMs": null,
+        "flushedBuffers": 0,
+        "consumedBuffers": 0,
+        "eventLayouts": []
+      },
+      "target": {
+        "identity": "57896:134373350286818527",
+        "receive": null,
+        "send": null,
+        "capturedAtUtc": "2026-10-24T17:04:33.9599151Z",
+        "unavailable": {
+          "networkReceiveBytesPerSecond": {
+            "code": "capacity",
+            "message": "Windows系统ETW会话/缓冲资源不足；没有停止其他采集器。",
+            "nativeErrorCode": 1450
+          },
+          "networkSendBytesPerSecond": {
+            "code": "capacity",
+            "message": "Windows系统ETW会话/缓冲资源不足；没有停止其他采集器。",
+            "nativeErrorCode": 1450
+          },
+          "networkBytesPerSecond": {
+            "code": "capacity",
+            "message": "Windows系统ETW会话/缓冲资源不足；没有停止其他采集器。",
+            "nativeErrorCode": 1450
+          }
+        }
+      }
+    }
+  ],
+  "clean": true,
+  "cleanup": "exact owned Host, fixture, ports and ETW sessions; no user processes or IFEO values changed"
+}

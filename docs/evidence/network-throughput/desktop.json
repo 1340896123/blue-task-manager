@@ -1,0 +1,62 @@
+{
+  "result": "PASS",
+  "mode": "desktop",
+  "assertions": 34,
+  "checks": [
+    "dedicated network UI ports are free",
+    "production CsWin32 and JSON.NET chain",
+    "isolated preferences load without recovery and dismiss the first-launch prompt",
+    "bootstrap identifies the actual runtime",
+    "isolated preferences dismiss the unrelated first-launch prompt",
+    "HTTP returns real bidirectional sum for the exact fixture identity",
+    "network column renders a sampled rate with units",
+    "network header labels receive plus send",
+    "detail shows the same actual receive, send and total",
+    "detail retains independent ETW time instead of request time",
+    "detail makes the actual network scope discoverable",
+    "ascending: visible network values sort numerically with unknowns last",
+    "descending: visible network values sort numerically with unknowns last",
+    "unreadable identities remain after numeric values",
+    "selected identity survives network sorting and filtering",
+    "network column retains keyboard resizing",
+    "real filtered CSV download retains BOM and one exact identity",
+    "CSV exports raw 网络接收 (bytes/sec) from the same real snapshot",
+    "CSV exports raw 网络发送 (bytes/sec) from the same real snapshot",
+    "CSV exports raw 网络合计 (bytes/sec) from the same real snapshot",
+    "CSV exports raw 网络采样时刻 UTC from the same real snapshot",
+    "1380x860: no document overflow",
+    "960x640: no document overflow",
+    "1380x860: no document overflow",
+    "network grid fits at actual Electron 125%",
+    "network source state explains paused sampling",
+    "independent TCP socket reports actual bidirectional transfer bytes",
+    "hardware adapter performance retains its independent dual-series chart and legend",
+    "settings exposes actual ETW source and update time",
+    "no renderer errors or IFEO writes",
+    "exact test Host owns one live ETW session",
+    "normal production desktop close releases its own ETW session without test cleanup",
+    "all exact owned application identities exited",
+    "fixture cleanup revalidates its original creation identity"
+  ],
+  "screenshots": [
+    "desktop-detail.png",
+    "desktop-process-1380.png",
+    "desktop-process-960.png",
+    "desktop-process-125.png",
+    "desktop-adapter.png"
+  ],
+  "errors": [],
+  "socketBytes": {
+    "sent": 8011776,
+    "received": 7995392
+  },
+  "source": {
+    "status": "available",
+    "windowDurationMs": 2022.1798999999999,
+    "collectionDurationMs": 1006.4071
+  },
+  "cadences": [],
+  "diagnostics": [],
+  "clean": true,
+  "cleanup": "exact owned Host, fixture, ports and ETW sessions; no user processes or IFEO values changed"
+}

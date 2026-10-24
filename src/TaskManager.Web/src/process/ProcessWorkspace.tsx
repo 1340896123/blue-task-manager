@@ -10,6 +10,7 @@ import ProcessIcon from './ProcessIcon';
 import ProcessDetail from './ProcessDetail';
 import ProcessActionDialog from './ProcessActionDialog';
 import { exportProcesses, processIo, processRows, type ProcessRow } from './processModel';
+import { networkDescription, networkScope, networkSourceText } from './network';
 export type LocateRequest = { identity: string; sequence: number } | null;
 export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstrap, preferences, connected, frozen, toggleFrozen, onRun, refresh, notify, onService, locateRequest, onLocateConsumed, samplingStatus }: {
   page: Page; snapshot: Snapshot; liveSnapshot: Snapshot; bootstrap: Bootstrap | null; preferences: PreferencesController; connected: boolean; frozen: boolean; toggleFrozen: () => void; onRun: () => void; refresh: () => void;
@@ -41,7 +42,7 @@ export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstr
   };
   const runAction = async (command: string, target: Process) => {
     if (command.startsWith('copy')) {
-      const text = command === 'copyPid' ? String(target.pid) : command === 'copyPath' ? target.path : `${target.name}\r\nPID ${target.pid}\r\n身份 ${target.identity}\r\n路径 ${target.path ?? '不可读取'}\r\n用户 ${target.userName ?? '不可读取'}\r\n显示采样 ${snapshot.capturedAtUtc}`;
+      const text = command === 'copyPid' ? String(target.pid) : command === 'copyPath' ? target.path : `${target.name}\r\nPID ${target.pid}\r\n身份 ${target.identity}\r\n路径 ${target.path ?? '不可读取'}\r\n用户 ${target.userName ?? '不可读取'}\r\n网络（接收+发送） ${target.networkBytesPerSecond === null ? `—（${reason(target.unavailable, 'networkBytesPerSecond')}）` : rate(target.networkBytesPerSecond)}\r\n${networkDescription(target)}\r\n显示采样 ${snapshot.capturedAtUtc}`;
       if (!text) return; try { await navigator.clipboard.writeText(text); notify('已复制到剪贴板。'); } catch (error) { notify(errorMessage(error), true); } return;
     }
     if (command === 'details') { setDetailTarget(target); return; }
@@ -69,6 +70,7 @@ export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstr
     window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
   });
   const maximumMemory = Math.max(1, ...model.rows.map(row => row.process.workingSetBytes ?? 0));
+  const maximumNetwork = Math.max(1, ...model.rows.flatMap(row => row.process.networkBytesPerSecond === null ? [] : [row.process.networkBytesPerSecond]));
   const metric = (p: Process, key: keyof Process, text: string) => p[key] === null ? <MissingValue reason={reason(p.unavailable, key)}/> : text;
   const w = (name: string, fallback: number) => cssNumber(`--width-column-${name}`, fallback);
   const definitions: Column<ProcessRow>[] = [
@@ -85,7 +87,7 @@ export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstr
     { key: 'workingSetBytes', label: '内存（工作集）', width: w('number', 112), sortable: true, numeric: true, metric: percent(snapshot.system.memoryPercent), render: row => metric(row.process, 'workingSetBytes', bytes(row.process.workingSetBytes)), cellStyle: row => ({ backgroundColor: heat(row.process.workingSetBytes == null ? null : row.process.workingSetBytes / maximumMemory * 100) }) },
     { key: 'privateBytes', label: '专用提交', width: w('number', 112), sortable: true, numeric: true, render: row => metric(row.process, 'privateBytes', bytes(row.process.privateBytes)) },
     { key: 'io', label: 'I/O', width: w('number', 112), sortable: true, numeric: true, title: '进程读取+写入，含缓存/文件/设备，不是物理磁盘吞吐', metric: <span className="metric-caption">读 + 写</span>, render: row => processIo(row.process) === null ? <MissingValue reason={reason(row.process.unavailable, 'ioReadBytesPerSecond')}/> : rate(processIo(row.process)) },
-    { key: 'networkBytesPerSecond', label: '网络', width: w('number', 112), numeric: true, metric: <span className="metric-caption">未接入吞吐</span>, render: row => <MissingValue reason={reason(row.process.unavailable, 'networkBytesPerSecond', '连接端点不等于逐进程网络吞吐')}/> },
+    { key: 'networkBytesPerSecond', label: '网络', width: w('number', 112), numeric: true, title: `接收+发送，字节/秒。${networkScope}`, metric: <span className="metric-caption">收 + 发</span>, render: row => row.process.networkBytesPerSecond === null ? <MissingValue reason={reason(row.process.unavailable, 'networkBytesPerSecond')}/> : <span title={networkDescription(row.process)}>{rate(row.process.networkBytesPerSecond)}</span>, cellStyle: row => ({ backgroundColor: heat(row.process.networkBytesPerSecond === null ? null : row.process.networkBytesPerSecond / maximumNetwork * 100) }) },
     { key: 'gpuPercent', label: 'GPU', width: w('number', 112), sortable: true, numeric: true, metric: percent(snapshot.system.gpuPercent), title: '最忙GPU引擎；GPU有独立采样时间', render: row => metric(row.process, 'gpuPercent', percent(row.process.gpuPercent)), cellStyle: row => ({ backgroundColor: heat(row.process.gpuPercent) }) },
     { key: 'gpuEngine', label: 'GPU 引擎', width: w('text', 180), render: row => metric(row.process, 'gpuEngine', row.process.gpuEngine ?? '—') },
     { key: 'userName', label: '用户', width: w('text', 180), render: row => metric(row.process, 'userName', row.process.userName ?? '—') },
@@ -121,6 +123,7 @@ export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstr
           <button className="menu-action" data-menu-close onClick={refresh}><RefreshCw size={16} aria-hidden="true"/>刷新数据</button>
         </div>
         {samplingStatus}
+        <div className="command-status" aria-label="逐进程网络采样状态"><strong>逐进程网络采样状态</strong><span>{networkSourceText(snapshot.processNetwork, snapshot.paused)}</span><span>{networkScope}</span></div>
       </CommandMenu>
     </PageHeader>
     <DataTable metricHeader={page === 'processes'} key={page} columnWidths={pref.columnWidths} onColumnWidthsChange={columnWidths => patch({ columnWidths })} scrollResetKey={`${pref.query}:${filters.currentUser}:${filters.sessionId}:${filters.state}:${pref.sortKey}:${pref.sortDirection}:${scrollReset}`} rows={model.rows} columns={columns} rowKey={row => row.process.identity} emptyDescription="请使用可执行文件名或PID搜索，或点击“重置视图”清除筛选；文件说明名称暂不参与搜索。" label={page === 'details' ? '进程详细信息' : '进程列表'} getHierarchy={tree ? row => ({ level: row.depth + 1, expanded: row.hasChildren ? !collapsed.has(row.process.identity) || searching : undefined }) : undefined} rowHeight={cssNumber(preferences.preferences.density === 'compact' ? '--height-row-compact' : '--height-row-standard', 32)} selected={selected?.identity??null} sort={sort} onSort={key => patch({ sortKey: key, sortDirection: pref.sortKey === key && pref.sortDirection === 'ascending' ? 'descending' : 'ascending', scrollTop: 0 })} onSelect={row => patch({ selectedIdentity: row.process.identity })} onActivate={row => setDetailTarget(row.process)} onContextMenu={(row, event) => openMenu(row.process, event)} onRowKey={(row, event) => {

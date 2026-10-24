@@ -9,7 +9,8 @@ export type Process = {
   threadCount: number; priority: string | null; cpuPercent: number | null; workingSetBytes: number | null;
   ioReadBytesPerSecond: number | null; ioWriteBytesPerSecond: number | null;
   totalCpuTime100ns: string | null; ioReadBytes: string | null; ioWriteBytes: string | null;
-  networkBytesPerSecond: number | null; gpuPercent: number | null; gpuCapturedAtUtc: string | null; gpuEngine: string | null;
+  networkBytesPerSecond: number | null; networkReceiveBytesPerSecond: number | null; networkSendBytesPerSecond: number | null; networkCapturedAtUtc: string | null;
+  gpuPercent: number | null; gpuCapturedAtUtc: string | null; gpuEngine: string | null;
   privateBytes: number | null; handleCount: number | null; startedAtUtc: string | null; uptimeSeconds: number | null;
   canTerminate: boolean; state: string; unavailable: Availability;
 };
@@ -36,13 +37,14 @@ export type Snapshot = {
   sampleId: number; capturedAtUtc: string; sessionStartedAtUtc: string; intervalMs: number; paused: boolean; system: SystemInfo;
   processes: Process[]; services: Service[]; startupItems: StartupItem[]; users: SessionUser[]; history: ProcessHistory[];
   performanceHistory: HistoryPoint[]; capabilities: Record<string, Capability>; warnings: Missing[]; slowDataCapturedAtUtc: string | null;
-  samplingDurationMs: number; networkAdapters: NetworkAdapter[]; physicalDisks: PhysicalDisk[]; gpuAdapters: GpuAdapter[]; telemetry: TelemetryStatus | null; logicalProcessors: LogicalProcessor[]; hwInfo: HwInfoSummary;
+  samplingDurationMs: number; networkAdapters: NetworkAdapter[]; physicalDisks: PhysicalDisk[]; gpuAdapters: GpuAdapter[]; telemetry: TelemetryStatus | null; logicalProcessors: LogicalProcessor[]; hwInfo: HwInfoSummary; processNetwork: ProcessNetworkStatus;
 };
 export type ProcessResult = { pid: number; identity: string | null; creationTimeFileTime: string | null; message: string; completed: boolean | null };
 export type NetworkAdapter = { id: string; interfaceIndex: number; alias: string; description: string; status: string; interfaceType: number; isHardware: boolean; isVirtual: boolean; isLoopback: boolean; isTunnel: boolean; receiveLinkSpeedBitsPerSecond: string; transmitLinkSpeedBitsPerSecond: string; receivedBytes: string; sentBytes: string; receiveBytesPerSecond: number | null; sendBytesPerSecond: number | null; unavailable: Availability };
 export type PhysicalDisk = { id: string; name: string; isTotal: boolean; readBytesPerSecond: number | null; writeBytesPerSecond: number | null; activePercent: number | null; unavailable: Availability };
 export type GpuAdapter = { id: string; adapterLuid: string; physicalIndex: number; description: string | null; isSoftware: boolean | null; identityCapturedAtUtc: string | null; utilizationPercent: number | null; busiestEngine: string | null; engineCount: number; unavailable: Availability };
 export type TelemetryStatus = { sampleId: number; capturedAtUtc: string | null; cpuCapturedAtUtc: string | null; collectionDurationMs: number | null; gpuInstanceCount: number; unavailable: Availability; queryDurationMs: number | null; initializationDurationMs: number | null };
+export type ProcessNetworkStatus = { capturedAtUtc: string | null; status: string; eventsLost: number; buffersLost: number; collectionDurationMs: number | null; unavailable: Availability; windowDurationMs: number | null; flushedBuffers: number; consumedBuffers: number; eventLayouts: string[] };
 export type ProcessDetails = { process: Process; capturedAtUtc: string; startedAtUtc: string | null; uptimeSeconds: number | null; handleCount: number | null; privateBytes: number | null; relatedServices: Service[]; unavailable: Availability; snapshotCapturedAtUtc: string | null; relatedServicesCapturedAtUtc: string | null };
 export type Connection = { protocol: string; addressFamily: string; localAddress: string; localPort: number; remoteAddress: string | null; remotePort: number | null; state: string | null; pid: number };
 export type ConnectionsResult = { capturedAtUtc: string; identity: string; connections: Connection[]; unavailable: Availability; truncated: boolean };

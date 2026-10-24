@@ -1,6 +1,6 @@
 # 网络吞吐验收结果
 
-日期：2026-10-25（Asia/Shanghai）。当前记录为原生后端阶段；浏览器与正式 Electron 的 N06/N07 将由后续阶段补齐，不以本记录代替界面验收。
+日期：2026-10-25（Asia/Shanghai）。原生后端与浏览器/正式 Electron 网络专项已执行；最终自包含交付和完整性能测量由交付阶段补记。
 
 ## 已执行
 
@@ -24,6 +24,28 @@
 
 原生可复现证据：[native.json](evidence/network-throughput/native.json)；本机输出 `output/playwright/network-throughput/native-final.json`、`output/playwright/windows-layout/native-api-browser.log`、`native-core-v11-browser.log`、`static-v11-browser.log`。fixture 由测试直接创建并按已持有的 Process 句柄结束，临时目录/端点已释放。强杀诊断只清理其捕获的单个自有会话。
 
-## 尚待后续阶段
+## 界面专项与真实桌面
 
-N06/N07 的真实浏览器/正式 Electron 网络列、排序、详情、CSV、960×640/1380×860/125%截图及 N08 桌面正常关闭和开销记录尚未在本阶段执行。N05 的系统 ETW 槽位耗尽、真实丢事件/缓冲、权限撤销故障未主动制造；相应生产错误/容量/过期与解析拒绝分支已实现，不能将隔离边界断言当作这些故障的真实成功采样。
+前端 `npm run typecheck`、`npm run build` 和 Host Release 构建通过。进程与详细信息网格沿用原有网络列 key、列宽、排序和选择；网络列显示真实接收+发送，详情分开呈现收/发/合计和独立 ETW 来源时间。复制信息、CSV 包含网络值与来源时间；CSV 数字使用原始 bytes/sec，未知留空并附原有不可用原因。更多菜单及设置可查看当前来源、预热/暂停/失败原因，硬件网卡图保持独立口径与实线/虚线图例。
+
+`tests/network-throughput-ui.mjs` 使用生产 Host、真实专用 echo 进程、本地 TCP 流量和 Playwright，未替换 API 或采集器。浏览器最终 **34 项通过**，正式 Electron **34 项通过**。检查同 identity 的 API/列/详情/CSV 值一致、独立时间不冒充请求时间、数值升降序及未知末尾、选择保持、键盘调宽与 JSON.NET 持久化、复制、960×640/1380×860、实际 Electron 125% 读回、reduced-motion、硬件网卡性能图和来源状态。Electron 正常窗口关闭后，精确本实例 ETW 会话消失，未借测试 helper 代清理；应用身份、fixture、端口均已释放。浏览器故意结束其无窗口 Host 时使用精确 FILETIME 清理 helper。
+
+浏览器独立 TCP socket 最终发送与接收各 16,924,672 字节。采样从 1 秒切换为 2 秒、5 秒后，分别得到真实新来源窗口 1,744.68ms、5,040.83ms，目标双向速率有效；速率分母采用实际窗口，不强行写成配置周期。Electron 另有约 8MB 双向真实传输，源窗口约 2,022ms。详情截图已滚动到网络收/发/合计/来源字段，避免仅拍到概览上半部。
+
+验收期间实际遇到 Windows ETW `1450`：快照继续刷新至 sample43、真实 socket 双向持续传输，但网络接收/发送/合计均为 null 且给出 `capacity` 原因，证明资源不足不会冒充0。只读审计确认一条属于本轮失败回归的残留会话；主代理通过归档 worker58284、pages-ui 失败及创建时窗确认 ownership，只清理该精确 PID+FILETIME+GUID，会话释放后专项恢复。另修复测试用 `logman query` 的已知 `0x80071068` 枚举竞态：仅此状态最多重试4次，其他错误仍失败，查询失败不当空列表。N05 的容量不足分支已有实际证据；真实丢事件/缓冲及权限撤销仍未主动制造。
+
+系统 .NET10 在验收中变为不可用，测试从本机官方 NuGet 10.0.12 包构建局部标准运行时 `output/tools/network-dotnet`，仅在提升 worker 中设置 `DOTNET_ROOT`/`DOTNET_ROOT_X64`，未修改系统运行时安装或管理员校验。界面专项使用独立目录 `output/network-throughput-release`，不覆盖并行工作的原 release。最终交付阶段另做标准自包含 publish，不能用测试环境变量替代离线交付。
+
+可复现命令（仓库根目录 PowerShell；正常已有 .NET10 时可省略 RuntimeDirectory）：
+
+```powershell
+$networkWorker = (Resolve-Path 'tests/network-throughput-worker.ps1').Path
+Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"' + $networkWorker + '"'),'-Mode','browser','-ReleaseDirectory','E:\taskManager\output\network-throughput-release','-RuntimeDirectory','E:\taskManager\output\tools\network-dotnet')
+Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"' + $networkWorker + '"'),'-Mode','desktop','-ReleaseDirectory','E:\taskManager\output\network-throughput-release','-RuntimeDirectory','E:\taskManager\output\tools\network-dotnet')
+```
+
+两模式顺序执行，等待 `output/playwright/network-throughput/worker-<mode>.json` complete。原始报告为同目录 `browser.json`/`desktop.json`，均 clean=true；容量诊断保留为 `desktop-capacity.json`。审阅证据见 [browser.json](evidence/network-throughput/browser.json)、[desktop.json](evidence/network-throughput/desktop.json)、[desktop-capacity.json](evidence/network-throughput/desktop-capacity.json)。桌面截图：[网络列](evidence/network-throughput/desktop-process-1380.png)、[窄窗](evidence/network-throughput/desktop-process-960.png)、[125%](evidence/network-throughput/desktop-process-125.png)、[网络详情](evidence/network-throughput/desktop-detail.png)、[硬件网卡](evidence/network-throughput/desktop-adapter.png)。
+
+## 最终交付待补
+
+N08 的完整120点历史预热后 ≥30 秒 CPU/内存/句柄/HTTP 性能与最新源代码的正式自包含包验证仍由最终交付阶段执行。真实丢事件/缓冲、权限撤销故障未主动制造，不能将隔离边界断言当作这些故障的真实成功采样。

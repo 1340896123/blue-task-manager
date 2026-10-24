@@ -52,8 +52,8 @@ const csvCell = (value: unknown) => {
   return `"${text.replaceAll('"', '""')}"`;
 };
 export function exportProcesses(rows: ProcessRow[], capturedAtUtc: string, tree: boolean) {
-  const headers = ['采样时刻 UTC', '树上下文行', '树层级', '名称', 'PID', '父PID', '创建FILETIME', '状态', 'CPU (%)', '工作集 (bytes)', '专用提交 (bytes)', 'I/O读取 (bytes/sec)', 'I/O写入 (bytes/sec)', 'GPU (%)', 'GPU采样时刻 UTC', 'GPU引擎', '用户', '路径', '字段不可用原因'];
-  const records = rows.map(({ process: p, depth, context }) => [capturedAtUtc, tree ? context ? '祖先上下文' : '匹配' : '', tree ? depth : '', p.name, p.pid, p.parentPid, p.creationTimeFileTime, p.state, p.cpuPercent, p.workingSetBytes, p.privateBytes, p.ioReadBytesPerSecond, p.ioWriteBytesPerSecond, p.gpuPercent, p.gpuCapturedAtUtc, p.gpuEngine, p.userName, p.path, Object.entries(p.unavailable).map(([k, v]) => `${k}: ${v.message}`).join('; ')]);
+  const headers = ['采样时刻 UTC', '树上下文行', '树层级', '名称', 'PID', '父PID', '创建FILETIME', '状态', 'CPU (%)', '工作集 (bytes)', '专用提交 (bytes)', 'I/O读取 (bytes/sec)', 'I/O写入 (bytes/sec)', '网络接收 (bytes/sec)', '网络发送 (bytes/sec)', '网络合计 (bytes/sec)', '网络采样时刻 UTC', 'GPU (%)', 'GPU采样时刻 UTC', 'GPU引擎', '用户', '路径', '字段不可用原因'];
+  const records = rows.map(({ process: p, depth, context }) => [capturedAtUtc, tree ? context ? '祖先上下文' : '匹配' : '', tree ? depth : '', p.name, p.pid, p.parentPid, p.creationTimeFileTime, p.state, p.cpuPercent, p.workingSetBytes, p.privateBytes, p.ioReadBytesPerSecond, p.ioWriteBytesPerSecond, p.networkReceiveBytesPerSecond, p.networkSendBytesPerSecond, p.networkBytesPerSecond, p.networkCapturedAtUtc, p.gpuPercent, p.gpuCapturedAtUtc, p.gpuEngine, p.userName, p.path, Object.entries(p.unavailable).map(([k, v]) => `${k}: ${v.message}`).join('; ')]);
   const blob = new Blob(['\uFEFF', [headers, ...records].map(record => record.map(csvCell).join(',')).join('\r\n'), '\r\n'], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `processes-${capturedAtUtc.replaceAll(':', '-')}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

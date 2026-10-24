@@ -1,0 +1,94 @@
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import net from 'node:net';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { chromium } from 'playwright';
+import { delay, until, portOpen, processTree, ownedAlive } from './e2e-support.mjs';
+import { probe } from './native-ui-support.mjs';
+import { networkSessions as sessions, stopOwnedHost } from './etw-support.mjs';
+import { clickCommand } from './layout-ui-support.mjs';
+
+const root=path.resolve(import.meta.dirname,'..'),mode=process.argv.includes('--desktop')?'desktop':process.env.TASKMANAGER_NETWORK_MODE??'browser',desktop=mode==='desktop';
+assert.ok(['browser','desktop'].includes(mode));
+const release=process.env.TASKMANAGER_NETWORK_RELEASE_DIRECTORY??path.join(root,'output/TaskManager-win-x64');
+const port=5416,cdp=9416,origin=`http://127.0.0.1:${port}`,output=path.join(root,'output/playwright/network-throughput');
+const temporary=await mkdtemp(path.join(tmpdir(),'taskmanager-network-ui-')),fixtureExe=path.join(root,'tests/TaskManager.NetworkTests/bin/Release/net10.0-windows10.0.19041.0/TaskManager.NetworkTests.exe');
+await mkdir(output,{recursive:true});
+const pageDefaults={query:'',sortKey:'name',sortDirection:'ascending',visibleColumns:null,columnWidths:null,filters:null,scrollTop:0,selectedIdentity:null,resourceType:null,resourceId:null,cpuGraphMode:'total'};
+await writeFile(path.join(temporary,'preferences.json'),JSON.stringify({version:1,intervalMs:1000,ui:{version:1,density:'compact',sidebarCollapsed:false,processView:'flat',taskManagerPromptDismissed:true,pages:{processes:{...pageDefaults,sortKey:'networkBytesPerSecond',sortDirection:'descending'},performance:{...pageDefaults,resourceType:'cpu'}}}}));
+const checks=[],screenshots=[],errors=[],controls=[],cadences=[],diagnostics=[];let host,browser,page,token,tree=[],fixture,fixtureIdentity,socket,writer,sourceSample,failure,clean=true;
+let sentBytes=0,receivedBytes=0;
+const check=(ok,message)=>{assert.ok(ok,message);checks.push(message);};
+const get=async route=>{const response=await fetch(`${origin}/api/${route}`,{signal:AbortSignal.timeout(12000)});assert.ok(response.ok,route+': '+response.status);return response.json();};
+async function post(route,body){const response=await fetch(`${origin}/api/${route}`,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-TaskManager-Token':token},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});assert.ok(response.ok,route+': '+response.status);return response.json();}
+const formatRate=value=>{const rank=Math.max(0,Math.min(4,Math.floor(Math.log(Math.max(value,1))/Math.log(1024))));return `${(value/1024**rank).toFixed(rank===0?0:1)} ${['B','KB','MB','GB','TB'][rank]}/秒`;};
+const nav=async name=>{await page.getByRole('button',{name,exact:true}).click();await page.locator('.toolbar h1').filter({hasText:name}).waitFor();};
+async function capture(name){const file=`${mode}-${name}.png`,destination=path.join(output,file);if(desktop){const session=await page.context().newCDPSession(page);const result=await session.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});await session.detach();await writeFile(destination,Buffer.from(result.data,'base64'));}else await page.screenshot({path:destination});screenshots.push(file);}
+async function viewport(width,height){if(desktop){probe(tree.map(item=>`${item.pid}:${item.fileTime}`).join(','),'resize',width,height);await delay(250);}else await page.setViewportSize({width,height});check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight),`${width}x${height}: no document overflow`);}
+function csvRows(text){const rows=[];let row=[],cell='',quoted=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}else if(ch===','&&!quoted){row.push(cell);cell='';}else if(ch==='\n'&&!quoted){row.push(cell.replace(/\r$/,''));rows.push(row);row=[];cell='';}else cell+=ch;}return rows;}
+async function sampledTarget(after=0){let value;try{await until(async()=>{value=await get('snapshot');return Date.parse(value.processNetwork.capturedAtUtc)>after&&value.processNetwork.status==='available'&&value.processes.some(item=>item.identity===fixtureIdentity&&item.networkReceiveBytesPerSecond>1000&&item.networkSendBytesPerSecond>1000);},'real ETW HTTP fixture throughput',45000);}catch(error){const target=value?.processes.find(item=>item.identity===fixtureIdentity);diagnostics.push({sampleId:value?.sampleId,source:value?.processNetwork,target:target?{identity:target.identity,receive:target.networkReceiveBytesPerSecond,send:target.networkSendBytesPerSecond,capturedAtUtc:target.networkCapturedAtUtc,unavailable:Object.fromEntries(Object.entries(target.unavailable).filter(([key])=>key.startsWith('network')))}:null});throw error;}return value;}
+try{
+  check(!await portOpen(port)&&!await portOpen(cdp),'dedicated network UI ports are free');
+  host=spawn(path.join(release,'TaskManager.Host.exe'),[...(desktop?[]:['--headless']),`--port=${port}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:temporary,TASKMANAGER_CDP_PORT:String(cdp)},stdio:'ignore',windowsHide:true});
+  await until(async()=>(await get('health')).ready,'real elevated production Host ready',45000);token=(await get('bootstrap')).token;
+  const health=await get('health');check(/CsWin32/.test(health.nativeSource)&&/Newtonsoft/.test(health.json),'production CsWin32 and JSON.NET chain');
+  const savedPreferences=await get('preferences');check(savedPreferences.warning===null&&savedPreferences.preferences.taskManagerPromptDismissed===true,'isolated preferences load without recovery and dismiss the first-launch prompt');
+  fixture=spawn(fixtureExe,['--fixture',path.join(temporary,'fixture')],{stdio:'ignore',windowsHide:true});
+  const created=probe('process-elevation',fixture.pid);fixtureIdentity=`${fixture.pid}:${created.creationTimeFileTime}`;
+  const endpointsFile=path.join(temporary,'fixture/endpoints.txt');let endpoints;
+  await until(async()=>{try{endpoints=Object.fromEntries((await readFile(endpointsFile,'utf8')).trim().split(/\r?\n/).map(line=>{const [key,value]=line.split('=');return[key,Number(value)];}));return endpoints.TCP4>0;}catch{return false;}},'real fixture endpoint file');
+  socket=net.createConnection({host:'127.0.0.1',port:endpoints.TCP4});await new Promise((resolve,reject)=>{socket.once('connect',resolve);socket.once('error',reject);});socket.on('data',chunk=>receivedBytes+=chunk.length);
+  const payload=Buffer.alloc(16*1024);writer=setInterval(()=>{if(!socket.destroyed&&socket.writableLength<65536){socket.write(payload);sentBytes+=payload.length;}},20);
+  if(desktop){await until(()=>portOpen(cdp),'actual Electron CDP',45000);browser=await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`);await until(()=>browser.contexts().flatMap(context=>context.pages()).some(item=>item.url().startsWith(origin)),'real Electron page',45000);page=browser.contexts().flatMap(context=>context.pages()).find(item=>item.url().startsWith(origin));}
+  else{browser=await chromium.launch({headless:true});page=await browser.newPage({viewport:{width:1380,height:860},reducedMotion:'reduce',permissions:['clipboard-read','clipboard-write']});await page.goto(origin);}
+  page.setDefaultTimeout(12000);page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(request.method()==='POST'&&/\/desktop\/task-manager-integration$/.test(request.url()))controls.push(request.url());});await page.emulateMedia({reducedMotion:'reduce'});
+  await page.getByRole('table',{name:'进程列表',exact:true}).waitFor();tree=processTree(host.pid);
+  check((await get('bootstrap')).desktop===desktop,'bootstrap identifies the actual runtime');
+  check(await page.getByRole('dialog',{name:'替换标准任务管理器？',exact:true}).count()===0,'isolated preferences dismiss the unrelated first-launch prompt');
+  const search=page.getByRole('searchbox'),row=()=>page.locator(`tr[data-row-key="${fixtureIdentity}"]`),networkIndex=await page.locator('th').evaluateAll(headers=>headers.findIndex(item=>item.dataset.columnKey==='networkBytesPerSecond'));
+  await search.fill(String(fixture.pid));await row().waitFor();await sampledTarget();await post('settings',{intervalMs:1000,paused:true});sourceSample=await get('snapshot');const target=sourceSample.processes.find(item=>item.identity===fixtureIdentity);
+  check(target.networkBytesPerSecond===target.networkReceiveBytesPerSecond+target.networkSendBytesPerSecond&&target.networkReceiveBytesPerSecond>0&&target.networkSendBytesPerSecond>0,'HTTP returns real bidirectional sum for the exact fixture identity');
+  await until(async()=>await row().locator('td').nth(networkIndex).innerText()===formatRate(target.networkBytesPerSecond),'network cell matches frozen real API sample');
+  check((await row().locator('td').nth(networkIndex).innerText())!=='—','network column renders a sampled rate with units');check((await page.locator('th[data-column-key="networkBytesPerSecond"]').innerText()).includes('收 + 发'),'network header labels receive plus send');
+  await row().dblclick();const dialog=page.getByRole('dialog',{name:'进程信息',exact:true});await dialog.waitFor();await until(async()=>await dialog.locator('time').count()>0,'detail network source timestamp');
+  const detailValue=label=>dialog.locator('.process-details > div').filter({has:page.locator('dt').getByText(label,{exact:true})}).locator('dd');
+  check(await detailValue('网络接收').innerText()===formatRate(target.networkReceiveBytesPerSecond)&&await detailValue('网络发送').innerText()===formatRate(target.networkSendBytesPerSecond)&&await detailValue('网络合计（接收+发送）').innerText()===formatRate(target.networkBytesPerSecond),'detail shows the same actual receive, send and total');
+  check(await dialog.locator('time').getAttribute('datetime')===target.networkCapturedAtUtc,'detail retains independent ETW time instead of request time');
+  check((await dialog.innerText()).includes('与硬件网卡总量口径不同'),'detail makes the actual network scope discoverable');await detailValue('网络合计（接收+发送）').scrollIntoViewIfNeeded();await capture('detail');
+  await dialog.getByRole('button',{name:'复制信息',exact:true}).click();if(!desktop){const copied=await page.evaluate(()=>navigator.clipboard.readText());check(copied.includes('网络（接收+发送）')&&copied.includes(target.networkCapturedAtUtc),'copied information includes throughput and source time');}
+  await dialog.getByRole('button',{name:'关闭对话框',exact:true}).click();await row().click();await search.fill('');
+  const sort=page.getByRole('button',{name:'按网络排序',exact:true});
+  for(const direction of ['ascending','descending']){if(await page.locator('th[data-column-key="networkBytesPerSecond"]').getAttribute('aria-sort')!==direction)await sort.click();await delay(120);const ids=await page.locator('tbody tr[data-row-key]').evaluateAll(rows=>rows.map(item=>item.dataset.rowKey));const values=ids.map(id=>sourceSample.processes.find(item=>item.identity===id).networkBytesPerSecond);check(values.every((value,index)=>!index||values[index-1]===null?value===null||index===0:value===null||(direction==='ascending'?values[index-1]<=value:values[index-1]>=value)),direction+': visible network values sort numerically with unknowns last');}
+  const unknown=sourceSample.processes.filter(item=>item.networkBytesPerSecond===null);if(unknown.length){await page.locator('[data-testid="table-scroll"]').evaluate(element=>element.scrollTop=element.scrollHeight);await delay(120);const lastId=await page.locator('tbody tr[data-row-key]').last().getAttribute('data-row-key');check(sourceSample.processes.find(item=>item.identity===lastId).networkBytesPerSecond===null,'unreadable identities remain after numeric values');}
+  await search.fill(String(fixture.pid));await row().waitFor();check(await row().getAttribute('aria-selected')==='true','selected identity survives network sorting and filtering');
+  const resize=page.getByRole('separator',{name:'调整网络列宽',exact:true});await resize.focus();const before=Number(await resize.getAttribute('aria-valuenow'));await resize.press('ArrowRight');check(Number(await resize.getAttribute('aria-valuenow'))>before,'network column retains keyboard resizing');
+  const download=page.waitForEvent('download');await clickCommand(page,'导出 CSV');const bytes=await readFile(await(await download).path()),csv=csvRows(bytes.toString('utf8'));const headers=csv[0],record=csv[1];
+  check(bytes.subarray(0,3).equals(Buffer.from([239,187,191]))&&csv.length===2,'real filtered CSV download retains BOM and one exact identity');
+  for(const [label,key]of[['网络接收 (bytes/sec)','networkReceiveBytesPerSecond'],['网络发送 (bytes/sec)','networkSendBytesPerSecond'],['网络合计 (bytes/sec)','networkBytesPerSecond'],['网络采样时刻 UTC','networkCapturedAtUtc']])check(record[headers.indexOf(label)]===String(target[key]),'CSV exports raw '+label+' from the same real snapshot');
+  await until(async()=>(await get('preferences')).preferences.pages.processes.columnWidths?.networkBytesPerSecond>before,'network width persists through JSON.NET');
+  for(const size of [[1380,860],[960,640]]){await viewport(...size);await capture('process-'+size[0]);}
+  if(desktop){await viewport(1380,860);await page.keyboard.press('Control+=');await until(async()=>(await get('desktop/window-state')).zoomFactor===1.25,'actual Electron 125% zoom readback');check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'network grid fits at actual Electron 125%');await capture('process-125');await page.keyboard.press('Control+0');}
+  if(!await page.locator('.command-menu').evaluate(element=>element.open))await page.locator('.command-menu > summary').click();check((await page.getByLabel('逐进程网络采样状态').innerText()).includes('采集已暂停'),'network source state explains paused sampling');await page.keyboard.press('Escape');
+  const resumedAt=Date.now();await post('settings',{intervalMs:1000,paused:false});await sampledTarget(resumedAt);check(sentBytes>0&&receivedBytes>0,'independent TCP socket reports actual bidirectional transfer bytes');
+  if(!desktop){for(const intervalMs of[2000,5000]){const changedAt=Date.now();await post('settings',{intervalMs,paused:false});let observed;await until(async()=>{observed=await get('snapshot');return observed.intervalMs===intervalMs&&Date.parse(observed.processNetwork.capturedAtUtc)>changedAt&&observed.processNetwork.status==='available'&&observed.processNetwork.windowDurationMs>=intervalMs*.8&&observed.processes.some(item=>item.identity===fixtureIdentity&&item.networkReceiveBytesPerSecond>0&&item.networkSendBytesPerSecond>0);},`${intervalMs}ms actual network window`,45000);cadences.push({intervalMs,windowDurationMs:observed.processNetwork.windowDurationMs});check(true,`${intervalMs}ms sampling yields a fresh valid network window and actual bidirectional rates`);}await post('settings',{intervalMs:1000,paused:false});}
+  await search.fill('');await nav('性能');const current=await get('snapshot'),adapter=current.networkAdapters.find(item=>item.status==='IfOperStatusUp')??current.networkAdapters[0];
+  if(adapter){await page.locator('.resource-tile').filter({has:page.locator('strong').getByText(adapter.alias,{exact:true})}).click();check(await page.locator('.resource-content svg[aria-label^="选中网卡吞吐"]').count()===1&&(await page.locator('.resource-content .chart-legend').innerText()).includes('发送（虚线）'),'hardware adapter performance retains its independent dual-series chart and legend');await capture('adapter');}
+  await nav('设置');await search.fill('逐进程网络');check((await page.locator('.settings-page').innerText()).includes('Windows ETW TCP/UDP IPv4/IPv6')&&(await page.locator('.settings-page').innerText()).includes('来源'),'settings exposes actual ETW source and update time');
+  check(errors.length===0&&controls.length===0,'no renderer errors or IFEO writes');
+  const identity=probe('process-elevation',host.pid),prefix=`BlueDomain-Network-${host.pid}-${identity.creationTimeFileTime}-`,ownedSessions=(await sessions()).filter(name=>name.startsWith(prefix));check(ownedSessions.length===1,'exact test Host owns one live ETW session');
+  if(desktop){await page.getByRole('button',{name:'关闭窗口',exact:true}).click();await until(()=>host.exitCode!==null||host.signalCode!==null,'normal Electron close stops the Host',25000);check(!(await sessions()).some(name=>name.startsWith(prefix)),'normal production desktop close releases its own ETW session without test cleanup');}
+  else await stopOwnedHost(host);
+  await until(async()=>!await portOpen(port)&&!await portOpen(cdp),'owned listeners released');check(tree.every(item=>!ownedAlive(item)),'all exact owned application identities exited');
+}catch(error){failure={message:error.message,stack:error.stack};if(page&&!page.isClosed())await capture('failure').catch(()=>{});}
+finally{
+  clearInterval(writer);socket?.destroy();if(host?.exitCode===null&&host.signalCode===null)tree=processTree(host.pid);await browser?.close().catch(()=>{});
+  if(host?.exitCode===null&&host.signalCode===null)await stopOwnedHost(host);
+  if(host){try{await until(async()=>!await portOpen(port)&&!await portOpen(cdp),'owned application listeners close after cleanup',15000);}catch{for(const entry of [...tree].reverse())if(ownedAlive(entry)){try{process.kill(entry.pid);}catch{}}await until(async()=>!await portOpen(port)&&!await portOpen(cdp),'exact owned fallback cleanup closes listeners',15000).catch(()=>{clean=false;});}if(tree.some(entry=>ownedAlive(entry)))clean=false;}
+  if(fixture?.exitCode===null&&fixture.signalCode===null){check(`${fixture.pid}:${probe('process-elevation',fixture.pid).creationTimeFileTime}`===fixtureIdentity,'fixture cleanup revalidates its original creation identity');const exited=new Promise(resolve=>fixture.once('exit',resolve));fixture.kill();await exited;}
+  await rm(temporary,{recursive:true,force:true});
+  if(!clean&&!failure)failure={message:'test-owned application resources remain'};
+  const report={result:failure?'FAIL':'PASS',mode,assertions:checks.length,checks,screenshots,errors,failure,socketBytes:{sent:sentBytes,received:receivedBytes},source:{status:sourceSample?.processNetwork.status,windowDurationMs:sourceSample?.processNetwork.windowDurationMs,collectionDurationMs:sourceSample?.processNetwork.collectionDurationMs},cadences,diagnostics,clean,cleanup:'exact owned Host, fixture, ports and ETW sessions; no user processes or IFEO values changed'};
+  await writeFile(path.join(output,`${mode}.json`),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));if(failure)process.exitCode=1;
+}
