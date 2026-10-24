@@ -1,19 +1,17 @@
 // Official Electron.NET startup hook; all application data stays on same-origin HTTP.
 module.exports.onStartup = function () {
   const { app, BrowserWindow, ipcMain } = require('electron');
-  const path = require('node:path');
   // Preserve Electron.NET's existing package identity for Windows taskbar grouping.
   app.setAppUserModelId('taskmanager-host');
   const origin = process.env.TASKMANAGER_ORIGIN;
   if (!origin || !/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) return false;
-  const preload = path.join(__dirname, 'window-preload.js');
   // Window chrome must keep working when the HTTP collector is unavailable.
   // Business operations continue to use the authenticated same-origin API.
   ipcMain.handle('taskmanager:window-action', (event, action) => {
     const current = BrowserWindow.fromWebContents(event.sender);
     const frame = event.senderFrame;
-    if (!current || current.isDestroyed() || frame !== event.sender.mainFrame ||
-        frame?.origin !== origin || event.sender.getLastWebPreferences().preload !== preload) {
+    // Validate the actual sender. Electron 45 omits preload from preference readback.
+    if (!current || current.isDestroyed() || frame !== event.sender.mainFrame || frame?.origin !== origin) {
       throw new Error('窗口请求来源无效。');
     }
     switch (action) {
