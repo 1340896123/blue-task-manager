@@ -1,5 +1,7 @@
 # 工程规范
 
+标题与数据视觉层级遵循 [VISUAL-HIERARCHY.md](VISUAL-HIERARCHY.md) 和 MASTER 顶部排版增量：每页一个 h1、设置一级分组用 h2，标题/分组/正文/说明形成稳定字阶；静态视觉强调不改变表头或虚拟行几何量。交付记录本轮 V 系列及相关真实链路回归证据。
+
 当前八页界面必须按 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md) 的Windows 11标准任务管理器结构实施并通过L系列验收。每页一个页头/命令栏，次命令进入更多；不以旧测试依赖为由保留多层操作栏、横排性能类别或营销设置页。Token以MASTER顶部2026-10-24增量优先。
 
 管理员与 NSIS 增量以 [ADMIN-INSTALLER.md](ADMIN-INSTALLER.md) 为当前规范。应用 manifest 与真实令牌双重校验；包必须自包含并保留 Electron/.NET 许可。安装/升级/卸载仅操作可信专用目录；卸载删除文件前严格清理本安装目录自有 IFEO，失败中止。管理员测试按实际 SCM 权限分支，仅操作自建服务；不以旧标准用户测试的权限断言代替管理员验收。

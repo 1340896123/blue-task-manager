@@ -1,5 +1,23 @@
 # Task Manager — Windows Blue Design System
 
+## 2026-10-24 标题与数据视觉层级（当前排版优先）
+
+按用户“设计太单一、标题不突出”的反馈，采用 Fluent UI 的清晰字阶加强既有 Windows 布局。完整审查、来源、组件映射与 V 系列验收见 [VISUAL-HIERARCHY.md](../../docs/VISUAL-HIERARCHY.md)。本节仅覆盖对应排版/表头表面规则，48px 标题区、56px 命令栏、36/58px 表头、32/40px 数据行及真实数据语义继续有效。
+
+```css
+--font-size-title: 24px;
+--font-size-section: 16px;
+--line-height-title: 32px;
+--line-height-section: 24px;
+--color-table-header: #F6F8FB;
+--color-table-header-selected: var(--color-selection);
+```
+
+- 每页 h1 使用 title/semibold/title 行高；设置一级分组改为 h2，section/semibold/section 行高，标题下12px、组间24px。设置项 body/medium，说明 caption/secondary；可展开分组标题保持同一视觉层级和原生交互。
+- 汇总表头 subtitle/semibold/accent；列名 body/medium/text，表头为 table-header，排序列 table-header-selected、accent/semibold，并保留方向箭头与 aria-sort。全部正常文字对比≥4.5:1，静态强调不能覆盖键盘焦点或改变几何量。
+- 性能关键事实 metric/semibold，标签 caption/secondary；资源名称保持既有32px。应用名 control/semibold，选中导航和资源名称 accent/semibold；已有计数改为无边框普通次级文本，不能呈现按钮外观。
+- 可使用既有3px accent短竖线标记页面标题；不得引入营销页头、额外工具栏、卡片墙、渐变或采样闪烁。
+
 ## 2026-10-24 CPU 图表模式与 HWiNFO 增量
 
 - CPU主图双击切换总体/逐逻辑处理器；可见原生选择控件有相同状态、键盘操作与焦点，复用height-control/body/caption/accent/selection。小图固定0～100%，有真实处理器组/索引及当前值；未知原因不只依赖颜色。
