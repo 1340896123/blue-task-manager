@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -62,6 +63,6 @@ try {
   await writeFile(path.join(output, 'restricted-process-ui-v11-results.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
 } finally {
-  if (host.exitCode === null) for (const p of processTree(host.pid).reverse()) if (ownedAlive(p)) { try { process.kill(p.pid); } catch {} }
+  if (host.exitCode === null) { const remaining = processTree(host.pid); await stopOwnedHost(host); for (const p of remaining.reverse()) if (ownedAlive(p)) { try { process.kill(p.pid); } catch {} } }
   await browser?.close().catch(() => {}); await delay(300); await rm(temporary, { recursive: true, force: true });
 }

@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -28,7 +29,7 @@ try {
   const beforeKey = await page.locator('tbody tr[data-row-key]').first().getAttribute('data-row-key');
   const before = await page.locator('tbody tr[data-row-key]').first().innerText();
   const previousToken = (await (await fetch(origin + '/api/bootstrap')).json()).token;
-  host.kill();
+  await stopOwnedHost(host);
   await until(async () => !await portOpen(port), 'stopped test host releases port');
   await page.locator('.connection-banner.error').getByText('连接中断 · 保留上次数据', { exact: true }).waitFor();
   check(await page.locator('tbody tr[data-row-key]').first().getAttribute('data-row-key') === beforeKey && await page.locator('tbody tr[data-row-key]').first().innerText() === before, 'A15 disconnect preserves last real paused identity and metric values without zero substitution');
@@ -46,4 +47,4 @@ try {
   await page.screenshot({ path: path.join(output, 'final-recovery-connected.png') });
   console.log(JSON.stringify({ result: 'PASS', assertions: assertions.length, checks: assertions }, null, 2));
   await writeFile(path.join(output, 'final-recovery-results.json'), JSON.stringify({ result: 'PASS', checks: assertions, checkedAtUtc: new Date().toISOString() }, null, 2));
-} finally { await browser?.close(); host.kill(); await until(async () => !await portOpen(port), 'recovery cleanup'); await rm(temporary, { recursive: true, force: true }); }
+} finally { await browser?.close(); await stopOwnedHost(host); await until(async () => !await portOpen(port), 'recovery cleanup'); await rm(temporary, { recursive: true, force: true }); }

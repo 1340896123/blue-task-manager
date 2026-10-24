@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -117,7 +118,7 @@ try {
 } catch (error) { await page?.screenshot({ path: path.join(output, 'failure.png') }).catch(() => {}); throw error; }
 finally {
   await browser?.close().catch(() => {});
-  if (host && alive(host.pid)) { if (!tree.length) tree = processTree(host.pid); host.kill(); }
+  if (host && alive(host.pid)) { if (!tree.length) tree = processTree(host.pid); await stopOwnedHost(host); }
   for (const row of tree.reverse()) if (ownedAlive(row)) { try { process.kill(row.pid); } catch {} }
   await delay(350); await rm(temporary, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   assert.equal(fingerprint(independentRegistry()), beforeHash, 'final global IFEO state must remain unchanged even after a failed test');

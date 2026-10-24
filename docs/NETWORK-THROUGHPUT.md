@@ -26,13 +26,13 @@ TCP provider 为 `9a280ac0-c8e0-11d1-84e2-00c04fb998a2`；UDP 为 `bf3a50c5-a9c9
 
 ## 采集、身份与生命周期
 
-1. SnapshotService 管理一个后台采集器和长寿命独立系统实时 logger，仅启用必要网络事件。会话名含本实例唯一标识；控制句柄只来自本次成功 StartTrace，不复用/修改/停止 NT Kernel Logger、SystemInformer 或其他已有会话。
+1. SnapshotService 管理一个后台采集器和长寿命独立系统实时 logger，仅启用必要网络事件。会话名含本实例 PID、原始创建 FILETIME 和随机唯一标识；控制句柄只来自本次成功 StartTrace，不复用/修改/停止 NT Kernel Logger、SystemInformer 或其他已有会话。
 2. CsWin32 生成 StartTraceW、OpenTraceW、ProcessTrace、ControlTraceW、CloseTrace 等绑定；必要权限仅通过公开令牌 API 启用已有权限，不修改系统安全策略。失败保留原生码。ProcessTrace 运行于专用后台线程；回调只做有界解析与计数，不做同步HTTP、文件、DNS或每包 OpenProcess。
 3. 字节按已验证的 `PID:creationTimeFileTime` 关联，使用事件自身时间而非回调到达时间划窗。事件时间不得早于该身份创建时刻/有效观测边界，延迟旧 PID 事件不得归新身份；新身份首窗预热，创建时间不可读则不可用。可采用默认 ProcessTrace 时间转换获得 FILETIME 对照，速率分母仍用单调时钟。
-4. 只发布已消费的完整缓冲窗口，采用 FLUSH/缓冲回调等明确边界，避免尚未送达事件被误算为完整零。原生等待/查询不阻塞HTTP、设置锁或基础进程采样；网络来源可独立，重复来源不伪造新时间。
+4. 只发布已消费的完整窗口。实测 Windows 的 BuffersWritten 与 BuffersRead 口径不同，不以两者相等判断完整；通过公开 EventRegister/EnableTraceEx2/EventWriteString，在同一会话、同一次 ProcessTrace 消费流写入每窗唯一序号标记，FLUSH 后等待对应标记回调，按标记的实际 FILETIME 划界。该标记是标准 ETW 内部同步，不承载业务协议。4秒未确认标记则 stale/null；晚到旧事件使当前窗口失效并重建基线。原生等待/查询不阻塞HTTP、设置锁或基础进程采样；网络来源可独立，重复来源不伪造新时间。
 5. 收发速率分别为有效窗口字节增量/真实单调时长，双方有效才合计。计数回退、非有限值、未知布局、容量上限、丢事件/丢缓冲增量使该窗口不可用；恢复重新建基线。健康完整窗无事件才是0。
 6. 全局提供状态、来源时刻及实际累计丢失计数/原因；超过 `max(5秒,3×intervalMs)` 未更新即 stale 并清空旧速率。暂停不发布新窗口，恢复预热，不将暂停期累计挤进短窗口；冻结仅冻结UI。
-7. 原生缓冲数与身份缓存均有上限，退出进程清理。关闭 STOP 仅本实例成功创建的会话，CloseTrace 消费句柄，等待消费线程退出后释放委托/本地内存；部分初始化失败也清理。不持久化流量与机器转储。
+7. 原生缓冲数与身份缓存均有上限，退出进程清理。关闭 STOP 仅本实例成功创建的会话，CloseTrace 消费句柄，等待消费线程退出后释放委托/本地内存；部分初始化失败也清理。不持久化流量与机器转储。Windows 在 TerminateProcess 后保留系统logger；故意强杀的原生验收先由独立 CsWin32 probe 核验本次 Host PID+创建 FILETIME，只清理带相同身份前缀且精确捕获的会话；正式桌面关闭必须验证生产 DisposeAsync 释放，无需测试代清理。
 
 ## HTTP/DTO 增量
 
@@ -42,7 +42,7 @@ TCP provider 为 `9a280ac0-c8e0-11d1-84e2-00c04fb998a2`；UDP 为 `bf3a50c5-a9c9
 |---|---|
 | `process` | `networkReceiveBytesPerSecond:number|null`、`networkSendBytesPerSecond:number|null`、`networkBytesPerSecond:number|null`（双方有效时相加）、`networkCapturedAtUtc:string|null`。保留既有合计字段名兼容列偏好。 |
 | `process.unavailable` | 缺失的收、发、合计逐项给 `warmingUp/accessDenied/notSupported/identityUnavailable/eventsLost/stale/paused/capacity/error` 等可读原因，成功移除旧notCollected；详情保留同identity网络字段与原因。 |
-| `snapshot.processNetwork` | 独立状态：`capturedAtUtc:string|null`、`status:string`、`eventsLost:number`、`buffersLost:number`、`collectionDurationMs:number|null`、`unavailable`。丢失为本会话真实累计；健康不等于所有PID可归属。 |
+| `snapshot.processNetwork` | 独立状态：`capturedAtUtc:string|null`、`status:string`、`eventsLost:number`、`buffersLost:number`、`collectionDurationMs:number|null`、`unavailable`；附 `windowDurationMs:number|null`、`flushedBuffers:number`、`consumedBuffers:number` 与最多16项 `eventLayouts:string[]` 来源诊断。缓冲两计数口径不同；完整性由标记确认。丢失为本会话真实累计；健康不等于所有PID可归属。 |
 | `capabilities.processNetwork` | 接入后 `available:true`，source 明确 CsWin32/ETW TCP/UDP IPv4/IPv6；当前可用性以状态与逐字段原因为准。 |
 | `system.network*`、`networkAdapters` | 保持 GetIfTable2 硬件适配器原合同，不被进程ETW合计覆盖，不要求两者相等。 |
 

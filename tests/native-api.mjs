@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -68,7 +69,7 @@ try {
   const second = await snapshotWhere(value => value.sampleId > first.sampleId && value.slowDataCapturedAtUtc !== null);
   check(second.services.length > 0 && second.users.length > 0, 'SCM and WTS real rows after actual deferred source read');
   check(second.capturedAtUtc > first.capturedAtUtc && second.system.cpuPercent >= 0 && second.system.cpuPercent <= 100, 'advancing valid sample');
-  check(second.processes.every(row => row.networkBytesPerSecond === null && (row.gpuPercent === null ? !!row.unavailable.gpuPercent : row.gpuPercent >= 0 && row.gpuPercent <= 100)), 'network remains unavailable; real GPU is valid or has an explicit reason');
+  check(second.capabilities.processNetwork.available && second.processes.every(row => (row.networkBytesPerSecond === null ? !!row.unavailable.networkBytesPerSecond : row.networkReceiveBytesPerSecond >= 0 && row.networkSendBytesPerSecond >= 0 && row.networkBytesPerSecond === row.networkReceiveBytesPerSecond + row.networkSendBytesPerSecond && !!row.networkCapturedAtUtc) && (row.gpuPercent === null ? !!row.unavailable.gpuPercent : row.gpuPercent >= 0 && row.gpuPercent <= 100)), 'real ETW network and GPU have valid values or explicit reasons');
   check(second.processes.every(row => row.ioReadBytesPerSecond === null || row.ioReadBytesPerSecond >= 0), 'I/O never negative');
   passed.push('A02 real snapshots, A03 native PID, A04 warmup and deltas, A08 explicit unavailable network and valid/partial GPU');
 
@@ -128,7 +129,7 @@ try {
     // Cleanup still reuses the saved identity; never terminate by process name.
     try { await write(`processes/${target.pid}/terminate`, { creationTimeFileTime: target.creationTimeFileTime }); } catch { process.kill(target.pid); }
   }
-  if (host.exitCode === null) host.kill();
-  await new Promise(resolve => { if (host.exitCode !== null) resolve(); else { host.once('exit', resolve); setTimeout(resolve, 5000).unref(); } });
+  if (host.exitCode === null) await stopOwnedHost(host);
+  await new Promise(resolve => { if (host.exitCode !== null || host.signalCode !== null) resolve(); else { host.once('exit', resolve); setTimeout(resolve, 5000).unref(); } });
   await rm(directory, { recursive: true, force: true });
 }

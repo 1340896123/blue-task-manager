@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -132,6 +133,6 @@ try {
     } catch { /* The dedicated bounded workload also self-exits after 120 seconds. */ }
   }
   // Only terminate direct test-created handles, never processes selected by generic executable name.
-  workload.kill(); host.kill(); await delay(350);
+  workload.kill(); await stopOwnedHost(host); await delay(350);
   await rm(temporary, { recursive: true, force: true });
 }

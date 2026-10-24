@@ -73,7 +73,6 @@ internal sealed class Win32Collector : IDisposable
         using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, basic.Pid);
         var openError = handle.IsInvalid ? Marshal.GetLastPInvokeError() : 0;
         var unavailable = basic.Unavailable;
-        unavailable["networkBytesPerSecond"] = NativeSupport.NotCollected;
         if (PInvoke.ProcessIdToSessionId(basic.Pid, out var sessionId)) basic.SessionId = sessionId;
         else unavailable["sessionId"] = NativeSupport.LastError("读取会话失败");
         if (handle.IsInvalid)

@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -28,4 +29,4 @@ try{
 
  check(JSON.stringify(expected)===JSON.stringify(observed),'CsWin32 read-only Run/RunOnce 32/64 views match independent managed registry enumeration and deduplication');
  console.log(JSON.stringify({result:'PASS',assertions:assertions.length,checks:assertions},null,2));
-}finally{target.kill();host.kill();await until(async()=>!await portOpen(port),'metadata cleanup');await delay(300);await rm(temporary,{recursive:true,force:true});}
+}finally{target.kill();await stopOwnedHost(host);await until(async()=>!await portOpen(port),'metadata cleanup');await delay(300);await rm(temporary,{recursive:true,force:true});}

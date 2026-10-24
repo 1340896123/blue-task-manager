@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -75,7 +76,7 @@ async function closeHost() {
   if (!host) return;
   const tree = processTree(host.pid);
   if (desktop && page && !page.isClosed()) { await page.getByRole('button', { name: '关闭窗口', exact: true }).click(); await until(() => host.exitCode !== null, 'actual Electron close exits owned host', 15000); }
-  else { if (browser) await browser.close(); host.kill(); await until(() => host.exitCode !== null || host.signalCode !== null, 'headless host exits'); }
+  else { if (browser) await browser.close(); await stopOwnedHost(host); await until(() => host.exitCode !== null || host.signalCode !== null, 'headless host exits'); }
   browser = null; page = null;
   await until(async () => !await portOpen(port) && (!desktop || !await portOpen(cdp)), 'owned application ports released');
   await until(() => tree.every(p => !ownedAlive(p)), 'owned application process identities exited', 15000);
@@ -307,8 +308,8 @@ try {
     const tree = processTree(host.pid);
     if (desktop) { await post('window/close', {}).catch(() => {}); await until(() => host.exitCode !== null, 'failure cleanup close', 4000).catch(() => {}); }
     if (browser) await browser.close().catch(() => {});
+    if (host.exitCode === null) await stopOwnedHost(host);
     for (const entry of tree.reverse()) if (ownedAlive(entry)) spawnSync('powershell', ['-NoProfile', '-Command', `Stop-Process -Id ${entry.pid} -Force`], { windowsHide: true, stdio: 'ignore' });
-    if (host.exitCode === null) host.kill();
   }
   // Cleanup is restricted to PID + creation time identities of this test's workload.
   for (const entry of ownedProcesses.reverse()) if (ownedAlive(entry)) spawnSync('powershell', ['-NoProfile', '-Command', `Stop-Process -Id ${entry.pid} -Force`], { windowsHide: true, stdio: 'ignore' });

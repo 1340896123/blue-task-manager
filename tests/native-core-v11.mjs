@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
@@ -23,7 +24,7 @@ async function start() {
   for (let i = 0; i < 150; i++) { try { if ((await (await fetch(origin + '/api/health')).json()).ready) { token = (await api('bootstrap')).token; return; } } catch {} await delay(100); }
   throw new Error('Host not ready');
 }
-async function stop() { if (!host || host.exitCode !== null) return; const exited = new Promise(resolve => host.once('exit', resolve)); host.kill(); await exited; }
+async function stop() { if (!host || host.exitCode !== null) return; const exited = new Promise(resolve => host.once('exit', resolve)); await stopOwnedHost(host); await exited; }
 try {
   await start();
   await api('settings', { intervalMs: 2000, paused: true }); await delay(300);

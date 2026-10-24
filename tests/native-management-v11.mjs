@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
@@ -95,7 +96,7 @@ try {
   console.log(JSON.stringify({ result: 'PASS', assertions, checks, source: 'real Win32 / independent native probe; no mocks', serviceSuccessChain: createPermission.available ? 'not executed: no dedicated test service provisioned; no user services changed' : 'not executed: SCM CREATE_SERVICE denied (5)' }, null, 2));
 } catch (error) { console.error(error); throw error; } finally {
   for (const [pid, creationTimeFileTime] of owned) { try { if (alive(pid)) await api(`processes/${pid}/terminate`, { creationTimeFileTime }); } catch {} }
-  const exited = new Promise(resolve => host.once('exit', resolve)); if (host.exitCode === null) { host.kill(); await exited; }
+  const exited = new Promise(resolve => host.once('exit', resolve)); if (host.exitCode === null) { await stopOwnedHost(host); await exited; }
   await until(async () => [...owned.keys()].every(pid => !alive(pid)), 'cleanup test-owned processes');
   await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 }

@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -40,7 +41,7 @@ try {
   check(sample.telemetry.gpuInstanceCount > 0 && sample.gpuAdapters.length > 0 && sample.gpuAdapters.length < sample.telemetry.gpuInstanceCount, 'real GPU wildcard instances reduce to adapters instead of full engine payload');
   check(sample.processes.every(p => p.gpuPercent === null ? !!p.unavailable.gpuPercent : p.gpuPercent >= 0 && p.gpuPercent <= 100 && !!p.gpuEngine && !!p.gpuCapturedAtUtc), 'process GPU has valid source, engine label and timestamp or an explicit unavailable reason');
   check(sample.processes.some(p => p.gpuPercent === null && p.unavailable.gpuPercent.code === 'noObservedEngine'), 'a PID with no observed GPU engine is unknown instead of a synthetic zero');
-  check(sample.processes.every(p => p.networkBytesPerSecond === null), 'GPU and connections do not invent per-process network throughput');
+  check(sample.capabilities.processNetwork.available && sample.processNetwork && sample.processes.every(p => p.networkBytesPerSecond === null ? !!p.unavailable.networkBytesPerSecond : p.networkReceiveBytesPerSecond >= 0 && p.networkSendBytesPerSecond >= 0 && p.networkBytesPerSecond === p.networkReceiveBytesPerSecond + p.networkSendBytesPerSecond && !!p.networkCapturedAtUtc), 'ETW network is independent of GPU/endpoints and has real directional rates or explicit reasons');
   check(sample.gpuAdapters.every(g => Number.isFinite(g.utilizationPercent) && g.utilizationPercent >= 0 && g.utilizationPercent <= 100), 'adapter GPU is a valid busiest-engine percentage');
   check(sample.system.gpuPercent === Math.max(...sample.gpuAdapters.map(g => g.utilizationPercent)), 'system GPU selects the busiest adapter engine including software adapters');
   check(sample.physicalDisks.length > 0 && sample.physicalDisks.every(d => !d.isTotal && d.id !== '_Total' && Number.isFinite(d.activePercent) && d.activePercent >= 0 && d.activePercent <= 100 && Number.isFinite(d.readBytesPerSecond) && d.readBytesPerSecond >= 0 && Number.isFinite(d.writeBytesPerSecond) && d.writeBytesPerSecond >= 0), 'physical disk real instances exclude _Total and expose real valid rates/activity');
@@ -99,6 +100,6 @@ try {
   console.log(JSON.stringify(report,null,2));
 } finally {
   if (target) try { await api(`processes/${target.pid}/terminate`, {creationTimeFileTime:target.creationTimeFileTime}); } catch {}
-  if (host.exitCode === null) { const exit = new Promise(resolve=>host.once('exit',resolve)); host.kill(); await exit; }
+  if (host.exitCode === null) { const exit = new Promise(resolve=>host.once('exit',resolve)); await stopOwnedHost(host); await exit; }
   await rm(directory,{recursive:true,force:true});
 }

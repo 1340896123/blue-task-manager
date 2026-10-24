@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -47,4 +48,4 @@ try{
   await page.screenshot({path:path.join(output,'v11-gpu-identity-960.png')});check(errors.length===0,'GPU identity UI has no runtime errors');
   const report={result:'PASS',assertions,checks,basicReadyMs,gpus:snapshot.gpuAdapters.map(g=>({description:g.description,adapterLuid:g.adapterLuid,isSoftware:g.isSoftware})),source:'production CsWin32 DXGI+PDH; independent native DXGI probe and Windows CIM; real browser UI; no mocks'};
   await writeFile(path.join(output,'v11-gpu-identity-results.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report,null,2));
-}finally{await browser?.close();if(host.exitCode===null){const exit=new Promise(resolve=>host.once('exit',resolve));host.kill();await exit;}await rm(directory,{recursive:true,force:true});}
+}finally{await browser?.close();if(host.exitCode===null){const exit=new Promise(resolve=>host.once('exit',resolve));await stopOwnedHost(host);await exit;}await rm(directory,{recursive:true,force:true});}

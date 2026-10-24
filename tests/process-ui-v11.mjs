@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -126,5 +127,5 @@ finally {
   if (created?.creationTimeFileTime && token) await post(`processes/${created.pid}/terminate`, { creationTimeFileTime: created.creationTimeFileTime }).catch(() => {});
   if (ownRoot?.creationTimeFileTime && token) { const preview = await post(`processes/${ownRoot.pid}/tree-preview`, { creationTimeFileTime: ownRoot.creationTimeFileTime }).catch(() => null); if (preview?.canTerminate) await post(`processes/${ownRoot.pid}/terminate-tree`, { creationTimeFileTime: ownRoot.creationTimeFileTime, members: preview.members.map(m => ({ pid: m.pid, creationTimeFileTime: m.creationTimeFileTime })) }).catch(() => {}); }
   if(desktopMode && host.exitCode===null){const appTree=processTree(host.pid);await post('window/close',{}).catch(()=>{});await until(()=>host.exitCode!==null,'desktop process flow host close',20000);await until(async()=>!await portOpen(port)&&!await portOpen(cdp),'desktop process flow ports closed');if(!appTree.every(p=>!ownedAlive(p)))throw new Error('Desktop process flow app identity leaked');}
-  await browser?.close(); if (host.exitCode === null) host.kill(); await delay(600); await rm(temporary, { recursive: true, force: true }).catch(() => {});
+  await browser?.close(); if (host.exitCode === null) await stopOwnedHost(host); await delay(600); await rm(temporary, { recursive: true, force: true }).catch(() => {});
 }

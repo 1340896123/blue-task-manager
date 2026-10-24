@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -53,4 +54,4 @@ try{
  check(controls.length===0,'read-only service QA never controls user services');check(errors.length===0,'no browser runtime errors');check(cspErrors.length===0,'no CSP violations');
  await writeFile(path.join(output,'pages-ui-v11-results.json'),JSON.stringify({assertions,checks,errors,cspErrors,serviceControlRequests:controls.length},null,2));console.log(JSON.stringify({passed:true,assertions,checks},null,2));
 }catch(e){if(browser)await browser.contexts()[0]?.pages()[0]?.screenshot({path:path.join(output,'pages-ui-v11-failure.png')}).catch(()=>{});throw e;}
-finally{if(browser)await browser.close();if(host.exitCode===null){const exited=new Promise(r=>host.once('exit',r));host.kill();await exited;}await rm(temporary,{recursive:true,force:true});}
+finally{if(browser)await browser.close();if(host.exitCode===null){const exited=new Promise(r=>host.once('exit',r));await stopOwnedHost(host);await exited;}await rm(temporary,{recursive:true,force:true});}

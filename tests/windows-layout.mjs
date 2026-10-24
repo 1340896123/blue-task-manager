@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -122,7 +123,7 @@ try{
 finally{
   const identities=processTree(host.pid);
   if(desktop&&page&&!page.isClosed()){await post('window/close',{}).catch(()=>{});await until(()=>host.exitCode!==null,'actual window closes Host',25000).catch(()=>{});}
-  await browser?.close().catch(()=>{});if(host.exitCode===null)host.kill();await until(()=>host.exitCode!==null||host.signalCode!==null,'owned Host exits').catch(()=>{});
+  await browser?.close().catch(()=>{});if(host.exitCode===null)await stopOwnedHost(host);await until(()=>host.exitCode!==null||host.signalCode!==null,'owned Host exits').catch(()=>{});
   const clean=!await portOpen(port)&&!await portOpen(cdp)&&identities.every(p=>!ownedAlive(p));if(!clean&&!failure)failure={message:'test-owned identities or listeners remain'};
   await rm(temporary,{recursive:true,force:true});
   const report={result:failure?'FAIL':'PASS',mode,assertions:checks.length,checks,screenshots,imageSizes,geometry,viewportFacts,errors,failure,clean,source:'production Release UI → HTTP → JSON.NET → CsWin32; no mock data or IFEO writes'};await writeFile(path.join(output,`${mode}-results.json`),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));if(failure)process.exitCode=1;

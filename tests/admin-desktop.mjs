@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -77,7 +78,7 @@ try {
   if (target) { try { await api(`processes/${target.pid}/terminate`, { creationTimeFileTime: target.creationTimeFileTime }); } catch {} }
   if (host.exitCode === null) {
     try { if (page) await page.getByRole('button', { name: '关闭窗口', exact: true }).click({ timeout: 3000 }); } catch {}
-    try { await until(() => host.exitCode !== null, 'cleanup elevated instance', 10000); } catch { host.kill(); }
+    try { await until(() => host.exitCode !== null, 'cleanup elevated instance', 10000); } catch { await stopOwnedHost(host); }
   }
   if (browser) { try { await browser.close(); } catch {} }
   for (const entry of tree.reverse()) { if (ownedAlive(entry)) { try { process.kill(entry.pid); } catch {} } }

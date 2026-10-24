@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -63,7 +64,7 @@ try {
   throw error;
 } finally {
   await browser?.close().catch(() => {});
-  if (alive(host.pid)) { if (!tree.length) tree = processTree(host.pid); host.kill(); }
+  if (alive(host.pid)) { if (!tree.length) tree = processTree(host.pid); await stopOwnedHost(host); }
   // Process identities are only descendants of this run's exact host; no name-based selection.
   for (const entry of tree.reverse()) if (ownedAlive(entry)) { try { process.kill(entry.pid); } catch {} }
   await delay(350);

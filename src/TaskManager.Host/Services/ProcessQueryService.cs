@@ -17,6 +17,7 @@ public sealed class ProcessQueryService(SnapshotService snapshots)
         var row = new ProcessDto { Identity = $"{pid}:{creation}", Pid = pid, ParentPid = basic.ParentPid, CreationTimeFileTime = creation, Name = basic.Name, ThreadCount = basic.ThreadCount,
             Publisher = previous?.Publisher, UserName = previous?.UserName, SessionId = previous?.SessionId, CanTerminate = previous?.CanTerminate ?? false,
             CpuPercent = previous?.CpuPercent, IoReadBytesPerSecond = previous?.IoReadBytesPerSecond, IoWriteBytesPerSecond = previous?.IoWriteBytesPerSecond,
+            NetworkReceiveBytesPerSecond = previous?.NetworkReceiveBytesPerSecond, NetworkSendBytesPerSecond = previous?.NetworkSendBytesPerSecond, NetworkCapturedAtUtc = previous?.NetworkCapturedAtUtc,
             GpuPercent = previous?.GpuPercent, GpuCapturedAtUtc = previous?.GpuCapturedAtUtc, GpuEngine = previous?.GpuEngine };
         row.Path = ProcessAccess.Path(handle);
         if (PInvoke.ProcessIdToSessionId(pid, out var session)) row.SessionId = session; else row.Unavailable["sessionId"] = NativeSupport.LastError("读取会话失败");
@@ -38,7 +39,12 @@ public sealed class ProcessQueryService(SnapshotService snapshots)
         if (row.Publisher is null) row.Unavailable.TryAdd("publisher", new("loading", "文件版本信息正在后台读取。"));
         if (row.UserName is null) row.Unavailable.TryAdd("userName", new("loading", "账户信息正在后台读取。"));
         if (previous is null) foreach (var field in new[] { "cpuPercent", "ioReadBytesPerSecond", "ioWriteBytesPerSecond" }) row.Unavailable[field] = NativeSupport.WarmingUp;
-        row.Unavailable["networkBytesPerSecond"] = NativeSupport.NotCollected;
+        var networkReason = previous is null ? NativeSupport.WarmingUp : current?.ProcessNetwork.Unavailable.GetValueOrDefault("source");
+        if (row.NetworkCapturedAtUtc is { } networkTime && DateTime.UtcNow - networkTime > TimeSpan.FromMilliseconds(Math.Max(5000, (current?.IntervalMs ?? 1000) * 3)))
+            networkReason = new("stale", "ETW网络最新窗口已过期，等待后台采集恢复。");
+        foreach (var field in new[] { "networkReceiveBytesPerSecond", "networkSendBytesPerSecond", "networkBytesPerSecond" })
+            if ((networkReason ?? previous?.Unavailable.GetValueOrDefault(field)) is { } missing) row.Unavailable[field] = missing;
+        if (row.Unavailable.ContainsKey("networkBytesPerSecond")) row.NetworkReceiveBytesPerSecond = row.NetworkSendBytesPerSecond = null;
         if (previous is null) row.Unavailable["gpuPercent"] = NativeSupport.WarmingUp;
         if (ProcessProtection.Family(processes).Contains(pid)) { row.CanTerminate = false; row.Unavailable["terminate"] = new("protected", "系统关键进程或本应用进程族受保护。"); }
         else if (!PInvoke.IsProcessCritical(handle, out var critical)) { row.CanTerminate = false; row.Unavailable["terminate"] = NativeSupport.LastError("无法确认进程关键状态"); }

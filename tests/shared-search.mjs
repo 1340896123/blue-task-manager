@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -78,7 +79,7 @@ async function stop() {
   if (desktop) {
     await post('window/close', {});
     await until(hostExited, 'Electron closes its own Host', 30000);
-  } else { await browser?.close(); browser = null; host.kill(); await until(hostExited, 'headless test Host exits'); }
+  } else { await browser?.close(); browser = null; await stopOwnedHost(host); await until(hostExited, 'headless test Host exits'); }
   await until(async () => !await portOpen(port) && (!desktop || !await portOpen(cdp)), 'own HTTP/CDP ports close');
   check(identities.every(identity => !ownedAlive(identity)), 'closing leaves no processes belonging to this test Host');
   await browser?.close().catch(() => {}); browser = null;
@@ -235,6 +236,6 @@ try {
   throw error;
 } finally {
   for (const target of owned) if (token && host && !hostExited() && target.creationTimeFileTime) await request(`processes/${target.pid}/terminate`, { creationTimeFileTime: target.creationTimeFileTime }).catch(() => {});
-  await stop().catch(() => { if (host && !hostExited()) host.kill(); });
+  await stop().catch(async () => { if (host && !hostExited()) await stopOwnedHost(host); });
   await rm(temporary, { recursive: true, force: true });
 }

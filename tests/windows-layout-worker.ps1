@@ -9,7 +9,7 @@ $stamp = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss')
 $probe = Join-Path $root 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe'
 $elevation = & $probe process-elevation $PID | ConvertFrom-Json
 if (-not $elevation.elevated) { throw 'Acceptance worker must have a real elevated Windows token.' }
-$allowed = @('windows-layout','windows-layout-audit','static-v11','native-api','native-metadata-v11','native-core-v11','native-management-v11','native-telemetry-v11','gpu-identity-v11','process-ui-v11','pages-ui-v11','ui-smoke','recovery-e2e','desktop-e2e','process-desktop-v11','native-desktop-v11','system-locations-v11','restricted-process-ui-v11','product-icon','taskbar-integration','desktop-performance-v11','grid-ui','shared-search','hwinfo-cpu')
+$allowed = @('windows-layout','windows-layout-audit','static-v11','native-api','native-metadata-v11','native-core-v11','native-management-v11','native-telemetry-v11','gpu-identity-v11','process-ui-v11','pages-ui-v11','ui-smoke','recovery-e2e','desktop-e2e','process-desktop-v11','native-desktop-v11','system-locations-v11','restricted-process-ui-v11','product-icon','taskbar-integration','desktop-performance-v11','grid-ui','shared-search','hwinfo-cpu','network-throughput')
 $results = @()
 if ($Desktop) {
     $env:TASKMANAGER_LAYOUT_DESKTOP='1'

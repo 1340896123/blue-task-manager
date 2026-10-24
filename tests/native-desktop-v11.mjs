@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { clickCommand } from './layout-ui-support.mjs';
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, cp, rename, readFile, writeFile, rm } from 'node:fs/promises';
@@ -111,6 +112,6 @@ finally {
   if (created && alive(created.pid)) {
     try { const current = probe('process-resources', created.pid, created.creationTimeFileTime); if (current) process.kill(created.pid); } catch { }
   }
-  if (host?.exitCode === null) for (const p of processTree(host.pid).reverse()) if (ownedAlive(p)) { try { process.kill(p.pid); } catch {} }
+  if (host?.exitCode === null) { const remaining = processTree(host.pid); await stopOwnedHost(host); for (const p of remaining.reverse()) if (ownedAlive(p)) { try { process.kill(p.pid); } catch {} } }
   await browser?.close().catch(() => {}); await delay(500); await rm(temporary, { recursive: true, force: true });
 }

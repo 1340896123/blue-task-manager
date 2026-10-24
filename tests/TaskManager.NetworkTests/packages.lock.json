@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0-windows10.0.19041": {
+      "ElectronNET.Core": {
+        "type": "Transitive",
+        "resolved": "0.6.0",
+        "contentHash": "5TUdZyWgOVaQFYnQgjeGzA7seN8qtV//dApVdkimS63cG0sJlsM7IS2DsmOjAadvo/0O0AEP46JwveyosDVLuA==",
+        "dependencies": {
+          "ElectronNET.Core.API": "0.6.0"
+        }
+      },
+      "ElectronNET.Core.API": {
+        "type": "Transitive",
+        "resolved": "0.6.0",
+        "contentHash": "eEkWwOMRg8A4ZAzSuR8GyB/7d4NUik/fS4N48KC7/jQrxhh3iQBh/Ip6LWyWOqGjNM3njXjgmQSYf0a1JfCp/Q==",
+        "dependencies": {
+          "SocketIOClient": "3.1.2",
+          "System.Drawing.Common": "8.0.22"
+        }
+      },
+      "ElectronNET.Core.AspNet": {
+        "type": "Transitive",
+        "resolved": "0.6.0",
+        "contentHash": "klhlMKev3UEKGDUhj1CL5Y5wNfxdoz3wHwg4863R6AjMfLjWtwwYUgYrFuupAEg/ApZIHZanl3v7EEcIkfg++A==",
+        "dependencies": {
+          "ElectronNET.Core.API": "0.6.0"
+        }
+      },
+      "Microsoft.AspNetCore.JsonPatch": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "sNPvgAoV/IsK4fS2gYDAqvbK5kMQPCU8h7WjOjxS1f4/0+bGnnZbTJ0ceM8jvMcUanDoNpYRFf+7UDb+s3P1ag==",
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.3"
+        }
+      },
+      "Microsoft.AspNetCore.Mvc.NewtonsoftJson": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "BuigyKPrvORCHyU8Vna7eQMQg6hDNqRQyFGCEa0+QJ8pLL5xcgNpLzaD1eom54Oaxb4mHnPs8MaPKejNL9lTKA==",
+        "dependencies": {
+          "Microsoft.AspNetCore.JsonPatch": "10.0.10",
+          "Newtonsoft.Json": "13.0.3",
+          "Newtonsoft.Json.Bson": "1.0.2"
+        }
+      },
+      "Microsoft.Win32.SystemEvents": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "IY0lTfC2uVwTizjtGgQ03ViwyXGQ9lMDblzB889/HyguAZJ2J8pRrjPown8h2eJe8WFc8nh+BUEsEPkshzizYQ=="
+      },
+      "Newtonsoft.Json": {
+        "type": "Transitive",
+        "resolved": "13.0.4",
+        "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
+      },
+      "Newtonsoft.Json.Bson": {
+        "type": "Transitive",
+        "resolved": "1.0.2",
+        "contentHash": "QYFyxhaABwmq3p/21VrZNYvCg3DaEoN/wUuw5nmfAf0X3HLjgupwhkEWdgfb9nvGAUIv3osmZoD3kKl4jxEmYQ==",
+        "dependencies": {
+          "Newtonsoft.Json": "12.0.1"
+        }
+      },
+      "SocketIO.Core": {
+        "type": "Transitive",
+        "resolved": "3.1.2",
+        "contentHash": "tb6vZ7DYhZooRGLHTPK7/Gifbu+kHbkQRbsee0LAnI28pWc5+Br+juh4pvid3kfIrGTl5dzAfy5huLELVU4svA=="
+      },
+      "SocketIO.Serializer.Core": {
+        "type": "Transitive",
+        "resolved": "3.1.2",
+        "contentHash": "/cJtU3JVzjqP/Jh3BpMMR0aNzYua6s9e3+hjZ6OnYprFHrGYyg/n9OcST1dBjmOvvgyJ3GwJlyq0NjnPETAHsA==",
+        "dependencies": {
+          "SocketIO.Core": "3.1.2"
+        }
+      },
+      "SocketIO.Serializer.SystemTextJson": {
+        "type": "Transitive",
+        "resolved": "3.1.2",
+        "contentHash": "AA8w3Y4JldC3FaL1D4WuyG4zLPdrzjf8AQx1LCKtzlMlTLOcbEW0UGt+BhKxkUnxYAD5O5fsqRrTNCGXu6VeWA==",
+        "dependencies": {
+          "SocketIO.Core": "3.1.2",
+          "SocketIO.Serializer.Core": "3.1.2"
+        }
+      },
+      "SocketIOClient": {
+        "type": "Transitive",
+        "resolved": "3.1.2",
+        "contentHash": "CMmnmhvG1Qf8k6BPh3RLqc/9MNvGUlCOyptjoP8a62bowPQkHTWvN25yy+gQqx5Ry/NgzkQHBJNpmRJhZNZrVQ==",
+        "dependencies": {
+          "SocketIO.Serializer.Core": "3.1.2",
+          "SocketIO.Serializer.SystemTextJson": "3.1.2"
+        }
+      },
+      "System.Drawing.Common": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "R9q9TI//kGavXWTxvaSS9ERj79s+Vm7V7769zEmRbzdrIOJzAnGw+wWSo/JkaVdQfAAefV2V1bWYKCHF7Zs5oQ==",
+        "dependencies": {
+          "Microsoft.Win32.SystemEvents": "10.0.10"
+        }
+      },
+      "taskmanager.host": {
+        "type": "Project",
+        "dependencies": {
+          "ElectronNET.Core": "[0.6.0, )",
+          "ElectronNET.Core.AspNet": "[0.6.0, )",
+          "Microsoft.AspNetCore.Mvc.NewtonsoftJson": "[10.0.10, )",
+          "Newtonsoft.Json": "[13.0.4, )",
+          "System.Drawing.Common": "[10.0.10, )"
+        }
+      }
+    }
+  }
+}

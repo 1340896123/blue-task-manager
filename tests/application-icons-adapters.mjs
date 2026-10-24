@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -109,7 +110,7 @@ try {
   // Start a second real Host, observe it, stop it, THEN request its history icon
   // for the first time. The browser is still on processes, never history.
   historyHost=spawn(hostExe,['--headless',`--port=${historyPort}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:path.join(temporary,'history')},windowsHide:true,stdio:'ignore'});
-  let past; await until(async()=>{past=(await get('snapshot')).processes.find(p=>p.pid===historyHost.pid&&p.path);return Boolean(past);},'second real Host path observed'); historyTree=processTree(historyHost.pid); historyHost.kill(); await until(async()=>!(await get('snapshot')).processes.some(p=>p.identity===past.identity),'dedicated history identity exited');
+  let past; await until(async()=>{past=(await get('snapshot')).processes.find(p=>p.pid===historyHost.pid&&p.path);return Boolean(past);},'second real Host path observed'); historyTree=processTree(historyHost.pid); await stopOwnedHost(historyHost); await until(async()=>!(await get('snapshot')).processes.some(p=>p.identity===past.identity),'dedicated history identity exited');
   const historical=await icon('history',past.identity); const historicalPixels=await pngFacts(historical); check(JSON.stringify(historicalPixels.pixels)===JSON.stringify(shell.pixels),'first historical icon request after exit retains exact executable resource pixels');
   await nav('应用历史记录'); await search.fill(String(past.pid)); row=page.locator(`tr[data-row-key="${past.identity}"]`); await row.waitFor(); await decoded(row,'exited history list displays real retained PNG'); await capture('exited-history');
   await icon('history',`${past.pid}:1`,204); await icon('process','2147483647:1',204); await icon('service',fixtureName,204); await icon('startup',fixtureName,204); await icon('invalid',own.identity,400);
@@ -147,7 +148,8 @@ finally {
   tree=[...new Map([...tree,...processTree(host.pid)].map(p=>[`${p.pid}:${p.fileTime}`,p])).values()];if(!workloadTree.length)workloadTree=processTree(workload.pid);
   if(desktop&&page&&!page.isClosed())await post('window/close',{}).catch(()=>{});
   await browser?.close().catch(()=>{});
-  for(const child of [historyHost,workload,host])if(child&&child.exitCode===null)child.kill();
+  for(const child of [historyHost,host])if(child&&child.exitCode===null)await stopOwnedHost(child);
+  if(workload.exitCode===null)workload.kill();
   await delay(700);
   for(const entry of [...historyTree,...workloadTree,...tree].reverse())if(ownedAlive(entry)){try{process.kill(entry.pid);}catch{}}
   await until(async()=>!await portOpen(port)&&!await portOpen(cdp)&&!await portOpen(historyPort),'test-owned listeners released').catch(error=>{failure??={message:error.message};});

@@ -1,3 +1,4 @@
+import { stopOwnedHost } from './etw-support.mjs';
 import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -258,8 +259,9 @@ finally {
   if (target && alive(target.pid)) { try { process.kill(target.pid); } catch {} }
   if (host.pid && host.exitCode === null) {
     // Exact test-owned identities only; these are never selected by executable name.
-    for (const entry of processTree(host.pid).reverse()) { if (ownedAlive(entry)) { try { process.kill(entry.pid); } catch {} } }
-    host.kill();
+    const remaining = processTree(host.pid);
+    await stopOwnedHost(host);
+    for (const entry of remaining.reverse()) { if (ownedAlive(entry)) { try { process.kill(entry.pid); } catch {} } }
   }
   independent.kill(); await browser?.close().catch(() => {});
   await delay(500); await rm(temporary, { recursive: true, force: true });

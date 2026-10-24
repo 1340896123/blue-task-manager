@@ -60,7 +60,11 @@ public sealed class ProcessDto
     public string? TotalCpuTime100ns { get; set; }
     public string? IoReadBytes { get; set; }
     public string? IoWriteBytes { get; set; }
-    public double? NetworkBytesPerSecond => null;
+    public double? NetworkReceiveBytesPerSecond { get; set; }
+    public double? NetworkSendBytesPerSecond { get; set; }
+    public double? NetworkBytesPerSecond => NetworkReceiveBytesPerSecond.HasValue && NetworkSendBytesPerSecond.HasValue
+        ? NetworkReceiveBytesPerSecond.Value + NetworkSendBytesPerSecond.Value : null;
+    public DateTime? NetworkCapturedAtUtc { get; set; }
     public double? GpuPercent { get; set; }
     public DateTime? GpuCapturedAtUtc { get; set; }
     public string? GpuEngine { get; set; }
@@ -133,6 +137,17 @@ public sealed record SnapshotDto(long SampleId, DateTime CapturedAtUtc, DateTime
     public TelemetryStatusDto? Telemetry { get; init; }
     public IReadOnlyList<LogicalProcessorDto> LogicalProcessors { get; init; } = [];
     public HwInfoSummaryDto HwInfo { get; init; } = HwInfoSensorsDto.WarmingUp.Summary;
+    public ProcessNetworkStatusDto ProcessNetwork { get; init; } = ProcessNetworkStatusDto.WarmingUp;
+}
+public sealed record ProcessNetworkStatusDto(DateTime? CapturedAtUtc, string Status, uint EventsLost, uint BuffersLost,
+    double? CollectionDurationMs, IReadOnlyDictionary<string, Unavailable> Unavailable)
+{
+    public double? WindowDurationMs { get; init; }
+    public uint FlushedBuffers { get; init; }
+    public uint ConsumedBuffers { get; init; }
+    public IReadOnlyList<string> EventLayouts { get; init; } = [];
+    public static ProcessNetworkStatusDto WarmingUp { get; } = new(null, "warmingUp", 0, 0, null,
+        new Dictionary<string, Unavailable> { ["source"] = new("warmingUp", "Windows ETW网络采集正在初始化/预热。") });
 }
 public sealed record StartRequest(string Executable, string? Arguments);
 public sealed record TerminateRequest(string CreationTimeFileTime);

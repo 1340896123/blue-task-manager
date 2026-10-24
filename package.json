@@ -25,6 +25,7 @@
     "test:core": "node tests/native-core-v11.mjs",
     "test:management": "node tests/native-management-v11.mjs",
     "test:telemetry": "node tests/native-telemetry-v11.mjs",
+    "test:network": "node tests/network-throughput.mjs",
     "test:hwinfo-cpu": "node tests/hwinfo-cpu.mjs",
     "test:hwinfo-cpu-ui": "node tests/hwinfo-cpu.mjs --browser",
     "test:hwinfo-cpu-desktop": "node tests/hwinfo-cpu.mjs --desktop",

@@ -24,7 +24,9 @@ if (args[0] == "process-elevation")
         {
             Windows.Win32.Security.TOKEN_ELEVATION elevation = default;
             if (!PInvoke.GetTokenInformation(token, Windows.Win32.Security.TOKEN_INFORMATION_CLASS.TokenElevation, &elevation, (uint)sizeof(Windows.Win32.Security.TOKEN_ELEVATION), out var size) || size != sizeof(Windows.Win32.Security.TOKEN_ELEVATION)) throw new InvalidOperationException("Test process elevation unavailable.");
-            Console.WriteLine(JsonConvert.SerializeObject(new { pid = uint.Parse(args[1]), elevated = elevation.TokenIsElevated != 0 }));
+            if (!PInvoke.GetProcessTimes(handle, out var created, out _, out _, out _)) throw new InvalidOperationException("Test process creation identity unavailable.");
+            var creationTime = ((ulong)(uint)created.dwHighDateTime << 32) | (uint)created.dwLowDateTime;
+            Console.WriteLine(JsonConvert.SerializeObject(new { pid = uint.Parse(args[1]), elevated = elevation.TokenIsElevated != 0, creationTimeFileTime = creationTime.ToString(System.Globalization.CultureInfo.InvariantCulture) }));
         }
     }
     return;
