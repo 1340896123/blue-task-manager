@@ -13,7 +13,12 @@ async function request<T>(route: string, init: RequestInit = {}, options: Reques
   const timeoutMs = options.timeoutMs === undefined ? 9000 : options.timeoutMs;
   const timeout = timeoutMs === null ? undefined : window.setTimeout(() => controller.abort(new Error('本机服务响应超时。操作可能已生效，请检查实际状态后再操作。')), timeoutMs);
   try {
-    const response = await fetch(`/api/${route}`, { ...init, cache: 'no-store', signal: controller.signal });
+    let response: Response;
+    try { response = await fetch(`/api/${route}`, { ...init, cache: 'no-store', signal: controller.signal }); }
+    catch (error) {
+      if (error instanceof TypeError && !controller.signal.aborted) throw new ApiError('无法连接本机服务，请检查主机状态后重试。', 'connectionFailed', 0);
+      throw error;
+    }
     const etag = response.headers.get('ETag');
     if (response.status === 304 && kind === 'snapshot') return { value: null as T, etag, unchanged: true };
     if (!response.ok) {
@@ -43,4 +48,4 @@ export const api = {
     }
   },
 };
-export function errorMessage(error: unknown) { return error instanceof TypeError ? '无法连接本机服务，请检查主机状态后重试。' : error instanceof Error ? error.message : '无法连接本机服务，请重试。'; }
+export function errorMessage(error: unknown) { return error instanceof Error ? error.message : '操作失败，请重试。'; }

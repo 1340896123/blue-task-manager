@@ -27,6 +27,9 @@ export default function App() {
   const [resetBusy, setResetBusy] = useState(false); const [resetError, setResetError] = useState<string | null>(null);
   const [locateRequest, setLocateRequest] = useState<LocateRequest>(null); const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
   const searchInput = useRef<HTMLInputElement>(null);
+  const closingWindow = useRef(false);
+  const nativeWindow = window.taskManagerWindow;
+  const desktopWindowAvailable = Boolean(nativeWindow || bootstrap?.desktop);
   const pref = preferences.page(page); const { density, sidebarCollapsed: collapsed } = preferences.preferences;
   const navigationCollapsed = collapsed || (compactNavigation && !compactExpanded);
   useEffect(() => { const media = window.matchMedia('(max-width: 1007px)'); const change = () => { setCompactNavigation(media.matches); setCompactExpanded(false); }; media.addEventListener('change', change); return () => media.removeEventListener('change', change); }, []);
@@ -35,7 +38,20 @@ export default function App() {
   const paused = snapshot?.paused ?? bootstrap?.settings.paused ?? false; const intervalMs = snapshot?.intervalMs ?? bootstrap?.settings.intervalMs ?? 1000;
   const title = navigation.find(item => item.id === page)!.label;
   const notify = (text: string, error = false) => setNotice({ text, error });
-  const windowAction = async (command: string) => { try { if (command === 'close') await preferences.flush(); await api.post(`window/${command}`, {}); setWindowRevision(v => v + 1); } catch (error) { notify(errorMessage(error), true); } };
+  const windowAction = async (command: string) => {
+    if (closingWindow.current) return;
+    if (command === 'close') closingWindow.current = true;
+    try {
+      if (command === 'close' && connected) {
+        let timer: number | undefined;
+        try { await Promise.race([preferences.flush().catch(() => false), new Promise<void>(resolve => { timer = window.setTimeout(resolve, 750); })]); }
+        finally { clearTimeout(timer); }
+      }
+      if (nativeWindow && (command === 'close' || command === 'minimize' || command === 'maximize')) await nativeWindow[command]();
+      else await api.post(`window/${command}`, {});
+      if (command !== 'close') setWindowRevision(v => v + 1);
+    } catch (error) { closingWindow.current = false; notify(errorMessage(error), true); }
+  };
   const refresh = async () => { telemetry.retry(); if (!connected) return; try { const result = await api.post<{ message: string }>('refresh', {}); telemetry.retry(); if (!processPage) notify(result.message); } catch (error) { notify(errorMessage(error), true); } };
   const created = (result: ProcessResult) => {
     telemetry.resumeDisplay(); setPage('processes'); if (result.identity) setLocateRequest({ identity: result.identity, sequence: Date.now() });
@@ -62,7 +78,7 @@ export default function App() {
   const warning = telemetry.error ?? (stale ? '采样未更新，正在保留最后一次成功数据。' : preferences.warning ?? snapshot?.warnings.map(w => w.message).join('；'));
   const samplingStatus = <div className="command-status"><strong>采样状态</strong><span>{status}</span><span>{snapshot ? `上次采样 ${dateTime(snapshot.capturedAtUtc)}` : '等待首个快照'}</span><span>{intervalMs / 1000} 秒 / 次{snapshot ? ` · ${snapshot.system.processCount} 个进程` : ''}</span></div>;
   return <div className={`app-shell bg-canvas text-main-text ${navigationCollapsed ? 'sidebar-collapsed' : ''}`} data-density={density}>
-    <header className="titlebar"><div className="brand"><img className="brand-mark" src="/icon.svg" alt="" aria-hidden="true" width="20" height="20"/><span>任务管理器</span></div><div className="global-search"><Search size={16} aria-hidden="true"/><label className="sr-only" htmlFor="global-search">{searchLabel}</label><input id="global-search" ref={searchInput} type="search" value={pref.query} disabled={!preferences.ready} maxLength={256} onChange={event => preferences.updatePage(page, { query: event.target.value.slice(0, 256), scrollTop: 0 })} placeholder={searchLabel} autoComplete="off" spellCheck={false}/>{pref.query && <button className="search-clear" aria-label="清空搜索" onClick={() => { preferences.updatePage(page, { query: '', scrollTop: 0 }); searchInput.current?.focus(); }}><X size={14} aria-hidden="true"/></button>}<kbd>Ctrl F</kbd></div><div className="window-controls" title={!bootstrap?.desktop ? '窗口控制仅在Electron桌面中可用' : undefined}><button aria-label="最小化窗口" disabled={!bootstrap?.desktop} onClick={() => void windowAction('minimize')}><Minus size={15} aria-hidden="true"/></button><button aria-label="最大化或还原窗口" disabled={!bootstrap?.desktop} onClick={() => void windowAction('maximize')}><Square size={12} aria-hidden="true"/></button><button aria-label="关闭窗口" disabled={!bootstrap?.desktop} onClick={() => void windowAction('close')}><X size={16} aria-hidden="true"/></button></div></header>
+    <header className="titlebar"><div className="brand"><img className="brand-mark" src="/icon.svg" alt="" aria-hidden="true" width="20" height="20"/><span>任务管理器</span></div><div className="global-search"><Search size={16} aria-hidden="true"/><label className="sr-only" htmlFor="global-search">{searchLabel}</label><input id="global-search" ref={searchInput} type="search" value={pref.query} disabled={!preferences.ready} maxLength={256} onChange={event => preferences.updatePage(page, { query: event.target.value.slice(0, 256), scrollTop: 0 })} placeholder={searchLabel} autoComplete="off" spellCheck={false}/>{pref.query && <button className="search-clear" aria-label="清空搜索" onClick={() => { preferences.updatePage(page, { query: '', scrollTop: 0 }); searchInput.current?.focus(); }}><X size={14} aria-hidden="true"/></button>}<kbd>Ctrl F</kbd></div><div className="window-controls" title={!desktopWindowAvailable ? '窗口控制仅在Electron桌面中可用' : undefined}><button aria-label="最小化窗口" disabled={!desktopWindowAvailable} onClick={() => void windowAction('minimize')}><Minus size={15} aria-hidden="true"/></button><button aria-label="最大化或还原窗口" disabled={!desktopWindowAvailable} onClick={() => void windowAction('maximize')}><Square size={12} aria-hidden="true"/></button><button aria-label="关闭窗口" disabled={!desktopWindowAvailable} onClick={() => void windowAction('close')}><X size={16} aria-hidden="true"/></button></div></header>
     <aside className="sidebar"><button className="menu-button icon-button" aria-label={navigationCollapsed ? '展开导航' : '折叠导航'} aria-expanded={!navigationCollapsed} disabled={!preferences.ready} onClick={() => { setCompactExpanded(navigationCollapsed); preferences.update(p => ({ ...p, sidebarCollapsed: !navigationCollapsed })); }}><Menu size={20} aria-hidden="true"/></button><nav aria-label="主导航">{navigation.filter(item => item.id !== 'settings').map(item => <button key={item.id} className="nav-item" aria-label={item.label} title={item.label} aria-current={page === item.id ? 'page' : undefined} onClick={() => navigate(item.id)}><item.icon size={20} aria-hidden="true"/><span>{item.label}</span></button>)}</nav><div className="sidebar-bottom"><button className="nav-item" aria-label="设置" title="设置" aria-current={page === 'settings' ? 'page' : undefined} onClick={() => navigate('settings')}><Settings size={20} aria-hidden="true"/><span>设置</span></button></div></aside>
     <main className="workspace" aria-label={title}>
       {warning && <div className={`connection-banner ${!connected ? 'error' : ''}`} role="status"><CircleAlert size={16} aria-hidden="true"/>{(!connected || stale) && <strong>{status}</strong>}<span>{warning}{(!connected || stale) && snapshot ? ` 上次采样 ${dateTime(snapshot.capturedAtUtc)}` : ''}</span>{preferences.warning && <button className="text-button" onClick={preferences.retry}>重新读取偏好</button>}<button className="text-button" onClick={telemetry.retry}>重试连接</button></div>}

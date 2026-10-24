@@ -37,6 +37,7 @@
     <ProjectReference Include="../TaskManager.Launcher/TaskManager.Launcher.csproj" ReferenceOutputAssembly="false" />
     <Content Update="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Electron\custom_main.js" CopyToOutputDirectory="PreserveNewest" TargetPath=".electron\custom_main.js" />
+    <None Update="Electron\window-preload.js" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath=".electron\window-preload.js" />
   </ItemGroup>
   <Target Name="CopyTaskManagerLauncher" AfterTargets="Build">
     <ItemGroup>

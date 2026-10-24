@@ -24,7 +24,11 @@ public sealed class DesktopWindowService(PreferencesService preferences)
             Frame = false, Show = false, AutoHideMenuBar = true,
             Title = "蓝域任务管理器", BackgroundColor = "#F3F7FC",
             Icon = Path.Combine(AppContext.BaseDirectory, ".electron", "task-manager.ico"),
-            WebPreferences = new WebPreferences { ContextIsolation = true, NodeIntegration = false, Sandbox = true, BackgroundThrottling = true }
+            WebPreferences = new WebPreferences
+            {
+                ContextIsolation = true, NodeIntegration = false, Sandbox = true, BackgroundThrottling = true,
+                Preload = Path.Combine(AppContext.BaseDirectory, ".electron", "window-preload.js")
+            }
         }, origin);
         window.OnReadyToShow += () => window?.Show();
         // Electron.NET 0.6.0 adds a legacy Windows 10 frame compensation at
