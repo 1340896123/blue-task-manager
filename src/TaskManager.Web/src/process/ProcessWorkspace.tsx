@@ -61,7 +61,7 @@ export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstr
   };
   useEffect(() => {
     const key = (event: globalThis.KeyboardEvent) => {
-      if (event.defaultPrevented || document.querySelector('dialog[open]') || menu || (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"],button,a,[role="menu"]'))) return;
+      if (event.defaultPrevented || document.querySelector('dialog[open]') || menu || (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"],button,a,summary,[role="menu"],[role="separator"]'))) return;
       if (event.key === 'Delete' && selected?.canTerminate && liveIds.has(selected.identity) && connected) { event.preventDefault(); setAction({ action: 'terminate', target: selected }); }
       if (event.code === 'Space' && !event.ctrlKey && !event.altKey) { event.preventDefault(); toggleFrozen(); }
       if (event.key === 'Enter' && selected && event.target === document.body) { event.preventDefault(); setDetailTarget(selected); }

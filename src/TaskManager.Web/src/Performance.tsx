@@ -12,15 +12,15 @@ function Chart({ points, series, label, intervalMs, percentage = true, mini = fa
   const count = points.filter(p => p.values.some(v => v !== null)).length;
   return <div className={`chart-wrap ${mini ? 'mini-chart' : ''}`}>{!mini && <div className="chart-scale"><span>{percentage ? '使用率' : '字节 / 秒 · 按当前可见样本自动缩放'}</span><span>{percentage ? '100%' : rate(maximum)}</span></div>}
     <svg className="resource-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role={mini ? undefined : "img"} aria-hidden={mini || undefined} aria-label={`${label}，${count} 个真实时间点，中断处保留缺口`}>
-      {[0,1,2,3,4].map(n => <line key={`h${n}`} x1="0" x2={width} y1={n*50} y2={n*50} className="chart-grid"/>)}
-      {[0,1,2,3,4,5,6,7,8].map(n => <line key={`v${n}`} x1={n*100} x2={n*100} y1="0" y2={height} className="chart-grid"/>)}
+      {!mini && [0,1,2,3,4].map(n => <line key={`h${n}`} x1="0" x2={width} y1={n*50} y2={n*50} className="chart-grid"/>)}
+      {!mini && [0,1,2,3,4,5,6,7,8].map(n => <line key={`v${n}`} x1={n*100} x2={n*100} y1="0" y2={height} className="chart-grid"/>)}
       {series.map((s, field) => {
         const segments: { x: number; y: number; timestamp: string; value: number }[][] = []; let current: typeof segments[number] = [];
         points.forEach((p, index) => { const value=p.values[field], timestamp=Date.parse(p.timestamp); const gap=index>0 && timestamp-Date.parse(points[index-1].timestamp)>Math.max(intervalMs*1.8,1500);
           if (value == null || gap) { if(current.length) segments.push(current); current=[]; } if(value==null)return;
           current.push({x:pad+(timestamp-first)/span*(width-pad*2),y:height-pad-value/maximum*(height-pad*2),timestamp:p.timestamp,value}); });
         if(current.length) segments.push(current);
-        return <g key={s.label} className={field ? 'chart-series-secondary' : 'chart-series-primary'}>{segments.map((part,i)=><g key={i}>{part.length>1&&<path d={part.map((p,j)=>`${j?'L':'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')} fill="none" stroke={s.color} vectorEffect="non-scaling-stroke"/>}{part.map(p=><circle key={p.timestamp} cx={p.x} cy={p.y} r={part.length===1?3:1.3} fill={s.color}><title>{`${s.label} · ${time(p.timestamp)} · ${percentage?percent(p.value):rate(p.value)}`}</title></circle>)}</g>)}</g>;
+        return <g key={s.label} className={field ? 'chart-series-secondary' : 'chart-series-primary'}>{segments.map((part,i)=><g key={i}>{part.length>1&&<path d={part.map((p,j)=>`${j?'L':'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')} fill="none" stroke={s.color} vectorEffect="non-scaling-stroke"/>}{(!mini || part.length===1) && part.map(p=><circle key={p.timestamp} cx={p.x} cy={p.y} r={part.length===1?3:1.3} fill={s.color}>{!mini && <title>{`${s.label} · ${time(p.timestamp)} · ${percentage?percent(p.value):rate(p.value)}`}</title>}</circle>)}</g>)}</g>;
       })}
     </svg>{!mini && !count&&<span className="chart-wait">等待有效采样，未知值保留为空</span>}{!mini && <><div className="chart-axis"><span>{points.length?time(points[0].timestamp):'等待采样'}</span><span>{points.length?time(points.at(-1)!.timestamp):''}</span></div><div className="chart-legend">{series.map((s,i)=><span key={s.label}><i className={i?'secondary':'primary'}/>{s.label}{i?'（虚线）':'（实线）'}</span>)}</div></>}
   </div>;
