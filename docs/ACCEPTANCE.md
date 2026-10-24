@@ -2,7 +2,7 @@
 
 ## HWiNFO 与 CPU 图表增量（H系列）
 
-规格见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)。真实业务链不能使用伪造映射/fixture代替；本机无HWiNFO时明确记录成功分支未执行。
+规格见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)，本次结果见 [HWINFO-CPU-ACCEPTANCE.md](HWINFO-CPU-ACCEPTANCE.md)。真实业务链不能使用伪造映射/fixture代替；本机无HWiNFO时明确记录成功分支未执行。
 
 | ID | 真实场景 | 通过条件 |
 |---|---|---|

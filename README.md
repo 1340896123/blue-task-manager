@@ -68,6 +68,10 @@ npm run test:e2e
 
 键盘：Ctrl+F搜索、Ctrl+N运行、F5刷新、Enter/双击详情、Shift+F10/右键操作、Delete结束确认、Space冻结列表、F1帮助、Esc关闭；桌面Ctrl+= / Ctrl+- / Ctrl+0调整25%步进缩放/恢复100%。冻结列表时采集和性能曲线继续运行；设置中的自动采样开关会真正暂停采集。
 
+性能页 CPU 图表支持双击切换“总体使用率 / 逻辑处理器”，也可使用“CPU 图表模式”选择器，或聚焦图表后按 Enter / 空格。模式会保存；逐逻辑处理器按 Windows 处理器组及组内索引显示真实 PDH 使用率，最多48张一页，历史保留真实时间与缺口。
+
+性能资源列表中的“HWiNFO 传感器”只读接入 HWiNFO SM2 共享内存，显示实际分组、原名、单位、当前值与 HWiNFO 会话最小/最大/平均值，支持搜索、排序、调宽。需已有 HWiNFO 正在运行，并在 Sensors 设置中开启 Shared Memory Support，且当前版本/许可提供该功能。未提供或过期会显示明确原因。应用不附带 HWiNFO；规格与条件验收见 [HWiNFO / CPU 图表](docs/HWINFO-CPU-GRAPHS.md)。管理员终端可分别运行 `npm run test:hwinfo-cpu`、`npm run test:hwinfo-cpu-ui`、`npm run test:hwinfo-cpu-desktop`（专用端口5306/9306）；没有真实 HWiNFO 时不会把解析器检查称为成功采集。
+
 GPU使用Windows PDH真实引擎计数并以DXGI实际型号名称标识；软件适配器明确标记，不猜Windows编号；磁盘I/O与进程I/O分别展示。逐进程网络吞吐、启动策略编辑与驱动级分析仍未接入，端点列表不冒充吞吐。服务动作受Windows当前账户权限约束，不自动提权或停止依赖服务；当前标准用户环境成功启停测试需保留权限限制。
 
 查找受限进程时先清空搜索和筛选，按实际 exe 名或 PID 定位；CPU、路径或发布者读取失败不等于进程不存在。系统任务管理器显示的文件说明可能与 exe 名不同，当前搜索不承诺匹配尚未读取的文件说明。

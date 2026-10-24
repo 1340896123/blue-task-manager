@@ -100,9 +100,9 @@ try{
   await rm(preferenceFile,{recursive:true});await writeFile(preferenceFile,savedPreferences);await page.getByRole('button',{name:'紧凑',exact:true}).click();
   await until(async()=>(await get('preferences')).warning===null,'preference write succeeds after restoring own fixture');await page.locator('.connection-banner').filter({hasText:'界面偏好未能保存'}).waitFor({state:'detached'});check(true,'preference recovery clears visible failure after real successful save');
   await nav('性能');const snapshot=await get('snapshot');
-  check(await page.locator('.resource-tile').count()===2+snapshot.physicalDisks.filter(d=>!d.isTotal).length+snapshot.networkAdapters.length+snapshot.gpuAdapters.length,'resource list includes CPU, memory and each actual enumerated device');
+  check(await page.locator('.resource-tile').count()===3+snapshot.physicalDisks.filter(d=>!d.isTotal).length+snapshot.networkAdapters.length+snapshot.gpuAdapters.length,'resource list includes CPU, memory, HWiNFO source and each actual enumerated device');
   check(await page.getByRole('group',{name:'资源类别'}).count()===0&&await page.locator('.resource-picker').count()===0,'no horizontal category tabs or nested device sidebar');
-  for(let i=0;i<await page.locator('.resource-tile').count();i++){const tile=page.locator('.resource-tile').nth(i);await tile.click();check(await tile.getAttribute('aria-pressed')==='true'&&await page.locator('.resource-content .resource-chart').count()>0,'each actual resource selects right chart and facts');}
+  for(let i=0;i<await page.locator('.resource-tile').count();i++){const tile=page.locator('.resource-tile').nth(i);await tile.click();const sensor=(await tile.innerText()).includes('HWiNFO');check(await tile.getAttribute('aria-pressed')==='true'&&(sensor?await page.getByRole('table',{name:'HWiNFO 传感器',exact:true}).count()===1:await page.locator('.resource-content .resource-chart').count()>0),'each actual resource selects its chart/facts or HWiNFO sensor table');}
   await capture('performance-devices');
   await nav('服务');const serviceSnapshot=await get('snapshot');let candidate;
   for(const service of serviceSnapshot.services.filter(s=>s.pid>0).slice(0,50)){const detail=await get(`services/${encodeURIComponent(service.name)}/details`);if(detail.canStop){candidate=detail;break;}}

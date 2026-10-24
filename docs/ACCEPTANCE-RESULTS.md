@@ -1,5 +1,7 @@
 # 1.1 真实链路验收记录
 
+2026-10-24 HWiNFO / CPU图表最新增量见 [专项验收](HWINFO-CPU-ACCEPTANCE.md)：86项原生/浏览器/正式Electron断言通过，原有回归及实际性能结果/条件边界逐项记录。HWiNFO成功采集与发布端停止/恢复没有真实映射条件，未执行；不以协议解析器检查替代。
+
 最新 IFEO 接管 740 修复验收见 [交付记录](evidence/ifeo-elevation-results.md) 与 [接管专项](evidence/ifeo-elevation-e2e.md)：便携和实际安装目录各 69 项真实接管检查通过，原入口专项 20 项通过；已更新本机安装，恢复测试前注册表与偏好。生产提交 `53e2906`，测试提交 `adea31e`；补充性能基准的可见性限制另记，不计为通过。
 
 最新1.1.1管理员与NSIS验收见 [实际验收记录](evidence/admin-installer-results.md) 和 [结构化结果](evidence/admin-installer-results.json)：真实提升桌面、22项安装生命周期与本机性能目标通过，未执行边界逐项保留。以下480项及原权限描述属于1.1.0历史基线，不代表当前启动权限或新包的全部证据。
