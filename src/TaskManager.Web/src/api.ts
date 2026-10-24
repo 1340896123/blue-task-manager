@@ -3,6 +3,7 @@ export class ApiError extends Error {
   constructor(message: string, public code: string, public status: number, public nativeErrorCode?: number | null) { super(message); }
 }
 export type RequestOptions = { signal?: AbortSignal; timeoutMs?: number | null };
+export type ApplicationIconKind = 'process' | 'history' | 'startup' | 'service';
 let token: string | null = null;
 async function request<T>(route: string, init: RequestInit = {}, options: RequestOptions = {}, kind: 'json' | 'blob' | 'snapshot' = 'json'): Promise<{ value: T; etag: string | null; unchanged: boolean }> {
   const controller = new AbortController();
@@ -28,7 +29,7 @@ export const api = {
   async bootstrap(signal?: AbortSignal) { const { value } = await request<Bootstrap>('bootstrap', {}, { signal }); token = value.token; return value; },
   async get<T>(route: string, signal?: AbortSignal, timeoutMs?: number | null) { return (await request<T>(route, {}, { signal, timeoutMs })).value; },
   snapshot(etag: string | null, signal?: AbortSignal) { return request<Snapshot>('snapshot', { headers: etag ? { 'If-None-Match': etag } : {} }, { signal }, 'snapshot'); },
-  async icon(target: Process, signal: AbortSignal) { return (await request<Blob | null>(identityRoute(target, 'icon'), {}, { signal, timeoutMs: 5000 }, 'blob')).value; },
+  async applicationIcon(kind: ApplicationIconKind, id: string, signal: AbortSignal) { return (await request<Blob | null>(`application-icon?kind=${kind}&id=${encodeURIComponent(id)}`, {}, { signal, timeoutMs: 5000 }, 'blob')).value; },
   async post<T>(route: string, body: unknown, signal?: AbortSignal, timeoutMs?: number | null): Promise<T> {
     if (!token) await api.bootstrap(signal);
     const inferred = route === 'desktop/browse-executable' ? null : /\/(control|terminate-tree)$/.test(route) ? 20000 : undefined;

@@ -1,4 +1,6 @@
-import { AppWindow, Clock3 } from 'lucide-react';
+import { Clock3, UserRound } from 'lucide-react';
+import ApplicationIcon from '../ApplicationIcon';
+import type { IconTarget } from '../applicationIcons';
 import { dateTime, matches } from '../format';
 import { cssNumber } from '../components';
 export { sorted } from '../sorting';
@@ -6,7 +8,8 @@ import type { PagePreference, Snapshot } from '../types';
 export type Patch = (patch: Partial<PagePreference>, silent?: boolean) => void;
 export type Notify = (message: string, error?: boolean) => void;
 export const col = (name: 'name'|'pid'|'number'|'path'|'text', fallback=180) => cssNumber(`--width-column-${name}`,fallback);
-export const nameCell=(name:string)=><span className="process-name"><span className="process-icon"><AppWindow aria-hidden="true"/></span><span title={name}>{name}</span></span>;
+export const nameCell=(name:string,target:IconTarget)=><span className="process-name"><ApplicationIcon {...target}/><span title={name}>{name}</span></span>;
+export const userCell=(name:string)=><span className="process-name"><span className="process-icon" aria-hidden="true"><UserRound/></span><span title={name}>{name}</span></span>;
 export const serviceState=(state:string)=>({SERVICE_RUNNING:'正在运行',SERVICE_STOPPED:'已停止',SERVICE_PAUSED:'已暂停',SERVICE_START_PENDING:'正在启动',SERVICE_STOP_PENDING:'正在停止',SERVICE_CONTINUE_PENDING:'正在继续',SERVICE_PAUSE_PENDING:'正在暂停',unknown:'未知'})[state]??state;
 export const sessionState=(state:string)=>({WTSActive:'活动',WTSConnected:'已连接',WTSDisconnected:'已断开',WTSListen:'侦听',WTSIdle:'空闲'})[state]??state;
 export function pidMatches(query:string,pid:number,...text:(string|null)[]){return /^\d+$/.test(query.trim())?pid===Number(query.trim()):matches(query,...text,pid);}

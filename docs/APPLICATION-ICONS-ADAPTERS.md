@@ -14,6 +14,8 @@
 
 已核查CsWin32现有SHGetFileInfo便捷重载会正确传结构体字节长度，缺口主要为其他页静态AppWindow未接入真实接口。
 
+前端所有应用名称共用ApplicationIcon，固定沿用16px图标与21px占位；用户账号行仅用UserRound语义图标。图标靠近可见区域时订阅，离开区域/卸载后取消未完成读取，共用最多2个请求与严格512条LRU缓存。204和临时失败按15/30/60秒退避；成功后15秒复核一次以等待打包应用元数据，随后最多每60秒刷新可见图标，进程路径/启动命令变化立即换键。刷新失败保留上次成功图标，淘汰/替换/窗口卸载释放Blob URL，不依赖每帧采样触发请求。
+
 ## 网络口径
 
 GetIfTable2入口仅保留HardwareInterface=true、FilterInterface=false、Type非SOFTWARE_LOOPBACK(24)/TUNNEL(131)。使用Windows/NDIS公开标志，不按名称/MAC/厂商猜测。保留断开硬件的真实状态和null速率/原因；可能包含Windows报告的隐藏硬件，不等同Get-NetAdapter默认可见设备集合。

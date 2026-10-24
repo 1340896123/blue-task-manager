@@ -52,23 +52,23 @@ export default function Performance({ snapshot, pref, patch }: { snapshot: Snaps
       ...order(snapshot.gpuAdapters).map(g=>({type:'gpu' as const,id:g.id,name:g.description??'GPU',description:g.description??`LUID ${g.adapterLuid}`,summary:percent(g.utilizationPercent)})),
     ];
     if(!snapshot.physicalDisks.some(d=>!d.isTotal))choices.splice(2,0,{type:'disk',id:null,name:'磁盘',description:'物理磁盘',summary:snapshot.telemetry?.capturedAtUtc?'当前不可用':'正在初始化'});
-    if(!snapshot.networkAdapters.length)choices.splice(choices.findIndex(r=>r.type==='gpu')<0?choices.length:choices.findIndex(r=>r.type==='gpu'),0,{type:'network',id:null,name:'网络',description:'网络适配器',summary:'当前不可用'});
+    if(!snapshot.networkAdapters.length)choices.splice(choices.findIndex(r=>r.type==='gpu')<0?choices.length:choices.findIndex(r=>r.type==='gpu'),0,{type:'network',id:null,name:'网络',description:'硬件网络适配器',summary:'暂未获取硬件网络适配器'});
     if(!snapshot.gpuAdapters.length)choices.push({type:'gpu',id:null,name:'GPU',description:'显卡适配器',summary:snapshot.telemetry?.capturedAtUtc?'当前不可用':'正在初始化'});
     return choices.map(choice=>({...choice,points:historyPoints(snapshot,choice.type,choice.id)}));
   },[snapshot]);
   const searching=Boolean(pref.query.trim());
-  const categories:Record<ResourceType,string>={cpu:'CPU 中央处理器',memory:'内存 memory 物理内存',disk:'磁盘 disk 物理磁盘',network:'网络 network 网络适配器',gpu:'GPU 显卡适配器'};
+  const categories:Record<ResourceType,string>={cpu:'CPU 中央处理器',memory:'内存 memory 物理内存',disk:'磁盘 disk 物理磁盘',network:'网络 network 硬件网络适配器',gpu:'GPU 显卡适配器'};
   const visible=resources.filter(resource=>matches(pref.query,categories[resource.type],resource.name,resource.description,resource.id));
   const savedType=pref.resourceType&&pref.resourceType!=='system'?pref.resourceType:'cpu';
-  const preferredNetwork=snapshot.networkAdapters.find(a=>a.isHardware&&a.status==='IfOperStatusUp')??snapshot.networkAdapters.find(a=>a.status==='IfOperStatusUp')??snapshot.networkAdapters[0];
+  const preferredNetwork=snapshot.networkAdapters.find(a=>a.status==='IfOperStatusUp')??snapshot.networkAdapters[0];
   const saved=visible.find(r=>r.type===savedType&&r.id===pref.resourceId)??(!pref.resourceId?visible.find(r=>r.type===savedType&&(r.type!=='network'||r.id===preferredNetwork?.id))??visible.find(r=>r.type===savedType):undefined);
-  const resource=saved??visible.find(r=>r.type===savedType)??visible[0];
+  const resource=saved??visible.find(r=>r.type===savedType&&(r.type!=='network'||r.id===preferredNetwork?.id))??visible.find(r=>r.type===savedType)??visible[0];
   const savedMissing=Boolean(!searching&&pref.resourceId&&!resources.some(r=>r.type===savedType&&r.id===pref.resourceId));
   if(!resource)return <Empty title="没有匹配的性能资源" description="请修改或清空顶部共用搜索，查看资源类别与本机实际设备。"/>;
   const {type,id:selectedId,points}=resource;
   const adapter=snapshot.networkAdapters.find(a=>a.id===selectedId),disk=snapshot.physicalDisks.find(d=>d.id===selectedId),gpu=snapshot.gpuAdapters.find(g=>g.id===selectedId);
   const isPdh=type==='disk'||type==='gpu';
-  const unavailable=type==='network'?adapter?.unavailable:type==='disk'?disk?.unavailable:type==='gpu'?gpu?.unavailable:Object.fromEntries(Object.entries(sys.unavailable).filter(([key])=>(type==='cpu'?['cpuPercent','threadCount','handleCount']:['memoryPercent','totalPhysicalBytes','availablePhysicalBytes','usedPhysicalBytes','commitBytes','commitLimitBytes','cacheBytes']).includes(key)));
+  const unavailable=type==='network'?adapter?.unavailable??Object.fromEntries(Object.entries(sys.unavailable).filter(([key])=>['networkReceiveBytesPerSecond','networkSendBytesPerSecond'].includes(key))):type==='disk'?disk?.unavailable:type==='gpu'?gpu?.unavailable:Object.fromEntries(Object.entries(sys.unavailable).filter(([key])=>(type==='cpu'?['cpuPercent','threadCount','handleCount']:['memoryPercent','totalPhysicalBytes','availablePhysicalBytes','usedPhysicalBytes','commitBytes','commitLimitBytes','cacheBytes']).includes(key)));
   const sourceTime=isPdh?snapshot.telemetry?.capturedAtUtc:snapshot.capturedAtUtc;
   const title=type==='cpu'?'CPU':type==='memory'?'内存':type==='network'?(adapter?.alias??'网络'):type==='disk'?`磁盘${disk?` ${disk.name}`:''}`:'GPU';
   const description=type==='network'?adapter?.description:type==='gpu'?gpu?.description:undefined;
@@ -79,16 +79,16 @@ export default function Performance({ snapshot, pref, patch }: { snapshot: Snaps
     </button>)}</aside>
     <section key={`${type}:${selectedId}:${pref.query}`} className="resource-content page-scroll" onScroll={event=>patch({scrollTop:event.currentTarget.scrollTop},true)} ref={node=>{if(node&&node.dataset.restored!=='true'){node.scrollTop=pref.scrollTop;node.dataset.restored='true';}}}>
       <div className="performance-heading"><h2>{title}</h2>{description&&<span title={description}>{description}</span>}</div>
-      {savedMissing&&<p className="metric-reasons" role="status">原选资源已不在当前枚举中，暂显示可用资源；重新选择可保存新偏好。</p>}
+      {savedMissing&&<p className="metric-reasons" role="status">{savedType==='network'?'原选接口不在当前硬件网络适配器列表中，暂按当前硬件列表显示；断开硬件保留状态，没有硬件时显示空态。':'原选资源已不在当前枚举中，暂显示可用资源。'}重新选择可保存新偏好。</p>}
       {unavailable&&<Reasons unavailable={unavailable}/>}{isPdh&&snapshot.telemetry&&<Reasons unavailable={snapshot.telemetry.unavailable}/>}
       {!selectedId&&['disk','network','gpu'].includes(type)&&<p className="metric-reasons">{resource.summary}，尚无可显示的实际设备。</p>}
       {type==='network'?<article className="chart-panel"><h3>接口接收与发送</h3><Chart points={points} series={[{label:'接收',color:primary},{label:'发送',color:secondary}]} label="选中网卡吞吐" intervalMs={snapshot.intervalMs} percentage={false}/></article>:<article className="chart-panel">{(type==='disk'||type==='gpu')&&<h3>{type==='disk'?'活动时间':'最忙引擎使用率'}</h3>}<Chart points={points.map(p=>({...p,values:[p.values[0]]}))} series={[{label:type==='disk'?'活动时间':type==='gpu'?'最忙引擎':'使用率',color:primary}]} label={title} intervalMs={snapshot.intervalMs}/></article>}
       {type==='disk'&&<article className="chart-panel"><h3>读取与写入</h3><Chart points={points.map(p=>({...p,values:p.values.slice(1)}))} series={[{label:'读取',color:primary},{label:'写入',color:secondary}]} label="物理磁盘吞吐" intervalMs={snapshot.intervalMs} percentage={false}/></article>}
       {type==='cpu'&&<Facts values={ [['使用率',sys.cpuPercent===null?<MissingValue reason={sys.unavailable.cpuPercent?.message??'CPU采样尚未有效'}/>:percent(sys.cpuPercent),true],['逻辑处理器',sys.logicalProcessorCount],['进程',sys.processCount],['线程',sys.threadCount??<MissingValue reason="系统线程数当前不可读"/>],['句柄',sys.handleCount??<MissingValue reason="系统句柄数当前不可读"/>],['系统运行时间',uptime(sys.uptimeSeconds)]]}/>}
       {type==='memory'&&<Facts values={ [['已用物理内存',bytes(sys.usedPhysicalBytes),true],['可用物理内存',bytes(sys.availablePhysicalBytes),true],['系统提交 / 限制',`${bytes(sys.commitBytes)} / ${bytes(sys.commitLimitBytes)}`,true],['系统缓存',bytes(sys.cacheBytes)],['总物理内存',bytes(sys.totalPhysicalBytes)]]}/>}
-      {type==='network'&&adapter&&<Facts values={ [['接收',rate(adapter.receiveBytesPerSecond),true],['发送',rate(adapter.sendBytesPerSecond),true],['接收 / 发送链路速度',`${linkSpeed(adapter.receiveLinkSpeedBitsPerSecond)} / ${linkSpeed(adapter.transmitLinkSpeedBitsPerSecond)}`],['接口描述',adapter.description],['LUID / 索引',`${adapter.id} / ${adapter.interfaceIndex}`],['类型 / 状态',`${adapter.isHardware?'硬件接口':adapter.isLoopback?'回环':adapter.isTunnel?'隧道':'虚拟 / 软件 / 过滤层'} · ${adapter.status}`]]}/>}
+      {type==='network'&&adapter&&<Facts values={ [['接收',rate(adapter.receiveBytesPerSecond),true],['发送',rate(adapter.sendBytesPerSecond),true],['接收 / 发送链路速度',`${linkSpeed(adapter.receiveLinkSpeedBitsPerSecond)} / ${linkSpeed(adapter.transmitLinkSpeedBitsPerSecond)}`],['接口描述',adapter.description],['LUID / 索引',`${adapter.id} / ${adapter.interfaceIndex}`],['类型 / 状态',`硬件网络适配器 · ${adapter.status}`]]}/>}
       {type==='disk'&&disk&&<Facts values={ [['活动时间',percent(disk.activePercent),true],['读取',rate(disk.readBytesPerSecond),true],['写入',rate(disk.writeBytesPerSecond),true],['原始实例',disk.name]]}/>}
       {type==='gpu'&&gpu&&<Facts values={ [['使用率',percent(gpu.utilizationPercent),true],['最忙引擎',gpu.busiestEngine??<MissingValue reason="当前未观察到有效引擎"/>],['引擎数',gpu.engineCount],['适配器描述',gpu.description??<MissingValue reason={gpu.unavailable.description?.message??'DXGI适配器描述暂不可用'}/>],['适配器 LUID',gpu.adapterLuid],['软件适配器',gpu.isSoftware===null?<MissingValue reason={gpu.unavailable.isSoftware?.message??'DXGI适配器类型暂不可用'}/>:gpu.isSoftware?'是':'否'],['PDH phys 索引',gpu.physicalIndex]]}/>}
-      <details className="resource-explanation"><summary>资源说明与采样状态</summary><p>来源时刻：{sourceTime?dateTime(sourceTime):'正在初始化 / 预热'} · 最多120个真实时间点。</p><p>{type==='network'?'此图显示所选GetIfTable2接口，吞吐为字节/秒，链路速度为位/秒。虚拟/过滤层可能经过同一流量，接口合计不能代表物理网线。':type==='disk'?'读写来自PhysicalDisk计数器，活动为100%减空闲时间。进程I/O不代表物理磁盘吞吐。':type==='gpu'?'显卡名称来自Windows，同名设备可按LUID区分；使用率取最忙引擎，不累加不同引擎百分比。':type==='memory'?'物理内存来自GlobalMemoryStatusEx；提交、限制、缓存、线程和句柄来自GetPerformanceInfo。缓存与已用物理内存不可直接相加。':'CPU按全机逻辑处理器归一化。图表从本应用启动后开始，不补造之前的数据。'} 暂停、设备缺失、无效值保留缺口；PDH点按独立采样时刻去重。</p></details>
+      <details className="resource-explanation"><summary>资源说明与采样状态</summary><p>来源时刻：{sourceTime?dateTime(sourceTime):'正在初始化 / 预热'} · 最多120个真实时间点。</p><p>{type==='network'?'此图仅显示Windows GetIfTable2报告的硬件网络适配器，排除虚拟、过滤、隧道和回环接口。断开的硬件仍保留实际状态与不可用原因；Windows报告的隐藏硬件也可能出现。吞吐为字节/秒，链路速度为位/秒；系统网络合计仅汇总活动硬件适配器。':type==='disk'?'读写来自PhysicalDisk计数器，活动为100%减空闲时间。进程I/O不代表物理磁盘吞吐。':type==='gpu'?'显卡名称来自Windows，同名设备可按LUID区分；使用率取最忙引擎，不累加不同引擎百分比。':type==='memory'?'物理内存来自GlobalMemoryStatusEx；提交、限制、缓存、线程和句柄来自GetPerformanceInfo。缓存与已用物理内存不可直接相加。':'CPU按全机逻辑处理器归一化。图表从本应用启动后开始，不补造之前的数据。'} 暂停、设备缺失、无效值保留缺口；PDH点按独立采样时刻去重。</p></details>
     </section></div></div>;
 }
