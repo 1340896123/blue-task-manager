@@ -1,0 +1,36 @@
+{
+  "release": "E:\\taskManager\\output\\connection-recovery\\TaskManager-win-x64",
+  "artifacts": [
+    {
+      "path": "TaskManager.Host.dll",
+      "bytes": 772608,
+      "sha256": "3e81d81a9302d699c63a6eef410e1a3400a9f785aebe3a9e72b968505c0fb68e"
+    },
+    {
+      "path": ".electron/custom_main.js",
+      "bytes": 2113,
+      "sha256": "00878625ecb94a20b76dacf3136d76e39594b2bb6eae3021873c629ea8064cd7"
+    },
+    {
+      "path": ".electron/window-preload.js",
+      "bytes": 475,
+      "sha256": "6f376bd509f6350a600f054a63e140ce74e9466af7f29e758f0d136f7cd599e4"
+    },
+    {
+      "path": "wwwroot/index.html",
+      "bytes": 649,
+      "sha256": "6b0ddd1b1483c617f2d28f16efa1521b962467677f64640128a9f27065a6496a"
+    },
+    {
+      "path": "wwwroot/assets/index-DMhFmY2h.js",
+      "bytes": 404543,
+      "sha256": "096049e3050945f8e1562984b9fef86a0e626b5c5c59507a370e19436d251a50"
+    },
+    {
+      "path": "wwwroot/assets/index-CtEvxi1a.css",
+      "bytes": 54295,
+      "sha256": "8e75ad6849b0367046f5d26dec5e465b343149cd74dc2cef067a8009616c93ce"
+    }
+  ],
+  "note": "Production binaries include the pre-existing network working-tree baseline; hashes identify tested files."
+}

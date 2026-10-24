@@ -1,0 +1,27 @@
+{
+    "complete":  true,
+    "elevated":  true,
+    "pid":  55496,
+    "results":  [
+                    {
+                        "suite":  "connection-recovery",
+                        "durationSeconds":  45.741535,
+                        "exitCode":  0
+                    },
+                    {
+                        "suite":  "native-api",
+                        "durationSeconds":  10.572324199999999,
+                        "exitCode":  0
+                    },
+                    {
+                        "suite":  "recovery-e2e",
+                        "durationSeconds":  10.735473599999999,
+                        "exitCode":  0
+                    },
+                    {
+                        "suite":  "desktop-e2e",
+                        "durationSeconds":  17.9959725,
+                        "exitCode":  0
+                    }
+                ]
+}

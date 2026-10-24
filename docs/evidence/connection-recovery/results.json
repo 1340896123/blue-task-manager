@@ -1,0 +1,283 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-24T17:22:26.868Z",
+  "checks": [
+    "normal: real Windows and JSON.NET source",
+    "normal: actual elevated Host token",
+    "normal: valid isolated preference skips the first-launch prompt",
+    "normal: genuine samples advance and include this Host PID",
+    "normal: fixed three-method bridge and no renderer Node require",
+    "normal: child frame receives no window bridge",
+    "normal: all three state transitions avoid HTTP window endpoints",
+    "normal: window closes within 3000ms (actual 19ms)",
+    "normal: close sends no HTTP window command",
+    "normal: all exact Host/Electron creation identities exited",
+    "normal: exact Host ETW sessions released",
+    "http-disconnected: real Windows and JSON.NET source",
+    "http-disconnected: actual elevated Host token",
+    "http-disconnected: valid isolated preference skips the first-launch prompt",
+    "transport: genuine request failure displays connection explanation",
+    "notification: mouse dismissal needs no Host request",
+    "notification: keyboard dismissal needs no Host request",
+    "http-disconnected: retains last genuine process identity and values",
+    "http-disconnected: all three state transitions avoid HTTP window endpoints",
+    "http-disconnected: window closes within 3000ms (actual 27ms)",
+    "http-disconnected: close sends no HTTP window command",
+    "http-disconnected: all exact Host/Electron creation identities exited",
+    "http-disconnected: exact Host ETW sessions released",
+    "host-terminated: real Windows and JSON.NET source",
+    "host-terminated: actual elevated Host token",
+    "host-terminated: valid isolated preference skips the first-launch prompt",
+    "host-terminated: dedicated real Host and owned ETW sessions stopped",
+    "host-terminated: real Electron remains alive after Host termination",
+    "host-terminated: window closes within 3000ms (actual 22ms)",
+    "host-terminated: close sends no HTTP window command",
+    "host-terminated: all exact Host/Electron creation identities exited",
+    "host-terminated: exact Host ETW sessions released",
+    "bootstrap-unavailable: real Windows and JSON.NET source",
+    "bootstrap-unavailable: actual elevated Host token",
+    "bootstrap-unavailable: valid isolated preference skips the first-launch prompt",
+    "bootstrap-unavailable: fresh renderer has enabled native close before bootstrap succeeds",
+    "bootstrap-unavailable: all three state transitions avoid HTTP window endpoints",
+    "bootstrap-unavailable: window closes within 3000ms (actual 17ms)",
+    "bootstrap-unavailable: close sends no HTTP window command",
+    "bootstrap-unavailable: all exact Host/Electron creation identities exited",
+    "bootstrap-unavailable: exact Host ETW sessions released",
+    "preference-save-stalled: real Windows and JSON.NET source",
+    "preference-save-stalled: actual elevated Host token",
+    "preference-save-stalled: valid isolated preference skips the first-launch prompt",
+    "preference-save-stalled: window closes within 3000ms (actual 780ms)",
+    "preference-save-stalled: close sends no HTTP window command",
+    "preference-save-stalled: all exact Host/Electron creation identities exited",
+    "preference-save-stalled: exact Host ETW sessions released",
+    "browser: real Windows and JSON.NET source",
+    "browser: actual elevated Host token",
+    "browser: valid isolated preference skips the first-launch prompt",
+    "ordinary browser: bridge absent and desktop controls disabled",
+    "classification: client TypeError keeps its actual cause instead of claiming disconnection",
+    "all scenarios: no renderer JavaScript exception"
+  ],
+  "assertions": 54,
+  "timings": [
+    {
+      "scenario": "normal",
+      "elapsedMs": 19
+    },
+    {
+      "scenario": "http-disconnected",
+      "elapsedMs": 27
+    },
+    {
+      "scenario": "host-terminated",
+      "elapsedMs": 22
+    },
+    {
+      "scenario": "bootstrap-unavailable",
+      "elapsedMs": 17
+    },
+    {
+      "scenario": "preference-save-stalled",
+      "elapsedMs": 780
+    }
+  ],
+  "launches": [
+    {
+      "name": "normal",
+      "hostPid": 25440,
+      "desktop": true,
+      "identities": [
+        {
+          "pid": 25440,
+          "fileTime": "134373361014222130"
+        },
+        {
+          "pid": 61036,
+          "fileTime": "134373361017362650"
+        },
+        {
+          "pid": 50692,
+          "fileTime": "134373361019972170"
+        },
+        {
+          "pid": 62332,
+          "fileTime": "134373361019987090"
+        },
+        {
+          "pid": 58000,
+          "fileTime": "134373361022524370"
+        }
+      ]
+    },
+    {
+      "name": "http-disconnected",
+      "hostPid": 37928,
+      "desktop": true,
+      "identities": [
+        {
+          "pid": 37928,
+          "fileTime": "134373361099788230"
+        },
+        {
+          "pid": 48496,
+          "fileTime": "134373361102341460"
+        },
+        {
+          "pid": 57296,
+          "fileTime": "134373361104577240"
+        },
+        {
+          "pid": 52240,
+          "fileTime": "134373361104619260"
+        },
+        {
+          "pid": 4756,
+          "fileTime": "134373361107114910"
+        }
+      ]
+    },
+    {
+      "name": "host-terminated",
+      "hostPid": 59840,
+      "desktop": true,
+      "identities": [
+        {
+          "pid": 59840,
+          "fileTime": "134373361191445040"
+        },
+        {
+          "pid": 21308,
+          "fileTime": "134373361193976710"
+        },
+        {
+          "pid": 46232,
+          "fileTime": "134373361196203750"
+        },
+        {
+          "pid": 53944,
+          "fileTime": "134373361196245010"
+        },
+        {
+          "pid": 4788,
+          "fileTime": "134373361198761610"
+        }
+      ]
+    },
+    {
+      "name": "bootstrap-unavailable",
+      "hostPid": 4664,
+      "desktop": true,
+      "identities": [
+        {
+          "pid": 4664,
+          "fileTime": "134373361281234570"
+        },
+        {
+          "pid": 57156,
+          "fileTime": "134373361283660320"
+        },
+        {
+          "pid": 4756,
+          "fileTime": "134373361285885050"
+        },
+        {
+          "pid": 48956,
+          "fileTime": "134373361285914490"
+        },
+        {
+          "pid": 40848,
+          "fileTime": "134373361288453490"
+        }
+      ]
+    },
+    {
+      "name": "preference-save-stalled",
+      "hostPid": 49784,
+      "desktop": true,
+      "identities": [
+        {
+          "pid": 49784,
+          "fileTime": "134373361346246320"
+        },
+        {
+          "pid": 57148,
+          "fileTime": "134373361348723890"
+        },
+        {
+          "pid": 30556,
+          "fileTime": "134373361350830990"
+        },
+        {
+          "pid": 57240,
+          "fileTime": "134373361350859170"
+        },
+        {
+          "pid": 55164,
+          "fileTime": "134373361353287030"
+        }
+      ]
+    },
+    {
+      "name": "browser",
+      "hostPid": 58644,
+      "desktop": false,
+      "identities": [
+        {
+          "pid": 58644,
+          "fileTime": "134373361417101210"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    "normal-electron.png",
+    "http-disconnected-electron.png",
+    "host-terminated-electron.png",
+    "bootstrap-unavailable-electron.png"
+  ],
+  "rendererErrors": [],
+  "nativeFacts": [
+    {
+      "label": "normal",
+      "toast": [],
+      "native": {
+        "hwnd": "2037334",
+        "topmost": false,
+        "state": 2,
+        "width": 160,
+        "height": 28,
+        "clientWidth": 144,
+        "clientHeight": 20
+      }
+    },
+    {
+      "label": "http-disconnected",
+      "toast": [],
+      "native": {
+        "hwnd": "858050",
+        "topmost": false,
+        "state": 2,
+        "width": 160,
+        "height": 28,
+        "clientWidth": 144,
+        "clientHeight": 20
+      }
+    },
+    {
+      "label": "bootstrap-unavailable",
+      "toast": [],
+      "native": {
+        "hwnd": "2296916",
+        "topmost": false,
+        "state": 2,
+        "width": 160,
+        "height": 28,
+        "clientWidth": 144,
+        "clientHeight": 20
+      }
+    }
+  ],
+  "limitations": [
+    "Origin/unknown IPC command rejection inspected in production source; raw untrusted IPC injection was not attempted.",
+    "Physical secure-desktop UAC interaction and installation are outside this isolated lifecycle test."
+  ]
+}

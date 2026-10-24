@@ -125,6 +125,12 @@ try {
   startup.phase = 'real-desktop-acceptance';
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('table', { name: '进程列表', exact: true }).waitFor();
+  const firstLaunch = page.getByRole('dialog', { name: '替换标准任务管理器？', exact: true });
+  if (await firstLaunch.count()) {
+    await firstLaunch.getByRole('button', { name: '暂不替换', exact: true }).click();
+    await firstLaunch.waitFor({ state: 'detached' });
+    check(true, 'A18 defer first-launch replacement in isolated preferences without changing the system entry');
+  }
   const bootstrap = await (await fetch(origin + '/api/bootstrap')).json();
   check(bootstrap.desktop === true, 'A18 production Release bootstrap reports actual Electron BrowserWindow');
   check(await page.getByRole('button', { name: '最小化窗口', exact: true }).isEnabled(), 'A18 actual desktop controls enabled');
