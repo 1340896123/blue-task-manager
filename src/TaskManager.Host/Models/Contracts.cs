@@ -4,9 +4,13 @@ public sealed record Unavailable(string Code, string Message, int? NativeErrorCo
 public sealed record Capability(bool Available, string Source, string? Reason = null);
 public sealed record SamplingSettings(int IntervalMs = 1000, bool Paused = false);
 public sealed record ResourceHistoryPoint(string Id, double? Percent, double? ReadBytesPerSecond, double? WriteBytesPerSecond);
+public sealed record LogicalProcessorHistoryPoint(string Id, double? Percent);
+public sealed record LogicalProcessorDto(string Id, uint Group, uint Index, double? Percent, IReadOnlyDictionary<string, Unavailable> Unavailable);
 public sealed record HistoryPoint(DateTime CapturedAtUtc, double? CpuPercent, double? MemoryPercent, double? NetworkReceiveBytesPerSecond, double? NetworkSendBytesPerSecond)
 {
     public DateTime? TelemetryCapturedAtUtc { get; init; }
+    public DateTime? CpuTelemetryCapturedAtUtc { get; init; }
+    public IReadOnlyList<LogicalProcessorHistoryPoint> LogicalProcessors { get; init; } = [];
     public double? GpuPercent { get; init; }
     public double? DiskActivePercent { get; init; }
     public IReadOnlyList<ResourceHistoryPoint> NetworkAdapters { get; init; } = [];
@@ -25,6 +29,7 @@ public sealed record GpuAdapterDto(string Id, string AdapterLuid, uint PhysicalI
 }
 public sealed record TelemetryStatusDto(long SampleId, DateTime? CapturedAtUtc, double? CollectionDurationMs, int GpuInstanceCount, IReadOnlyDictionary<string, Unavailable> Unavailable)
 {
+    public DateTime? CpuCapturedAtUtc { get; init; }
     public double? QueryDurationMs { get; init; }
     public double? InitializationDurationMs { get; init; }
 }
@@ -126,6 +131,8 @@ public sealed record SnapshotDto(long SampleId, DateTime CapturedAtUtc, DateTime
     public IReadOnlyList<PhysicalDiskDto> PhysicalDisks { get; init; } = [];
     public IReadOnlyList<GpuAdapterDto> GpuAdapters { get; init; } = [];
     public TelemetryStatusDto? Telemetry { get; init; }
+    public IReadOnlyList<LogicalProcessorDto> LogicalProcessors { get; init; } = [];
+    public HwInfoSummaryDto HwInfo { get; init; } = HwInfoSensorsDto.WarmingUp.Summary;
 }
 public sealed record StartRequest(string Executable, string? Arguments);
 public sealed record TerminateRequest(string CreationTimeFileTime);

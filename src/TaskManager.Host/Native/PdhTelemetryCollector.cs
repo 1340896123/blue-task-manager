@@ -11,7 +11,10 @@ namespace TaskManager.Host.Native;
 
 internal sealed record GpuReading(double? Percent, string? Engine, Unavailable? Unavailable);
 internal sealed record PdhSample(TelemetryStatusDto Status, IReadOnlyDictionary<string, GpuReading> Processes,
-    IReadOnlyList<PhysicalDiskDto> Disks, IReadOnlyList<GpuAdapterDto> Gpus);
+    IReadOnlyList<PhysicalDiskDto> Disks, IReadOnlyList<GpuAdapterDto> Gpus)
+{
+    public IReadOnlyList<LogicalProcessorDto> LogicalProcessors { get; init; } = [];
+}
 
 /// <summary>One deferred worker and one long-lived batch query. Never holds the snapshot/settings lock.</summary>
 internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> settings) : IAsyncDisposable
@@ -22,10 +25,11 @@ internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> setti
     private Task? _worker;
     private Dictionary<uint, string>? _pending;
     private PdhSample _current = new(new(0, null, null, 0, new Dictionary<string, Unavailable>
-        { ["gpu"] = NativeSupport.WarmingUp, ["disk"] = NativeSupport.WarmingUp }), new Dictionary<string, GpuReading>(), [], []);
+        { ["gpu"] = NativeSupport.WarmingUp, ["disk"] = NativeSupport.WarmingUp, ["logicalProcessors"] = NativeSupport.WarmingUp }), new Dictionary<string, GpuReading>(), [], []);
     private Dictionary<uint, string> _previousIdentities = new();
     private PdhCloseQuerySafeHandle? _query;
-    private Counter? _gpu, _read, _write, _idle;
+    private Counter? _gpu, _read, _write, _idle, _cpu;
+    private HashSet<string> _previousCpuInstances = new(StringComparer.Ordinal);
     private long _sampleId;
     private bool _collected;
     private DateTime _previousCapture;
@@ -65,8 +69,9 @@ internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> setti
                 catch (Exception exception)
                 {
                     var reason = exception is PdhException native ? native.Reason : new Unavailable("error", "PDH读取失败：" + exception.Message);
-                    lock (_gate) _current = new(new(++_sampleId, DateTime.UtcNow, null, 0, new Dictionary<string, Unavailable> { ["gpu"] = reason, ["disk"] = reason }), new Dictionary<string, GpuReading>(), [], []);
-                    _previousIdentities.Clear(); _collected = false;
+                    lock (_gate) _current = new(new(++_sampleId, DateTime.UtcNow, null, 0, new Dictionary<string, Unavailable> { ["gpu"] = reason, ["disk"] = reason, ["logicalProcessors"] = reason }), new Dictionary<string, GpuReading>(), [], [])
+                    { LogicalProcessors = _current.LogicalProcessors.Select(row => row with { Percent = null, Unavailable = new Dictionary<string, Unavailable> { ["percent"] = reason } }).ToArray() };
+                    _previousIdentities.Clear(); _previousCpuInstances.Clear(); _collected = false;
                     // No tight retry loop. The next basic sample requests the next attempt.
                 }
             }
@@ -85,6 +90,7 @@ internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> setti
         _read = Add(@"\PhysicalDisk(*)\Disk Read Bytes/sec");
         _write = Add(@"\PhysicalDisk(*)\Disk Write Bytes/sec");
         _idle = Add(@"\PhysicalDisk(*)\% Idle Time");
+        _cpu = Add(@"\Processor Information(*)\% Processor Time");
         _initializationDurationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
     }
 
@@ -106,6 +112,28 @@ internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> setti
         var read = Read(_read!, out var readError);
         var write = Read(_write!, out var writeError);
         var idle = Read(_idle!, out var idleError);
+        var cpu = Read(_cpu!, out var cpuError);
+        // Processor Information exposes real processor-group,index identities. Total/group totals never become CPU rows.
+        var cpuRows = new List<LogicalProcessorDto>();
+        var cpuInstances = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var item in cpu)
+        {
+            var parts = item.Key.Split(',');
+            if (parts.Length != 2 || !uint.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var group)
+                || !uint.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var index)) continue;
+            if (group > ushort.MaxValue || index >= 64) continue;
+            var valid = _collected && _previousCpuInstances.Contains(item.Key) && item.Value.Value.HasValue;
+            var missing = new Dictionary<string, Unavailable>();
+            if (!valid) missing["percent"] = cpuError ?? item.Value.Error ?? NativeSupport.WarmingUp;
+            cpuRows.Add(new(item.Key, group, index, valid ? Math.Clamp(item.Value.Value!.Value, 0, 100) : null, missing));
+            if (item.Value.Value.HasValue) cpuInstances.Add(item.Key);
+        }
+        if (cpuRows.Count > 4096) { cpuError = new("capacity", "逻辑处理器实例超过4096项边界。"); cpuRows.Clear(); cpuInstances.Clear(); }
+        if (cpuRows.Count == 0 && cpuError is null) cpuError = new("notSupported", "当前系统未提供Processor Information的处理器组/索引实例。");
+        if (cpuError is not null) errors["logicalProcessors"] = cpuError;
+        else if (cpuRows.Any(row => row.Percent is null)) errors["logicalProcessors"] = cpuRows.Select(row => row.Unavailable.GetValueOrDefault("percent")).First(reason => reason is not null)!;
+        _previousCpuInstances = cpuError is null ? cpuInstances : new(StringComparer.Ordinal);
+        var cpuCapturedAt = cpuError is null ? DateTime.UtcNow : (DateTime?)null;
         if (gpuError is not null) errors["gpu"] = gpuError;
         if (readError is not null || writeError is not null || idleError is not null) errors["disk"] = readError ?? writeError ?? idleError!;
         var identities = new Dictionary<uint, string>();
@@ -177,7 +205,8 @@ internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> setti
         _previousCapture = captureStarted;
         _collected = true;
         return new(new(++_sampleId, DateTime.UtcNow, Stopwatch.GetElapsedTime(started).TotalMilliseconds, engineCount, errors)
-            { QueryDurationMs = queryDuration, InitializationDurationMs = _initializationDurationMs }, values, disks, gpus);
+            { QueryDurationMs = queryDuration, InitializationDurationMs = _initializationDurationMs, CpuCapturedAtUtc = cpuCapturedAt }, values, disks, gpus)
+            { LogicalProcessors = cpuRows.OrderBy(row => row.Group).ThenBy(row => row.Index).ToArray() };
     }
 
     private double? Value(Dictionary<string, CounterValue> source, string name, Unavailable? sourceError, string field, Dictionary<string, Unavailable> missing)

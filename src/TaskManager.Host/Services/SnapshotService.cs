@@ -9,6 +9,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     private readonly object _gate = new();
     private readonly Win32Collector _collector = new();
     private PdhTelemetryCollector? _telemetry;
+    private HwInfoTelemetryCollector? _hwInfo;
+    public HwInfoSensorsDto HwInfo => _hwInfo?.Current ?? HwInfoSensorsDto.WarmingUp;
     private Task<SlowData>? _slowRead;
     private SamplingSettings _settings = new(preferences.IntervalMs, false);
     private readonly string _instance = Guid.NewGuid().ToString("N");
@@ -25,6 +27,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     {
         ["processes"] = new(true, "CsWin32 Toolhelp / GetProcessTimes / PSAPI / GetProcessIoCounters"),
         ["system"] = new(true, "CsWin32 GetSystemTimes / GlobalMemoryStatusEx / GetPerformanceInfo / GetTickCount64"),
+        ["logicalProcessors"] = new(true, "CsWin32 PDH English Processor Information % Processor Time；真实group,index、独立来源时间及相邻样本"),
+        ["hwInfo"] = new(true, "CsWin32 HWiNFO SM2只读共享内存；独立后台缓存/有界互斥同步", "可选来源：需HWiNFO运行并由其当前版本/许可启用共享内存。"),
         ["network"] = new(true, "CsWin32 GetIfTable2：仅Up状态真实硬件适配器总量；排除过滤、虚拟、回环和隧道接口"),
         ["services"] = new(true, "CsWin32 SCM EnumServicesStatusEx"),
         ["users"] = new(true, "CsWin32 WTS + 进程令牌 SID，按明确用户/会话聚合"),
@@ -79,6 +83,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         {
             preferences.SaveInterval(request.IntervalMs);
             _settings = new(request.IntervalMs, request.Paused);
+            _hwInfo?.SetPaused(request.Paused);
             if (_snapshot is not null) _snapshot = _snapshot with { IntervalMs = _settings.IntervalMs, Paused = _settings.Paused };
             Invalidate();
             return _settings;
@@ -90,6 +95,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _telemetry = new(() => Settings);
+        _hwInfo = new(() => Settings);
         var slow = new SlowData([], [], [], [new Unavailable("loading", "服务、启动项和会话正在后台读取；基础进程采样继续。")], null);
         var nextSlowAttempt = DateTime.MinValue;
         long sampleId = 0;
@@ -104,6 +110,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
                     var started = Stopwatch.GetTimestamp();
                     var raw = _collector.Collect();
                     var telemetry = FreshTelemetry(_telemetry.Current, settings.IntervalMs);
+                    var hwInfo = _hwInfo.Current;
                     ApplyTelemetry(raw, telemetry, settings.IntervalMs);
                     var capturedAt = DateTime.UtcNow;
                     bool refreshSlow;
@@ -135,6 +142,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
                         _performance.Enqueue(new(capturedAt, raw.System.CpuPercent, raw.System.MemoryPercent, raw.System.NetworkReceiveBytesPerSecond, raw.System.NetworkSendBytesPerSecond)
                         {
                             TelemetryCapturedAtUtc = telemetry.Status.CapturedAtUtc, GpuPercent = raw.System.GpuPercent, DiskActivePercent = raw.System.DiskActivePercent,
+                            CpuTelemetryCapturedAtUtc = telemetry.Status.CpuCapturedAtUtc,
+                            LogicalProcessors = telemetry.LogicalProcessors.Select(row => new LogicalProcessorHistoryPoint(row.Id, row.Percent)).ToArray(),
                             NetworkAdapters = raw.NetworkAdapters.Where(row => row.ReceiveBytesPerSecond.HasValue || row.SendBytesPerSecond.HasValue).Select(row => new ResourceHistoryPoint(row.Id, null, row.ReceiveBytesPerSecond, row.SendBytesPerSecond)).ToArray(),
                             PhysicalDisks = telemetry.Disks.Select(row => new ResourceHistoryPoint(row.Id, row.ActivePercent, row.ReadBytesPerSecond, row.WriteBytesPerSecond)).ToArray(),
                             GpuAdapters = telemetry.Gpus.Select(row => new ResourceHistoryPoint(row.Id, row.UtilizationPercent, null, null)).ToArray()
@@ -144,10 +153,12 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
                             slow.Services, slow.StartupItems, users, _history.Values.Select(item => item.ToDto()).OrderByDescending(item => item.IsRunning).ThenBy(item => item.Name).ToArray(),
                             _performance.ToArray(), Capabilities, preferences.Warning is { } warning ? slow.Warnings.Append(warning).ToArray() : slow.Warnings, slow.CapturedAtUtc)
                         { SamplingDurationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds, NetworkAdapters = raw.NetworkAdapters,
-                            PhysicalDisks = telemetry.Disks, GpuAdapters = telemetry.Gpus, Telemetry = telemetry.Status };
+                            PhysicalDisks = telemetry.Disks, GpuAdapters = telemetry.Gpus, Telemetry = telemetry.Status,
+                            LogicalProcessors = telemetry.LogicalProcessors, HwInfo = hwInfo.Summary };
                         Invalidate();
                     }
                     _telemetry.Request(raw.Processes);
+                    _hwInfo.Request();
                     nextSample = Stopwatch.GetTimestamp() + settings.IntervalMs * Stopwatch.Frequency / 1000;
                 }
                 catch (Exception exception)
@@ -166,6 +177,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     {
         await base.StopAsync(cancellationToken);
         if (_telemetry is not null) await _telemetry.DisposeAsync();
+        if (_hwInfo is not null) await _hwInfo.DisposeAsync();
         if (_slowRead is { } pending) { try { await pending.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken); } catch (Exception ex) { logger.LogWarning(ex, "慢来源关闭时读取失败"); } }
     }
     public override void Dispose() { base.Dispose(); _collector.Dispose(); }
@@ -201,11 +213,20 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
 
     private static PdhSample FreshTelemetry(PdhSample sample, int intervalMs)
     {
+        if (sample.Status.CpuCapturedAtUtc is { } cpuCaptured && DateTime.UtcNow - cpuCaptured > TimeSpan.FromMilliseconds(Math.Max(5000, intervalMs * 3)))
+        {
+            var cpuStale = new Unavailable("stale", "逻辑处理器最新PDH采样已过期，等待后台查询恢复。");
+            sample = sample with
+            {
+                Status = sample.Status with { Unavailable = new Dictionary<string, Unavailable>(sample.Status.Unavailable) { ["logicalProcessors"] = cpuStale } },
+                LogicalProcessors = sample.LogicalProcessors.Select(row => row with { Percent = null, Unavailable = new Dictionary<string, Unavailable> { ["percent"] = cpuStale } }).ToArray()
+            };
+        }
         if (sample.Status.CapturedAtUtc is not { } captured || DateTime.UtcNow - captured <= TimeSpan.FromMilliseconds(Math.Max(5000, intervalMs * 3))) return sample;
         var stale = new Unavailable("stale", "PDH最新采样已过期，等待后台查询恢复。");
         return sample with
         {
-            Status = sample.Status with { Unavailable = new Dictionary<string, Unavailable> { ["gpu"] = stale, ["disk"] = stale } },
+            Status = sample.Status with { Unavailable = new Dictionary<string, Unavailable>(sample.Status.Unavailable) { ["gpu"] = stale, ["disk"] = stale, ["logicalProcessors"] = stale } },
             Processes = new Dictionary<string, GpuReading>(),
             Gpus = sample.Gpus.Select(row => row with { UtilizationPercent = null, BusiestEngine = null, Unavailable = new Dictionary<string, Unavailable>(row.Unavailable) { ["utilizationPercent"] = stale } }).ToArray(),
             Disks = sample.Disks.Select(row => row with { ReadBytesPerSecond = null, WriteBytesPerSecond = null, ActivePercent = null,

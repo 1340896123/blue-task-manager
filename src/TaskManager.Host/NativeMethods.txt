@@ -125,3 +125,9 @@ IsIconic
 ShowWindow
 SetForegroundWindow
 GetForegroundWindow
+OpenFileMappingW
+MapViewOfFile
+UnmapViewOfFile
+VirtualQuery
+OpenMutexW
+ReleaseMutex

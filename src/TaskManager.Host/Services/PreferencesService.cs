@@ -77,7 +77,7 @@ public sealed class PreferencesService
             if (!Pages.Contains(pair.Key) || p is null || p.Query is null || p.Query.Length > 256 || p.Query.Contains('\0') || !Keys.Contains(p.SortKey) || p.SortDirection is not ("ascending" or "descending") || !double.IsFinite(p.ScrollTop) || p.ScrollTop is < 0 or > 10_000_000 || p.SelectedIdentity?.Length > 128 || p.VisibleColumns?.Count > 40 || p.VisibleColumns?.Any(key => !Keys.Contains(key)) == true || p.Filters?.State is not (null or "all" or "running" or "restricted")) Invalid();
             if (p.VisibleColumns is not null && (!p.VisibleColumns.Contains("name") || (pair.Key is "processes" or "details" && !p.VisibleColumns.Contains("pid")))) Invalid();
             if (p.ColumnWidths is { } widths && (widths.Count > 40 || widths.Any(width => !Columns.TryGetValue(pair.Key, out var allowed) || !allowed.Contains(width.Key) || !double.IsFinite(width.Value) || width.Value is < 64 or > 1600))) Invalid();
-            if (p.ResourceType is not (null or "system" or "cpu" or "memory" or "network" or "disk" or "gpu") || p.ResourceId?.Length > 256 || p.ResourceId?.Contains('\0') == true) Invalid();
+            if (p.ResourceType is not (null or "system" or "cpu" or "memory" or "network" or "disk" or "gpu" or "hwinfo") || p.ResourceId?.Length > 256 || p.ResourceId?.Contains('\0') == true || p.CpuGraphMode is not ("total" or "logicalProcessors")) Invalid();
         }
         if (ui.Window is { } window && (window.Width is < 960 or > 3840 || window.Height is < 640 or > 2160 || !double.IsFinite(window.ZoomFactor) || window.ZoomFactor is < .75 or > 2)) Invalid();
     }

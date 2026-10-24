@@ -29,6 +29,9 @@ public sealed class TaskManagerController(SnapshotService snapshots, ProcessActi
     [HttpGet("preferences")]
     public IActionResult Preferences() => Ok(preferences.Current);
 
+    [HttpGet("hwinfo/sensors")]
+    public IActionResult HwInfoSensors() => Ok(snapshots.HwInfo);
+
     [HttpPost("preferences")]
     public IActionResult Preferences(UiPreferences request) => Ok(preferences.Save(request));
 
