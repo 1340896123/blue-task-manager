@@ -41,7 +41,7 @@ export default function TaskManagerIntegration({ connected, notify }: { connecte
   const allowWrite = Boolean(state?.canWrite && connected && !busy);
   return <>
     <section className="settings-section" aria-labelledby="task-manager-integration-title">
-      <h3 id="task-manager-integration-title">任务栏右键中的任务管理器</h3>
+      <h3 id="task-manager-integration-title">任务管理器入口</h3>
       <div className="setting-row integration-setting">
         <div>
           <strong>接管原“任务管理器”入口</strong>

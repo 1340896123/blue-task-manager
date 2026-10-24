@@ -10,6 +10,6 @@ checks.push('application C# JSON uses JSON.NET; native bindings are CsWin32, inc
 const style=await readFile(path.join(root,'src/TaskManager.Web/src/styles.css'),'utf8');const outsideTokens=style.replace(/:root\s*\{[\s\S]*?\}/g,'');assert.ok(!/#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(|font-size\s*:\s*\d|box-shadow\s*:\s*(?!var\()[0-9]/i.test(outsideTokens));
 for(const extension of ['.tsx','.ts'])for(const file of await files(path.join(root,'src/TaskManager.Web/src'),extension)){const text=await readFile(file,'utf8');assert.ok(!/#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(|Math\.random\(|route\.fulfill|mockData/i.test(text),file);}
 checks.push('component colors/font sizes/shadows resolve semantic tokens; no random/mock business data or mocked API routes');
-assert.ok(style.includes('--height-table-header: 58px')&&style.includes('--height-row-compact: 32px')&&style.includes('--height-row-standard: 40px'));
-checks.push('table header58/compact32/standard40 originate from design tokens; actual DOM checked by process UI suite');
+assert.ok(style.includes('--height-table-header: 58px')&&style.includes('--height-table-header-plain: 36px')&&style.includes('--height-row-compact: 32px')&&style.includes('--height-row-standard: 40px'));
+checks.push('metric header58/plain header36/compact32/standard40 originate from design tokens; actual DOM checked by UI suites');
 console.log(JSON.stringify({result:'PASS',assertions:checks.length,checks},null,2));

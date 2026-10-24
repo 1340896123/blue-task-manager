@@ -36,6 +36,7 @@
 --color-surface-subtle: #FAFAFA;
 --color-text: #1A1A1A;
 --color-text-secondary: #5F5F5F;
+--color-text-disabled: #747474;
 --color-border: #E5E5E5;
 --color-control-border: #8A8A8A;
 --color-selection: #E8EEF5;
