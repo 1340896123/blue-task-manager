@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode, type KeyboardEvent, type MouseEvent, type PointerEvent, type RefObject } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, ArrowUp, ChevronsLeftRight, CircleHelp, MoreHorizontal, X } from 'lucide-react';
 
@@ -139,13 +139,13 @@ export function DataTable<T>({ rows, columns, rowKey, label, rowHeight, sort, on
     {rows.length === 0 && <Empty title={emptyTitle} description={emptyDescription}/>}
   </div>{widthEditor && editorColumn && <Modal title={`设置${editorColumn.label}列宽`} description={`允许 ${minimum(editorColumn)}～${widthMax} 像素。也可拖动列头右边界，或聚焦调整柄后使用左右键。`} onClose={() => setWidthEditor(null)}><form onSubmit={event => { event.preventDefault(); if (validEditor) { setColumnWidth(editorColumn, editorWidth); setWidthEditor(null); } }}><label className="column-width-field">列宽（像素）<input autoFocus type="number" min={minimum(editorColumn)} max={widthMax} step="1" value={widthEditor.value} onChange={event => setWidthEditor({ ...widthEditor, value: event.target.value })}/></label><div className="modal-actions"><button type="button" className="command-button bordered" onClick={() => { setColumnWidth(editorColumn, null); setWidthEditor(null); }}>恢复默认宽度</button><button type="button" className="command-button" onClick={() => setWidthEditor(null)}>取消</button><button className="command-button primary" type="submit" disabled={!validEditor}>应用宽度</button></div></form></Modal>}</>;
 }
-export function Modal({ title, description, children, onClose, busy = false, wide = false, className = '' }: { title: string; description?: string; children: ReactNode; onClose: () => void; busy?: boolean; wide?: boolean; className?: string }) {
+export function Modal({ title, description, children, onClose, busy = false, wide = false, className = '', initialFocusRef }: { title: string; description?: string; children: ReactNode; onClose: () => void; busy?: boolean; wide?: boolean; className?: string; initialFocusRef?: RefObject<HTMLElement | null> }) {
   const dialog = useRef<HTMLDialogElement>(null); const titleId = useId(); const descriptionId = useId();
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const node = dialog.current!; node.showModal();
+    const node = dialog.current!; node.showModal(); initialFocusRef?.current?.focus({ preventScroll: true });
     return () => { node.close(); previous?.focus(); };
-  }, []);
+  }, [initialFocusRef]);
   return <dialog ref={dialog} className={`modal ${wide ? 'modal-wide' : ''} ${className}`} aria-labelledby={titleId} aria-describedby={description ? descriptionId : undefined} onCancel={event => { event.preventDefault(); event.stopPropagation(); if (!busy) onClose(); }} onKeyDown={event => {
     if (event.target instanceof Element && event.target.closest('dialog') !== dialog.current) return;
     if (event.key !== 'Tab') return;

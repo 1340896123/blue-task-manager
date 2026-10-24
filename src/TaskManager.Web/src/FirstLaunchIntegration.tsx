@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { api, errorMessage } from './api';
 import { Modal } from './components';
@@ -9,6 +9,7 @@ import type { Notify } from './pages/pageShared';
 const route = 'desktop/task-manager-integration';
 export default function FirstLaunchIntegration({ preferences, connected, notify, onSettings }: { preferences: PreferencesController; connected: boolean; notify: Notify; onSettings: () => void }) {
   const required = !preferences.preferences.taskManagerPromptDismissed;
+  const deferButton = useRef<HTMLButtonElement>(null);
   const [state, setState] = useState<TaskManagerIntegrationState | null>(null);
   const [reading, setReading] = useState(true), [writing, setWriting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +55,7 @@ export default function FirstLaunchIntegration({ preferences, connected, notify,
   if (!required) return null;
   const label = reading ? '正在读取系统入口…' : state ? ({ disabled: '尚未替换标准任务管理器', enabled: '本目录程序已替换标准任务管理器', migrationRequired: '旧接管需要修复', conflict: '已有其他工具或目录接管此入口', unavailable: '暂时无法确认系统入口' })[state.status] : '暂时无法确认系统入口';
   const canReplace = Boolean(connected && !reading && !writing && state?.status === 'disabled' && state.canEnable && state.canWrite === true && state.executableAvailable);
-  return <Modal title="替换标准任务管理器？" description="让 Windows 的任务管理器入口打开蓝域任务管理器。" className="first-launch-modal" busy={writing} onClose={() => { if (!writing) void complete(); }}>
+  return <Modal title="替换标准任务管理器？" description="让 Windows 的任务管理器入口打开蓝域任务管理器。" className="first-launch-modal" initialFocusRef={deferButton} busy={writing} onClose={() => { if (!writing) void complete(); }}>
     <div className="first-launch-content">
       <p>替换后，任务栏右键的“任务管理器”、Ctrl+Shift+Esc 等入口将打开蓝域。</p>
       <p>影响当前计算机的所有用户；以后从这些入口启动时，Windows 会请求管理员授权。</p>
@@ -70,6 +71,6 @@ export default function FirstLaunchIntegration({ preferences, connected, notify,
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="first-launch-links"><button className="text-button" disabled={reading || writing || !connected} onClick={() => void refresh()}><RefreshCw size={14} aria-hidden="true"/>重新读取</button><button className="text-button" disabled={writing} onClick={() => void complete(true)}>前往设置管理</button></div>
     </div>
-    <div className="modal-actions"><button autoFocus className="command-button bordered" disabled={writing} onClick={() => void complete()}>{state?.status === 'enabled' ? '继续使用' : '暂不替换'}</button>{state?.status !== 'enabled' && <button className="command-button primary" disabled={!canReplace} onClick={() => void replace()}>{writing ? '正在替换并核验…' : '替换标准任务管理器'}</button>}</div>
+    <div className="modal-actions"><button ref={deferButton} className="command-button bordered" disabled={writing} onClick={() => void complete()}>{state?.status === 'enabled' ? '继续使用' : '暂不替换'}</button>{state?.status !== 'enabled' && <button className="command-button primary" disabled={!canReplace} onClick={() => void replace()}>{writing ? '正在替换并核验…' : '替换标准任务管理器'}</button>}</div>
   </Modal>;
 }
