@@ -3,6 +3,7 @@ using System.Globalization;
 using TaskManager.Host.Models;
 using Windows.Win32;
 using Windows.Win32.NetworkManagement.IpHelper;
+using Windows.Win32.NetworkManagement.Ndis;
 
 namespace TaskManager.Host.Native;
 
@@ -35,8 +36,9 @@ internal sealed class NetworkCollector
             {
                 var row = table->Table[i];
                 // NDIS hardware identity is authoritative; aliases/vendor names are not.
-                // Retain disconnected hardware so its actual state remains visible.
-                if (!row.InterfaceAndOperStatusFlags.HardwareInterface || row.InterfaceAndOperStatusFlags.FilterInterface || row.Type is 24 or 131) continue;
+                // NotPresent entries are removed hardware retained by Windows; keep
+                // present but disconnected hardware with its actual state instead.
+                if (!row.InterfaceAndOperStatusFlags.HardwareInterface || row.InterfaceAndOperStatusFlags.FilterInterface || row.Type is 24 or 131 || row.OperStatus == IF_OPER_STATUS.IfOperStatusNotPresent) continue;
                 var id = row.InterfaceLuid.Value;
                 var up = (int)row.OperStatus == 1;
                 var unavailable = new Dictionary<string, Unavailable>();

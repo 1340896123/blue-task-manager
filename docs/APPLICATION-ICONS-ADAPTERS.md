@@ -18,7 +18,7 @@
 
 ## 网络口径
 
-GetIfTable2入口仅保留HardwareInterface=true、FilterInterface=false、Type非SOFTWARE_LOOPBACK(24)/TUNNEL(131)。使用Windows/NDIS公开标志，不按名称/MAC/厂商猜测。保留断开硬件的真实状态和null速率/原因；可能包含Windows报告的隐藏硬件，不等同Get-NetAdapter默认可见设备集合。
+GetIfTable2入口仅保留HardwareInterface=true、FilterInterface=false、Type非SOFTWARE_LOOPBACK(24)/TUNNEL(131)，并排除OperStatus=IfOperStatusNotPresent的已移除设备。使用Windows/NDIS公开标志和存在状态，不按名称/MAC/厂商猜测。保留当前仍存在但断开的硬件及其真实状态和null速率/原因；可能包含Windows报告的隐藏硬件，不等同Get-NetAdapter默认可见设备集合。
 
 networkAdapters、逐网卡性能历史和系统总量使用相同硬件集合；总量只汇总其中Up接口。无活动硬件为null并明确原因。活动硬件集合变化总量预热一帧，稳定单网卡继续差分；虚拟接口变化不影响硬件集合。LUID/UInt64字符串与未知不填零的合同不变。
 
@@ -31,7 +31,7 @@ networkAdapters、逐网卡性能历史和系统总量使用相同硬件集合�
 | I03 | 专用进程退出后首次历史图标请求仍200；错误identity或清历史后204 |
 | I04 | 真实启动快捷方式/Run命令、运行或停止服务返回真实PNG或有根据204；不执行命令/服务控制 |
 | I05 | 有真实打包应用时检查AppsFolder图标；无实例明确未覆盖，不伪造应用 |
-| I06 | 独立WindowProbe network-counters全量对照：集合等于HardwareInterface&&!FilterInterface&&非24/131；断开硬件保留，虚拟/过滤/隧道/回环不出现 |
+| I06 | 独立WindowProbe network-counters全量对照：集合等于HardwareInterface&&!FilterInterface&&非24/131&&非NotPresent；当前存在的断开硬件保留，已移除硬件及虚拟/过滤/隧道/回环不出现 |
 | I07 | 正式Electron全应用列表截图、滚动/切页与恢复：有界图标请求/缓存、无行高抖动；仅清理测试身份/本实例 |
 
 API/桌面通过标准提升worker运行。结果/命令/截图写本轮验收报告，构建不替代真实链路。
