@@ -46,3 +46,15 @@ Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -ArgumentList @('-N
 - 正式桌面截图：`output/playwright/visual-hierarchy/after/desktop-1380-进程.png`、`desktop-1380-performance.png`、`desktop-1380-settings.png`、`desktop-960-settings.png`；实际125%截图同目录 `desktop-125-*-native.png`。完整八页及各尺寸均已归档。
 
 本轮为样式回归，未重新构建/安装NSIS包，未操作全局IFEO或用户服务，未重复全部原生硬件采集及安装生命周期专项；这些项目不计为本轮通过。主代理负责截图视查、最终差异检查与阶段提交。
+
+## 2026-10-25 本机更新
+
+用户明确要求更新本机后，重新执行 `scripts/build-installer.ps1 -SkipRestore -MakeNsisPath C:\nsis\makensis.exe` 和 `scripts/verify-installer.ps1`，完整生成自包含安装包及ZIP。安装包SHA256为 `291f44e1081aea1ab47e5a64d23f2893a1d57d76d5e8d3246459ecd4fedd691e`，169,316,083字节；独立解包核验3,242个文件及实际启动清单通过。
+
+通过标准RunAs执行 `output/local-update-visual-20261024/install-worker.ps1`，核验安装标记和真实提升令牌后，在 `C:\Program Files\BlueDomainTaskManager` 原位静默安装，安装器退出0。安装文件全部逐一核对SHA256，现有偏好与入口配置的安装前后核对通过。版本号沿用1.1.1，以包SHA256区分此次构建。
+
+安装目录的真实Electron以隔离偏好完成22项检查：八页24px/600标题、蓝色资源汇总、CPU关键指标、16px设置h2、实际Windows采样、捆绑runtime和renderer隔离均通过。三张安装版截图及测试身份/5310、9310监听清理结果在同一证据目录。
+
+最后重新打开使用日常偏好的安装版，确认真实管理员Host、Electron窗口及5188端口，HTTP实际提供的index、JS、CSS原始字节均与核验包一致，日常偏好哈希保持不变，窗口按交付意图保持运行。最初使用Windows PowerShell 5解码HTML文本的核对因响应未声明charset而误报，已改为原始字节SHA256核对，通过后未重复安装；原始错误与修正复核分别保留在 `initial-verification-error.json`、`final-verification.ps1`。
+
+可复现安装/验证脚本、构建日志、包核验、22项桌面结果、截图及最终PASS记录保存在 `output/local-update-visual-20261024/`；最终结果为 `install-result.json`、`reopened-application.json` 和 `install-status.json`。本次未执行实际安装的卸载或全局入口写入。
