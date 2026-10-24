@@ -37,6 +37,8 @@ public sealed class ProcessDto
     public string? CreationTimeFileTime { get; set; }
     public required string Name { get; init; }
     public string? Path { get; set; }
+    [Newtonsoft.Json.JsonIgnore]
+    public string? ApplicationUserModelId { get; set; }
     public string? Publisher { get; set; }
     public uint? SessionId { get; set; }
     public string? UserName { get; set; }
@@ -105,7 +107,15 @@ public sealed class UserDto
     public int UnreadableProcessCount { get; set; }
     public Dictionary<string, Unavailable> Unavailable { get; init; } = new();
 }
-public sealed record ProcessHistoryDto(string Identity, uint Pid, string Name, DateTime FirstObservedAtUtc, DateTime LastObservedAtUtc, bool IsRunning, string? ObservedCpuTime100ns, string? ObservedIoReadBytes, string? ObservedIoWriteBytes);
+public sealed record ProcessHistoryDto(string Identity, uint Pid, string Name, DateTime FirstObservedAtUtc, DateTime LastObservedAtUtc, bool IsRunning, string? ObservedCpuTime100ns, string? ObservedIoReadBytes, string? ObservedIoWriteBytes)
+{
+    // A process may exit before the history page is opened. Keep its observed source,
+    // without exporting paths or requiring the old PID to remain alive.
+    [Newtonsoft.Json.JsonIgnore]
+    public string? IconPath { get; init; }
+    [Newtonsoft.Json.JsonIgnore]
+    public string? ApplicationUserModelId { get; init; }
+}
 public sealed record SnapshotDto(long SampleId, DateTime CapturedAtUtc, DateTime SessionStartedAtUtc, int IntervalMs, bool Paused,
     SystemDto System, IReadOnlyList<ProcessDto> Processes, IReadOnlyList<ServiceDto> Services, IReadOnlyList<StartupDto> StartupItems,
     IReadOnlyList<UserDto> Users, IReadOnlyList<ProcessHistoryDto> History, IReadOnlyList<HistoryPoint> PerformanceHistory,

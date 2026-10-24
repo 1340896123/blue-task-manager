@@ -61,7 +61,7 @@ internal sealed class ProcessMetadataCache : IDisposable
             await foreach (var item in queue.Reader.ReadAllAsync(stopping.Token))
             {
                 var errors = new Dictionary<string, Unavailable>();
-                string? publisher = null, user = null;
+                string? publisher = null, user = null, appId = null;
                 try
                 {
                     if (item.Path is not null)
@@ -88,7 +88,11 @@ internal sealed class ProcessMetadataCache : IDisposable
                 try
                 {
                     using var handle = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, item.Pid);
-                    if (!handle.IsInvalid && PInvoke.GetProcessTimes(handle, out var creation, out _, out _, out _) && item.Identity == $"{item.Pid}:{NativeSupport.FileTime(creation)}") user = ReadOwner(handle, errors);
+                    if (!handle.IsInvalid && PInvoke.GetProcessTimes(handle, out var creation, out _, out _, out _) && item.Identity == $"{item.Pid}:{NativeSupport.FileTime(creation)}")
+                    {
+                        user = ReadOwner(handle, errors);
+                        appId = ApplicationIdentity.Read(handle);
+                    }
                     else errors["userName"] = new("exited", "后台读取时该进程身份已退出或不可读。");
                 }
                 catch (Exception ex) when (ex is UnauthorizedAccessException or System.ComponentModel.Win32Exception)
@@ -100,7 +104,7 @@ internal sealed class ProcessMetadataCache : IDisposable
                     if (identities.TryGetValue(item.Identity, out var previous))
                     {
                         if (previous.Unavailable.TryGetValue("path", out var error)) errors["path"] = error;
-                        identities[item.Identity] = new(item.Path, publisher, user, errors);
+                        identities[item.Identity] = new(item.Path, publisher, user, errors) { ApplicationUserModelId = appId };
                     }
                 }
             }

@@ -1,5 +1,11 @@
 # 开源实现研究与技术决策
 
+## 全页应用图标与真实硬件网卡（2026-10-24）
+
+本轮实现前核验[TaskExplorer IconExtreactor.cpp](https://github.com/DavidXanatos/TaskExplorer/blob/master/MiscHelpers/Common/IconExtreactor.cpp)的SHGetFileInfo/ExtractIconEx与图标生命周期、[SystemInformer appresolver.c](https://github.com/winsiderss/systeminformer/blob/master/phlib/appresolver.c)的AppsFolder Shell应用枚举、[HardwareDevices netoptions.c](https://github.com/winsiderss/systeminformer/blob/master/plugins/HardwareDevices/netoptions.c)通过MIB_IF_ROW2官方标记描述网卡属性的做法。采用Shell原生应用图标、后台按需提取与有界缓存；打包应用使用公开GetApplicationUserModelId和AppsFolder IShellItemImageFactory，不解析自造协议或移植专有驱动。
+
+网卡筛选使用[Microsoft MIB_IF_ROW2](https://learn.microsoft.com/windows/win32/api/netioapi/ns-netioapi-mib_if_row2)的HardwareInterface/FilterInterface与标准IF_TYPE值；保留断开硬件，拒绝按网卡名称猜测。启动/服务命令只读定位遵循[CreateProcess文档](https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw)的引号/未引号前缀顺序与Windows SearchPath，不执行命令。.lnk交由SHGetFileInfo；跨页来源仅允许当前快照已观测行，详见[增量合同](APPLICATION-ICONS-ADAPTERS.md)。
+
 ## 全页网格列宽与排序（2026-10-23）
 
 通过 GitHub API 实际读取 TanStack/table `v8.21.3`，固定提交 `c66b60aa6a6eac930ba8b8e26b7164679ea4feb5` 的 [列宽指南](https://github.com/TanStack/table/blob/c66b60aa6a6eac930ba8b8e26b7164679ea4feb5/docs/guide/column-sizing.md) 与 [React列宽示例](https://github.com/TanStack/table/blob/c66b60aa6a6eac930ba8b8e26b7164679ea4feb5/examples/react/column-sizing/src/main.tsx)。成熟模式包括独立columnSizing状态、minSize/maxSize约束、标题与单元格共用getSize像素值、独立调整柄及双击resetSize；指南区分onChange即时反馈和onEnd提交以避免React拖动卡顿。采用这些交互/状态原则，在现有DataTable与TanStack Virtual中接入，不为少量交互迁移到新依赖；拖动临时状态与持久保存分离。

@@ -34,6 +34,9 @@ internal sealed class NetworkCollector
             for (var i = 0; i < table->NumEntries; i++)
             {
                 var row = table->Table[i];
+                // NDIS hardware identity is authoritative; aliases/vendor names are not.
+                // Retain disconnected hardware so its actual state remains visible.
+                if (!row.InterfaceAndOperStatusFlags.HardwareInterface || row.InterfaceAndOperStatusFlags.FilterInterface || row.Type is 24 or 131) continue;
                 var id = row.InterfaceLuid.Value;
                 var up = (int)row.OperStatus == 1;
                 var unavailable = new Dictionary<string, Unavailable>();
@@ -55,7 +58,7 @@ internal sealed class NetworkCollector
                     row.ReceiveLinkSpeed.ToString(CultureInfo.InvariantCulture), row.TransmitLinkSpeed.ToString(CultureInfo.InvariantCulture),
                     row.InOctets.ToString(CultureInfo.InvariantCulture), row.OutOctets.ToString(CultureInfo.InvariantCulture), receive, send, unavailable));
             }
-            var included = result.Where(row => row.Status == "IfOperStatusUp" && !row.IsLoopback && !row.IsTunnel).ToArray();
+            var included = result.Where(row => row.Status == "IfOperStatusUp").ToArray();
             system.NetworkInterfaceCount = included.Length;
             var beforeIncluded = _previous?.Where(row => row.Value.Up).Select(row => row.Key).ToHashSet();
             // A topology change invalidates only the aggregate for one sample; individual stable interfaces remain valid.
@@ -66,7 +69,7 @@ internal sealed class NetworkCollector
                 system.NetworkSendBytesPerSecond = included.Sum(row => row.SendBytesPerSecond!.Value);
             }
             else system.Unavailable["networkReceiveBytesPerSecond"] = system.Unavailable["networkSendBytesPerSecond"] = included.Length == 0
-                ? new("notCollected", "未发现活动的非回环、非隧道网络接口。") : NativeSupport.WarmingUp;
+                ? new("notCollected", "未发现处于Up状态的真实硬件网络适配器。") : NativeSupport.WarmingUp;
             _previous = current;
             _tick = tick;
             return result.OrderByDescending(row => row.IsHardware).ThenBy(row => row.Alias, StringComparer.OrdinalIgnoreCase).ToArray();

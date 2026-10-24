@@ -1,5 +1,7 @@
 # 后端 API 合同
 
+当前全页图标/硬件网卡合同见[APPLICATION-ICONS-ADAPTERS.md](APPLICATION-ICONS-ADAPTERS.md)。新增GET application-icon的kind/id参数只映射快照真实行，200 PNG/204不可读/400非法/503暂不可用；无新增Web DTO字段。networkAdapters仅HardwareInterface&&!FilterInterface且非回环/隧道，保留断开硬件，总量仅其中Up接口；覆盖下文历史虚拟接口口径。
+
 ## 任务栏右键任务管理器入口增量
 
 详见[IFEO提升修复](IFEO-ELEVATION-FIX.md)。GET `desktop/task-manager-integration`实时查询HKLM64 IFEO，返回`{status:disabled|enabled|migrationRequired|conflict|unavailable,enabled:boolean|null,ownsDebugger,migrationRequired,canRepair,canRead,canWrite:boolean|null,canEnable,canDisable,executableAvailable,scope:machine,executablePath,registrationCommand,currentDebugger:string|null,useFilter:uint|null,revision,checkedAtUtc,conflictReason,readError,writeError}`。无读取权限/未知不当作未接管；实际SET_VALUE或父键CREATE_SUB_KEY权限独立探测，GET不写注册表。executablePath为同目录Launcher；Host的原生窗口复用验证仍使用Host路径。executableAvailable同时要求Launcher与Host存在。

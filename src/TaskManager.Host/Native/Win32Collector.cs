@@ -15,7 +15,10 @@ using Windows.Win32.System.Threading;
 namespace TaskManager.Host.Native;
 
 internal sealed record ProcessCounters(ulong? Cpu, ulong? Read, ulong? Write, long Tick);
-internal sealed record ProcessMetadata(string? Path, string? Publisher, string? UserName, Dictionary<string, Unavailable> Unavailable);
+internal sealed record ProcessMetadata(string? Path, string? Publisher, string? UserName, Dictionary<string, Unavailable> Unavailable)
+{
+    public string? ApplicationUserModelId { get; init; }
+}
 internal sealed record RawCollection(SystemDto System, List<ProcessDto> Processes, Dictionary<string, ProcessCounters> Counters, IReadOnlyList<NetworkAdapterDto> NetworkAdapters);
 
 internal sealed class Win32Collector : IDisposable
@@ -99,6 +102,7 @@ internal sealed class Win32Collector : IDisposable
             SessionId = basic.SessionId, Unavailable = unavailable };
         var metadata = _metadata.Read(handle, basic.Pid, identity);
         row.Path = metadata.Path;
+        row.ApplicationUserModelId = metadata.ApplicationUserModelId;
         row.Publisher = metadata.Publisher;
         row.UserName = metadata.UserName;
         foreach (var missing in metadata.Unavailable) unavailable[missing.Key] = missing.Value;

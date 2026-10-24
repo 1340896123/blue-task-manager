@@ -1,5 +1,7 @@
 # 真实链路验收矩阵
 
+全页应用图标/真实网络适配器增量采用[APPLICATION-ICONS-ADAPTERS.md](APPLICATION-ICONS-ADAPTERS.md)的I01～I07，并回归A07/B19及相关L/G项目；不以构建替代API和正式Electron截图。
+
 ## Windows 11 全页标准布局增量（L系列）
 
 当前规格见 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md) 和 [MASTER](../design-system/task-manager/MASTER.md)。覆盖全部八页，使用生产真实Windows采集，不mock业务数据。以下覆盖旧A05的常驻状态栏要求；异常/暂停/冻结/最后时刻的可发现性仍必须验证。

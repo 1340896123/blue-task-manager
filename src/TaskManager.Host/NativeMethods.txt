@@ -54,6 +54,13 @@ SERVICE_QUERY_CONFIG
 SERVICE_QUERY_STATUS
 SC_MANAGER_CONNECT
 SHGetFileInfoW
+GetApplicationUserModelId
+SHCreateItemInKnownFolder
+IShellItemImageFactory
+DeleteObject
+GetObjectW
+DIBSECTION
+SearchPathW
 DestroyIcon
 ShellExecuteExW
 SHOpenFolderAndSelectItems

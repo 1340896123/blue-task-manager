@@ -54,6 +54,10 @@ public sealed class TaskManagerController(SnapshotService snapshots, ProcessActi
     public async Task<IActionResult> Icon(uint pid, [FromQuery] string creationTimeFileTime)
     { var png = await icons.ReadAsync(pid, creationTimeFileTime); return png is null ? NoContent() : File(png, "image/png"); }
 
+    [HttpGet("application-icon")]
+    public async Task<IActionResult> ApplicationIcon([FromQuery] string kind, [FromQuery] string id)
+    { var png = await icons.ReadApplicationAsync(kind, id, snapshots.Current); return png is null ? NoContent() : File(png, "image/png"); }
+
     [HttpPost("processes/{pid:long}/priority")]
     public IActionResult Priority(uint pid, PriorityRequest request) => Ok(management.Priority(pid, request));
 

@@ -71,6 +71,7 @@ if (args[0] == "network-counters")
             {
                 var row = table->Table[i];
                 rows.Add(new { id = row.InterfaceLuid.Value.ToString(), alias = row.Alias.ToString(), hardware = row.InterfaceAndOperStatusFlags.HardwareInterface,
+                    filter = row.InterfaceAndOperStatusFlags.FilterInterface, type = row.Type, status = row.OperStatus.ToString(), description = row.Description.ToString(),
                     receivedBytes = row.InOctets.ToString(), sentBytes = row.OutOctets.ToString(), receiveLinkSpeed = row.ReceiveLinkSpeed.ToString(), transmitLinkSpeed = row.TransmitLinkSpeed.ToString() });
             }
             Console.WriteLine(JsonConvert.SerializeObject(rows));

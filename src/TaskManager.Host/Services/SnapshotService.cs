@@ -25,7 +25,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     {
         ["processes"] = new(true, "CsWin32 Toolhelp / GetProcessTimes / PSAPI / GetProcessIoCounters"),
         ["system"] = new(true, "CsWin32 GetSystemTimes / GlobalMemoryStatusEx / GetPerformanceInfo / GetTickCount64"),
-        ["network"] = new(true, "CsWin32 GetIfTable2：活动非回环、非隧道网卡总量，可能含虚拟接口"),
+        ["network"] = new(true, "CsWin32 GetIfTable2：仅Up状态真实硬件适配器总量；排除过滤、虚拟、回环和隧道接口"),
         ["services"] = new(true, "CsWin32 SCM EnumServicesStatusEx"),
         ["users"] = new(true, "CsWin32 WTS + 进程令牌 SID，按明确用户/会话聚合"),
         ["startup"] = new(true, "只读 Registry Run/RunOnce + Startup 文件夹"),
@@ -34,7 +34,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         ["processConnections"] = new(true, "CsWin32 GetExtendedTcpTable/GetExtendedUdpTable IPv4/IPv6 OWNER_PID；端点不是吞吐"),
         ["processPriority"] = new(true, "CsWin32 SetPriorityClass/GetPriorityClass，五档非实时优先级"),
         ["processTree"] = new(true, "Toolhelp真实关系/FILETIME身份/同句柄预检/叶到根退出确认"),
-        ["processIcons"] = new(true, "CsWin32 SHGetFileInfo / DestroyIcon；独立COM STA按需PNG"),
+        ["processIcons"] = new(true, "CsWin32 SHGetFileInfo / AppsFolder IShellItemImageFactory；独立COM STA按需PNG，覆盖进程/历史/启动/服务"),
         ["serviceControl"] = new(true, "CsWin32 SCM；最小动作权限、同句柄状态/PID核验、15秒有界观察", "成功取决于当前用户权限，不自动提权或停止依赖服务。"),
         ["shellLocations"] = new(true, "CsWin32 Shell公开接口/固定Windows系统入口"),
         ["efficiency"] = new(true, "CsWin32 ProcessPowerThrottling + SetPriorityClass + 原生读回", "每个目标需按身份读取实际能力；外部效率模式不覆盖，没有恢复基线不关闭。"),
@@ -42,7 +42,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         ["processGpu"] = new(true, "CsWin32 PDH English GPU Engine；最忙单引擎，两样本与创建身份校验", "需驱动提供有效计数器；无实例、预热或受限时null并给原因。"),
         ["gpuAdapters"] = new(true, "CsWin32 PDH；同适配器引擎先跨PID汇总，再取最忙引擎，含软件适配器", "按计数器LUID/phys索引标识；phys索引不是Windows GPU编号或实体硬件保证，真实DXGI描述单独匹配。"),
         ["gpuIdentity"] = new(true, "CsWin32 DXGI CreateDXGIFactory1 / IDXGIAdapter1.GetDesc1，按完整AdapterLuid精确匹配", "描述/软件标志按实际读取，失败不影响PDH指标；不推断Windows GPU编号。"),
-        ["networkAdapters"] = new(true, "CsWin32 GetIfTable2；按LUID逐接口差分，包含真实硬件/虚拟/回环/隧道标记"),
+        ["networkAdapters"] = new(true, "CsWin32 GetIfTable2；HardwareInterface且非FilterInterface、非回环/隧道，仅真实硬件；断开硬件保留原状态"),
         ["diskActivity"] = new(true, "CsWin32 PDH English PhysicalDisk；100-% Idle Time", "系统活动百分比为最忙物理磁盘；系统读写为非_Total实例吞吐之和，进程I/O不参与。")
     };
 
@@ -222,6 +222,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
             if (!_history.TryGetValue(process.Identity, out var history)) _history[process.Identity] = history = new(process, capturedAt);
             history.IsRunning = true;
             history.LastObserved = capturedAt;
+            history.IconPath ??= process.Path;
+            history.ApplicationUserModelId ??= process.ApplicationUserModelId;
             if (raw.Counters.TryGetValue(process.Identity, out var current))
             {
                 if (_historyPrevious.TryGetValue(process.Identity, out var previous)) history.Add(previous, current);
@@ -256,6 +258,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         public string Identity { get; } = process.Identity;
         private uint Pid { get; } = process.Pid;
         private string Name { get; } = process.Name;
+        public string? IconPath { get; set; } = process.Path;
+        public string? ApplicationUserModelId { get; set; } = process.ApplicationUserModelId;
         private DateTime FirstObserved { get; } = timestamp;
         public DateTime LastObserved { get; set; } = timestamp;
         public bool IsRunning { get; set; }
@@ -271,6 +275,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
             if (previous.Read.HasValue && current.Read >= previous.Read) Read += current.Read.Value - previous.Read.Value;
             if (previous.Write.HasValue && current.Write >= previous.Write) Write += current.Write.Value - previous.Write.Value;
         }
-        public ProcessHistoryDto ToDto() => new(Identity, Pid, Name, FirstObserved, LastObserved, IsRunning, HasCpu ? Cpu.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, HasRead ? Read.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, HasWrite ? Write.ToString(System.Globalization.CultureInfo.InvariantCulture) : null);
+        public ProcessHistoryDto ToDto() => new(Identity, Pid, Name, FirstObserved, LastObserved, IsRunning, HasCpu ? Cpu.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, HasRead ? Read.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, HasWrite ? Write.ToString(System.Globalization.CultureInfo.InvariantCulture) : null)
+        { IconPath = IconPath, ApplicationUserModelId = ApplicationUserModelId };
     }
 }
