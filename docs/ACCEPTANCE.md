@@ -1,5 +1,9 @@
 # 真实链路验收矩阵
 
+## 网络吞吐补全（N系列）
+
+规格与N01～N08完整矩阵见 [NETWORK-THROUGHPUT.md](NETWORK-THROUGHPUT.md)，结果记于 `NETWORK-THROUGHPUT-RESULTS.md`。必须包含真实专用TCP/UDP IPv4及可用IPv6收发、空闲归零、完整身份/新进程预热、暂停恢复/周期变化、浏览器排序详情CSV和正式Electron尺寸/125%截图、开销及本实例ETW会话释放。权限/丢失/不支持/过期不得变0；无法实际触发分支记未执行，fixture不能替代真实成功。网卡仍为硬件GetIfTable2，进程ETW与网卡合计不要求相等。仅清理测试创建身份/端点，不触碰用户ETW会话。该增量覆盖旧A系列“逐进程网络未接入”的断言。
+
 ## HWiNFO 与 CPU 图表增量（H系列）
 
 规格见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)，本次结果见 [HWINFO-CPU-ACCEPTANCE.md](HWINFO-CPU-ACCEPTANCE.md)。真实业务链不能使用伪造映射/fixture代替；本机无HWiNFO时明确记录成功分支未执行。

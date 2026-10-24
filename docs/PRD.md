@@ -1,5 +1,7 @@
 # 产品需求：蓝域任务管理器
 
+网络吞吐补全增量（2026-10-25）：接入逐进程 ETW TCP/UDP IPv4/IPv6 接收、发送、合计速率及独立来源状态，覆盖进程/详细信息网格与进程详情；硬件网卡继续 GetIfTable2 原有语义。规格见 [NETWORK-THROUGHPUT.md](NETWORK-THROUGHPUT.md)，N系列验收。此增量覆盖下文历史“逐进程网络未接入/不在范围”条款，不能用 I/O 或连接数代替。
+
 视觉层级增量（2026-10-24）：根据“太单一、标题不突出”的反馈，强化八页标题、设置分组、资源汇总与选中层级，保持 Windows 11 标准布局和真实数据链。审查、排版 Token 与本轮 V 系列验收见 [VISUAL-HIERARCHY.md](VISUAL-HIERARCHY.md)。
 
 HWiNFO / CPU图表增量（2026-10-24）：CPU主图双击切换“总体使用率 / 逻辑处理器”，提供键盘等效入口并持久偏好，逐CPU来自真实Windows PDH。增加可选只读HWiNFO SM2传感器视图，保留实际分组/原名/单位及当前/最小/最大/平均值，缺失/过期明确。范围见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)，验收采用H系列；不自动安装/配置HWiNFO，不猜测传感器与逻辑CPU对应。

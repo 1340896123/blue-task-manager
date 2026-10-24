@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 逐进程网络吞吐（2026-10-25）
+
+实际通过GitHub API/raw核验SystemInformer固定提交 `9f257e3b76c9af9ae598968070686561f5ec66b9` 的 `plugins/ExtendedTools/etwmon.c`、`etwstat.c` 和 `phnt/include/ntwmi.h`：Windows8+独立命名系统logger，NETWORK_TCPIP，TCP/UDP IPv4/IPv6从负载PID/TransferSize收发累计；事件头PID不可替代。微软SystemTraceProvider文档确认独立Wnode.Guid/有限槽位，TCP/UDP MOF与事件版本核验原生字段。采用公开ETW/CsWin32、身份/完整窗/丢事件状态、有界后台及仅本实例清理；不复制源码，不接管其他ETW会话，不引入驱动。固定链接、实际源位置、字段和N系列验收完整记录于 [NETWORK-THROUGHPUT.md](NETWORK-THROUGHPUT.md)。
+
 ## HWiNFO 与 CPU 图表（2026-10-24）
 
 固定源码、许可边界和二进制布局核验记录见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)。核验MIT的Hwinfo.SharedMemory.Net `1d09864597f4342e2466880399ad0872892f870a`（只读SM2、可变stride、mutex/头一致性、缓存、pollTime），以及当前MIT的SystemInformer `897116aaeda8c9de1653c50aafd5155cf7f30609` CPU总图/逐CPU持久模式与独立历史；不复制GPL实现、不引入远程协议或驱动。Windows逐CPU采用公开PDH Processor Information；HWiNFO官方入口本次被Cloudflare阻挡，不声称已核验其当前许可时限。
