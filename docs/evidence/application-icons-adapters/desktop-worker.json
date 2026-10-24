@@ -1,0 +1,11 @@
+{
+  "elevated": true,
+  "complete": true,
+  "results": [
+    {
+      "suite": "application-icons-adapters",
+      "durationSeconds": 58.981568599999996,
+      "exitCode": 0
+    }
+  ]
+}

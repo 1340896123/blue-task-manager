@@ -1,0 +1,176 @@
+{
+  "result": "PASS",
+  "sourceCommit": "89e08ab",
+  "acceptanceDate": "2026-10-24",
+  "platform": "Windows x64",
+  "source": "production Release UI → HTTP → JSON.NET → CsWin32; no mock data",
+  "builds": {
+    "solutionRelease": "PASS (0 warnings, 0 errors)",
+    "webTypecheck": "PASS",
+    "webProductionBuild": "PASS",
+    "staticValidation": "PASS",
+    "finalNetworkFixHostRelease": "PASS (0 warnings, 0 errors)",
+    "runtime": "Existing pinned Electron 45 copied to an isolated runtime; dependency versions unchanged."
+  },
+  "suites": {
+    "application-icons-adapters-browser": {
+      "result": "PASS",
+      "assertions": 106,
+      "durationSeconds": 52.7402144,
+      "network": {
+        "nativeCount": 54,
+        "hardwareCount": 2,
+        "upCount": 1,
+        "disconnectedCount": 1,
+        "notPresentExcluded": 3,
+        "excludedCount": 52,
+        "historyPoints": 10
+      },
+      "packagedApp": {
+        "observed": 26,
+        "verified": 1,
+        "nontransparentPixels": 628
+      },
+      "blob": {
+        "requests": 195,
+        "inflight": 0,
+        "maximumInflight": 2,
+        "aborted": 1,
+        "created": 189,
+        "revoked": 0,
+        "live": 189,
+        "maximumLive": 189
+      },
+      "unload": {
+        "created": 189,
+        "revoked": 189,
+        "remaining": 0
+      },
+      "cleanup": {
+        "observedOwnedIdentities": 10,
+        "remainingOwnedIdentities": 0,
+        "listenersReleased": true
+      },
+      "screenshots": 21,
+      "runtimeErrors": 0,
+      "cspErrors": 0
+    },
+    "windows-layout-browser": {
+      "result": "PASS",
+      "assertions": 181,
+      "durationSeconds": 25.2097496,
+      "clean": true,
+      "runtimeErrors": 0
+    },
+    "application-icons-adapters-desktop": {
+      "result": "PASS",
+      "assertions": 118,
+      "durationSeconds": 58.981568599999996,
+      "network": {
+        "nativeCount": 54,
+        "hardwareCount": 2,
+        "upCount": 1,
+        "disconnectedCount": 1,
+        "notPresentExcluded": 3,
+        "excludedCount": 52,
+        "historyPoints": 9
+      },
+      "packagedApp": {
+        "observed": 26,
+        "verified": 1,
+        "nontransparentPixels": 628
+      },
+      "blob": {
+        "requests": 259,
+        "inflight": 0,
+        "maximumInflight": 2,
+        "aborted": 2,
+        "created": 252,
+        "revoked": 22,
+        "live": 230,
+        "maximumLive": 231
+      },
+      "unload": {
+        "created": 252,
+        "revoked": 252,
+        "remaining": 0
+      },
+      "cleanup": {
+        "observedOwnedIdentities": 12,
+        "remainingOwnedIdentities": 0,
+        "listenersReleased": true
+      },
+      "screenshots": 29,
+      "runtimeErrors": 0,
+      "cspErrors": 0
+    },
+    "windows-layout-desktop": {
+      "result": "PASS",
+      "assertions": 246,
+      "durationSeconds": 34.6148032,
+      "clean": true,
+      "runtimeErrors": 0
+    },
+    "ui-smoke": {
+      "result": "PASS",
+      "assertions": 36,
+      "durationSeconds": 12.2813186
+    },
+    "recovery-e2e": {
+      "result": "PASS",
+      "assertions": 4,
+      "durationSeconds": 6.9568384
+    },
+    "desktop-e2e": {
+      "result": "PASS",
+      "assertions": 42,
+      "durationSeconds": 23.8724325
+    }
+  },
+  "nativeBaseline": {
+    "api": {
+      "result": "PASS",
+      "assertions": 78
+    },
+    "metadata": {
+      "result": "PASS",
+      "assertions": 5
+    }
+  },
+  "nativeTelemetryFinal": {
+    "result": "PASS",
+    "assertions": 24,
+    "durationSeconds": 52.189444,
+    "samples": 27,
+    "pdhSamples": 27,
+    "samplingMs": {
+      "p50": 46.6824,
+      "p95": 65.8535
+    },
+    "pdhCollectionMs": {
+      "p50": 3.6865,
+      "p95": 7.3557
+    },
+    "pdhQueryMs": {
+      "p50": 0.6956,
+      "p95": 1.345
+    },
+    "cpuMachinePercent": 0.3427029772506157,
+    "handles": {
+      "before": 614,
+      "after": 613
+    },
+    "networkAdapters": 2,
+    "source": "production CsWin32 PDH/GetIfTable2; independent Get-Counter and native probe; no mocks"
+  },
+  "limitations": [
+    "Real observed application count remained below 512; no artificial data was created to exhaust the LRU.",
+    "Pixel equality uses opaque pixels and exact alpha silhouette between two Windows icon APIs; transparent/antialiased RGB conversion differs."
+  ],
+  "safety": {
+    "serviceControlWrites": 0,
+    "ifeoWrites": 0,
+    "fixtures": "Unique real Startup .lnk, dedicated Host and workload identities; cleanup verified by creation identity and target path."
+  },
+  "totalAssertions": 840
+}
