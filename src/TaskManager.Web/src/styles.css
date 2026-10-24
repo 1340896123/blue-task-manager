@@ -36,6 +36,7 @@
   --width-brand: 280px; --width-brand-min: 224px; --width-brand-compact: 208px; --width-brand-small: 160px; --width-search-compact: 420px; --width-action-min: 88px; --width-toast: 660px; --size-status-dot: 6px;
   --height-resource-tile: 72px; --width-resource-sparkline: 64px; --height-resource-sparkline: 40px;
   --height-performance-chart: 280px; --height-performance-chart-compact: 220px;
+  --width-cpu-chart-min: 140px; --height-cpu-chart: 112px;
   font-family: var(--font-ui); font-size: var(--font-size-body); color: var(--color-text); background: var(--color-app);
   font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased;
 }
@@ -408,6 +409,24 @@ select { min-width: var(--width-setting-control); min-height: var(--height-contr
 .resource-explanation { margin-top: var(--space-5); font-size: var(--font-size-caption); color: var(--color-text-secondary); }
 .resource-explanation summary { cursor: pointer; min-height: var(--height-menu-item); padding-block: var(--space-2); }
 .resource-explanation p { margin-top: var(--space-2); overflow-wrap: anywhere; }
+.cpu-graph-controls { display: flex; align-items: center; gap: var(--space-3); }
+.cpu-graph-controls label { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.cpu-graph-controls select { min-height: var(--height-control); padding-inline: var(--space-2); background: var(--color-surface); border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-control); }
+.cpu-graph-hint, .cpu-grid-caption { margin-block: var(--space-2); color: var(--color-text-secondary); font-size: var(--font-size-caption); }
+.cpu-chart-interaction { min-width: 0; }
+.logical-cpu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--width-cpu-chart-min), 1fr)); gap: var(--space-3); }
+.logical-cpu-chart { height: var(--height-cpu-chart); display: flex; flex-direction: column; min-width: 0; }
+.logical-cpu-chart header { display: flex; justify-content: space-between; gap: var(--space-1); padding-bottom: var(--space-1); font-size: var(--font-size-caption); font-variant-numeric: tabular-nums; }
+.resource-content .logical-cpu-chart h3 { font-size: var(--font-size-caption); font-weight: var(--font-weight-regular); }
+.logical-cpu-chart .dense-chart { flex: 1; min-height: 0; }
+.resource-content .logical-cpu-chart .resource-chart { height: 100%; }
+.dense-chart .chart-wait { inset: 0; }
+.cpu-chart-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-3); font-size: var(--font-size-caption); font-variant-numeric: tabular-nums; }
+.hwinfo-content { display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.hwinfo-content .performance-heading { flex: 0 0 auto; margin-bottom: var(--space-3); }
+.hwinfo-source { flex: 0 1 auto; overflow: auto; max-height: 50%; margin-bottom: var(--space-3); color: var(--color-text-secondary); font-size: var(--font-size-caption); }
+.hwinfo-source p { margin-bottom: var(--space-1); overflow-wrap: anywhere; }
+.hwinfo-source strong { color: var(--color-text); }
 .settings-page { padding: var(--space-6); background: var(--color-surface); }
 .setting-row { min-height: var(--height-setting-row); padding: var(--space-3) 0; border: 0; border-bottom: var(--border-width) solid var(--color-border); border-radius: 0; margin: 0; background: transparent; }
 .setting-row strong { font-size: var(--font-size-body); }

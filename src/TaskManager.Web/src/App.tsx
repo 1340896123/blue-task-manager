@@ -30,7 +30,7 @@ export default function App() {
   const navigationCollapsed = collapsed || (compactNavigation && !compactExpanded);
   useEffect(() => { const media = window.matchMedia('(max-width: 1007px)'); const change = () => { setCompactNavigation(media.matches); setCompactExpanded(false); }; media.addEventListener('change', change); return () => media.removeEventListener('change', change); }, []);
   const processPage = page === 'processes' || page === 'details';
-  const searchLabel = processPage ? '搜索名称、发布者、路径或 PID' : ({ services: '搜索服务名称、显示名称或 PID', users: '搜索用户名、会话名称或会话 ID', startup: '搜索启动名称、来源或命令', history: '搜索进程名称或 PID', performance: '搜索资源类别、设备名称或标识', settings: '搜索设置、说明、来源或能力' } as const)[page as Exclude<Page, 'processes' | 'details'>];
+  const searchLabel = processPage ? '搜索名称、发布者、路径或 PID' : ({ services: '搜索服务名称、显示名称或 PID', users: '搜索用户名、会话名称或会话 ID', startup: '搜索启动名称、来源或命令', history: '搜索进程名称或 PID', performance: '搜索资源、设备或 HWiNFO 传感器读取项', settings: '搜索设置、说明、来源或能力' } as const)[page as Exclude<Page, 'processes' | 'details'>];
   const paused = snapshot?.paused ?? bootstrap?.settings.paused ?? false; const intervalMs = snapshot?.intervalMs ?? bootstrap?.settings.intervalMs ?? 1000;
   const title = navigation.find(item => item.id === page)!.label;
   const notify = (text: string, error = false) => setNotice({ text, error });

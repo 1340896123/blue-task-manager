@@ -1,4 +1,4 @@
-import type { Bootstrap, Process, Snapshot } from './types';
+import type { Bootstrap, HwInfoSensors, Process, Snapshot } from './types';
 export class ApiError extends Error {
   constructor(message: string, public code: string, public status: number, public nativeErrorCode?: number | null) { super(message); }
 }
@@ -29,6 +29,7 @@ export const api = {
   async bootstrap(signal?: AbortSignal) { const { value } = await request<Bootstrap>('bootstrap', {}, { signal }); token = value.token; return value; },
   async get<T>(route: string, signal?: AbortSignal, timeoutMs?: number | null) { return (await request<T>(route, {}, { signal, timeoutMs })).value; },
   snapshot(etag: string | null, signal?: AbortSignal) { return request<Snapshot>('snapshot', { headers: etag ? { 'If-None-Match': etag } : {} }, { signal }, 'snapshot'); },
+  async hwInfoSensors(signal: AbortSignal) { return (await request<HwInfoSensors>('hwinfo/sensors', {}, { signal })).value; },
   async applicationIcon(kind: ApplicationIconKind, id: string, signal: AbortSignal) { return (await request<Blob | null>(`application-icon?kind=${kind}&id=${encodeURIComponent(id)}`, {}, { signal, timeoutMs: 5000 }, 'blob')).value; },
   async post<T>(route: string, body: unknown, signal?: AbortSignal, timeoutMs?: number | null): Promise<T> {
     if (!token) await api.bootstrap(signal);

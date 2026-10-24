@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, errorMessage } from '../api';
 import type { Page, PagePreference, PreferencesResult, UiPreferences } from '../types';
-export const defaultPage: PagePreference = { query: '', sortKey: 'name', sortDirection: 'ascending', visibleColumns: null, columnWidths: null, filters: null, scrollTop: 0, selectedIdentity: null, resourceType: null, resourceId: null };
+export const defaultPage: PagePreference = { query: '', sortKey: 'name', sortDirection: 'ascending', visibleColumns: null, columnWidths: null, filters: null, scrollTop: 0, selectedIdentity: null, resourceType: null, resourceId: null, cpuGraphMode: 'total' };
 export const defaultPreferences: UiPreferences = { version: 1, density: 'compact', sidebarCollapsed: false, processView: 'flat', searchQuery: '', pages: {} };
 export function usePreferences() {
   const [preferences, setPreferences] = useState<UiPreferences>(defaultPreferences); const [ready, setReady] = useState(false); const [warning, setWarning] = useState<string | null>(null);
