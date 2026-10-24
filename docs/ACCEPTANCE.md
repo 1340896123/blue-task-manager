@@ -1,5 +1,22 @@
 # 真实链路验收矩阵
 
+## HWiNFO 与 CPU 图表增量（H系列）
+
+规格见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)。真实业务链不能使用伪造映射/fixture代替；本机无HWiNFO时明确记录成功分支未执行。
+
+| ID | 真实场景 | 通过条件 |
+|---|---|---|
+| H01 | Host Release、Web类型/生产构建及旧偏好 | 构建成功；JSON.NET/CsWin32边界保持；旧配置默认total，合法模式持久化、非法值拒绝；历史/缓冲有界 |
+| H02 | 真实PDH至少两个样本，与独立Windows计数器对照 | 每项真实group/index、0～100%；无_Total/组总计；预热/无效/重置不伪0，不复制总体值；独立时间去重 |
+| H03 | CPU主图双击两次、原生模式控件、跨页及重启 | 总图/逐逻辑处理器图双向切换，磁贴保持总量，同一历史不清空，偏好保存；键盘等效、可见焦点/模式名称 |
+| H04 | HWiNFO未运行或共享内存未提供 | 真实API/性能入口明确缺失原因及开启共享内存说明，列表无伪数据，Windows其他资源继续采样；不自动安装/配置 |
+| H05 | 用户已有HWiNFO真实SM2可用 | 完整分组/身份/原名/单位/current/min/max/avg与HWiNFO对应；pollTime为真实来源；非有限值明确缺失；不把传感器名猜成逻辑CPU编号 |
+| H06 | 真实来源暂停/停止/恢复与应用暂停/恢复 | 未更新达到阈值stale、当前值不伪新；映射恢复可再读、句柄释放；不为测试关闭用户HWiNFO，无法执行时标未执行 |
+| H07 | 960×640、1380×860、实际Electron125%、reduced-motion | 逐CPU网格只内部纵向滚动、无页面横溢，0～100%及编号可读；传感器表/搜索可用；HWiNFO无伪小图 |
+| H08 | 正式Electron真实窗口与回归 | 生产UI→HTTP→JSON.NET→CsWin32→Windows；总图/逐CPU/HWiNFO状态截图，命令/Git SHA/未执行条件可复现；仅精确清理本次测试身份，无本实例残留 |
+
+另可用独立二进制协议fixture检查坏头、stride/越界/溢出、未知类型与非有限值，但不将其记为H05/H06真实成功。回归相关A07/A14/A17/A18、B14/B16及L04/L08/L10；不以构建代替桌面与真实采集证据。
+
 全页应用图标/真实网络适配器增量采用[APPLICATION-ICONS-ADAPTERS.md](APPLICATION-ICONS-ADAPTERS.md)的I01～I07，并回归A07/B19及相关L/G项目；不以构建替代API和正式Electron截图。
 
 ## Windows 11 全页标准布局增量（L系列）

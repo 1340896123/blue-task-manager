@@ -1,5 +1,7 @@
 # 产品需求：蓝域任务管理器
 
+HWiNFO / CPU图表增量（2026-10-24）：CPU主图双击切换“总体使用率 / 逻辑处理器”，提供键盘等效入口并持久偏好，逐CPU来自真实Windows PDH。增加可选只读HWiNFO SM2传感器视图，保留实际分组/原名/单位及当前/最小/最大/平均值，缺失/过期明确。范围见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)，验收采用H系列；不自动安装/配置HWiNFO，不猜测传感器与逻辑CPU对应。
+
 Windows 标准布局增量（2026-10-24）：用户要求全部八页完整采用 Windows 11 左导航版任务管理器布局；以 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md) 和 MASTER 当前增量为准，覆盖旧版可选卡片/横向资源页签/多层操作栏/常驻底部状态栏。保留真实Windows数据、共享搜索、全部列排序调宽和已实现动作，不用伪字段或空按钮复刻外观；验收采用 L 系列。
 
 网格交互增量（2026-10-23）：所有已有数据网格支持列宽拖动和全部列头排序，含进程详情 TCP/UDP 表；逐页覆盖、持久偏好和验收见 [GRID-INTERACTIONS.md](GRID-INTERACTIONS.md)。

@@ -1,5 +1,7 @@
 # 架构与数据合同
 
+> HWiNFO / CPU当前增量见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)。逐CPU复用PDH worker/长期query及独立时间轴；HWiNFO以CsWin32只读SM2映射，有界校验/同步/缓存并明确缺失/过期。快照只带传感器摘要，完整列表由同源GET读取缓存，不向120点历史复制全部传感器，不增加驱动或私有传输协议。
+
 > 当前界面结构增量见 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md)：全部八页采用Windows 11标准任务管理器布局。复用既有真实API/身份保护/DataTable，单一命令栏承载主动作，次动作进更多；性能为统一逐资源磁贴列，设置为原生分组。普通/资源汇总表头分别读取36/58px Token，虚拟滚动估算与实际DOM一致；不为布局新增采集协议或虚构字段。
 
 > 最新管理员/安装增量见 [ADMIN-INSTALLER.md](ADMIN-INSTALLER.md)：Host-first 入口嵌入 requireAdministrator，并在 entry/HTTP/Electron 初始化前使用 CsWin32 验证实际 TokenElevation，DLL/headless 不能绕过。以自包含 win-x64 publish 完整目录交给标准 NSIS/MUI2 每机安装；不改变官方 Electron.NET 生命周期和 renderer sandbox。下文“无需安装器/验收无需管理员”保留为历史基线，当前以增量及 R 系列验收为准。

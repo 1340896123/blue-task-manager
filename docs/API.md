@@ -1,5 +1,7 @@
 # 后端 API 合同
 
+HWiNFO / CPU增量以 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md) 的HTTP与DTO为准：增加snapshot.logicalProcessors[]、telemetry.cpuCapturedAtUtc、历史cpuTelemetryCapturedAtUtc/logicalProcessors[]及snapshot.hwInfo摘要；GET `/api/hwinfo/sensors`返回缓存分组与真实读取项。偏好增加cpuGraphMode=total|logicalProcessors（旧配置默认total），resourceType允许hwinfo；JSON.NET/null与原因/同源边界不变。
+
 当前全页图标/硬件网卡合同见[APPLICATION-ICONS-ADAPTERS.md](APPLICATION-ICONS-ADAPTERS.md)。新增GET application-icon的kind/id参数只映射快照真实行，200 PNG/204不可读/400非法/503暂不可用；无新增Web DTO字段。networkAdapters仅HardwareInterface&&!FilterInterface且非回环/隧道，保留断开硬件，总量仅其中Up接口；覆盖下文历史虚拟接口口径。
 
 ## 任务栏右键任务管理器入口增量

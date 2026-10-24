@@ -1,5 +1,11 @@
 # Task Manager — Windows Blue Design System
 
+## 2026-10-24 CPU 图表模式与 HWiNFO 增量
+
+- CPU主图双击切换总体/逐逻辑处理器；可见原生选择控件有相同状态、键盘操作与焦点，复用height-control/body/caption/accent/selection。小图固定0～100%，有真实处理器组/索引及当前值；未知原因不只依赖颜色。
+- 逐CPU网格复用space-2/3、chart-line/chart-grid/control-border，单格最小宽度140px、高度112px，映射为 `--width-cpu-chart-min:140px`、`--height-cpu-chart:112px`。只在资源内容区纵向滚动，不挤出页面。
+- HWiNFO单资源入口复用resource-tile，显示状态/读取数量，不造小曲线；右侧用既有密度表格与分组/来源说明，数值tabular-nums，单位可读，min/max/avg明确是HWiNFO会话。无新配色、字号、阴影或独立卡片墙。完整合同见 [HWINFO-CPU-GRAPHS.md](../../docs/HWINFO-CPU-GRAPHS.md)。
+
 ## 2026-10-24 Windows 11 标准布局（当前优先）
 
 用户要求全部八页使用 Windows 标准任务管理器布局。具体逐页结构、列顺序、命令栏及研究来源见 [WINDOWS-LAYOUT.md](../../docs/WINDOWS-LAYOUT.md)。以下几何增量覆盖旧版允许的响应式图表网格、横向资源类别、重复页头、多层操作栏及常驻底部状态栏。已有颜色/数据状态/调宽排序/身份保护继续有效；Windows 蓝色用于选择、图表和热度，主体改为 Windows 中性浅色结构面。

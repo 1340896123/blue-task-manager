@@ -1,5 +1,11 @@
 # 开源实现研究与技术决策
 
+## HWiNFO 与 CPU 图表（2026-10-24）
+
+固定源码、许可边界和二进制布局核验记录见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)。核验MIT的Hwinfo.SharedMemory.Net `1d09864597f4342e2466880399ad0872892f870a`（只读SM2、可变stride、mutex/头一致性、缓存、pollTime），以及当前MIT的SystemInformer `897116aaeda8c9de1653c50aafd5155cf7f30609` CPU总图/逐CPU持久模式与独立历史；不复制GPL实现、不引入远程协议或驱动。Windows逐CPU采用公开PDH Processor Information；HWiNFO官方入口本次被Cloudflare阻挡，不声称已核验其当前许可时限。
+
+UI/UX Pro Max定向查询keyboard equivalent pointer gestures首次命中移动手势/拖动，未作为双击直接依据；收窄keyboard navigation实际命中Web Keyboard Navigation，采用完整键盘操作/可见焦点。既有Windows Token继续优先，图表模式使用原生选择控件作为双击等效入口，无新页面视觉系统。
+
 ## 全页应用图标与真实硬件网卡（2026-10-24）
 
 本轮实现前核验[TaskExplorer IconExtreactor.cpp](https://github.com/DavidXanatos/TaskExplorer/blob/master/MiscHelpers/Common/IconExtreactor.cpp)的SHGetFileInfo/ExtractIconEx与图标生命周期、[SystemInformer appresolver.c](https://github.com/winsiderss/systeminformer/blob/master/phlib/appresolver.c)的AppsFolder Shell应用枚举、[HardwareDevices netoptions.c](https://github.com/winsiderss/systeminformer/blob/master/plugins/HardwareDevices/netoptions.c)通过MIB_IF_ROW2官方标记描述网卡属性的做法。采用Shell原生应用图标、后台按需提取与有界缓存；打包应用使用公开GetApplicationUserModelId和AppsFolder IShellItemImageFactory，不解析自造协议或移植专有驱动。
