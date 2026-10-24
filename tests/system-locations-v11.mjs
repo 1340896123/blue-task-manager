@@ -1,3 +1,4 @@
+import { clickCommand } from './layout-ui-support.mjs';
 import {spawn,spawnSync} from 'node:child_process';
 import {mkdtemp,mkdir,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -24,7 +25,7 @@ try{
  await until(async()=>(await(await fetch(origin+'/api/health')).json()).ready&&await portOpen(cdp),'system location release ready',45000);
  browser=await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`);await until(()=>browser.contexts()[0]?.pages().length,'system location window');page=browser.contexts()[0].pages()[0];tree=processTree(host.pid);await activate();await page.getByRole('button',{name:'启动应用',exact:true}).click();
  for(const [label,expected] of [['当前用户启动文件夹',path.join(process.env.APPDATA,'Microsoft/Windows/Start Menu/Programs/Startup')],['公共启动文件夹',path.join(process.env.ProgramData,'Microsoft/Windows/Start Menu/Programs/Startup')]]){
-  const before=new Set(windows('class:CabinetWClass',true).map(w=>w.hwnd));const response=page.waitForResponse(r=>r.url().endsWith('/desktop/open-system-location'));await page.getByRole('button',{name:label,exact:true}).click();check((await response).ok(),label+' accepted by real Windows Shell');let matched;
+  const before=new Set(windows('class:CabinetWClass',true).map(w=>w.hwnd));const [response]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/desktop/open-system-location')),clickCommand(page,label)]);check(response.ok(),label+' accepted by real Windows Shell');let matched;
   try{await until(()=>{for(const w of windows('class:CabinetWClass').filter(w=>!before.has(w.hwnd)||/Startup|启动/.test(w.title))){if(shellFolderMatches(w,expected)){matched=w;return true;}}return false;},label+' actual address',12000);}catch{}
   results.push({location:label,accepted:true,actualWindowVerified:Boolean(matched),evidence:matched?'Visible Explorer HWND matches exact official Startup path through standard Shell automation LocationURL':'Shell accepted; exact Windows address not independently exposed in this run'});
   if(matched&&!before.has(matched.hwnd)){created.push(matched);nativeUi(matched,'close');created.pop();}await activate();
@@ -33,7 +34,7 @@ try{
  try{await until(()=>{for(const w of windows('设置').filter(w=>w.title==='设置')){const info=nativeUi(w,'inspect');if(info.elements.some(e=>/启动/.test(e.name))){settings=w;return true;}}return false;},'actual Startup apps Settings heading',15000);}catch{}
  results.push({location:'Windows启动应用设置',accepted:true,actualWindowVerified:Boolean(settings),evidence:settings?'Actual Windows Settings UI contains Startup heading':'Shell accepted; exact Windows page not independently exposed in this run'});
  if(settings&&!settingsBefore.has(settings.hwnd)){created.push(settings);nativeUi(settings,'close');created.pop();}await activate();await page.getByRole('button',{name:'服务',exact:true}).click();
- const serviceBefore=new Set(windows('class:MMCMainFrame',true).map(w=>w.hwnd));const serviceResponse=page.waitForResponse(r=>r.url().endsWith('/desktop/open-system-location'));await page.getByRole('button',{name:'Windows 服务管理器',exact:true}).click();check((await serviceResponse).ok(),'fixed Windows services.msc accepted');let service;
+ const serviceBefore=new Set(windows('class:MMCMainFrame',true).map(w=>w.hwnd));const serviceResponse=page.waitForResponse(r=>r.url().endsWith('/desktop/open-system-location'));await clickCommand(page,'Windows 服务管理器');check((await serviceResponse).ok(),'fixed Windows services.msc accepted');let service;
  try{await until(()=>{service=windows('class:MMCMainFrame').filter(w=>/服务/.test(w.title)).sort((a,b)=>Number(serviceBefore.has(a.hwnd))-Number(serviceBefore.has(b.hwnd)))[0];return Boolean(service);},'actual Services MMC window',15000);}catch{}
  results.push({location:'Windows服务管理器',accepted:true,actualWindowVerified:Boolean(service),evidence:service?'Actual Services MMC native window title/class verified; no service operations':'Shell accepted; Services MMC window not independently visible in this run'});
  if(service&&!serviceBefore.has(service.hwnd)){created.push(service);nativeUi(service,'close');created.pop();}await activate();

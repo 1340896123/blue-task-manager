@@ -1,3 +1,4 @@
+import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -111,7 +112,7 @@ try {
     ['默认进程视图', '默认进程视图', '表格密度'], ['折叠侧栏', '折叠侧栏', '自动采样'],
     ['始终置顶', '始终置顶', '界面缩放'], ['界面缩放', '界面缩放', '始终置顶'],
     ['界面偏好', '界面偏好', '自动采样'], ['Microsoft.Windows.CsWin32', '原生接口', '自动采样'],
-    ['进程详情', '进程详情', '更新速度'], ['任务栏右键中的任务管理器', '任务栏右键中的任务管理器', '表格密度'],
+    ['进程详情', '进程详情', '更新速度'], ['任务栏右键中的任务管理器', '任务管理器入口', '表格密度'],
   ]) {
     await search().fill(query);
     check(await page.getByText(expected, { exact: true }).first().isVisible(), `settings query ${query} reveals its real entry`);
@@ -122,23 +123,24 @@ try {
   await clear(); await navigate('性能');
   for (const label of ['CPU', '内存', '网络', '磁盘', 'GPU']) {
     await search().fill(label);
-    check(await page.getByRole('group', { name: '资源类别' }).getByRole('button', { name: label, exact: true }).isVisible(), `performance category ${label} is searchable`);
+    check(await resourceTiles(page).first().isVisible(), `performance category ${label} is searchable`);
     check(await page.locator('.performance-heading h2').isVisible(), `performance category ${label} preserves real chart or warm-up state`);
   }
   await clear();
-  await page.getByRole('group', { name: '资源类别' }).getByRole('button', { name: '内存', exact: true }).click();
+  await resourceTile(page,'内存').click();
   const snapshot = await get('snapshot');
   const realResources = [
     ...snapshot.networkAdapters.slice(0, 1).flatMap(a => [[a.alias, '网络'], [a.id, '网络']]),
-    ...snapshot.physicalDisks.slice(0, 1).map(d => [d.name, '磁盘']),
+    ...snapshot.physicalDisks.filter(d=>!d.isTotal).slice(0, 1).map(d => [d.name, '磁盘']),
     ...snapshot.gpuAdapters.slice(0, 1).flatMap(g => [[g.description ?? g.adapterLuid, 'GPU'], [g.adapterLuid, 'GPU']]),
   ];
   for (const [query, category] of realResources) {
     await search().fill(query);
-    check(await page.getByRole('group', { name: '资源类别' }).getByRole('button', { name: category, exact: true }).getAttribute('aria-pressed') === 'true', `actual resource identifier selects matching ${category} category`);
-    check(await page.locator('.resource-picker [aria-pressed="true"]').isVisible(), 'actual resource name/identity selects a matching device');
+    await until(async()=>await page.locator('.resource-tile[aria-pressed="true"]').count()===1,'matching actual resource becomes selected');
+    check(await page.locator('.resource-tile[aria-pressed="true"]').count() === 1, `actual resource identifier selects matching ${category} category`);
+    check(await page.locator('.resource-tile[aria-pressed="true"]').isVisible()&&(await page.locator('.resource-tile[aria-pressed="true"]').getAttribute('title')).toLocaleLowerCase().includes(query.toLocaleLowerCase()), 'actual resource name/identity selects the corresponding real device');
     await clear();
-    check(await page.getByRole('group', { name: '资源类别' }).getByRole('button', { name: '内存', exact: true }).getAttribute('aria-pressed') === 'true', 'clearing device search restores the saved memory resource preference');
+    check(await resourceTile(page,'内存').getAttribute('aria-pressed') === 'true', 'clearing device search restores the saved memory resource preference');
   }
   if (!realResources.length) skipped.push('No real adapters/disks/GPUs were enumerated; device-specific searches not executed.');
   await capture('performance-restored');
@@ -174,7 +176,7 @@ try {
     check(await page.locator('tbody tr[data-row-key]').count() === 1, `${name} uses exact numeric PID matching`);
   }
   await page.locator(`tr[data-row-key="${target.identity}"]`).click();
-  await page.getByRole('button', { name: '定位仍运行的进程', exact: true }).click();
+  await clickCommand(page, '定位仍运行的进程');
   await page.locator(`tr[data-row-key="${target.identity}"]`).waitFor();
   check(await search().inputValue() === String(target.pid), 'history navigation applies the verified real process PID globally');
   await locateReplayGuard(`${absent}-history`);
@@ -213,7 +215,7 @@ try {
   check(await search().inputValue() === '', 'explicit shared empty survives restart and never revives the old process query');
   await navigate('性能'); check(await search().inputValue() === '', 'the restored explicit empty remains common on other pages');
   await navigate('设置'); await search().fill('界面偏好');
-  await page.getByRole('button', { name: '恢复默认界面偏好…', exact: true }).click();
+  await page.locator('.setting-buttons').getByRole('button', { name: '恢复默认界面偏好…', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: '恢复默认界面偏好', exact: true }).click();
   check(await search().inputValue() === '', 'restoring default interface preferences clears the shared query');
   for (const size of [{ width: 960, height: 640 }, { width: 1380, height: 860 }]) {

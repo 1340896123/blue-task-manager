@@ -1,3 +1,4 @@
+import { clickCommand } from './layout-ui-support.mjs';
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, cp, rename, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -27,7 +28,8 @@ const capture = async name => { const session = await page.context().newCDPSessi
 async function connect() {
   await until(async () => (await (await fetch(origin + '/api/health')).json()).ready && await portOpen(cdp), 'native release ready', 45000);
   browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`); await until(() => browser.contexts()[0]?.pages().length > 0, 'window created'); page = browser.contexts()[0].pages()[0];
-  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor(); tree = processTree(host.pid);
+  await page.getByRole('table', { name: '进程列表', exact: true }).waitFor(); tree = processTree(host.pid);
+  await until(()=>windows('蓝域').some(window=>tree.some(entry=>entry.pid===window.pid)), 'actual native BrowserWindow becomes visible');
 }
 async function close() {
   const userTasks = new Set(created && alive(created.pid) ? processTree(created.pid).map(p => p.pid) : []); const exact = processTree(host.pid).filter(p => !userTasks.has(p.pid)); await page.getByRole('button', { name: '关闭窗口', exact: true }).click();
@@ -57,10 +59,10 @@ try {
   const response = page.waitForResponse(r => r.url() === origin + '/api/processes/start' && r.request().method() === 'POST'); await dialog.getByRole('button', { name: '运行', exact: true }).click(); created = await (await response).json();
   record(created.pid > 0 && alive(created.pid), 'B11 chosen file creates independently live exact Windows process');
   const row = page.locator(`tr[data-row-key="${created.identity}"]`); await row.waitFor(); await row.click();
-  const csvEvent = page.waitForEvent('download'); await page.getByRole('button',{name:'导出 CSV',exact:true}).click(); const csv = await readFile(await (await csvEvent).path());
+  const [csvDownload] = await Promise.all([page.waitForEvent('download'), clickCommand(page,'导出 CSV')]); const csv = await readFile(await csvDownload.path());
   record(csv.subarray(0,3).equals(Buffer.from([239,187,191])) && csv.toString('utf8').includes(`"'${fileName}"`) && csv.toString('utf8').includes(`"${exe}"`) && csv.toString('utf8').includes('工作集 (bytes)'), 'B07 actual Electron CSV preserves comma path and neutralizes real formula-prefixed executable name with BOM/units');
   const shellBefore = new Set(windows('class:CabinetWClass').map(w => w.hwnd));
-  await page.getByRole('button', { name: '更多进程操作', exact: true }).click(); const locationResponse = page.waitForResponse(r => r.url().endsWith('/file-action')); await page.getByRole('menuitem', { name: '打开文件位置', exact: true }).click(); console.log('file-action:', await (await locationResponse).text());
+  await page.locator('.command-menu > summary').click(); const locationResponse = page.waitForResponse(r => r.url().endsWith('/file-action')); await clickCommand(page, '打开文件位置', {menu:true}); console.log('file-action:', await (await locationResponse).text());
   let explorer, locationInfo;
   await until(() => {
     for (const w of windows('class:CabinetWClass').filter(w => !shellBefore.has(w.hwnd) || w.title.includes('owned,fixture'))) {
@@ -71,18 +73,18 @@ try {
   }, 'actual Explorer selects exact unique owned executable', 30000);
   if (!shellBefore.has(explorer.hwnd)) ownedWindows.push(explorer); record(locationInfo.elements.some(e => e.selected === true && e.name.includes(path.parse(fileName).name)), 'B06 standard Windows Explorer select command visibly selects unique test executable');
   nativeUi(explorer, 'capture', path.join(output, 'v11-native-file-location.png')); images.push('v11-native-file-location.png');
-  nativeUi(windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid)), 'foreground'); await page.bringToFront(); await row.click(); await page.getByRole('button', { name: '更多进程操作', exact: true }).click(); await page.getByRole('menuitem', { name: 'Windows 属性', exact: true }).click();
+  nativeUi(windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid)), 'foreground'); await page.bringToFront(); await row.click(); await page.locator('.command-menu > summary').click(); await clickCommand(page, 'Windows 属性', {menu:true});
   let properties, propInfo;
   await until(() => { properties = windows(path.parse(fileName).name).find(w => w.className === '#32770'); if (!properties) return false; propInfo = nativeUi(properties, 'inspect'); return propInfo.elements.some(e => (e.name ?? '').includes(fileName) || (e.value ?? '').includes(fileName)); }, 'actual Windows properties for exact test file', 30000);
   ownedWindows.push(properties); record(propInfo.elements.some(e => (e.name ?? '').includes(fileName) || (e.value ?? '').includes(fileName)), 'B06 actual Windows property sheet identifies owned filename');
   nativeUi(properties, 'capture', path.join(output, 'v11-native-properties.png')); images.push('v11-native-properties.png');
   nativeUi(properties, 'close'); ownedWindows = ownedWindows.filter(w => w.hwnd !== properties.hwnd); if (!shellBefore.has(explorer.hwnd)) nativeUi(explorer, 'close'); ownedWindows = ownedWindows.filter(w => w.hwnd !== explorer.hwnd); nativeUi(windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid)), 'foreground'); await page.bringToFront();
-  await page.getByRole('button', { name: '设置', exact: true }).click(); await page.getByRole('switch', { name: '始终置顶', exact: true }).click();
+  await page.getByRole('searchbox').fill('');await page.getByRole('button', { name: '设置', exact: true }).click(); await page.getByRole('switch', { name: '始终置顶', exact: true }).click();
   await until(() => main().topmost, 'independent native topmost style'); record(main().topmost, 'B10 actual WS_EX_TOPMOST matches enabled UI readback');
   probe(tree.map(p => `${p.pid}:${p.fileTime}`).join(','), 'resize', 960, 640); await delay(800); await page.keyboard.press('Control+='); await delay(500);
   const state = await (await fetch(origin + '/api/desktop/window-state')).json(); console.log('zoom/bounds', JSON.stringify({state,native:main(),viewport:await page.evaluate(()=>({w:innerWidth,h:innerHeight,dpr:devicePixelRatio}))})); record(state.zoomFactor === 1.25 && main().clientWidth === 960 && main().clientHeight === 640 && await page.evaluate(() => Math.abs(devicePixelRatio-1.25)<.02 && Math.abs(innerWidth-960/1.25)<=1), 'B17 native 960px width and actual Electron 125% zoom combined');
   record(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'B17 960 native window at125% has no document horizontal overflow'); await capture('v11-desktop-960-125-settings.png');
-  await page.getByRole('button', { name: '进程', exact: true }).click(); await row.waitFor(); await row.dblclick();
+  await page.getByRole('button', { name: '进程', exact: true }).click();await page.getByRole('searchbox').fill(String(created.pid)); await row.waitFor(); await row.dblclick();
   record(await dialog.evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1; }), 'B17 live details fit 960 window at125%'); await capture('v11-desktop-960-125-details.png'); await page.keyboard.press('Escape');
   await row.click(); await row.press('Shift+F10'); record(await page.getByRole('menu').evaluate(el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1; }), 'B17 keyboard menu fits combined minimum native window and125%'); await page.keyboard.press('Escape');
   // Observe actual hidden DOM from native minimize; HTTP request scheduling only.
@@ -99,7 +101,7 @@ try {
   const expectedWindow = saved.ui.window; await close(); record(alive(created.pid), 'desktop close does not terminate independently running user task');
   host = start(); await connect(); const restored = main(); const restoredState = await (await fetch(origin + '/api/desktop/window-state')).json();
   console.log('restore dimensions',JSON.stringify({expectedWindow,restored,restoredState})); record(restored.topmost && restored.clientWidth === expectedWindow.width && restored.clientHeight === expectedWindow.height && restoredState.zoomFactor === expectedWindow.zoomFactor && await page.evaluate(()=>Math.abs(devicePixelRatio-1.25)<.02), 'B10 restart restores native size/topmost and actual zoom preferences');
-  await page.keyboard.press('Control+0'); await page.getByRole('button', { name: '设置', exact: true }).click(); await page.getByRole('switch', { name: '始终置顶', exact: true }).click();
+  await page.keyboard.press('Control+0'); await page.getByRole('searchbox').fill('');await page.getByRole('button', { name: '设置', exact: true }).click(); await page.getByRole('switch', { name: '始终置顶', exact: true }).click();
   record(errors.length === 0 && csp.length === 0, 'native desktop workflow has zero renderer exceptions/CSP errors'); await close();
   const report = { result: 'PASS', checkedAtUtc: new Date().toISOString(), assertions: checks.length, checks, screenshots: images, nativeSources: 'CsWin32 common-dialog controls/UI Automation/PrintWindow/extended style/placement', cleanup: 'exact app identities and ports released; only new exact test Shell HWNDs closed; unique owned workload cleaned in finally' };
   await writeFile(path.join(output, 'native-desktop-v11-results.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report, null, 2));

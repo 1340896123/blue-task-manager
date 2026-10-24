@@ -1,5 +1,7 @@
 # 蓝域任务管理器
 
+全部八页现采用 Windows 11 标准任务管理器布局：左侧导航、单一命令栏、性能资源磁贴与纵向设置。筛选、进程树、显示列、CSV 等扩展操作统一放在“更多”；见[布局规格](docs/WINDOWS-LAYOUT.md)与[本轮真实验收](docs/WINDOWS-LAYOUT-RESULTS.md)。
+
 接管原“任务管理器”的740提升错误已补充修复链路：系统入口先启动普通权限Launcher，再由Windows请求管理员授权启动Host。旧接管在设置显示“旧接管需要修复”，可确认“修复接管”或取消；安装升级保留现状，不自动迁移。完整说明与本轮真实验收要求见[IFEO提升修复](docs/IFEO-ELEVATION-FIX.md)，旧验收结果不能代替本轮成功链证据。
 
 [手动构建并发布 Windows 安装包](https://github.com/1340896123/blue-task-manager/actions/workflows/manual-windows-installer.yml)：进入Actions，点击 **Run workflow** 并选择`main`。安装E2E通过后会创建Git tag和附带NSIS安装包、SHA256及真实验收报告的[Release](https://github.com/1340896123/blue-task-manager/releases)。`release_tag`留空默认预览标签`v<Host版本>-build.<运行序号>`，填写`v1.1.1`可发布匹配Host版本的正式版；已有标签拒绝覆盖。Release附件长期提供，Actions artifacts保留14天，详见[使用说明](docs/MANUAL-INSTALLER-BUILD.md)。

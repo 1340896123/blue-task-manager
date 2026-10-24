@@ -1,0 +1,42 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-24T02:01:09.036Z",
+  "assertions": 2,
+  "checks": [
+    "dedicated application/runtime/workload identities all exited",
+    "all acceptance HTTP/CDP listeners released"
+  ],
+  "processes": [],
+  "openPorts": [],
+  "checkedPorts": [
+    5191,
+    5192,
+    5193,
+    5194,
+    5195,
+    5196,
+    5197,
+    5198,
+    5199,
+    5200,
+    5201,
+    5202,
+    5203,
+    5204,
+    5230,
+    5290,
+    5296,
+    9224,
+    9225,
+    9226,
+    9227,
+    9228,
+    9230,
+    9231,
+    9232,
+    9250,
+    9290,
+    9296
+  ],
+  "scope": "read-only post-run audit of task paths and dedicated ports; no cleanup mutations"
+}

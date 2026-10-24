@@ -18,7 +18,7 @@ try {
   browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {}) });
   const page = await browser.newPage({ viewport: { width: 1380, height: 860 } });
   await page.goto(origin);
-  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
+  await page.getByRole('table', { name: '进程列表', exact: true }).waitFor();
   await page.getByRole('button', { name: '设置', exact: true }).click();
   await page.getByRole('switch', { name: '自动采样', exact: true }).click();
   await page.getByRole('button', { name: '进程', exact: true }).click();
@@ -30,12 +30,13 @@ try {
   const previousToken = (await (await fetch(origin + '/api/bootstrap')).json()).token;
   host.kill();
   await until(async () => !await portOpen(port), 'stopped test host releases port');
-  await page.getByText('连接中断 · 保留上次数据', { exact: true }).waitFor();
+  await page.locator('.connection-banner.error').getByText('连接中断 · 保留上次数据', { exact: true }).waitFor();
   check(await page.locator('tbody tr[data-row-key]').first().getAttribute('data-row-key') === beforeKey && await page.locator('tbody tr[data-row-key]').first().innerText() === before, 'A15 disconnect preserves last real paused identity and metric values without zero substitution');
-  check(await page.getByText(/上次采样/).isVisible(), 'A15 last successful sampling time remains visible');
+  check(await page.locator('.connection-banner.error').getByText(/上次采样/).isVisible(), 'A15 last successful sampling time remains visible');
   await page.screenshot({ path: path.join(output, 'final-recovery-disconnected.png') });
   host = start();
-  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
+  await until(async () => (await (await fetch(origin + '/api/health')).json()).ready, 'replacement real host ready');
+  await page.locator('.connection-banner.error').waitFor({state:'detached'});
   const after = (await (await fetch(origin + '/api/bootstrap')).json()).token;
   check(after !== previousToken, 'A15 new host rotates in-memory operation token');
   await page.getByRole('button', { name: '设置', exact: true }).click();

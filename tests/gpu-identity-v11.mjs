@@ -35,11 +35,11 @@ try{
   const later=await until(s=>s.telemetry.sampleId>=snapshot.telemetry.sampleId+3,'subsequent PDH samples');
   check(snapshot.gpuAdapters.every(g=>later.gpuAdapters.find(a=>a.id===g.id)?.identityCapturedAtUtc===g.identityCapturedAtUtc),'stable GPU descriptions use cached metadata instead of per-frame DXGI enumeration');
   browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1380,height:860},reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(origin);await page.getByRole('table',{name:'进程列表',exact:true}).waitFor();await page.getByRole('button',{name:'性能',exact:true}).click();await page.getByRole('group',{name:'资源类别'}).getByRole('button',{name:'GPU',exact:true}).click();
+  await page.goto(origin);await page.getByRole('table',{name:'进程列表',exact:true}).waitFor();await page.getByRole('button',{name:'性能',exact:true}).click();
   for(let i=0;i<snapshot.gpuAdapters.length;i++){
-    const gpu=snapshot.gpuAdapters[i];const choice=page.locator('.resource-picker button').nth(i);await choice.click();
-    check(await choice.locator('strong').innerText()===gpu.description&&(await page.locator('.performance-heading h2').innerText()).includes(gpu.description),`real GPU ${i+1} Windows description appears in resource selector and heading`);
-    check((await choice.locator('small').innerText()).includes(gpu.adapterLuid)&&(await page.locator('.resource-fact-grid').innerText()).includes(gpu.adapterLuid),`real GPU ${i+1} keeps its exact LUID visible for identity disambiguation`);
+    const gpu=snapshot.gpuAdapters[i];const choice=page.locator('.resource-tile').filter({has:page.getByText(gpu.description,{exact:true})});await choice.click();
+    check((await choice.innerText()).includes(gpu.description)&&(await page.locator('.performance-heading').innerText()).includes(gpu.description),`real GPU ${i+1} Windows description appears in resource selector and heading`);
+    check((await choice.getAttribute('title')).includes(gpu.adapterLuid)&&(await choice.getAttribute('aria-label')).includes(gpu.adapterLuid)&&(await page.locator('.resource-fact-grid').innerText()).includes(gpu.adapterLuid),`real GPU ${i+1} keeps its exact LUID visible for identity disambiguation`);
   }
   await page.screenshot({path:path.join(output,'v11-gpu-identity.png')});
   await page.setViewportSize({width:960,height:640});

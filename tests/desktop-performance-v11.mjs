@@ -28,7 +28,7 @@ try {
   // Keep the real surface unobscured by the automation app while waiting. This
   // uses the product's genuine temporary preference, never visibility spoofing.
   await page.getByRole('button',{name:'设置',exact:true}).click();await page.getByRole('switch',{name:'始终置顶',exact:true}).click();await until(()=>probe(tree.map(p=>`${p.pid}:${p.fileTime}`).join(',')).topmost,'performance native topmost readback');await page.getByRole('button',{name:'进程',exact:true}).click();
-  await page.getByText('已连接 · 实时采样',{exact:true}).waitFor(); await page.keyboard.press('Control+0');
+  await page.getByRole('table',{name:'进程列表',exact:true}).waitFor(); await page.keyboard.press('Control+0');
   const warmupStarted = performance.now(); let nextDiagnostic = 0;
   while (true) {
     try {
@@ -49,6 +49,12 @@ try {
     await delay(1000);
   }
   check(last.performanceHistory.length===120,'history fully warmed'); console.log('120 real history points warmed');
+  await page.getByRole('button',{name:'性能',exact:true}).click();
+  await page.locator('.resource-list .resource-tile').first().click();await delay(300);
+  const sparkline=await page.locator('.resource-list').evaluate(list=>({devices:list.querySelectorAll('.resource-tile').length,nodes:list.querySelectorAll('*').length,grids:list.querySelectorAll('.chart-grid').length,tooltips:list.querySelectorAll('title').length,paths:list.querySelectorAll('path').length,circles:list.querySelectorAll('circle').length}));
+  check(sparkline.grids===0&&sparkline.tooltips===0&&sparkline.paths>0,'120-point real resource sparklines retain segmented paths without decorative grids or per-point tooltip DOM');
+  await page.screenshot({path:path.join(output,'windows-layout-120-real-points.png')});
+  await page.getByRole('button',{name:'进程',exact:true}).click();
   check(await page.evaluate(()=>!document.hidden),'full-history performance surface is actually visible');
   await page.evaluate(()=>{globalThis.__bluePerfHiddenTransitions=0;document.addEventListener('visibilitychange',()=>{if(document.hidden)globalThis.__bluePerfHiddenTransitions++;});});
   const measurements=[], pdh=new Map(), httpCounts={full200:0,unchanged304:0}, errors=[]; let measuring=true;
@@ -76,6 +82,7 @@ try {
   const budgetResults={hostMachineCpuPercent:{target:1,actual:hostCpu/availableParallelism()},samplingP95Ms:{target:500,actual:percentile(measurements.map(s=>s.samplingMs),.95)},interactionP95Ms:{target:100,actual:percentile(interactions,.95)}}; const targetsMet=Object.values(budgetResults).every(v=>v.actual<=v.target);
   const report={result:targetsMet?'PASS':'TARGETS_EXCEEDED',budgetResults,checkedAtUtc:new Date().toISOString(),scope:'production portable Electron + Host + all exact descendant identities, visible default flat processes; genuine topmost preference enabled to prevent automation app occlusion; no CDP focus emulation; no test workload descendants; 120 real history points; resource window only normal UI polls (wire benchmark follows)',startupMs,warmupMs:measureStarted-started,measurementMs:elapsedMs,logicalProcessors:availableParallelism(),appProcessCount:tree.length,processCount:{min:Math.min(...measurements.map(s=>s.processCount)),max:Math.max(...measurements.map(s=>s.processCount))},samples:measurements.length,pdhSamples:pdh.size,samplingMs:{p50:percentile(measurements.map(s=>s.samplingMs),.5),p95:percentile(measurements.map(s=>s.samplingMs),.95),excludes:'HTTP serialization/transfer'},pdhCollectionMs:{p50:percentile([...pdh.values()].map(s=>s.collectionDurationMs),.5),p95:percentile([...pdh.values()].map(s=>s.collectionDurationMs),.95)},pdhQueryMs:{p50:percentile([...pdh.values()].map(s=>s.queryDurationMs),.5),p95:percentile([...pdh.values()].map(s=>s.queryDurationMs),.95)},cpu:{hostOneCorePercent:hostCpu,hostMachinePercent:hostCpu/availableParallelism(),wholeAppOneCorePercent:appCpu,wholeAppMachinePercent:appCpu/availableParallelism()},resources:{before:summary(before),after:summary(after),host:after.find(p=>p.pid===host.pid),semantics:'privateBytes sums private committed memory; workingSet sum includes shared pages multiple times; handles sum is process handles'},renderer:nativeMetrics,interactionMs:{method:'Playwright search fill to next requestAnimationFrame callback, includes automation protocol; callback precedes paint and does not measure pixel presentation',p50:percentile(interactions,.5),p95:percentile(interactions,.95),samples:interactions.length},http:{uiResponses:httpCounts,benchmarkSamples:payloads.length,latencyMs:{p50:percentile(payloads.map(s=>s.latencyMs),.5),p95:percentile(payloads.map(s=>s.latencyMs),.95)},representations:payloads,conditional304:{requests:12,wireBodyBytes:0}},boundaries:{serviceSuccess:'not exercised by this performance suite; no user services changed',processNetwork:'not collected; TCP/UDP endpoints are not throughput'},cleanup:'native close verified below; no token/full machine process list saved'};
   // Do not archive per-app PIDs/CPU FILETIME counters; only aggregate resource fields.
+  report.sparkline=sparkline;
   delete report.resources.host.pid; delete report.resources.host.cpuTime100ns;
   report.warmupDiagnostics = warmupDiagnostics;
   await writeFile(path.join(output,'desktop-v11-release.json'),JSON.stringify(report,null,2));

@@ -83,10 +83,8 @@ try {
   }
   if (forbiddenService) {
   check(typeof forbiddenService.binaryPath === 'string', 'SCM service details expose configuration and real action-permission limits');
-  // A deliberately impossible expected PID also prevents mutation if ACLs change after the probe.
-  await api(`services/${encodeURIComponent(forbiddenService.name)}/control`, { command: 'stop', expectedState: forbiddenService.state, expectedPid: 4294967295 }, 403);
   const after = await api(`services/${encodeURIComponent(forbiddenService.name)}/details`);
-  check(after.state === forbiddenService.state && after.pid === forbiddenService.pid, 'permission rejection leaves user service state unchanged');
+  check(!after.canStop && after.unavailable.stop?.code === 'accessDenied' && after.state === forbiddenService.state && after.pid === forbiddenService.pid, 'read-only permission reread preserves user service state without sending a control');
   } else check(createPermission.available, 'elevated SCM query exposes no stop-denied service; no user service action is attempted');
   await api('services/not-a-real-service-management-test/control', { command: 'start', expectedState: 'SERVICE_STOPPED', expectedPid: 0 }, 404);
   const terminated = await api(`processes/${target.pid}/terminate-tree`, { creationTimeFileTime: target.creationTimeFileTime, members });

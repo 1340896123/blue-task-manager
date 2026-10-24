@@ -1,0 +1,318 @@
+{
+  "result": "PASS",
+  "budgetResults": {
+    "hostMachineCpuPercent": {
+      "target": 1,
+      "actual": 0.249476596488057
+    },
+    "samplingP95Ms": {
+      "target": 500,
+      "actual": 334.3558
+    },
+    "interactionP95Ms": {
+      "target": 100,
+      "actual": 25.200000047683716
+    }
+  },
+  "checkedAtUtc": "2026-10-24T01:54:42.220Z",
+  "scope": "production portable Electron + Host + all exact descendant identities, visible default flat processes; genuine topmost preference enabled to prevent automation app occlusion; no CDP focus emulation; no test workload descendants; 120 real history points; resource window only normal UI polls (wire benchmark follows)",
+  "startupMs": 784.3349000000001,
+  "warmupMs": 138418.7265,
+  "measurementMs": 33776.071200000006,
+  "logicalProcessors": 28,
+  "appProcessCount": 5,
+  "processCount": {
+    "min": 817,
+    "max": 823
+  },
+  "samples": 28,
+  "pdhSamples": 28,
+  "samplingMs": {
+    "p50": 84.7771,
+    "p95": 334.3558,
+    "excludes": "HTTP serialization/transfer"
+  },
+  "pdhCollectionMs": {
+    "p50": 5.0239,
+    "p95": 34.2636
+  },
+  "pdhQueryMs": {
+    "p50": 1.0239,
+    "p95": 2.0244
+  },
+  "cpu": {
+    "hostOneCorePercent": 6.985344701665596,
+    "hostMachinePercent": 0.249476596488057,
+    "wholeAppOneCorePercent": 15.40476679241486,
+    "wholeAppMachinePercent": 0.550170242586245
+  },
+  "resources": {
+    "before": {
+      "privateBytes": 679837696,
+      "workingSetBytes": 1014800384,
+      "handles": 3586
+    },
+    "after": {
+      "privateBytes": 598097920,
+      "workingSetBytes": 1006276608,
+      "handles": 3582
+    },
+    "host": {
+      "privateBytes": 75464704,
+      "workingSetBytes": 166617088,
+      "handles": 833
+    },
+    "semantics": "privateBytes sums private committed memory; workingSet sum includes shared pages multiple times; handles sum is process handles"
+  },
+  "renderer": {
+    "jsHeapBytes": 10410783,
+    "totalJsHeapBytes": 18646619,
+    "domNodes": 797,
+    "mountedRows": 30,
+    "logicalViewport": {
+      "width": 1380,
+      "height": 860
+    },
+    "dpr": 1
+  },
+  "interactionMs": {
+    "method": "Playwright search fill to next requestAnimationFrame callback, includes automation protocol; callback precedes paint and does not measure pixel presentation",
+    "p50": 13.700000047683716,
+    "p95": 25.200000047683716,
+    "samples": 10
+  },
+  "http": {
+    "uiResponses": {
+      "full200": 28,
+      "unchanged304": 4
+    },
+    "benchmarkSamples": 12,
+    "latencyMs": {
+      "p50": 5.905299999983981,
+      "p95": 8.073499999998603
+    },
+    "representations": [
+      {
+        "encoding": "identity",
+        "wireBytes": 1802112,
+        "decodedBytes": 1802112,
+        "latencyMs": 8.073499999998603
+      },
+      {
+        "encoding": "gzip",
+        "wireBytes": 209655,
+        "decodedBytes": 1802112,
+        "latencyMs": 6.500599999999395
+      },
+      {
+        "encoding": "identity",
+        "wireBytes": 1802112,
+        "decodedBytes": 1802112,
+        "latencyMs": 6.86710000000312
+      },
+      {
+        "encoding": "gzip",
+        "wireBytes": 209655,
+        "decodedBytes": 1802112,
+        "latencyMs": 7.294900000008056
+      },
+      {
+        "encoding": "identity",
+        "wireBytes": 1802112,
+        "decodedBytes": 1802112,
+        "latencyMs": 4.00800000000163
+      },
+      {
+        "encoding": "gzip",
+        "wireBytes": 209529,
+        "decodedBytes": 1798389,
+        "latencyMs": 5.905299999983981
+      },
+      {
+        "encoding": "identity",
+        "wireBytes": 1798389,
+        "decodedBytes": 1798389,
+        "latencyMs": 3.074799999973038
+      },
+      {
+        "encoding": "gzip",
+        "wireBytes": 209529,
+        "decodedBytes": 1798389,
+        "latencyMs": 5.556400000001304
+      },
+      {
+        "encoding": "identity",
+        "wireBytes": 1798389,
+        "decodedBytes": 1798389,
+        "latencyMs": 3.0271000000066124
+      },
+      {
+        "encoding": "gzip",
+        "wireBytes": 209529,
+        "decodedBytes": 1798389,
+        "latencyMs": 6.034799999993993
+      },
+      {
+        "encoding": "identity",
+        "wireBytes": 1798389,
+        "decodedBytes": 1798389,
+        "latencyMs": 5.2321999999985565
+      },
+      {
+        "encoding": "gzip",
+        "wireBytes": 209529,
+        "decodedBytes": 1798389,
+        "latencyMs": 5.07050000000163
+      }
+    ],
+    "conditional304": {
+      "requests": 12,
+      "wireBodyBytes": 0
+    }
+  },
+  "boundaries": {
+    "serviceSuccess": "not exercised by this performance suite; no user services changed",
+    "processNetwork": "not collected; TCP/UDP endpoints are not throughput"
+  },
+  "cleanup": "native close verified below; no token/full machine process list saved",
+  "sparkline": {
+    "devices": 63,
+    "nodes": 653,
+    "grids": 0,
+    "tooltips": 0,
+    "paths": 78,
+    "circles": 0
+  },
+  "warmupDiagnostics": [
+    {
+      "elapsedMs": 54,
+      "sampleId": 3,
+      "points": 3,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 47.5941,
+      "visible": true,
+      "error": null
+    },
+    {
+      "elapsedMs": 10261,
+      "sampleId": 12,
+      "points": 12,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 45.9226,
+      "visible": true,
+      "error": null
+    },
+    {
+      "elapsedMs": 20512,
+      "sampleId": 21,
+      "points": 21,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 43.7557,
+      "visible": true,
+      "error": null
+    },
+    {
+      "elapsedMs": 30695,
+      "sampleId": 30,
+      "points": 30,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 34.4782,
+      "visible": true,
+      "error": null
+    },
+    {
+      "elapsedMs": 40876,
+      "sampleId": 39,
+      "points": 39,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 38.2554,
+      "visible": true,
+      "error": null
+    },
+    {
+      "elapsedMs": 51062,
+      "sampleId": 48,
+      "points": 48,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 33.2773,
+      "visible": false,
+      "error": null
+    },
+    {
+      "elapsedMs": 61431,
+      "sampleId": 57,
+      "points": 57,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 56.6076,
+      "visible": false,
+      "error": null
+    },
+    {
+      "elapsedMs": 71772,
+      "sampleId": 66,
+      "points": 66,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 58.6206,
+      "visible": false,
+      "error": null
+    },
+    {
+      "elapsedMs": 82257,
+      "sampleId": 75,
+      "points": 75,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 55.6289,
+      "visible": false,
+      "error": null
+    },
+    {
+      "elapsedMs": 92604,
+      "sampleId": 84,
+      "points": 84,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 57.3449,
+      "visible": true,
+      "error": null
+    },
+    {
+      "elapsedMs": 102927,
+      "sampleId": 93,
+      "points": 93,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 59.9209,
+      "visible": true,
+      "error": null
+    },
+    {
+      "elapsedMs": 113202,
+      "sampleId": 102,
+      "points": 102,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 56.081,
+      "visible": true,
+      "error": null
+    },
+    {
+      "elapsedMs": 123706,
+      "sampleId": 112,
+      "points": 112,
+      "intervalMs": 1000,
+      "paused": false,
+      "samplingMs": 71.9296,
+      "visible": true,
+      "error": null
+    }
+  ]
+}

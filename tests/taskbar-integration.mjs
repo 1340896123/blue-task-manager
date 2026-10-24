@@ -66,9 +66,9 @@ try {
   await until(() => browser.contexts()[0]?.pages().length > 0, 'real entry BrowserWindow page');
   page = browser.contexts()[0].pages()[0]; page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => { if (request.method() === 'POST' && request.url().endsWith('/api/desktop/task-manager-integration')) writes.push(request.url()); });
-  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
+  await page.getByRole('table', { name: '进程列表', exact: true }).waitFor();
   await page.getByRole('button', { name: '设置', exact: true }).click();
-  const card = page.getByRole('heading', { name: '任务栏右键中的任务管理器', exact: true }).locator('..');
+  const card = page.getByRole('heading', { name: '任务管理器入口', exact: true }).locator('..');
   await card.scrollIntoViewIfNeeded();
   await until(async () => !(await card.innerText()).includes('正在读取实际状态'), 'settings actual registry state');
   const cardText = await card.innerText();

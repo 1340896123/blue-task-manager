@@ -1,0 +1,193 @@
+{
+  "suites": [
+    {
+      "suite": "static-v11",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 3,
+      "log": "output/playwright/windows-layout/static-v11-browser.log"
+    },
+    {
+      "suite": "native-api",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 78,
+      "log": "output/playwright/windows-layout/native-api-browser.log"
+    },
+    {
+      "suite": "native-metadata-v11",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 5,
+      "log": "output/playwright/windows-layout/native-metadata-v11-browser.log"
+    },
+    {
+      "suite": "native-core-v11",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 25,
+      "log": "output/playwright/windows-layout/native-core-v11-browser.log"
+    },
+    {
+      "suite": "native-management-v11",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 89,
+      "log": "output/playwright/windows-layout/native-management-v11-desktop.log"
+    },
+    {
+      "suite": "native-telemetry-v11",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 24,
+      "log": "output/playwright/windows-layout/native-telemetry-v11-browser.log"
+    },
+    {
+      "suite": "gpu-identity-v11",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 12,
+      "log": "output/playwright/windows-layout/gpu-identity-v11-browser.log"
+    },
+    {
+      "suite": "process-ui-v11",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 34,
+      "log": "output/playwright/windows-layout/process-ui-v11-browser.log"
+    },
+    {
+      "suite": "pages-ui-v11",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 48,
+      "log": "output/playwright/windows-layout/pages-ui-v11-desktop.log"
+    },
+    {
+      "suite": "ui-smoke",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 36,
+      "log": "output/playwright/windows-layout/ui-smoke-browser.log"
+    },
+    {
+      "suite": "recovery-e2e",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 4,
+      "log": "output/playwright/windows-layout/recovery-e2e-desktop.log"
+    },
+    {
+      "suite": "desktop-e2e",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 42,
+      "log": "output/playwright/windows-layout/desktop-e2e-desktop.log"
+    },
+    {
+      "suite": "process-desktop-v11",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 34,
+      "log": "output/playwright/windows-layout/process-desktop-v11-desktop.log"
+    },
+    {
+      "suite": "native-desktop-v11",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 22,
+      "log": "output/playwright/windows-layout/native-desktop-v11-desktop.log"
+    },
+    {
+      "suite": "system-locations-v11",
+      "runGroup": "desktop",
+      "result": "PARTIAL_WINDOWS_OBSERVABILITY",
+      "assertions": 6,
+      "log": "output/playwright/windows-layout/system-locations-v11-desktop.log"
+    },
+    {
+      "suite": "restricted-process-ui-v11",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 9,
+      "log": "output/playwright/windows-layout/restricted-process-ui-v11-desktop.log"
+    },
+    {
+      "suite": "product-icon",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 16,
+      "log": "output/playwright/windows-layout/product-icon-desktop.log"
+    },
+    {
+      "suite": "taskbar-integration",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 20,
+      "log": "output/playwright/windows-layout/taskbar-integration-desktop.log"
+    },
+    {
+      "suite": "desktop-performance-v11",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 0,
+      "log": "output/playwright/windows-layout/desktop-performance-v11-desktop.log"
+    },
+    {
+      "suite": "grid-ui",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 1189,
+      "log": "output/playwright/windows-layout/grid-ui-browser.log"
+    },
+    {
+      "suite": "grid-ui",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 1190,
+      "log": "output/playwright/windows-layout/grid-ui-desktop.log"
+    },
+    {
+      "suite": "shared-search",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 150,
+      "log": "output/playwright/windows-layout/shared-search-browser.log"
+    },
+    {
+      "suite": "shared-search",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 150,
+      "log": "output/playwright/windows-layout/shared-search-desktop.log"
+    },
+    {
+      "suite": "windows-layout",
+      "runGroup": "browser",
+      "result": "PASS",
+      "assertions": 215,
+      "log": "output/playwright/windows-layout/windows-layout-browser.log"
+    },
+    {
+      "suite": "windows-layout",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 298,
+      "log": "output/playwright/windows-layout/windows-layout-desktop.log"
+    },
+    {
+      "suite": "windows-layout-audit",
+      "runGroup": "desktop",
+      "result": "PASS",
+      "assertions": 2,
+      "log": "output/playwright/windows-layout/windows-layout-audit-desktop.log"
+    }
+  ],
+  "totalAssertions": 3701,
+  "runGroupsNote": "Worker log group desktop still runs pages-ui-v11/recovery-e2e/native-management headless; each suite retains its actual production mode. Performance suite has three measured budgets and does not publish an assertion count.",
+  "counts": {
+    "passed": 25,
+    "partial": 1,
+    "failed": 0
+  }
+}

@@ -1,0 +1,198 @@
+[
+  {
+    "file": "browser-1380-processes.png",
+    "source": "output/playwright/windows-layout/browser-1380-进程.png"
+  },
+  {
+    "file": "browser-1380-performance.png",
+    "source": "output/playwright/windows-layout/browser-1380-performance.png"
+  },
+  {
+    "file": "browser-1380-history.png",
+    "source": "output/playwright/windows-layout/browser-1380-应用历史记录.png"
+  },
+  {
+    "file": "browser-1380-startup.png",
+    "source": "output/playwright/windows-layout/browser-1380-启动应用.png"
+  },
+  {
+    "file": "browser-1380-users.png",
+    "source": "output/playwright/windows-layout/browser-1380-用户.png"
+  },
+  {
+    "file": "browser-1380-details.png",
+    "source": "output/playwright/windows-layout/browser-1380-详细信息.png"
+  },
+  {
+    "file": "browser-1380-services.png",
+    "source": "output/playwright/windows-layout/browser-1380-服务.png"
+  },
+  {
+    "file": "browser-1380-settings.png",
+    "source": "output/playwright/windows-layout/browser-1380-settings.png"
+  },
+  {
+    "file": "browser-960-processes.png",
+    "source": "output/playwright/windows-layout/browser-960-进程.png"
+  },
+  {
+    "file": "browser-960-performance.png",
+    "source": "output/playwright/windows-layout/browser-960-performance.png"
+  },
+  {
+    "file": "browser-960-history.png",
+    "source": "output/playwright/windows-layout/browser-960-应用历史记录.png"
+  },
+  {
+    "file": "browser-960-startup.png",
+    "source": "output/playwright/windows-layout/browser-960-启动应用.png"
+  },
+  {
+    "file": "browser-960-users.png",
+    "source": "output/playwright/windows-layout/browser-960-用户.png"
+  },
+  {
+    "file": "browser-960-details.png",
+    "source": "output/playwright/windows-layout/browser-960-详细信息.png"
+  },
+  {
+    "file": "browser-960-services.png",
+    "source": "output/playwright/windows-layout/browser-960-服务.png"
+  },
+  {
+    "file": "browser-960-settings.png",
+    "source": "output/playwright/windows-layout/browser-960-settings.png"
+  },
+  {
+    "file": "desktop-1380-processes.png",
+    "source": "output/playwright/windows-layout/desktop-1380-进程.png"
+  },
+  {
+    "file": "desktop-1380-performance.png",
+    "source": "output/playwright/windows-layout/desktop-1380-performance.png"
+  },
+  {
+    "file": "desktop-1380-history.png",
+    "source": "output/playwright/windows-layout/desktop-1380-应用历史记录.png"
+  },
+  {
+    "file": "desktop-1380-startup.png",
+    "source": "output/playwright/windows-layout/desktop-1380-启动应用.png"
+  },
+  {
+    "file": "desktop-1380-users.png",
+    "source": "output/playwright/windows-layout/desktop-1380-用户.png"
+  },
+  {
+    "file": "desktop-1380-details.png",
+    "source": "output/playwright/windows-layout/desktop-1380-详细信息.png"
+  },
+  {
+    "file": "desktop-1380-services.png",
+    "source": "output/playwright/windows-layout/desktop-1380-服务.png"
+  },
+  {
+    "file": "desktop-1380-settings.png",
+    "source": "output/playwright/windows-layout/desktop-1380-settings.png"
+  },
+  {
+    "file": "desktop-960-processes.png",
+    "source": "output/playwright/windows-layout/desktop-960-进程.png"
+  },
+  {
+    "file": "desktop-960-performance.png",
+    "source": "output/playwright/windows-layout/desktop-960-performance.png"
+  },
+  {
+    "file": "desktop-960-history.png",
+    "source": "output/playwright/windows-layout/desktop-960-应用历史记录.png"
+  },
+  {
+    "file": "desktop-960-startup.png",
+    "source": "output/playwright/windows-layout/desktop-960-启动应用.png"
+  },
+  {
+    "file": "desktop-960-users.png",
+    "source": "output/playwright/windows-layout/desktop-960-用户.png"
+  },
+  {
+    "file": "desktop-960-details.png",
+    "source": "output/playwright/windows-layout/desktop-960-详细信息.png"
+  },
+  {
+    "file": "desktop-960-services.png",
+    "source": "output/playwright/windows-layout/desktop-960-服务.png"
+  },
+  {
+    "file": "desktop-960-settings.png",
+    "source": "output/playwright/windows-layout/desktop-960-settings.png"
+  },
+  {
+    "file": "desktop-125-processes.png",
+    "source": "output/playwright/windows-layout/desktop-125-进程.png"
+  },
+  {
+    "file": "desktop-125-performance.png",
+    "source": "output/playwright/windows-layout/desktop-125-performance.png"
+  },
+  {
+    "file": "desktop-125-history.png",
+    "source": "output/playwright/windows-layout/desktop-125-应用历史记录.png"
+  },
+  {
+    "file": "desktop-125-startup.png",
+    "source": "output/playwright/windows-layout/desktop-125-启动应用.png"
+  },
+  {
+    "file": "desktop-125-users.png",
+    "source": "output/playwright/windows-layout/desktop-125-用户.png"
+  },
+  {
+    "file": "desktop-125-details.png",
+    "source": "output/playwright/windows-layout/desktop-125-详细信息.png"
+  },
+  {
+    "file": "desktop-125-services.png",
+    "source": "output/playwright/windows-layout/desktop-125-服务.png"
+  },
+  {
+    "file": "desktop-125-settings.png",
+    "source": "output/playwright/windows-layout/desktop-125-settings.png"
+  },
+  {
+    "file": "desktop-125-processes-native.png",
+    "source": "output/playwright/windows-layout/desktop-125-进程-native.png"
+  },
+  {
+    "file": "desktop-125-settings-native.png",
+    "source": "output/playwright/windows-layout/desktop-125-settings-native.png"
+  },
+  {
+    "file": "desktop-120-real-points.png",
+    "source": "output/performance/windows-layout-120-real-points.png"
+  },
+  {
+    "file": "desktop-service-confirm-cancel.png",
+    "source": "output/playwright/windows-layout/desktop-service-confirm-cancel.png"
+  },
+  {
+    "file": "desktop-preference-save-failure.png",
+    "source": "output/playwright/windows-layout/desktop-preference-save-failure.png"
+  },
+  {
+    "file": "desktop-frozen.png",
+    "source": "output/playwright/windows-layout/desktop-frozen.png"
+  },
+  {
+    "file": "desktop-paused.png",
+    "source": "output/playwright/windows-layout/desktop-paused.png"
+  },
+  {
+    "file": "browser-disconnected.png",
+    "source": "output/playwright/final-recovery-disconnected.png"
+  },
+  {
+    "file": "browser-reconnected.png",
+    "source": "output/playwright/final-recovery-connected.png"
+  }
+]

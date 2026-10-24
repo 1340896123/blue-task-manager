@@ -1,3 +1,4 @@
+import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -122,7 +123,7 @@ try {
   await collectStartupFacts('real-application-page-discovered');
   startup.phase = 'real-desktop-acceptance';
   const errors = []; page.on('pageerror', error => errors.push(error.message));
-  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
+  await page.getByRole('table', { name: '进程列表', exact: true }).waitFor();
   const bootstrap = await (await fetch(origin + '/api/bootstrap')).json();
   check(bootstrap.desktop === true, 'A18 production Release bootstrap reports actual Electron BrowserWindow');
   check(await page.getByRole('button', { name: '最小化窗口', exact: true }).isEnabled(), 'A18 actual desktop controls enabled');
@@ -170,17 +171,17 @@ try {
   await until(async () => await page.locator('tbody tr[data-row-key]').count() === 1, 'real PID search');
   check(await page.locator('tbody').innerText().then(text => text.includes('TaskManager.TestWorkload')), 'A18 exact PID search finds independently spawned real test process');
   await search.fill('');
-  await page.getByRole('button', { name: '冻结显示', exact: true }).click();
-  await page.getByRole('button', { name: '继续显示', exact: true }).waitFor();
+  await clickCommand(page, '冻结显示');
+  await page.getByRole('button', { name: '继续显示最新数据', exact: true }).waitFor();
   await delay(2200);
-  await page.getByRole('button', { name: '按内存（工作集）排序', exact: true }).click();
-  check(await page.getByRole('columnheader').filter({ has: page.getByRole('button', { name: '按内存（工作集）排序', exact: true }) }).getAttribute('aria-sort') === 'ascending', 'A06 memory header exposes ascending numeric sort');
+  await page.getByRole('button', { name: '按内存排序', exact: true }).click();
+  check(await page.getByRole('columnheader').filter({ has: page.getByRole('button', { name: '按内存排序', exact: true }) }).getAttribute('aria-sort') === 'ascending', 'A06 memory header exposes ascending numeric sort');
   const memoryIndex = (await page.getByRole('columnheader').allTextContents()).findIndex(text=>text.includes('内存'));
   const displayed = await page.locator('tbody tr[data-row-key]').evaluateAll((rows,index)=>rows.map(row=>row.cells[index]?.innerText),memoryIndex);
   const values = displayed.map(text=>{const match=/([\d.]+)\s*(B|KB|MB|GB|TB)/.exec(text??'');return match?Number(match[1])*1024**['B','KB','MB','GB','TB'].indexOf(match[2]):null;}).filter(value=>value!==null);
   check(values.length > 3 && values.every((value, index) => index === 0 || value >= values[index - 1]), 'A06 visible real working-set values sort numerically ascending');
-  await page.getByRole('button', { name: '继续显示', exact: true }).click();
-  await page.getByRole('button', { name: '冻结显示', exact: true }).waitFor();
+  await clickCommand(page, '继续显示');
+  await page.locator('.frozen-banner').waitFor({state:'detached'});
   for (const name of ['性能', '应用历史记录', '启动应用', '用户', '详细信息', '服务', '设置', '进程']) {
     await page.getByRole('button', { name, exact: true }).click();
     check(await page.getByRole('heading', { name, exact: true, level: 1 }).isVisible(), `A18 real desktop navigation ${name}`);
@@ -223,7 +224,7 @@ try {
   // Electron correctly prevents navigation, while CDP leaves a pending
   // navigation signal. A real same-origin reload resets the automation state.
   await page.goto(origin);
-  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
+  await page.getByRole('table', { name: '进程列表', exact: true }).waitFor();
   const pagesBefore = page.context().pages().length;
   await page.evaluate(() => window.open('https://example.com/')); await delay(300);
   check(page.context().pages().length === pagesBefore, 'A18 external new window is denied');

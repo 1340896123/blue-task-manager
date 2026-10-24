@@ -35,7 +35,7 @@ try {
   browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`);
   await until(() => browser.contexts()[0]?.pages().length > 0, 'product icon BrowserWindow exists');
   page = browser.contexts()[0].pages()[0];
-  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
+  await page.getByRole('table', { name: '进程列表', exact: true }).waitFor();
   check(await page.locator('img.brand-mark').evaluate(async image => { await image.decode(); return image.complete && image.naturalWidth === 512 && image.src.endsWith('/icon.svg'); }), 'React brand loads and decodes the canonical SVG');
   for (const [route, kind] of [['icon.svg', 'svg'], ['favicon.ico', 'icon'], ['icon-256.png', 'png'], ['icon-512.png', 'png']]) {
     const response = await fetch(`${origin}/${route}`);

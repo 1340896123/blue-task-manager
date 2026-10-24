@@ -1,3 +1,4 @@
+import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -230,7 +231,7 @@ try {
   await exerciseTable('服务', table, snapshot.services.map(row => ({ key: row.name, row })), (row, key) => key === 'display' ? row.displayName : key === 'state' ? serviceStates[row.state] ?? row.state : key === 'pid' ? row.pid || null : row.name);
   await screenshot('services-1380');
 
-  phase = 'tree'; table = await nav('进程', '进程列表'); await page.getByRole('button', { name: '进程树', exact: true }).click();
+  phase = 'tree'; table = await nav('进程', '进程列表'); await clickCommand(page, '进程树');
   await page.getByRole('searchbox').fill('TaskManager.TestWorkload'); table = page.getByRole('treegrid', { name: '进程列表', exact: true });
   const childIds = children.map(child => child.join(':'));
   const rootRow = table.locator(`tr[data-row-key="${target.identity}"]`); await rootRow.click();
@@ -262,10 +263,10 @@ try {
   check(await separator(table, 'local').getAttribute('aria-valuenow') === connectionWidth && await table.locator('th[aria-sort]:not([aria-sort="none"])').getAttribute('data-column-key') === connectionSort, 'G05: connection tab switch and native refresh preserve width and sorting');
   await screenshot('connections'); await page.keyboard.press('Escape');
 
-  phase = 'persistence'; table = await nav('进程', '进程列表'); await page.getByRole('button', { name: '平铺', exact: true }).click();
+  phase = 'persistence'; table = await nav('进程', '进程列表'); await clickCommand(page, '平铺');
   const processWidth = await separator(table, 'name').getAttribute('aria-valuenow');
   await separator(table, 'gpuEngine').press('ArrowRight'); const engineWidth = await separator(table, 'gpuEngine').getAttribute('aria-valuenow');
-  const columnsMenu = page.locator('details').filter({ has: page.locator('summary', { hasText: '显示列' }) }); await columnsMenu.locator('summary').click();
+  const columnsMenu = page.locator('details.control-popover').filter({ has: page.locator(':scope > summary', { hasText: '显示列' }) }); await revealControl(columnsMenu.locator(':scope > summary'));await columnsMenu.locator(':scope > summary').click();
   await columnsMenu.getByLabel('GPU 引擎', { exact: true }).uncheck(); await columnsMenu.getByLabel('GPU 引擎', { exact: true }).check(); await columnsMenu.locator('summary').click();
   check(await separator(table, 'gpuEngine').getAttribute('aria-valuenow') === engineWidth, 'G05: hidden and reshown column preserves its custom width');
   table = await nav('详细信息', '进程详细信息'); await separator(table, 'name').press('ArrowRight'); const detailWidth = await separator(table, 'name').getAttribute('aria-valuenow');
@@ -287,13 +288,13 @@ try {
   const persistedWidths = (await get('preferences')).preferences.pages.processes.columnWidths;
   await closeHost(); await start(); table = page.getByRole('table', { name: '进程列表', exact: true });
   check(await separator(table, 'name').getAttribute('aria-valuenow') === processWidth && JSON.stringify((await get('preferences')).preferences.pages.processes.columnWidths) === JSON.stringify(persistedWidths), 'G05: actual host restart reloads persisted page widths');
-  await page.getByRole('button', { name: '重置视图', exact: true }).click();
+  await clickCommand(page, '重置视图');
   await until(async () => await separator(table, 'name').getAttribute('aria-valuenow') === '272' && (await get('preferences')).preferences.pages.processes.columnWidths == null, 'page reset renders and persists default widths');
   check(true, 'G05: page reset restores and persists default column widths');
   const memoryTitle = header(table, 'workingSetBytes').locator('.column-title'); await memoryTitle.scrollIntoViewIfNeeded();
   check(await memoryTitle.evaluate(el => el.scrollWidth <= el.clientWidth && getComputedStyle(el).textOverflow === 'ellipsis'), 'G06: default memory column title fits completely with tail ellipsis available'); await screenshot('default-readable-titles');
   await page.getByRole('button', { name: '设置', exact: true }).click(); await page.getByRole('searchbox').fill('');
-  await page.getByRole('button', { name: '恢复默认界面偏好…', exact: true }).click(); const reset = page.getByRole('dialog', { name: '恢复默认界面偏好？', exact: true }); await reset.getByRole('button', { name: '恢复默认界面偏好', exact: true }).click();
+  await page.locator('.setting-buttons').getByRole('button', { name: '恢复默认界面偏好…', exact: true }).click(); const reset = page.getByRole('dialog', { name: '恢复默认界面偏好？', exact: true }); await reset.getByRole('button', { name: '恢复默认界面偏好', exact: true }).click();
   await until(async () => Object.keys((await get('preferences')).preferences.pages ?? {}).length === 0, 'global reset clears every page width'); check(true, 'G05: global reset clears all persisted column widths');
   check(errors.length === 0, 'G07: no browser runtime errors'); check(cspErrors.length === 0, 'G07: no CSP violations');
   await closeHost();

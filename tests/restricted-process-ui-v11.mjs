@@ -1,3 +1,4 @@
+import { clickCommand, revealControl, openProcessFilter, resourceTiles, resourceTile } from './layout-ui-support.mjs';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -21,7 +22,7 @@ try {
   browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`);
   await until(() => browser.contexts()[0]?.pages().length, 'actual Electron page exists');
   page = browser.contexts()[0].pages()[0];
-  await page.getByText('已连接 · 实时采样', { exact: true }).waitFor();
+  await page.getByRole('table', { name: '进程列表', exact: true }).waitFor();
   runtime = processTree(host.pid);
   const snapshot = await (await fetch(origin + '/api/snapshot')).json();
   const oracle = spawnSync('powershell', ['-NoProfile', '-Command', "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false); @(Get-CimInstance Win32_Process -Filter \"Name = 'SGuard64.exe' OR Name = 'SGuardSvc64.exe'\" | Select-Object Name,ProcessId) | ConvertTo-Json -Compress"], { encoding: 'utf8', windowsHide: true });
@@ -35,18 +36,18 @@ try {
   check((await row.innerText()).includes(String(target.pid)), 'restricted process is visible by its real executable name');
   await search.fill(String(target.pid)); await row.waitFor();
   check((await row.innerText()).includes(target.name), 'restricted process is visible by its actual PID');
-  await page.getByRole('button', { name: '进程树', exact: true }).click(); await row.waitFor();
+  await clickCommand(page, '进程树'); await row.waitFor();
   check(await row.isVisible(), 'unknown creation identity never removes a row from the real process tree');
   if (target.state === 'restricted') {
     check(await row.getByText('访问受限', { exact: true }).isVisible(), 'the row explains access restriction while preserving process existence');
     check(target.creationTimeFileTime !== null || target.unavailable.creationTimeFileTime?.nativeErrorCode != null, 'unreadable creation identity keeps the actual native error rather than fabricating a value');
   }
-  await page.locator('.control-popover').filter({ hasText: '筛选' }).locator('summary').click();
+  await openProcessFilter(page);
   check(await page.getByRole('option', { name: '基本查询可用', exact: true }).count() === 1, 'information availability filter does not mislabel restricted running processes as stopped');
   await page.getByLabel('信息读取', { exact: true }).selectOption('restricted');
   if (target.state === 'restricted') await row.waitFor();
   await page.getByRole('button', { name: '清除筛选', exact: true }).click();
-  await page.locator('.control-popover').filter({ hasText: '筛选' }).locator('summary').click();
+  await openProcessFilter(page);
   await search.fill('SGuard64.exe');
   if (guards.some(p => p.Name.toLowerCase() === 'sguard64.exe')) await page.locator('tbody tr[data-row-key]').first().waitFor();
   await page.screenshot({ path: path.join(output, 'guard-process-visible.png') });
