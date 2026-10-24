@@ -1,5 +1,7 @@
 # 架构与数据合同
 
+> 首次启动入口增量见 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)：仅正式桌面且偏好读取成功后展示，复用已有 GET/POST task-manager-integration；UiPreferences 增加向后兼容的 taskManagerPromptDismissed:false，经 JSON.NET 保存。跳过仅保存偏好；替换需显式操作且真实读回；不新增系统协议/绑定，界面重置保留完成标记。
+
 > 网络吞吐当前增量见 [NETWORK-THROUGHPUT.md](NETWORK-THROUGHPUT.md)：CsWin32管理本实例独立命名ETW系统实时会话，后台消费TCP/UDP IPv4/IPv6所属PID与字节数，再按创建身份及完整窗口计算收发合计。只控制本次创建会话，有界状态/缓冲，丢失/过期/预热明确，关闭释放。此用户增量覆盖下文历史“不增加持续ETW/逐进程网络未接入”边界；保持GetIfTable2硬件网卡口径。
 
 > HWiNFO / CPU当前增量见 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md)。逐CPU复用PDH worker/长期query及独立时间轴；HWiNFO以CsWin32只读SM2映射，有界校验/同步/缓存并明确缺失/过期。快照只带传感器摘要，完整列表由同源GET读取缓存，不向120点历史复制全部传感器，不增加驱动或私有传输协议。

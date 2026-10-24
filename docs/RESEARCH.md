@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 首次启动替换提示（2026-10-25）
+
+实际通过 GitHub API 获取 SystemInformer 固定提交 `b059589e4dc5d7dbffc3d3c68190b3c226505659`，读取 [options.c](https://github.com/winsiderss/systeminformer/blob/b059589e4dc5d7dbffc3d3c68190b3c226505659/SystemInformer/options.c) 的 PhpIsDefaultTaskManager/PhpSetDefaultTaskManager，核验标准 IFEO Debugger、先读实际状态、明确替换/恢复确认、固定安全目录提醒与真实写错误。仅借鉴交互及公开 Windows 来源，复用本项目既有更严格冲突/自有值/revision/读回服务。UI/UX Pro Max 定向 keyboard focus modal 查询命中可见焦点；复用现有 React/Tailwind 原生 dialog 与 Windows 蓝色 Token，不生成新设计系统。完整取舍和 F 系列见 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)。
+
 ## 逐进程网络吞吐（2026-10-25）
 
 实际通过GitHub API/raw核验SystemInformer固定提交 `9f257e3b76c9af9ae598968070686561f5ec66b9` 的 `plugins/ExtendedTools/etwmon.c`、`etwstat.c` 和 `phnt/include/ntwmi.h`：Windows8+独立命名系统logger，NETWORK_TCPIP，TCP/UDP IPv4/IPv6从负载PID/TransferSize收发累计；事件头PID不可替代。微软SystemTraceProvider文档确认独立Wnode.Guid/有限槽位，TCP/UDP MOF与事件版本核验原生字段。采用公开ETW/CsWin32、身份/完整窗/丢事件状态、有界后台及仅本实例清理；不复制源码，不接管其他ETW会话，不引入驱动。固定链接、实际源位置、字段和N系列验收完整记录于 [NETWORK-THROUGHPUT.md](NETWORK-THROUGHPUT.md)。

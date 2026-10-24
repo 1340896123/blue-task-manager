@@ -1,5 +1,7 @@
 # 后端 API 合同
 
+首次启动偏好增量（2026-10-25）：UiPreferences 增加 `taskManagerPromptDismissed:boolean`，缺失默认 false，GET/POST preferences 使用 JSON.NET 持久化；它表示已完成首次选择，与实际 IFEO 状态独立。桌面提示复用下文既有 task-manager-integration，不新增写入接口，界面重置保留该标记。完整行为见 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)。
+
 网络吞吐增量（2026-10-25）见 [NETWORK-THROUGHPUT.md](NETWORK-THROUGHPUT.md)：process新增 `networkReceiveBytesPerSecond/networkSendBytesPerSecond:number|null`、`networkCapturedAtUtc:string|null`；既有 `networkBytesPerSecond` 为真实收发合计（双方有效才相加）。snapshot新增 `processNetwork` 状态（`capturedAtUtc/status/eventsLost/buffersLost/collectionDurationMs/unavailable`）；详情沿用最近同identity网络值/来源/原因。`capabilities.processNetwork.available:true` 表示接入，当前权限/预热/丢失/过期看字段原因；覆盖下文历史network=null/notCollected条款。ETW进程流量与GetIfTable2硬件总量不相互替代。
 
 HWiNFO / CPU增量以 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md) 的HTTP与DTO为准：增加snapshot.logicalProcessors[]、telemetry.cpuCapturedAtUtc、历史cpuTelemetryCapturedAtUtc/logicalProcessors[]及snapshot.hwInfo摘要；GET `/api/hwinfo/sensors`返回缓存分组与真实读取项。偏好增加cpuGraphMode=total|logicalProcessors（旧配置默认total），resourceType允许hwinfo；JSON.NET/null与原因/同源边界不变。

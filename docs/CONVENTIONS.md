@@ -1,5 +1,7 @@
 # 工程规范
 
+首次启动提示遵循 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)：区分偏好 ready 与读取成功，未确认不写 IFEO；错误/未知/冲突不转未接管，写失败不标已选择；重置界面默认保留提示完成标记。复用原生 dialog 焦点/忙态与既有接管服务，交付记录 F 系列实际执行和未执行分支。
+
 标题与数据视觉层级遵循 [VISUAL-HIERARCHY.md](VISUAL-HIERARCHY.md) 和 MASTER 顶部排版增量：每页一个 h1、设置一级分组用 h2，标题/分组/正文/说明形成稳定字阶；静态视觉强调不改变表头或虚拟行几何量。交付记录本轮 V 系列及相关真实链路回归证据。
 
 当前八页界面必须按 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md) 的Windows 11标准任务管理器结构实施并通过L系列验收。每页一个页头/命令栏，次命令进入更多；不以旧测试依赖为由保留多层操作栏、横排性能类别或营销设置页。Token以MASTER顶部2026-10-24增量优先。
