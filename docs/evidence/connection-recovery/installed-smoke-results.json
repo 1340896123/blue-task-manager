@@ -1,0 +1,77 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-24T17:25:30.292Z",
+  "checks": [
+    "normal: real Windows and JSON.NET source",
+    "normal: actual elevated Host token",
+    "normal: valid isolated preference skips the first-launch prompt",
+    "normal: genuine samples advance and include this Host PID",
+    "normal: fixed three-method bridge and no renderer Node require",
+    "normal: child frame receives no window bridge",
+    "normal: all three state transitions avoid HTTP window endpoints",
+    "normal: window closes within 3000ms (actual 27ms)",
+    "normal: close sends no HTTP window command",
+    "normal: all exact Host/Electron creation identities exited",
+    "normal: exact Host ETW sessions released",
+    "all scenarios: no renderer JavaScript exception"
+  ],
+  "assertions": 12,
+  "timings": [
+    {
+      "scenario": "normal",
+      "elapsedMs": 27
+    }
+  ],
+  "launches": [
+    {
+      "name": "normal",
+      "hostPid": 46964,
+      "desktop": true,
+      "identities": [
+        {
+          "pid": 46964,
+          "fileTime": "134373363200294560"
+        },
+        {
+          "pid": 31292,
+          "fileTime": "134373363206794380"
+        },
+        {
+          "pid": 33116,
+          "fileTime": "134373363209747460"
+        },
+        {
+          "pid": 50944,
+          "fileTime": "134373363209779460"
+        },
+        {
+          "pid": 44636,
+          "fileTime": "134373363212604740"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    "normal-electron.png"
+  ],
+  "rendererErrors": [],
+  "nativeFacts": [
+    {
+      "label": "normal",
+      "toast": [],
+      "native": {
+        "hwnd": "6361758",
+        "topmost": false,
+        "state": 2,
+        "width": 160,
+        "height": 28,
+        "clientWidth": 144,
+        "clientHeight": 20
+      }
+    }
+  ],
+  "limitations": [
+    "Origin/unknown IPC command rejection inspected in production source; raw untrusted IPC injection was not attempted.",
+    "Physical secure-desktop UAC interaction and installation are outside this isolated lifecycle test."
+  ]
+}

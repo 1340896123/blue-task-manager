@@ -1,0 +1,14 @@
+{
+    "installerExitCode":  0,
+    "closedInstalledProcesses":  0,
+    "preferencesPreserved":  true,
+    "version":  "1.1.1",
+    "installation":  "C:\\Program Files\\BlueDomainTaskManager",
+    "hostDllAfter":  "3e81d81a9302d699c63a6eef410e1a3400a9f785aebe3a9e72b968505c0fb68e",
+    "checkedAtUtc":  "2026-10-24T17:25:19.6952491Z",
+    "hostDllBefore":  "c539027dbac1d145896b99da4120b6c94d46f0540c509405742ef42d75de486b",
+    "ifeoPreserved":  true,
+    "installerSha256":  "94026901cab531913ba48493e4f5b4689d96d957bdf5c746430927e058bc7a58",
+    "result":  "PASS",
+    "payloadFiles":  3246
+}

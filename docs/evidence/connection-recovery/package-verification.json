@@ -1,0 +1,34 @@
+﻿{
+    "version":  "1.1.1",
+    "installer":  "E:\\taskManager\\output\\releases\\BlueDomainTaskManager-v1.1.1-win-x64-setup.exe",
+    "installerBytes":  169317042,
+    "installerSha256":  "94026901cab531913ba48493e4f5b4689d96d957bdf5c746430927e058bc7a58",
+    "payloadFilesVerified":  3246,
+    "manifests":  {
+                      "host":  "requireAdministrator",
+                      "launcher":  "asInvoker",
+                      "installer":  "requireAdministrator"
+                  },
+    "uninstallerManifest":  "requireAdministrator / uiAccess=false",
+    "signature":  "NotSigned",
+    "runtimeConfiguration":  {
+                                 "tfm":  "net10.0",
+                                 "includedFrameworks":  [
+                                                            {
+                                                                "name":  "Microsoft.NETCore.App",
+                                                                "version":  "10.0.12"
+                                                            },
+                                                            {
+                                                                "name":  "Microsoft.AspNetCore.App",
+                                                                "version":  "10.0.12"
+                                                            }
+                                                        ],
+                                 "configProperties":  {
+                                                          "System.GC.Server":  false,
+                                                          "System.Reflection.Metadata.MetadataUpdater.IsSupported":  false,
+                                                          "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization":  false,
+                                                          "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS":  false
+                                                      }
+                             },
+    "lifecycle":  "Not executed by this static verifier. No installer, uninstaller or IFEO change is run."
+}

@@ -59,4 +59,14 @@ worker 明确设置子进程 `DOTNET_ROOT`/`DOTNET_ROOT_X64` 到专用 SDK，只
 
 可审阅证据为 [专项结果](evidence/connection-recovery/results.json)、[worker 退出码](evidence/connection-recovery/worker-status.json)、[正常桌面](evidence/connection-recovery/normal-electron.png)、[HTTP 断连桌面](evidence/connection-recovery/http-disconnected-electron.png)、[bootstrap 失败桌面](evidence/connection-recovery/bootstrap-unavailable-electron.png)。截图已检查，仅捕获测试应用内容。完整日志在 `output/playwright/connection-recovery`；旧桌面回归结果及多尺寸截图在 `output/playwright/final-desktop-results.json` 等 `final-desktop-*` 文件中。
 
-本报告记录隔离运行目录验收。原始非法 IPC 通道/命令注入没有动态执行，拒绝分支通过源码审查；不将可调用面限制和子 frame 检查冒充所有原始 IPC 攻击分支覆盖。没有重新执行全套安装/卸载、全部硬件采集、HWiNFO、服务控制或性能预算验收；本机安装更新由主代理另行验证。
+原始非法 IPC 通道/命令注入没有动态执行，拒绝分支通过源码审查；不将可调用面限制和子 frame 检查冒充所有原始 IPC 攻击分支覆盖。没有重新执行全套安装/卸载、全部硬件采集、HWiNFO、服务控制或性能预算验收。
+
+## 本机安装更新
+
+2026-10-25 已通过标准 NSIS 包原位更新 `C:\Program Files\BlueDomainTaskManager`，安装退出 0。静态解包与安装后均核对 3,246 个文件；用户偏好与既有 IFEO 配置保持。旧安装包和 ZIP 已备份到 `output/connection-recovery/previous-package`。
+
+最终安装器为 `output/releases/BlueDomainTaskManager-v1.1.1-win-x64-setup.exe`，169,317,042 字节，SHA256 `94026901cab531913ba48493e4f5b4689d96d957bdf5c746430927e058bc7a58`。包由已验收的 Host、生产 UI 与最终窗口脚本组装；[包核验](evidence/connection-recovery/package-verification.json) 与 [安装结果](evidence/connection-recovery/install-result.json) 记录精确产物。
+
+安装后通过同一专项脚本 `--smoke` 从实际安装目录再验收 12 项：真实采样、三个固定窗口方法、无 renderer Node 权限、子 frame 无桥接、实际最小化/最大化/还原、关闭及精确进程/端口/ETW 清理。关闭实测 27 毫秒，无渲染器异常；见 [安装后结果](evidence/connection-recovery/installed-smoke-results.json) 和 [安装产物](evidence/connection-recovery/installed-artifacts.json)。测试仅使用临时偏好，未替用户选择系统入口设置。
+
+复现命令：`powershell -NoProfile -ExecutionPolicy Bypass -File output/connection-recovery/install-worker.ps1`（标准管理员终端；固定安装目标、所有权与安装器哈希验证）。该 worker 调用已有 `scripts/build-installer.ps1 -SkipBuild` 的产物，完成文件及设置核验后调用 `tests/connection-recovery.mjs --smoke`。最终保持应用关闭，[独立复核](evidence/connection-recovery/final-state.json) 确认日常偏好未变，5188/5331/9331 无遗留监听。
