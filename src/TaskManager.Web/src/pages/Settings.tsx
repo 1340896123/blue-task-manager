@@ -26,7 +26,7 @@ export default function Settings({data,bootstrap,connected,telemetry,preferences
   const section = (title: string, children: ReactNode, collapsible = false) => {
     const content = isValidElement<{ children?: ReactNode }>(children) && children.type === Fragment ? children.props.children : children;
     const rows = Children.toArray(content).filter(child => matches(pref.query, title) || matches(pref.query, textOf(child)));
-    return rows.length ? <section className="settings-section">{collapsible ? <details className="settings-disclosure" open={pref.query.trim() ? true : undefined}><summary>{title}</summary>{rows}</details> : <><h3>{title}</h3>{rows}</>}</section> : null;
+    return rows.length ? <section className="settings-section">{collapsible ? <details className="settings-disclosure" open={pref.query.trim() ? true : undefined}><summary><h2>{title}</h2></summary>{rows}</details> : <><h2>{title}</h2>{rows}</>}</section> : null;
   };
   const sampling = section('常规', <><div className="setting-row"><div><strong>更新速度</strong><p>改变真实采样周期，不生成间隔内的额外点。当前 {data.intervalMs/1000} 秒。</p></div><select aria-label="采样间隔" value={data.intervalMs} disabled={telemetry.busy||!connected} onChange={e=>void settings(Number(e.target.value),data.paused)}><option value={1000}>每1秒</option><option value={2000}>每2秒</option><option value={5000}>每5秒</option></select></div>
       <div className="setting-row"><div><strong>自动采样</strong><p>暂停会停止真实采集和历史增长；继续后保留时间缺口。</p></div><button className="toggle" role="switch" aria-label="自动采样" aria-checked={!data.paused} disabled={!connected||telemetry.busy} onClick={()=>void settings(data.intervalMs,!data.paused)}><span/></button></div>
