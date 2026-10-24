@@ -1,5 +1,53 @@
 # Task Manager — Windows Blue Design System
 
+## 2026-10-24 Windows 11 标准布局（当前优先）
+
+用户要求全部八页使用 Windows 标准任务管理器布局。具体逐页结构、列顺序、命令栏及研究来源见 [WINDOWS-LAYOUT.md](../../docs/WINDOWS-LAYOUT.md)。以下几何增量覆盖旧版允许的响应式图表网格、横向资源类别、重复页头、多层操作栏及常驻底部状态栏。已有颜色/数据状态/调宽排序/身份保护继续有效；Windows 蓝色用于选择、图表和热度，主体改为 Windows 中性浅色结构面。
+
+```css
+--height-titlebar: 48px;
+--height-toolbar: 56px;
+--height-table-header: 58px; /* 仅带资源汇总的进程/用户 */
+--height-table-header-plain: 36px;
+--height-control: 32px;
+--height-controls: 32px;
+--height-nav: 40px;
+--height-nav-toggle: 48px;
+--height-statusbar: 0px; /* 取消常驻底栏，不作为浮层定位的唯一间距 */
+--width-sidebar: 204px;
+--width-sidebar-collapsed: 48px;
+--font-size-title: 20px;
+--width-search: 400px;
+--width-search-min: 240px;
+--width-search-max: 480px;
+--height-search: 32px;
+--width-resource-list: 220px;
+--width-resource-list-compact: 184px;
+--height-resource-tile: 72px;
+--width-resource-sparkline: 64px;
+--height-resource-sparkline: 40px;
+--height-performance-chart: 280px;
+--height-performance-chart-compact: 220px;
+--height-setting-row: 56px;
+--width-settings: 960px;
+--color-app: #F3F3F3;
+--color-titlebar: #F3F3F3;
+--color-sidebar: #F3F3F3;
+--color-surface-subtle: #FAFAFA;
+--color-text: #1A1A1A;
+--color-text-secondary: #5F5F5F;
+--color-border: #E5E5E5;
+--color-control-border: #8A8A8A;
+--color-selection: #E8EEF5;
+--color-hover: #ECECEC;
+```
+
+- 外壳仅标题栏+内容两行；设置仍在导航底部。普通连接信息放更多的“采样状态”；暂停/冻结/断连/过期/保存失败用有条件InfoBar，不因移除底栏丢失状态和最后成功时刻。浮层从视口底部按space定位，不能随statusbar=0贴边。
+- 普通页一条命令栏；次命令、筛选、树、列、导出、重置和口径在更多/弹出层内。命令不可换行形成第二栏；窄窗按重要性溢出。更多视图操作不依赖选中行。
+- 菜单/导航图标20px，行内/更多图标16px；标题栏产品标识20px。表格行继续32/40px，不改虚拟估算与列宽持久化。普通表头采用plain Token，DataTable估算必须读取对应的实际表头高度。
+- 性能统一左侧逐资源磁贴+右图/事实两列；左列CPU、内存、每磁盘、每网卡、每GPU，真实小图与大图同源。禁止横向资源页签/指标卡片墙。
+- 设置直接使用常规/视图/入口/偏好/关于等Windows设置分组，只有一个页头。正文13px/说明12px遵循桌面密度；不套用技能营销模板、远程字体、手机safe-area或新增暗色主题。
+
 ## 1.1组件与Token增量
 
 本节扩展既有视觉而不改变参考布局/Windows蓝色方向。实现先映射这些CSS变量/Tailwind语义值；组件禁止新硬编码Hex/RGB/阴影/动画。已有Token适用于全部新增菜单、详情、资源选择器、树及CSV反馈。

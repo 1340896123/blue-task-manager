@@ -1,5 +1,7 @@
 # 架构与数据合同
 
+> 当前界面结构增量见 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md)：全部八页采用Windows 11标准任务管理器布局。复用既有真实API/身份保护/DataTable，单一命令栏承载主动作，次动作进更多；性能为统一逐资源磁贴列，设置为原生分组。普通/资源汇总表头分别读取36/58px Token，虚拟滚动估算与实际DOM一致；不为布局新增采集协议或虚构字段。
+
 > 最新管理员/安装增量见 [ADMIN-INSTALLER.md](ADMIN-INSTALLER.md)：Host-first 入口嵌入 requireAdministrator，并在 entry/HTTP/Electron 初始化前使用 CsWin32 验证实际 TokenElevation，DLL/headless 不能绕过。以自包含 win-x64 publish 完整目录交给标准 NSIS/MUI2 每机安装；不改变官方 Electron.NET 生命周期和 renderer sandbox。下文“无需安装器/验收无需管理员”保留为历史基线，当前以增量及 R 系列验收为准。
 
 > 1.1实施增量见 `PRODUCT-V1.1.md` 与 `API.md` 的1.1合同。新增能力沿用同源HTTP/JSON.NET/CsWin32，不新增私有传输协议；以下原始架构继续适用，服务只读等1.0范围由本轮增量覆盖。
