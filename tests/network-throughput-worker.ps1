@@ -1,4 +1,4 @@
-param([ValidateSet('browser','desktop')][string]$Mode = 'browser', [string]$ReleaseDirectory = '', [string]$RuntimeDirectory = '')
+param([ValidateSet('browser','desktop','resources')][string]$Mode = 'browser', [string]$ReleaseDirectory = '', [string]$RuntimeDirectory = '', [switch]$VerifySelfContained)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $root
@@ -13,9 +13,11 @@ if ($RuntimeDirectory) {
 $probe = Join-Path $root 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe'
 if (-not (& $probe process-elevation $PID | ConvertFrom-Json).elevated) { throw 'Network acceptance requires an actual elevated Windows token.' }
 $env:TASKMANAGER_NETWORK_MODE = $Mode
+if ($VerifySelfContained) { $env:TASKMANAGER_VERIFY_SELF_CONTAINED = '1' }
 if ($ReleaseDirectory) { $env:TASKMANAGER_NETWORK_RELEASE_DIRECTORY = [IO.Path]::GetFullPath($ReleaseDirectory) }
 $node = (Get-Command node.exe).Source
-$info = [Diagnostics.ProcessStartInfo]::new($node, ('"' + (Join-Path $root 'tests/network-throughput-ui.mjs') + '"'))
+$networkSuite = if ($Mode -eq 'resources') { 'tests/network-resource-trend.mjs' } else { 'tests/network-throughput-ui.mjs' }
+$info = [Diagnostics.ProcessStartInfo]::new($node, ('"' + (Join-Path $root $networkSuite) + '"'))
 $info.UseShellExecute=$false; $info.CreateNoWindow=$true; $info.RedirectStandardOutput=$true; $info.RedirectStandardError=$true; $info.WorkingDirectory=$root
 $info.StandardOutputEncoding=[Text.UTF8Encoding]::new($false); $info.StandardErrorEncoding=[Text.UTF8Encoding]::new($false)
 [IO.File]::WriteAllText((Join-Path $output "worker-$Mode.json"), (@{elevated=$true;pid=$PID;running=$true} | ConvertTo-Json), [Text.UTF8Encoding]::new($false))

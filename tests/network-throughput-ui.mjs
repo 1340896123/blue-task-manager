@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import { tmpdir } from 'node:os';
@@ -13,6 +13,7 @@ import { clickCommand } from './layout-ui-support.mjs';
 const root=path.resolve(import.meta.dirname,'..'),mode=process.argv.includes('--desktop')?'desktop':process.env.TASKMANAGER_NETWORK_MODE??'browser',desktop=mode==='desktop';
 assert.ok(['browser','desktop'].includes(mode));
 const release=process.env.TASKMANAGER_NETWORK_RELEASE_DIRECTORY??path.join(root,'output/TaskManager-win-x64');
+const selfContained=process.env.TASKMANAGER_VERIFY_SELF_CONTAINED==='1',runName=mode+(selfContained?'-selfcontained':'');
 const port=5416,cdp=9416,origin=`http://127.0.0.1:${port}`,output=path.join(root,'output/playwright/network-throughput');
 const temporary=await mkdtemp(path.join(tmpdir(),'taskmanager-network-ui-')),fixtureExe=path.join(root,'tests/TaskManager.NetworkTests/bin/Release/net10.0-windows10.0.19041.0/TaskManager.NetworkTests.exe');
 await mkdir(output,{recursive:true});
@@ -25,14 +26,17 @@ const get=async route=>{const response=await fetch(`${origin}/api/${route}`,{sig
 async function post(route,body){const response=await fetch(`${origin}/api/${route}`,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-TaskManager-Token':token},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});assert.ok(response.ok,route+': '+response.status);return response.json();}
 const formatRate=value=>{const rank=Math.max(0,Math.min(4,Math.floor(Math.log(Math.max(value,1))/Math.log(1024))));return `${(value/1024**rank).toFixed(rank===0?0:1)} ${['B','KB','MB','GB','TB'][rank]}/秒`;};
 const nav=async name=>{await page.getByRole('button',{name,exact:true}).click();await page.locator('.toolbar h1').filter({hasText:name}).waitFor();};
-async function capture(name){const file=`${mode}-${name}.png`,destination=path.join(output,file);if(desktop){const session=await page.context().newCDPSession(page);const result=await session.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});await session.detach();await writeFile(destination,Buffer.from(result.data,'base64'));}else await page.screenshot({path:destination});screenshots.push(file);}
+async function capture(name){const file=`${runName}-${name}.png`,destination=path.join(output,file);if(desktop){const session=await page.context().newCDPSession(page);const result=await session.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});await session.detach();await writeFile(destination,Buffer.from(result.data,'base64'));}else await page.screenshot({path:destination});screenshots.push(file);}
 async function viewport(width,height){if(desktop){probe(tree.map(item=>`${item.pid}:${item.fileTime}`).join(','),'resize',width,height);await delay(250);}else await page.setViewportSize({width,height});check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight),`${width}x${height}: no document overflow`);}
 function csvRows(text){const rows=[];let row=[],cell='',quoted=false;for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}else if(ch===','&&!quoted){row.push(cell);cell='';}else if(ch==='\n'&&!quoted){row.push(cell.replace(/\r$/,''));rows.push(row);row=[];cell='';}else cell+=ch;}return rows;}
 async function sampledTarget(after=0){let value;try{await until(async()=>{value=await get('snapshot');return Date.parse(value.processNetwork.capturedAtUtc)>after&&value.processNetwork.status==='available'&&value.processes.some(item=>item.identity===fixtureIdentity&&item.networkReceiveBytesPerSecond>1000&&item.networkSendBytesPerSecond>1000);},'real ETW HTTP fixture throughput',45000);}catch(error){const target=value?.processes.find(item=>item.identity===fixtureIdentity);diagnostics.push({sampleId:value?.sampleId,source:value?.processNetwork,target:target?{identity:target.identity,receive:target.networkReceiveBytesPerSecond,send:target.networkSendBytesPerSecond,capturedAtUtc:target.networkCapturedAtUtc,unavailable:Object.fromEntries(Object.entries(target.unavailable).filter(([key])=>key.startsWith('network')))}:null});throw error;}return value;}
 try{
   check(!await portOpen(port)&&!await portOpen(cdp),'dedicated network UI ports are free');
-  host=spawn(path.join(release,'TaskManager.Host.exe'),[...(desktop?[]:['--headless']),`--port=${port}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:temporary,TASKMANAGER_CDP_PORT:String(cdp)},stdio:'ignore',windowsHide:true});
+  const hostEnvironment={...process.env,TASKMANAGER_DATA_DIR:temporary,TASKMANAGER_CDP_PORT:String(cdp)};
+  if(selfContained){const config=JSON.parse(await readFile(path.join(release,'TaskManager.Host.runtimeconfig.json'),'utf8'));check(!config.runtimeOptions.framework&&!config.runtimeOptions.frameworks&&config.runtimeOptions.includedFrameworks.length===2,'published Host declares both self-contained frameworks');for(const key of Object.keys(hostEnvironment))if(key.startsWith('DOTNET_ROOT'))delete hostEnvironment[key];}
+  host=spawn(path.join(release,'TaskManager.Host.exe'),[...(desktop?[]:['--headless']),`--port=${port}`],{cwd:release,env:hostEnvironment,stdio:'ignore',windowsHide:true});
   await until(async()=>(await get('health')).ready,'real elevated production Host ready',45000);token=(await get('bootstrap')).token;
+  if(selfContained){const clr=spawnSync('powershell.exe',['-NoProfile','-Command',`(Get-Process -Id ${host.pid}).Modules | Where-Object ModuleName -eq 'coreclr.dll' | Select-Object -ExpandProperty FileName`],{encoding:'utf8',windowsHide:true,timeout:15000});check(clr.status===0&&clr.stdout.trim().toLowerCase()===path.join(release,'coreclr.dll').toLowerCase(),'Host loads its own published CLR with DOTNET_ROOT variables removed');}
   const health=await get('health');check(/CsWin32/.test(health.nativeSource)&&/Newtonsoft/.test(health.json),'production CsWin32 and JSON.NET chain');
   const savedPreferences=await get('preferences');check(savedPreferences.warning===null&&savedPreferences.preferences.taskManagerPromptDismissed===true,'isolated preferences load without recovery and dismiss the first-launch prompt');
   fixture=spawn(fixtureExe,['--fixture',path.join(temporary,'fixture')],{stdio:'ignore',windowsHide:true});
@@ -89,6 +93,6 @@ finally{
   if(fixture?.exitCode===null&&fixture.signalCode===null){check(`${fixture.pid}:${probe('process-elevation',fixture.pid).creationTimeFileTime}`===fixtureIdentity,'fixture cleanup revalidates its original creation identity');const exited=new Promise(resolve=>fixture.once('exit',resolve));fixture.kill();await exited;}
   await rm(temporary,{recursive:true,force:true});
   if(!clean&&!failure)failure={message:'test-owned application resources remain'};
-  const report={result:failure?'FAIL':'PASS',mode,assertions:checks.length,checks,screenshots,errors,failure,socketBytes:{sent:sentBytes,received:receivedBytes},source:{status:sourceSample?.processNetwork.status,windowDurationMs:sourceSample?.processNetwork.windowDurationMs,collectionDurationMs:sourceSample?.processNetwork.collectionDurationMs},cadences,diagnostics,clean,cleanup:'exact owned Host, fixture, ports and ETW sessions; no user processes or IFEO values changed'};
-  await writeFile(path.join(output,`${mode}.json`),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));if(failure)process.exitCode=1;
+  const report={result:failure?'FAIL':'PASS',mode,selfContained,releaseDirectory:release,assertions:checks.length,checks,screenshots,errors,failure,socketBytes:{sent:sentBytes,received:receivedBytes},source:{status:sourceSample?.processNetwork.status,windowDurationMs:sourceSample?.processNetwork.windowDurationMs,collectionDurationMs:sourceSample?.processNetwork.collectionDurationMs},cadences,diagnostics,clean,cleanup:'exact owned Host, fixture, ports and ETW sessions; no user processes or IFEO values changed'};
+  await writeFile(path.join(output,`${runName}.json`),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));if(failure)process.exitCode=1;
 }

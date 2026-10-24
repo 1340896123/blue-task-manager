@@ -72,7 +72,7 @@ npm run test:e2e
 
 性能资源列表中的“HWiNFO 传感器”只读接入 HWiNFO SM2 共享内存，显示实际分组、原名、单位、当前值与 HWiNFO 会话最小/最大/平均值，支持搜索、排序、调宽。需已有 HWiNFO 正在运行，并在 Sensors 设置中开启 Shared Memory Support，且当前版本/许可提供该功能。未提供或过期会显示明确原因。应用不附带 HWiNFO；规格与条件验收见 [HWiNFO / CPU 图表](docs/HWINFO-CPU-GRAPHS.md)。管理员终端可分别运行 `npm run test:hwinfo-cpu`、`npm run test:hwinfo-cpu-ui`、`npm run test:hwinfo-cpu-desktop`（专用端口5306/9306）；没有真实 HWiNFO 时不会把解析器检查称为成功采集。
 
-GPU使用Windows PDH真实引擎计数并以DXGI实际型号名称标识；软件适配器明确标记，不猜Windows编号；磁盘I/O与进程I/O分别展示。逐进程网络吞吐、启动策略编辑与驱动级分析仍未接入，端点列表不冒充吞吐。服务动作受Windows当前账户权限约束，不自动提权或停止依赖服务；当前标准用户环境成功启停测试需保留权限限制。
+GPU使用Windows PDH真实引擎计数并以DXGI实际型号名称标识；软件适配器明确标记，不猜Windows编号；磁盘I/O与进程I/O分别展示。逐进程网络已通过Windows ETW接入TCP/UDP IPv4/IPv6真实收发，列表显示接收+发送，详情、复制及CSV保留双向速率和独立来源时间；预热、容量不足、事件丢失或身份不可确认时显示未知与原因。硬件网卡性能继续使用GetIfTable2，不与进程ETW合计混用，端点列表也不冒充吞吐。规格和本机验证见[网络吞吐](docs/NETWORK-THROUGHPUT.md)与[验收结果](docs/NETWORK-THROUGHPUT-RESULTS.md)。启动策略编辑与驱动级分析仍未接入；服务动作受Windows当前账户权限约束，不自动停止依赖服务。
 
 查找受限进程时先清空搜索和筛选，按实际 exe 名或 PID 定位；CPU、路径或发布者读取失败不等于进程不存在。系统任务管理器显示的文件说明可能与 exe 名不同，当前搜索不承诺匹配尚未读取的文件说明。
 

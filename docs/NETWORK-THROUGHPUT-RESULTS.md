@@ -1,6 +1,6 @@
 # 网络吞吐验收结果
 
-日期：2026-10-25（Asia/Shanghai）。原生后端与浏览器/正式 Electron 网络专项已执行；最终自包含交付和完整性能测量由交付阶段补记。
+日期：2026-10-25（Asia/Shanghai）。原生后端、浏览器/正式 Electron、独立自包含交付和满120点历史后的性能验收已执行。原生实现提交4373f4a，界面实现提交c497a16；交付目录同时包含当前工作区已提交的窗口兼容修复。
 
 ## 已执行
 
@@ -46,6 +46,43 @@ Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -ArgumentList @('-N
 
 两模式顺序执行，等待 `output/playwright/network-throughput/worker-<mode>.json` complete。原始报告为同目录 `browser.json`/`desktop.json`，均 clean=true；容量诊断保留为 `desktop-capacity.json`。审阅证据见 [browser.json](evidence/network-throughput/browser.json)、[desktop.json](evidence/network-throughput/desktop.json)、[desktop-capacity.json](evidence/network-throughput/desktop-capacity.json)。桌面截图：[网络列](evidence/network-throughput/desktop-process-1380.png)、[窄窗](evidence/network-throughput/desktop-process-960.png)、[125%](evidence/network-throughput/desktop-process-125.png)、[网络详情](evidence/network-throughput/desktop-detail.png)、[硬件网卡](evidence/network-throughput/desktop-adapter.png)。
 
-## 最终交付待补
+## 最终自包含交付与性能（N08）
 
-N08 的完整120点历史预热后 ≥30 秒 CPU/内存/句柄/HTTP 性能与最新源代码的正式自包含包验证仍由最终交付阶段执行。真实丢事件/缓冲、权限撤销故障未主动制造，不能将隔离边界断言当作这些故障的真实成功采样。
+交付目录为 `output/network-throughput-selfcontained`，启动 `TaskManager.Host.exe` 或 `start.cmd`，须保留整个目录。使用微软官方10.0.401 SDK压缩包，按官方release-metadata的SHA512核验后解压到工作区 `output/tools/network-sdk-10.0.401`，未更改系统SDK或运行时。Host和Launcher分别执行标准 `dotnet publish -c Release -r win-x64 --self-contained true`，保留官方Electron.NET bridge及Electron45运行时、.NET/ASP.NET10.0.12和完整许可。生产Web入口及窗口preload/startup hook均核对源文件SHA256，最终整包不依赖本机是否安装.NET10。
+
+自包含目录重跑正式Electron网络专项：**36项通过**。测试单独移除Host子进程所有 `DOTNET_ROOT*` 环境变量，独立读取其实际加载的 `coreclr.dll`，确认路径为交付目录；网络收发、来源、排序、CSV、尺寸、实际125%及正常退出均通过，精确本实例ETW会话与端口释放。证据：[desktop-selfcontained.json](evidence/network-throughput/desktop-selfcontained.json)。
+
+性能测试环境为Windows11企业版10.0.26200 x64、Node24.16.0、28逻辑处理器。正式自包含Electron保持真实可见窗口，先积累120个真实历史点，再测量33.29秒，共30个界面快照，本机实际739～748个进程。初次预热窗口被隐藏的尝试不予采纳；最终测试通过原生HWND恢复真实窗口，并验证测量期间没有hidden转换，未伪造Page Visibility或历史点。
+
+| 指标 | 本轮实测 | 项目目标 |
+|---|---:|---:|
+| 基础采样p50 / p95 | 20.27 / 27.29ms | p95 ≤500ms |
+| Host平均整机CPU | 0.126%（单核口径3.52%） | ≤1% |
+| 整应用平均整机CPU | 0.365% | 单列记录 |
+| 搜索交互p50 / p95 | 13.3 / 27.0ms | p95 ≤100ms |
+| Host private / 工作集 | 69.7 / 163.8MiB | 单列记录 |
+| 整应用句柄 | 3628 →3619 | 观察资源趋势 |
+| Renderer JS堆 / DOM / 挂载行 | 9.35MiB / 835 / 30 | 虚拟行有界 |
+| HTTP延迟p50 / p95 | 3.52 / 21.78ms | 单列记录 |
+| 代表性identity / gzip响应体 | 1,391,969 / 208,710字节 | 压缩与缓存真实有效 |
+
+测量期间独立网络窗口27个，全部available，实际丢事件和丢缓冲均为0；网络后台没有阻塞基本采样。12次条件GET全部304、空响应体。private表示专用提交，工作集相加含重复共享页；交互计时到下一requestAnimationFrame回调，不宣称为像素呈现时延。本机进程规模不同于历史约900进程基线，不作严格同负载前后比较或长时SLA承诺。
+
+性能原始报告与正常清理结果分别见[performance.json](evidence/network-throughput/performance.json)、[performance-worker.json](evidence/network-throughput/performance-worker.json)。另用三个10秒壁钟间隔观察线程/句柄，源快照时间跨度29.42秒：Host线程37→37，整应用线程201→207，句柄3509→3580，五个原始应用身份保持稳定且全部窗口网络available，正常关闭释放ETW和原始身份。独立证据为[resource-trend.json](evidence/network-throughput/resource-trend.json)；与上述满历史CPU测量属于不同观测窗口，短时线程/句柄变化不构成长期无泄漏承诺。身份对照使用CsWin32读出的原始FILETIME，避免CIM日期精度截断造成误判。
+
+补充回归的最终有效日志：原生API79项、核心25项、GPU/磁盘/网卡24项、进程管理89项、元数据5项、进程UI34项、页面UI48项、UI smoke36项，全部通过；汇总见[regressions.json](evidence/network-throughput/regressions.json)。页面/UI smoke最初仅清理阶段遭遇上述logman竞态，修复后复跑通过。静态约束最终复验通过，C#仍只使用JSON.NET与CsWin32，业务界面没有模拟来源。
+
+在已提升的PowerShell中可复验最终目录（`$networkRoot`为仓库根目录）：
+
+```powershell
+$networkRoot = 'E:\taskManager'
+& "$networkRoot\tests\network-throughput-worker.ps1" -Mode desktop -ReleaseDirectory "$networkRoot\output\network-throughput-selfcontained" -RuntimeDirectory "$networkRoot\output\tools\network-dotnet" -VerifySelfContained
+& "$networkRoot\tests\network-throughput-worker.ps1" -Mode resources -ReleaseDirectory "$networkRoot\output\network-throughput-selfcontained" -RuntimeDirectory "$networkRoot\output\tools\network-dotnet" -VerifySelfContained
+$env:DOTNET_ROOT = "$networkRoot\output\tools\network-dotnet"
+$env:DOTNET_ROOT_X64 = $env:DOTNET_ROOT
+$env:TASKMANAGER_RELEASE_DIRECTORY = "$networkRoot\output\network-throughput-selfcontained"
+$env:TASKMANAGER_VERIFY_SELF_CONTAINED = '1'
+node "$networkRoot\tests\desktop-performance-v11.mjs"
+```
+
+以上环境变量仅供测试探针/fixture；被测自包含Host会单独清除 `DOTNET_ROOT*`。真实丢事件/缓冲和权限撤销未主动制造；相关解析/状态/过期分支验证不冒充这些故障的真实成功采样。

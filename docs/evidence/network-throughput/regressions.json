@@ -1,0 +1,42 @@
+[
+  {
+    "suite": "native-api",
+    "passed": true,
+    "assertions": 79
+  },
+  {
+    "suite": "native-core-v11",
+    "passed": true,
+    "assertions": 25
+  },
+  {
+    "suite": "native-telemetry-v11",
+    "passed": true,
+    "assertions": 24
+  },
+  {
+    "suite": "native-management-v11",
+    "passed": true,
+    "assertions": 89
+  },
+  {
+    "suite": "native-metadata-v11",
+    "passed": true,
+    "assertions": 5
+  },
+  {
+    "suite": "process-ui-v11",
+    "passed": true,
+    "assertions": 34
+  },
+  {
+    "suite": "pages-ui-v11",
+    "passed": true,
+    "assertions": 48
+  },
+  {
+    "suite": "ui-smoke",
+    "passed": true,
+    "assertions": 36
+  }
+]

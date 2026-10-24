@@ -1,0 +1,41 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-24T17:41:54.491Z",
+  "durationMs": 29424,
+  "appProcessCount": 5,
+  "samples": [
+    {
+      "capturedAtUtc": "2026-10-24T17:41:18.3849496Z",
+      "appThreads": 201,
+      "hostThreads": 37,
+      "appHandles": 3509,
+      "networkStatus": "available",
+      "samplingMs": 68.9948
+    },
+    {
+      "capturedAtUtc": "2026-10-24T17:41:28.6901192Z",
+      "appThreads": 203,
+      "hostThreads": 39,
+      "appHandles": 3545,
+      "networkStatus": "available",
+      "samplingMs": 25.2295
+    },
+    {
+      "capturedAtUtc": "2026-10-24T17:41:37.8167596Z",
+      "appThreads": 201,
+      "hostThreads": 37,
+      "appHandles": 3540,
+      "networkStatus": "available",
+      "samplingMs": 105.7356
+    },
+    {
+      "capturedAtUtc": "2026-10-24T17:41:47.8084104Z",
+      "appThreads": 207,
+      "hostThreads": 37,
+      "appHandles": 3580,
+      "networkStatus": "available",
+      "samplingMs": 24.4975
+    }
+  ],
+  "clean": true
+}

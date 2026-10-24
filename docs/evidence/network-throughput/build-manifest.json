@@ -1,0 +1,46 @@
+{
+  "createdAtUtc": "2026-10-24T17:45:14.4570905Z",
+  "sourceCommits": [
+    "4373f4a",
+    "c497a16",
+    "3560a51"
+  ],
+  "sdkVersion": "10.0.401",
+  "runtimeVersion": "10.0.12",
+  "selfContained": true,
+  "desktopAssertions": 36,
+  "files": [
+    {
+      "path": "TaskManager.Host.exe",
+      "sha256": "A02AD459F4E53A856652709643621B5CA5F5EE022D95F3FCCC06224775793ADD"
+    },
+    {
+      "path": "TaskManager.Host.dll",
+      "sha256": "72BA8E9AECA6CD8D615898AFD1D2A35038D06C39F9D1FF9755C577445EFF8AF5"
+    },
+    {
+      "path": "TaskManager.Host.runtimeconfig.json",
+      "sha256": "F169C50CABE129AF6DB8765FEBFC51196917C22F29D23E2F5DF81B312FA7B5E6"
+    },
+    {
+      "path": "TaskManager.Launcher.exe",
+      "sha256": "20AE7F4819B35B4959E2EC4C91A8DBC00C00777809B4971E270E8B82625A6234"
+    },
+    {
+      "path": "TaskManager.Launcher.runtimeconfig.json",
+      "sha256": "564EDFAD8990E994033CABA1FBFC6D7B10E935CDB4842F9C9A6225A4C09F70AA"
+    },
+    {
+      "path": "wwwroot/index.html",
+      "sha256": "6B0DDD1B1483C617F2D28F16EFA1521B962467677F64640128A9F27065A6496A"
+    },
+    {
+      "path": ".electron/custom_main.js",
+      "sha256": "00878625ECB94A20B76DACF3136D76E39594B2BB6EAE3021873C629EA8064CD7"
+    },
+    {
+      "path": ".electron/window-preload.js",
+      "sha256": "6F376BD509F6350A600F054A63E140CE74E9466AF7F29E758F0D136F7CD599E4"
+    }
+  ]
+}

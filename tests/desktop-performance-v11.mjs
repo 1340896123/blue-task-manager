@@ -15,7 +15,9 @@ if (await portOpen(port) || await portOpen(cdp)) throw new Error('Performance po
 const temporary = await mkdtemp(path.join(tmpdir(), 'blue-performance-'));
 await writeFile(path.join(temporary,'preferences.json'),JSON.stringify({version:1,intervalMs:1000,ui:{version:1,density:'compact',sidebarCollapsed:false,processView:'flat',taskManagerPromptDismissed:true,pages:{}}}));
 const release = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root,'output/TaskManager-win-x64'));
-const host = spawn(path.join(release, 'TaskManager.Host.exe'), [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: temporary, TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore' });
+const hostEnvironment = { ...process.env, TASKMANAGER_DATA_DIR: temporary, TASKMANAGER_CDP_PORT: String(cdp) };
+if (process.env.TASKMANAGER_VERIFY_SELF_CONTAINED === '1') for (const key of Object.keys(hostEnvironment)) if (key.startsWith('DOTNET_ROOT')) delete hostEnvironment[key];
+const host = spawn(path.join(release, 'TaskManager.Host.exe'), [`--port=${port}`], { cwd: tmpdir(), env: hostEnvironment, windowsHide: true, stdio: 'ignore' });
 const started = performance.now(); let browser, page, tree = [], last;
 const output = path.join(root, 'output/performance');
 await mkdir(output, { recursive: true });
@@ -52,6 +54,8 @@ try {
     await delay(1000);
   }
   check(last.performanceHistory.length===120,'history fully warmed'); console.log('120 real history points warmed');
+  // Restore the actual HWND after the long warmup; never spoof Page Visibility.
+  nativeUi(window,'foreground'); await page.bringToFront(); await until(async()=>await page.evaluate(()=>!document.hidden),'full-history surface restored to the real desktop',15000);
   await page.getByRole('button',{name:'性能',exact:true}).click();
   await page.locator('.resource-list .resource-tile').first().click();await delay(300);
   const sparkline=await page.locator('.resource-list').evaluate(list=>({devices:list.querySelectorAll('.resource-tile').length,nodes:list.querySelectorAll('*').length,grids:list.querySelectorAll('.chart-grid').length,tooltips:list.querySelectorAll('title').length,paths:list.querySelectorAll('path').length,circles:list.querySelectorAll('circle').length}));
@@ -60,13 +64,13 @@ try {
   await page.getByRole('button',{name:'进程',exact:true}).click();
   check(await page.evaluate(()=>!document.hidden),'full-history performance surface is actually visible');
   await page.evaluate(()=>{globalThis.__bluePerfHiddenTransitions=0;document.addEventListener('visibilitychange',()=>{if(document.hidden)globalThis.__bluePerfHiddenTransitions++;});});
-  const measurements=[], pdh=new Map(), httpCounts={full200:0,unchanged304:0}, errors=[]; let measuring=true;
+  const measurements=[], pdh=new Map(), networkWindows=new Map(), httpCounts={full200:0,unchanged304:0}, errors=[]; let measuring=true;
   page.on('pageerror',e=>errors.push(e.message));
   page.on('response',async response=>{
     if(!measuring || response.url()!==origin+'/api/snapshot')return;
     if(response.status()===304){httpCounts.unchanged304++;return;}
     if(response.status()!==200)return;
-    try { const s=await response.json(); if(!measuring)return; httpCounts.full200++;last=s;measurements.push({sampleId:s.sampleId,processCount:s.processes.length,samplingMs:s.samplingDurationMs,history:s.performanceHistory.length});pdh.set(s.telemetry.sampleId,s.telemetry); } catch{}
+    try { const s=await response.json(); if(!measuring)return; httpCounts.full200++;last=s;measurements.push({sampleId:s.sampleId,processCount:s.processes.length,samplingMs:s.samplingDurationMs,history:s.performanceHistory.length});pdh.set(s.telemetry.sampleId,s.telemetry);if(s.processNetwork.capturedAtUtc)networkWindows.set(s.processNetwork.capturedAtUtc,s.processNetwork); } catch{}
   });
   tree=processTree(host.pid); const before=resources(tree); const measureStarted=performance.now();
   await delay(32000);
@@ -74,6 +78,7 @@ try {
   check(await page.evaluate(()=>!document.hidden),'performance window remained genuinely visible');
   check(await page.evaluate(()=>globalThis.__bluePerfHiddenTransitions===0),'performance resource window had no hidden transition');
   check(measurements.length>=20 && measurements.every(s=>s.history===120),`real full-history steady-state measure (${measurements.length} UI samples)`);
+  check([...networkWindows.values()].filter(source=>source.status==='available').length>=3,'real ETW network windows continue advancing throughout the performance measurement');
   const cpu=(a,b)=>Number(BigInt(b.cpuTime100ns)-BigInt(a.cpuTime100ns))/10000/elapsedMs*100;
   const appCpu=after.reduce((n,r)=>n+cpu(before.find(b=>b.pid===r.pid),r),0); const hostCpu=cpu(before.find(b=>b.pid===host.pid),after.find(b=>b.pid===host.pid));
   const nativeMetrics=await page.evaluate(()=>({jsHeapBytes:performance.memory?.usedJSHeapSize??null,totalJsHeapBytes:performance.memory?.totalJSHeapSize??null,domNodes:document.querySelectorAll('*').length,mountedRows:document.querySelectorAll('tbody tr[data-row-key]').length,logicalViewport:{width:innerWidth,height:innerHeight},dpr:devicePixelRatio}));
@@ -86,6 +91,9 @@ try {
   const report={result:targetsMet?'PASS':'TARGETS_EXCEEDED',budgetResults,checkedAtUtc:new Date().toISOString(),scope:'production portable Electron + Host + all exact descendant identities, visible default flat processes; genuine topmost preference enabled to prevent automation app occlusion; no CDP focus emulation; no test workload descendants; 120 real history points; resource window only normal UI polls (wire benchmark follows)',startupMs,warmupMs:measureStarted-started,measurementMs:elapsedMs,logicalProcessors:availableParallelism(),appProcessCount:tree.length,processCount:{min:Math.min(...measurements.map(s=>s.processCount)),max:Math.max(...measurements.map(s=>s.processCount))},samples:measurements.length,pdhSamples:pdh.size,samplingMs:{p50:percentile(measurements.map(s=>s.samplingMs),.5),p95:percentile(measurements.map(s=>s.samplingMs),.95),excludes:'HTTP serialization/transfer'},pdhCollectionMs:{p50:percentile([...pdh.values()].map(s=>s.collectionDurationMs),.5),p95:percentile([...pdh.values()].map(s=>s.collectionDurationMs),.95)},pdhQueryMs:{p50:percentile([...pdh.values()].map(s=>s.queryDurationMs),.5),p95:percentile([...pdh.values()].map(s=>s.queryDurationMs),.95)},cpu:{hostOneCorePercent:hostCpu,hostMachinePercent:hostCpu/availableParallelism(),wholeAppOneCorePercent:appCpu,wholeAppMachinePercent:appCpu/availableParallelism()},resources:{before:summary(before),after:summary(after),host:after.find(p=>p.pid===host.pid),semantics:'privateBytes sums private committed memory; workingSet sum includes shared pages multiple times; handles sum is process handles'},renderer:nativeMetrics,interactionMs:{method:'Playwright search fill to next requestAnimationFrame callback, includes automation protocol; callback precedes paint and does not measure pixel presentation',p50:percentile(interactions,.5),p95:percentile(interactions,.95),samples:interactions.length},http:{uiResponses:httpCounts,benchmarkSamples:payloads.length,latencyMs:{p50:percentile(payloads.map(s=>s.latencyMs),.5),p95:percentile(payloads.map(s=>s.latencyMs),.95)},representations:payloads,conditional304:{requests:12,wireBodyBytes:0}},boundaries:{serviceSuccess:'not exercised by this performance suite; no user services changed',processNetwork:'independent Windows ETW TCP/UDP identity windows; hardware adapter counters remain separate'},cleanup:'native close verified below; no token/full machine process list saved'};
   // Do not archive per-app PIDs/CPU FILETIME counters; only aggregate resource fields.
   report.sparkline=sparkline;
+  report.releaseDirectory=release;
+  report.hostRuntimeRootsRemoved=process.env.TASKMANAGER_VERIFY_SELF_CONTAINED==='1';
+  report.processNetwork={windows:networkWindows.size,statusCounts:Object.fromEntries([...new Set([...networkWindows.values()].map(source=>source.status))].map(status=>[status,[...networkWindows.values()].filter(source=>source.status===status).length])),latestStatus:last.processNetwork.status,eventsLost:last.processNetwork.eventsLost,buffersLost:last.processNetwork.buffersLost};
   delete report.resources.host.pid; delete report.resources.host.cpuTime100ns;
   report.warmupDiagnostics = warmupDiagnostics;
   await writeFile(path.join(output,'desktop-v11-release.json'),JSON.stringify(report,null,2));
