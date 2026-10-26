@@ -1,5 +1,9 @@
 # Task Manager — Windows Blue Design System
 
+## 2026-10-27 白色简约图表（当前图表配色优先）
+
+全部性能主图、逐逻辑处理器图及资源磁贴小曲线采用纯白图面（surface）、中性浅灰网格（chart-grid `#ECEFF2`）与边界（border），主序列为Windows蓝色实线（chart-line `#0067C0`），次序列为深灰虚线（chart-secondary `#58636F`）。大小曲线、数据点和图例同步读取序列Token；小曲线使用中性边界。轴、单位、图例文字和等待说明沿用text-secondary。保持既有线宽、布局、单位和真实时间缺口，磁盘继续仅显示读取/写入；表格热度和外壳Token仍按各自语义使用。曲线对白底对比≥3:1、标签≥4.5:1；主/次线实测5.674/6.124:1，标签6.385:1。完整角色、状态与C系列验收见 [CHART-PALETTE.md](../../docs/CHART-PALETTE.md)。
+
 ## 2026-10-27 磁盘型号、类型与吞吐展示
 
 性能页保留资源双栏；磁盘右侧只保留一张读取/写入吞吐图，复用既有实线/虚线、双图例、字节/秒速率轴和chart Token。移除活动时间事实项、活动率大图、小曲线及说明文案；左磁贴小曲线改用同一真实读/写历史，摘要分两行显示读/写速率，名称及类型/总线仍可辨认。磁盘磁贴最小高度为height-resource-tile加space-6（96px），允许内容自然增高；其他资源保持72px，避免双速率文字挤压。磁盘型号在资源标题处以既有subtitle/body层级显示完整可选择文本，事实列表明确“型号”“类型”“总线类型”。搜索覆盖设备字段。长型号按既有overflow-wrap换行；缺失使用现有MissingValue与可访问原因，不新增配色、字号、徽标或卡片墙。复用secondary/accent/space/事实列表Token，按960×640、1380×860、实际Electron125%和reduced-motion检查。来源/边界及D01～D08见 [DISK-IDENTITY.md](../../docs/DISK-IDENTITY.md)。
@@ -216,8 +220,8 @@
 | --color-heat-3 | #B8D9FA | 真实资源热度3级 |
 | --color-heat-4 | #8FC0F1 | 真实资源热度4级 |
 | --color-chart-line | #0067C0 | CPU/主曲线 |
-| --color-chart-secondary | #5C3BBF | 次曲线，与主曲线同时有图例 |
-| --color-chart-grid | #DFE8F3 | 图表网格 |
+| --color-chart-secondary | #58636F | 深灰次曲线，虚线并配明确图例 |
+| --color-chart-grid | #ECEFF2 | 图表中性浅灰网格；图面使用surface、边界使用border |
 | --color-overlay | rgb(15 35 60 / 32%) | 弹窗遮罩 |
 
 热度以绝对实际CPU/GPU百分比0/5/20/50/80映射，内存可按当前可见最大值的比例但须保持数值可读；未知指标不着热度。热度、在线状态都保留文字或数值，不能只凭颜色判断。
