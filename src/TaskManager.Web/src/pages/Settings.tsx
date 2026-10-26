@@ -9,13 +9,15 @@ import type { useTelemetry } from '../useTelemetry';
 import type { Notify, Patch } from './pageShared';
 import TaskManagerIntegration from './TaskManagerIntegration';
 import { networkSourceText } from '../process/network';
+import { UpdateSettingsRow, updateStatusText } from '../ApplicationUpdates';
+import type { ApplicationUpdatesController } from '../hooks/useApplicationUpdates';
 type WindowState={available:boolean;alwaysOnTop:boolean;zoomFactor:number};
 // Search the same labels and descriptions that are rendered, including unavailable controls.
 function textOf(node: ReactNode): string {
   return Children.toArray(node).map(child => typeof child === 'string' || typeof child === 'number' ? String(child) : isValidElement<{ children?: ReactNode }>(child) ? textOf(child.props.children) : '').join(' ');
 }
 const names:Record<string,string>={processes:'进程',system:'系统资源',network:'网络接口合计',services:'服务',users:'用户会话',startup:'启动项目',history:'本次历史',processNetwork:'逐进程网络吞吐',processGpu:'逐进程 GPU',diskActivity:'物理磁盘活动',networkAdapters:'逐网络适配器',gpuAdapters:'GPU适配器',gpuIdentity:'显卡名称与身份',logicalProcessors:'逐逻辑处理器使用率',hwInfo:'HWiNFO 传感器',processDetails:'进程详情',processConnections:'TCP / UDP端点',processPriority:'进程优先级',processTree:'进程树',processIcons:'Windows图标',serviceControl:'服务控制',shellLocations:'Windows位置与属性',efficiency:'效率模式'};
-export default function Settings({data,bootstrap,connected,telemetry,preferences,notify,onHelp,onReset,pref,patch,windowRevision}:{data:Snapshot;bootstrap:Bootstrap|null;connected:boolean;telemetry:ReturnType<typeof useTelemetry>;preferences:PreferencesController;notify:Notify;onHelp:()=>void;onReset:()=>void;pref:PagePreference;patch:Patch;windowRevision:number}){
+export default function Settings({data,bootstrap,connected,telemetry,preferences,updates,onUpdates,notify,onHelp,onReset,pref,patch,windowRevision}:{data:Snapshot;bootstrap:Bootstrap|null;connected:boolean;telemetry:ReturnType<typeof useTelemetry>;preferences:PreferencesController;updates:ApplicationUpdatesController;onUpdates:()=>void;notify:Notify;onHelp:()=>void;onReset:()=>void;pref:PagePreference;patch:Patch;windowRevision:number}){
   const [windowState,setWindowState]=useState<WindowState|null>(null),[windowError,setWindowError]=useState<string|null>(null),[busy,setBusy]=useState(false);
   const scroll = useRef<HTMLDivElement>(null), previousQuery = useRef(pref.query);
   useEffect(() => { if (previousQuery.current !== pref.query) { previousQuery.current = pref.query; if (scroll.current) scroll.current.scrollTop = 0; } }, [pref.query]);
@@ -44,10 +46,12 @@ export default function Settings({data,bootstrap,connected,telemetry,preferences
   const sources = section('关于 / 本机数据来源', <dl className="about-list">{[['运行权限','启动必需管理员权限；新任务默认继承管理员权限'],['原生接口','Microsoft.Windows.CsWin32 · Win32'],['应用通信','本机同源HTTP · JSON.NET'],['逐逻辑处理器','Windows PDH Processor Information · 处理器组 / 组内索引'],['逐进程网络',`Windows ETW TCP/UDP IPv4/IPv6 · ${networkSourceText(data.processNetwork,data.paused)}`],['硬件传感器','HWiNFO SM2 只读共享内存；在性能页查看实际分组与会话统计'],['桌面模式',bootstrap?.desktop?'Electron.NET':'浏览器 / 无窗口主机'],['版本',bootstrap?.version??'正在读取']].filter(([k,v])=>matches(pref.query,'关于 / 本机数据来源')||matches(pref.query,k,v)).map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>, true);
   const capabilities = section('能力与采集边界', <div className="capability-list">{Object.entries(data.capabilities).filter(([key,c])=>matches(pref.query,'能力与采集边界')||matches(pref.query,names[key]??key,c.reason,c.source,c.available?'已接入':'未接入')).map(([key,c])=><div key={key}><span className={`status-badge ${c.available?'success':'warning'}`}>{c.available?<Check size={12} aria-hidden="true"/>:<Info size={12} aria-hidden="true"/>}{c.available?'已接入':'未接入'}</span><span><strong>{names[key]??key}</strong><small>{c.reason??c.source}</small></span></div>)}</div>, true);
   const integrationVisible = matches(pref.query, '任务栏右键中的任务管理器 接管原任务管理器入口 Windows IFEO Ctrl+Shift+Esc 当前计算机 所有用户 管理员 授权 注册 取消 默认关闭 启用 接管 修复 旧接管 请求的操作需要提升 刷新入口实际状态 完整程序目录 固定 读取 移动 删除 Debugger 权限 状态 影响');
+  const updatesVisible = matches(pref.query, '应用更新 GitHub Release 检查更新 后台下载 下载更新 立即更新 下次启动自动更新 版本 进度 安装 校验', updateStatusText(updates.state, Boolean(bootstrap?.desktop)), updates.state?.candidateVersion ?? null, updates.state?.currentReleaseTag ?? updates.state?.currentVersion ?? null, updates.state?.installReason ?? null, updates.error ?? updates.state?.error?.message ?? null);
   return <div className="settings-page page-scroll" onScroll={e=>patch({scrollTop:e.currentTarget.scrollTop},true)} ref={node=>{scroll.current=node;if(node&&node.dataset.restored!=='true'){node.scrollTop=pref.scrollTop;node.dataset.restored='true';}}}>
     {sampling}{view}{windowError&&<p className="form-error" role="alert">{windowError}<button className="text-button" onClick={()=>void readWindow()}>重新读取窗口状态</button></p>}
     <div hidden={!integrationVisible} style={integrationVisible?undefined:{display:'none'}}><TaskManagerIntegration connected={connected} notify={notify}/></div>
+    {updatesVisible && <section className="settings-section" aria-labelledby="application-updates-title"><h2 id="application-updates-title">应用更新</h2><UpdateSettingsRow updates={updates} desktop={Boolean(bootstrap?.desktop)} connected={connected} onOpen={onUpdates} notify={notify}/></section>}
     {help}{sources}{capabilities}
-    {!sampling&&!view&&!integrationVisible&&!help&&!sources&&!capabilities&&<Empty title="没有匹配的设置" description="请修改或清空顶部共用搜索，查看设置、说明、数据来源与能力。"/>}
+    {!sampling&&!view&&!integrationVisible&&!updatesVisible&&!help&&!sources&&!capabilities&&<Empty title="没有匹配的设置" description="请修改或清空顶部共用搜索，查看设置、说明、数据来源与能力。"/>}
   </div>;
 }
