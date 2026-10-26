@@ -1,5 +1,9 @@
 # Task Manager — Windows Blue Design System
 
+## 2026-10-26 磁盘型号与类型
+
+性能页保留资源双栏和现有图表；磁盘型号在资源标题处以既有subtitle/body层级显示完整可选择文本，事实列表明确“型号”“类型”“总线类型”。左磁贴保留真实实例标识/活动率，次行可显示真实类型与总线，搜索覆盖这些字段。长型号按既有overflow-wrap换行；缺失使用现有MissingValue与可访问原因，不新增配色、字号、徽标或卡片墙。复用secondary/accent/space/事实列表Token，按960×640、1380×860、实际Electron125%和reduced-motion检查。来源/边界及D系列见 [DISK-IDENTITY.md](../../docs/DISK-IDENTITY.md)。
+
 ## 2026-10-26 GitHub更新入口
 
 确认有更新时在展开侧栏底部设置右侧放44px Download图标，复用Lucide及现有accent/hover/focus/disabled/空间Token；悬浮/聚焦可读版本，下载进度具文字和aria语义。紧凑侧栏可上下排列；无更新不留空占位。完成后复用Modal，说明版本/校验/关闭重启，提供“立即更新”“下次启动自动更新”，初始焦点后者；等待现有业务Modal结束再显示。960×640/125%正文内滚、按钮可达，reduced-motion去除非必要旋转。行为/错误/安装资格及U系列见 [GITHUB-UPDATES.md](../../docs/GITHUB-UPDATES.md)。

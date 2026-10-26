@@ -1,5 +1,7 @@
 # 工程规范
 
+磁盘身份遵循 [DISK-IDENTITY.md](DISK-IDENTITY.md)：先验证真实物理编号，再读存储描述符及seek-penalty；型号、介质与总线逐字段状态，禁止从型号关键字/盘符/SCSI标签推测类型。交付保存D系列真实设备对照、桌面截图和未执行分支。
+
 GitHub更新遵循 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：固定来源/附件、可信版本与散列、受保护ProgramData暂存、同源写保护和NSIS优雅交接。renderer不提供执行URL/路径/参数；LocalAppData不能作为管理员待执行包信任根。按用户下载/安装选择执行，scheduled只自动尝试一次；记录U系列实际成功与未执行范围，不能模拟新版本冒充E2E。
 
 已有入口接管按 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md) 的最新用户要求实现：任何工具均可经明确确认接管；不做产品旧命令备份恢复，取消/卸载恢复 Windows 标准入口。测试 finally 恢复原现场仅用于清理，不能混淆为产品取消语义。多值写失败明确可能部分生效，不自动重试；交付记录 T 系列真实执行范围。

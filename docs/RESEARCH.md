@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 物理磁盘型号与类型（2026-10-26）
+
+实际通过GitHub API核验System Informer固定提交 `d40e6e0441103828287b1b60807259040e541b5f` 的 HardwareDevices/storage.c、disk.c：公开StorageDeviceProperty描述符两段有界读取、ProductIdOffset、IOCTL_STORAGE_GET_DEVICE_NUMBER与原生磁盘索引；借鉴真实编号/部分成功/实际返回长度验证，不复制源码或驱动。微软seek-penalty口径、复合/虚拟设备边界及UI/UX Pro Max适用建议见 [DISK-IDENTITY.md](DISK-IDENTITY.md)。
+
 ## GitHub Release更新（2026-10-26）
 
 实际核验electron-builder v26.0.12 tag指向固定提交 `44c5265a9260ca6f319f111b5a2ca7e50b0a7cd6`，读取electron-updater的GitHubProvider.ts/NsisUpdater.ts：prerelease/latest、频道元数据、明确更新参数及安装交接。当前自有NSIS/Release附件不符合该频道模板，因此借鉴流程，采用标准GitHub Releases/Compare REST、HTTPS、API asset digest和SHA256SUMS，不直接调用quitAndInstall。GitHub官方文档及实际build.8资产已核验，同core旧commit compare为ahead；完整取舍、受保护暂存、NSIS一次性交接和U系列见 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)。
