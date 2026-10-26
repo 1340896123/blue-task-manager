@@ -10,6 +10,8 @@
 
 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md) 定义 F01～F09：旧配置兼容、真实 Electron 首次提示与实际 IFEO 只读对照、暂不/ESC/关闭跨重启不再提示、界面重置保留、实际失败与冲突、受保护真实替换/恢复、键盘/960/125%及退出清理。F09 覆盖真实当前目录已启用时从首个读取前到读取后均无 dialog 闪现、静默偏好落盘/重启、无 IFEO POST 与保存失败反馈；其他目录/旧接管/未知不能误跳过。结果保存专项或本文既有结果文件；未执行的全机写入不得写成通过，禁止 mock 业务接口。
 
+2026-10-26 [免提示前置与冲突回归](FIRST-LAUNCH-SILENT-RESULTS.md) 40 项通过；F09 真实当前目录 enabled:true 的静默保存/重启成功分支未执行。
+
 ## 网络吞吐补全（N系列）
 
 规格与N01～N08完整矩阵见 [NETWORK-THROUGHPUT.md](NETWORK-THROUGHPUT.md)，结果记于 `NETWORK-THROUGHPUT-RESULTS.md`。必须包含真实专用TCP/UDP IPv4及可用IPv6收发、空闲归零、完整身份/新进程预热、暂停恢复/周期变化、浏览器排序详情CSV和正式Electron尺寸/125%截图、开销及本实例ETW会话释放。权限/丢失/不支持/过期不得变0；无法实际触发分支记未执行，fixture不能替代真实成功。网卡仍为硬件GetIfTable2，进程ETW与网卡合计不要求相等。仅清理测试创建身份/端点，不触碰用户ETW会话。该增量覆盖旧A系列“逐进程网络未接入”的断言。

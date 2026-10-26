@@ -18,7 +18,8 @@ const checks = [], screenshots = [], geometry = [], errors = [], artifacts = [];
 const check = (condition, message) => { assert.ok(condition, message); checks.push(message); console.log('PASS ' + message); };
 const hash = text => createHash('sha256').update(text).digest('hex');
 const checkoutAtRun = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', windowsHide: true }).stdout.trim();
-let host, tree = [], browser, page, token, failure, integrationPosts = 0, state, startupText = '';
+let host, tree = [], browser, page, token, failure, integrationPosts = 0, state, startupText = '', releaseInitialRead;
+const firstLaunchInitialRead = { delayedRequests: 0, delayMs: 700 };
 
 // Independent Windows RegistryKey reader; production reads use CsWin32.
 // This suite performs no registry writes and compares every value/type/child.
@@ -94,8 +95,37 @@ try {
   page.setDefaultTimeout(12000); page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => { if (request.method() === 'POST' && request.url().endsWith('/api/desktop/task-manager-integration')) integrationPosts++; });
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  const initialReadGate = new Promise(resolve => { releaseInitialRead = resolve; });
+  const integrationRoute = '**/api/desktop/task-manager-integration';
+  const delayRealRead = async route => {
+    if (route.request().method() === 'GET') { firstLaunchInitialRead.delayedRequests++; await initialReadGate; }
+    await route.continue();
+  };
+  await page.route(integrationRoute, delayRealRead);
+  await page.addInitScript(() => {
+    const seen = new WeakSet();
+    window.__firstPromptMounts = 0;
+    new MutationObserver(() => {
+      for (const dialog of document.querySelectorAll('dialog')) {
+        if (dialog.textContent?.includes('替换标准任务管理器？') && !seen.has(dialog)) { seen.add(dialog); window.__firstPromptMounts++; }
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+  await page.reload();
+  await until(() => firstLaunchInitialRead.delayedRequests > 0, 'real first-launch GET is held before continuing to the production API');
+  await page.getByRole('table', { name: '进程列表', exact: true }).waitFor();
+  await delay(firstLaunchInitialRead.delayMs);
+  firstLaunchInitialRead.dialogCountDuringDelay = await page.locator('dialog').count();
+  firstLaunchInitialRead.promptMountsDuringDelay = await page.evaluate(() => window.__firstPromptMounts);
+  check(firstLaunchInitialRead.dialogCountDuringDelay === 0 && firstLaunchInitialRead.promptMountsDuringDelay === 0, 'initial real GET delay creates no first-launch dialog or transient mount');
+  check((await api('preferences')).preferences.taskManagerPromptDismissed === false && integrationPosts === 0, 'pending first-launch read neither saves the choice nor posts an IFEO change');
+  await capture('first-launch-reading-no-dialog');
+  releaseInitialRead();
   const first = page.getByRole('dialog', { name: '替换标准任务管理器？', exact: true });
   await first.getByRole('button', { name: '前往设置接管现有入口', exact: true }).waitFor();
+  await page.unroute(integrationRoute, delayRealRead);
+  firstLaunchInitialRead.promptMountsAfterRead = await page.evaluate(() => window.__firstPromptMounts);
+  check(firstLaunchInitialRead.promptMountsAfterRead === 1, 'continuing the unmodified real conflict GET creates exactly one first-launch dialog');
   check(await first.getByRole('button', { name: '暂不替换', exact: true }).evaluate(el => el === document.activeElement), 'first-launch initial focus is on the defer action');
   check((await first.innerText()).includes('不恢复此前工具') && (await first.innerText()).includes(state.currentDebugger), 'first-launch conflict explains replacement and standard-only restoration with the actual command');
   await geometryCheck('first-launch-1380', first); await capture('first-launch-existing-entry');
@@ -106,6 +136,8 @@ try {
   const takeover = card.getByRole('button', { name: '接管现有入口…', exact: true });
   await until(async () => await takeover.isEnabled() === state.canTakeOver, 'settings action follows actual takeover capability');
   check((await api('preferences')).preferences.taskManagerPromptDismissed && integrationPosts === 0, 'first-launch settings navigation persists the choice without an integration POST');
+  const persisted = JSON.parse(await readFile(path.join(temporary, 'preferences.json'), 'utf8'));
+  check(persisted.ui.taskManagerPromptDismissed === true, 'first-launch choice is present in the real JSON.NET preference file');
   check((await card.innerText()).includes(state.currentDebugger), 'settings shows the current real alternate command');
   await capture('settings-existing-entry');
   await card.getByRole('button', { name: '查看接管现有入口的影响', exact: true }).click();
@@ -136,6 +168,7 @@ try {
   check(tree.every(row => !ownedAlive(row)), 'all dedicated Host/Electron creation identities have exited');
 } catch (error) { failure = { message: error.message, stack: error.stack }; await page?.screenshot({ path: path.join(output, 'failure.png') }).catch(() => {}); }
 finally {
+  releaseInitialRead?.();
   await browser?.close().catch(() => {});
   if (host && alive(host.pid)) { if (!tree.length) tree = processTree(host.pid); await stopOwnedHost(host).catch(error => { failure ??= { message: error.message }; }); }
   for (const row of tree.reverse()) if (ownedAlive(row)) { try { process.kill(row.pid); } catch {} }
@@ -143,6 +176,6 @@ finally {
   if (!globalRegistryUnchanged) failure ??= { message: 'read-only acceptance observed a changed global registry' };
   await rm(temporary, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   const startupDiagnostics = startupText.split(/\r?\n/).filter(line => /error|exception|failed|failure|not found|missing|unhandled/i.test(line) && !/token|secret|auth/i.test(line)).slice(-20);
-  const report = { result: failure ? 'FAIL' : 'PASS', checkedAtUtc: new Date().toISOString(), checkoutAtRun, release, assertions: checks.length, checks, artifacts, screenshots, geometry, errors, integrationPosts, globalRegistryUnchanged, canWrite: state?.canWrite, startupExitCode: host?.exitCode, startupDiagnostics, failure, unexecuted: ['T03: successful global takeover/type replacement and standard reset; the current user entry was preserved', 'T04: real UseFilter mutation and system taskmgr launch; the existing user entry was preserved', 'T05: real native write denial, concurrent registry mutation and partial write failure; no corresponding controlled condition was induced', 'T07: global Launcher and uninstall success chains; existing user process and entry were preserved'], source: 'production self-contained Electron.NET → same-origin HTTP → JSON.NET → CsWin32; no mocked business API or registry fixture' };
+  const report = { result: failure ? 'FAIL' : 'PASS', checkedAtUtc: new Date().toISOString(), checkoutAtRun, release, assertions: checks.length, checks, artifacts, screenshots, geometry, firstLaunchInitialRead, errors, integrationPosts, globalRegistryUnchanged, canWrite: state?.canWrite, startupExitCode: host?.exitCode, startupDiagnostics, failure, unexecuted: ['F09: current-directory enabled silent completion/restart/save-failure; actual IFEO points to the installed directory, so no global entry was changed to manufacture this state', 'T03: successful global takeover/type replacement and standard reset; the current user entry was preserved', 'T04: real UseFilter mutation and system taskmgr launch; the existing user entry was preserved', 'T05: real native write denial, concurrent registry mutation and partial write failure; no corresponding controlled condition was induced', 'T07: global Launcher and uninstall success chains; existing user process and entry were preserved'], source: 'production self-contained Electron.NET → same-origin HTTP → JSON.NET → CsWin32; only the initial GET was delayed and then continued without changing its response; no mocked business API or registry fixture' };
   await writeFile(path.join(output, 'results.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report, null, 2)); if (failure) process.exitCode = 1;
 }

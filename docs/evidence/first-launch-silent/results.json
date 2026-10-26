@@ -1,0 +1,225 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-26T09:44:13.750Z",
+  "checkoutAtRun": "8872757e11aa84cc0a8f27de84c402b7afac0c41",
+  "release": "E:\\taskManager\\output\\takeover\\TaskManager-win-x64",
+  "assertions": 40,
+  "checks": [
+    "test controller has a real elevated Windows token",
+    "production API belongs to the dedicated elevated Host",
+    "CsWin32 GET matches the independent HKLM64 Debugger",
+    "actual installed-directory entry requires explicit takeover",
+    "canTakeOver follows actual permission and complete application files",
+    "target command is the trusted quoted Launcher and fixed marker",
+    "invalid takeover combination is rejected before mutation",
+    "invalid takeover combination is rejected before mutation",
+    "missing/stale revision, implicit takeover and non-owned cancel are rejected",
+    "all protected API requests preserve the full existing registry configuration",
+    "initial real GET delay creates no first-launch dialog or transient mount",
+    "pending first-launch read neither saves the choice nor posts an IFEO change",
+    "continuing the unmodified real conflict GET creates exactly one first-launch dialog",
+    "first-launch initial focus is on the defer action",
+    "first-launch conflict explains replacement and standard-only restoration with the actual command",
+    "first-launch-1380: confirmation fits the real Electron viewport",
+    "first-launch-1380: footer actions remain visible",
+    "first-launch settings navigation persists the choice without an integration POST",
+    "first-launch choice is present in the real JSON.NET preference file",
+    "settings shows the current real alternate command",
+    "takeover confirmation states actual source/target, filtering and standard-only restoration",
+    "takeover initial focus is on the neutral defer action",
+    "confirmation follows the real native capability",
+    "takeover Tab 1 stays inside the confirmation",
+    "takeover Tab 2 stays inside the confirmation",
+    "takeover Tab 3 stays inside the confirmation",
+    "takeover Tab 4 stays inside the confirmation",
+    "takeover Tab 5 stays inside the confirmation",
+    "takeover Tab 6 stays inside the confirmation",
+    "takeover Tab 7 stays inside the confirmation",
+    "takeover-1380: confirmation fits the real Electron viewport",
+    "takeover-1380: footer actions remain visible",
+    "Escape cancels takeover without a system write request",
+    "takeover-960: confirmation fits the real Electron viewport",
+    "takeover-960: footer actions remain visible",
+    "real Electron zoom factor is 125%",
+    "takeover-960-at-125: confirmation fits the real Electron viewport",
+    "takeover-960-at-125: footer actions remain visible",
+    "all UI interactions preserve the complete existing entry and raise no renderer error",
+    "all dedicated Host/Electron creation identities have exited"
+  ],
+  "artifacts": [
+    {
+      "path": "TaskManager.Host.exe",
+      "bytes": 184832,
+      "sha256": "d25bcb75129aafdd88f19e9ece3df7e471c570375b955991fb9a6b3ca5213595"
+    },
+    {
+      "path": "TaskManager.Host.dll",
+      "bytes": 773120,
+      "sha256": "aa214709d17706bfb692d5b0dde761e89390bb55a3bd2ef066410b669d8487c6"
+    },
+    {
+      "path": "TaskManager.Launcher.exe",
+      "bytes": 184832,
+      "sha256": "a6828ea86530b1ef7c8a87b352aeb91d4e9108873ce0eef6d37556b8a4ce2986"
+    },
+    {
+      "path": "wwwroot/index.html",
+      "bytes": 649,
+      "sha256": "0267707c3e9586b503b3a68812a43da58c12cb7e4c1ccd93b4f476cc480f2893"
+    },
+    {
+      "path": "wwwroot/assets/index-AknTUE7K.js",
+      "bytes": 407069,
+      "sha256": "b4f7dae709dfbf135b74ff8dd8c0b1d1125a15c499d67e3bf306910dd4b723b1"
+    },
+    {
+      "path": "wwwroot/assets/index-CYldVc1P.css",
+      "bytes": 54666,
+      "sha256": "662743e8becfe5fcf714c33871fce40fead11a45575119f95915d356d48766a0"
+    }
+  ],
+  "screenshots": [
+    "first-launch-reading-no-dialog.png",
+    "first-launch-existing-entry.png",
+    "settings-existing-entry.png",
+    "takeover-confirmation.png",
+    "takeover-confirmation-960.png",
+    "takeover-confirmation-125.png",
+    "takeover-confirmation-125-native.png"
+  ],
+  "geometry": [
+    {
+      "name": "first-launch-1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "dialog": {
+        "x": 450,
+        "y": 72.046875,
+        "right": 930,
+        "bottom": 787.953125
+      },
+      "buttons": [
+        {
+          "x": 639,
+          "y": 726.953125,
+          "right": 727,
+          "bottom": 758.953125
+        },
+        {
+          "x": 735,
+          "y": 726.953125,
+          "right": 901,
+          "bottom": 758.953125
+        }
+      ],
+      "documentOverflow": false
+    },
+    {
+      "name": "takeover-1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "dialog": {
+        "x": 280,
+        "y": 162.4375,
+        "right": 1100,
+        "bottom": 697.546875
+      },
+      "buttons": [
+        {
+          "x": 837,
+          "y": 636.546875,
+          "right": 925,
+          "bottom": 668.546875
+        },
+        {
+          "x": 933,
+          "y": 636.546875,
+          "right": 1071,
+          "bottom": 668.546875
+        }
+      ],
+      "documentOverflow": false
+    },
+    {
+      "name": "takeover-960",
+      "viewport": [
+        960,
+        640
+      ],
+      "dialog": {
+        "x": 70,
+        "y": 52.4375,
+        "right": 890,
+        "bottom": 587.546875
+      },
+      "buttons": [
+        {
+          "x": 643,
+          "y": 526.546875,
+          "right": 731,
+          "bottom": 558.546875
+        },
+        {
+          "x": 739,
+          "y": 526.546875,
+          "right": 861,
+          "bottom": 558.546875
+        }
+      ],
+      "documentOverflow": false
+    },
+    {
+      "name": "takeover-960-at-125",
+      "viewport": [
+        768,
+        512
+      ],
+      "dialog": {
+        "x": 24,
+        "y": 24,
+        "right": 744,
+        "bottom": 488
+      },
+      "buttons": [
+        {
+          "x": 497.6000061035156,
+          "y": 427.20001220703125,
+          "right": 585.6000061035156,
+          "bottom": 459.20001220703125
+        },
+        {
+          "x": 593.6000366210938,
+          "y": 427.20001220703125,
+          "right": 715.2000350952148,
+          "bottom": 459.20001220703125
+        }
+      ],
+      "documentOverflow": false
+    }
+  ],
+  "firstLaunchInitialRead": {
+    "delayedRequests": 1,
+    "delayMs": 700,
+    "dialogCountDuringDelay": 0,
+    "promptMountsDuringDelay": 0,
+    "promptMountsAfterRead": 1
+  },
+  "errors": [],
+  "integrationPosts": 0,
+  "globalRegistryUnchanged": true,
+  "canWrite": true,
+  "startupExitCode": 0,
+  "startupDiagnostics": [],
+  "unexecuted": [
+    "F09: current-directory enabled silent completion/restart/save-failure; actual IFEO points to the installed directory, so no global entry was changed to manufacture this state",
+    "T03: successful global takeover/type replacement and standard reset; the current user entry was preserved",
+    "T04: real UseFilter mutation and system taskmgr launch; the existing user entry was preserved",
+    "T05: real native write denial, concurrent registry mutation and partial write failure; no corresponding controlled condition was induced",
+    "T07: global Launcher and uninstall success chains; existing user process and entry were preserved"
+  ],
+  "source": "production self-contained Electron.NET → same-origin HTTP → JSON.NET → CsWin32; only the initial GET was delayed and then continued without changing its response; no mocked business API or registry fixture"
+}
