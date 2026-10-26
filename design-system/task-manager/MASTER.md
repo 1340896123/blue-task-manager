@@ -1,6 +1,6 @@
 # Task Manager — Windows Blue Design System
 
-## 2026-10-26 磁盘型号、类型与吞吐展示
+## 2026-10-27 磁盘型号、类型与吞吐展示
 
 性能页保留资源双栏；磁盘右侧只保留一张读取/写入吞吐图，复用既有实线/虚线、双图例、字节/秒速率轴和chart Token。移除活动时间事实项、活动率大图、小曲线及说明文案；左磁贴小曲线改用同一真实读/写历史，摘要显示读/写速率，名称及类型/总线仍可辨认。磁盘型号在资源标题处以既有subtitle/body层级显示完整可选择文本，事实列表明确“型号”“类型”“总线类型”。搜索覆盖设备字段。长型号按既有overflow-wrap换行；缺失使用现有MissingValue与可访问原因，不新增配色、字号、徽标或卡片墙。复用secondary/accent/space/事实列表Token，按960×640、1380×860、实际Electron125%和reduced-motion检查。来源/边界及D01～D08见 [DISK-IDENTITY.md](../../docs/DISK-IDENTITY.md)。
 
