@@ -10,7 +10,7 @@
   --color-hover: #ECECEC; --color-focus: #005FB8; --color-success: #0F6C38; --color-success-bg: #E6F4EA;
   --color-warning: #835400; --color-warning-bg: #FFF4D6; --color-danger: #B4232C; --color-danger-bg: #FDECEE;
   --color-heat-0: #F5F9FF; --color-heat-1: #E8F2FE; --color-heat-2: #D4E8FC; --color-heat-3: #B8D9FA; --color-heat-4: #8FC0F1;
-  --color-chart-line: #0067C0; --color-chart-secondary: #5C3BBF; --color-chart-grid: #DFE8F3;
+  --color-chart-line: #0067C0; --color-chart-secondary: #58636F; --color-chart-grid: #ECEFF2;
   --color-overlay: rgb(15 35 60 / 32%);
   --font-ui: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", sans-serif; --font-mono: "Cascadia Code", Consolas, monospace;
   --font-size-caption: 12px; --font-size-body: 13px; --font-size-control: 14px; --font-size-title: 24px; --font-size-section: 16px; --font-size-metric: 24px;
@@ -168,7 +168,7 @@ h1, h2, h3, p { margin: 0; }
 .chart-panel { min-width: 0; }
 .chart-scale { display: flex; justify-content: space-between; gap: var(--space-2); margin: var(--space-2) 0 var(--space-2); color: var(--color-text-secondary); font-size: var(--font-size-caption); }
 .chart-wrap { position: relative; }
-.resource-chart { display: block; width: 100%; height: var(--height-chart); background: var(--color-heat-0); border: var(--border-width) solid var(--color-border); }
+.resource-chart { display: block; width: 100%; height: var(--height-chart); background: var(--color-surface); border: var(--border-width) solid var(--color-border); }
 .chart-grid { stroke: var(--color-chart-grid); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .chart-axis { display: flex; justify-content: space-between; font-size: var(--font-size-caption); color: var(--color-text-secondary); margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
 .chart-wait { position: absolute; inset: 0 0 var(--space-6); display: grid; place-items: center; color: var(--color-text-secondary); font-size: var(--font-size-caption); }
@@ -439,7 +439,7 @@ select { min-width: var(--width-setting-control); min-height: var(--height-contr
 .resource-tile-disk .resource-tile-text small { display: flex; flex-direction: column; overflow: visible; }
 .resource-tile-disk .resource-tile-text small > span { overflow-wrap: anywhere; }
 .resource-tile .mini-chart { flex: 0 0 var(--width-resource-sparkline); width: var(--width-resource-sparkline); height: var(--height-resource-sparkline); }
-.mini-chart .resource-chart { height: var(--height-resource-sparkline); border-color: var(--color-chart-line); background: var(--color-surface); }
+.mini-chart .resource-chart { height: var(--height-resource-sparkline); border-color: var(--color-border); background: var(--color-surface); }
 .mini-chart .chart-grid { stroke: transparent; }
 .resource-content { padding: var(--space-6); }
 .performance-heading { margin-bottom: var(--space-5); align-items: baseline; min-width: 0; }
