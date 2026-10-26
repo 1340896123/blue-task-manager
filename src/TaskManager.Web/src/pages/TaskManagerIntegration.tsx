@@ -77,7 +77,7 @@ export default function TaskManagerIntegration({ connected, notify }: { connecte
         </div>
       </div>
     </section>
-    {confirmation && <Modal title={confirmationTitle} description="此操作改变的是Windows原有任务管理器入口，不是新增菜单项。" onClose={() => { setConfirmation(null); setDialogError(null); }} busy={busy} wide initialFocusRef={deferButton}>
+    {confirmation && <Modal title={confirmationTitle} description="此操作改变的是Windows原有任务管理器入口，不是新增菜单项。" onClose={() => { setConfirmation(null); setDialogError(null); }} busy={busy} wide className="integration-modal" initialFocusRef={deferButton}>
       <div className="integration-confirmation">
         <p><Info aria-hidden="true"/>{confirmingEnable ? '任务栏右键中的“任务管理器”、Ctrl+Shift+Esc 等入口将打开本目录中的蓝域任务管理器。' : '取消后，任务栏右键中的“任务管理器”、Ctrl+Shift+Esc 等入口将打开 Windows 标准任务管理器，不恢复此前工具。'}</p>
         {confirmation.action === 'repair' && <p>将本目录的旧接管更新为支持 Windows 管理员授权的入口；只有确认后才修改。</p>}

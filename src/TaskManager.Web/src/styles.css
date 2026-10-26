@@ -275,6 +275,10 @@ select { min-width: var(--width-setting-control); min-height: var(--height-contr
 .integration-confirmation { display: grid; gap: var(--space-3); font-size: var(--font-size-control); line-height: var(--line-height-relaxed); }
 .integration-confirmation > p:first-child { display: flex; align-items: flex-start; gap: var(--space-2); }
 .integration-confirmation svg { flex-shrink: 0; color: var(--color-accent); }
+.integration-modal[open] { display: flex; flex-direction: column; overflow: hidden; }
+.integration-modal > h2, .integration-modal > .modal-description, .integration-modal > .modal-actions { flex-shrink: 0; }
+.integration-modal .integration-confirmation { flex: 1 1 auto; min-height: 0; overflow: auto; padding: var(--space-1); margin: calc(-1 * var(--space-1)); }
+.integration-modal .modal-actions { flex-wrap: wrap; }
 .first-launch-modal[open] { display: flex; flex-direction: column; overflow: hidden; }
 .first-launch-modal > h2, .first-launch-modal > .modal-description, .first-launch-modal > .modal-actions { flex-shrink: 0; }
 .first-launch-content { display: grid; gap: var(--space-3); min-height: 0; overflow: auto; font-size: var(--font-size-body); line-height: var(--line-height-relaxed); padding: var(--space-1); margin: calc(-1 * var(--space-1)); }
