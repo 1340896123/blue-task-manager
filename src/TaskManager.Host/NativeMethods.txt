@@ -156,3 +156,11 @@ EventUnregister
 EventWriteString
 EnableTraceEx2
 ENABLECALLBACK_ENABLED_STATE
+ConvertStringSecurityDescriptorToSecurityDescriptorW
+GetFileSecurityW
+CreateDirectoryW
+CreateFileW
+LocalFree
+GetPrivateProfileStringW
+SEE_MASK_NOCLOSEPROCESS
+SEE_MASK_NOASYNC

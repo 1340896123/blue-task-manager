@@ -20,18 +20,26 @@ catch (StartupPrivilegeException error) { Console.Error.WriteLine($"{error.Code}
 catch (ApiException error) { Console.Error.WriteLine($"{error.Code}: {error.Message} 卸载维护失败，必须保留程序文件。"); Environment.ExitCode = 1; return; }
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
 
+var desktopMode = !args.Contains("--headless", StringComparer.OrdinalIgnoreCase);
+var updates = new ApplicationUpdateService(desktopMode);
+var normalDesktopStartup = desktopMode && !args.Any(argument => argument.StartsWith("--port", StringComparison.OrdinalIgnoreCase))
+    && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TASKMANAGER_PORT")) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TASKMANAGER_DATA_DIR"))
+    && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TASKMANAGER_CDP_PORT"));
+if (normalDesktopStartup && await updates.TryApplyScheduledAtStartupAsync()) { updates.Dispose(); return; }
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 var portArgument = args.FirstOrDefault(argument => argument.StartsWith("--port=", StringComparison.OrdinalIgnoreCase))?[7..];
 var port = int.TryParse(portArgument ?? Environment.GetEnvironmentVariable("TASKMANAGER_PORT"), out var configuredPort) ? configuredPort : 5188;
 if (port is < 1024 or > 65535) throw new InvalidOperationException("TASKMANAGER_PORT must be between 1024 and 65535.");
 var preferences = new PreferencesService();
 var desktop = new DesktopWindowService(preferences);
-if (!args.Contains("--headless", StringComparer.OrdinalIgnoreCase))
+if (desktopMode)
 {
     Environment.SetEnvironmentVariable("TASKMANAGER_ORIGIN", $"http://127.0.0.1:{port}");
     builder.UseElectron(args, async (IServiceProvider services) => await desktop.OpenAsync($"http://127.0.0.1:{port}", services.GetRequiredService<IHostApplicationLifetime>()));
 }
 builder.Services.AddSingleton(desktop);
+builder.Services.AddSingleton(updates);
+builder.Services.AddHostedService(provider => provider.GetRequiredService<ApplicationUpdateService>());
 builder.WebHost.ConfigureKestrel(options => options.Listen(System.Net.IPAddress.Loopback, port, listen => listen.Protocols = HttpProtocols.Http1));
 builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
 {
@@ -60,6 +68,7 @@ builder.Services.AddSingleton<SnapshotService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<SnapshotService>());
 builder.Services.AddSingleton<ProcessActionService>();
 var app = builder.Build();
+updates.ConfigureDesktopShutdown(async () => { await desktop.ExecuteAsync("close"); app.Lifetime.StopApplication(); });
 app.UseMiddleware<LocalAccessMiddleware>();
 app.UseResponseCompression();
 app.UseDefaultFiles();
