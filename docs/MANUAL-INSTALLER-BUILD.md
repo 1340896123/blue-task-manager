@@ -1,5 +1,7 @@
 # 手动构建 Windows 安装包
 
+2026-10-26更新合同见 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：构建前将metadata阶段确定的ReleaseTag与完整SourceCommit嵌入应用/安装产品身份，不能只在构建后给同基础版本追加build.N标签而丢失来源。未来安装包保留标准手动模式，并提供明确更新模式等旧映像释放、一次尝试结果和成功重启；官方setup/SHA256SUMS仍须同源、完整验收后发布。
+
 ## 在 GitHub 上运行
 
 打开[手动构建工作流](https://github.com/1340896123/blue-task-manager/actions/workflows/manual-windows-installer.yml)，点击 **Run workflow**，选择`main`并启动。手动运行会先构建并验证安装包，全部通过后创建Git tag与附带NSIS安装包的GitHub Release；普通提交不会自动运行。

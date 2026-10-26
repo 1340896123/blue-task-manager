@@ -1,5 +1,7 @@
 # 工程规范
 
+GitHub更新遵循 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：固定来源/附件、可信版本与散列、受保护ProgramData暂存、同源写保护和NSIS优雅交接。renderer不提供执行URL/路径/参数；LocalAppData不能作为管理员待执行包信任根。按用户下载/安装选择执行，scheduled只自动尝试一次；记录U系列实际成功与未执行范围，不能模拟新版本冒充E2E。
+
 已有入口接管按 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md) 的最新用户要求实现：任何工具均可经明确确认接管；不做产品旧命令备份恢复，取消/卸载恢复 Windows 标准入口。测试 finally 恢复原现场仅用于清理，不能混淆为产品取消语义。多值写失败明确可能部分生效，不自动重试；交付记录 T 系列真实执行范围。
 
 首次启动提示遵循 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)：区分偏好 ready 与读取成功，初次真实入口读取完成前不创建 dialog；当前目录正常 enabled:true 时静默完成偏好，不弹提示、不写 IFEO，保存失败仍保留偏好错误。错误/未知/冲突不转已接管或未接管，系统写失败不标已选择；重置界面默认保留提示完成标记。复用原生 dialog 焦点/忙态与既有接管服务，交付记录 F 系列实际执行和未执行分支。

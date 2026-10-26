@@ -1,5 +1,7 @@
 # 后端 API 合同
 
+GitHub更新增量见 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：`GET /api/updates`读缓存版本/检查/下载/ready/scheduled/错误状态；`POST /api/updates/check|download|cancel|install`沿用Origin/写令牌。download/install仅接受expectedRevision及install的mode=now|nextStart，固定仓库/URL/安装路径由后端决定；陈旧409、后台启动202，JSON.NET/null与真实原因保持。便携明确不支持自动安装，具体DTO/交接以专项为准。
+
 已有入口接管增量（2026-10-26）：GET `desktop/task-manager-integration` 增加 `canTakeOver:boolean`；POST 增加 `takeOver?:boolean=false`，仅与 `enabled:true,repair:false` 合法。显式接管可替换其他工具/目录、类型异常及特殊配置；关闭现有非零/异常 UseFilter，固定写本目录 Launcher。取消/卸载恢复 Windows 标准入口，不恢复旧工具。最新读回/错误/界面合同见 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md)，覆盖历史“一律拒绝其他工具/特殊配置”条款。
 
 首次启动偏好增量（2026-10-25）：UiPreferences 增加 `taskManagerPromptDismissed:boolean`，缺失默认 false，GET/POST preferences 使用 JSON.NET 持久化；它表示已完成首次选择，与实际 IFEO 状态独立。桌面提示复用下文既有 task-manager-integration，不新增写入接口，界面重置保留该标记。完整行为见 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)。

@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## GitHub Release更新（2026-10-26）
+
+实际核验electron-builder v26.0.12 tag指向固定提交 `44c5265a9260ca6f319f111b5a2ca7e50b0a7cd6`，读取electron-updater的GitHubProvider.ts/NsisUpdater.ts：prerelease/latest、频道元数据、明确更新参数及安装交接。当前自有NSIS/Release附件不符合该频道模板，因此借鉴流程，采用标准GitHub Releases/Compare REST、HTTPS、API asset digest和SHA256SUMS，不直接调用quitAndInstall。GitHub官方文档及实际build.8资产已核验，同core旧commit compare为ahead；完整取舍、受保护暂存、NSIS一次性交接和U系列见 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)。
+
 ## 已有任务管理器入口接管（2026-10-26）
 
 本轮实际在线重新核验 TaskExplorer 固定提交 `9f3f95d22f07f759dd1e0114417529ba51decb01` 的 CustomSetupTool/util.c（`SetupHasTaskMgrDebuggerIfeo` / `SetupCreateTaskMgrDebuggerIfeo`），以及 Microsoft RegSetValueExW / RegQueryValueExW / GFlags 文档源码。采用标准 HKLM64 IFEO、正确引用的固定 Launcher REG_SZ、实际权限与错误、字节/类型有界读取；不移植专有协议/驱动，不复制 GPL 源码。核验链接和取舍见 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md)。用户新要求覆盖历史“不覆盖其他工具”策略：显式接管允许替换，取消恢复 Windows 标准入口、不恢复旧工具。UseFilter 关闭及过滤子键行为由 T04 真实 Windows 场景补验，不把仅支持根 Debugger 的参考实现当作该分支已通过证据。

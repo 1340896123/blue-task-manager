@@ -1,5 +1,9 @@
 # Task Manager — Windows Blue Design System
 
+## 2026-10-26 GitHub更新入口
+
+确认有更新时在展开侧栏底部设置右侧放44px Download图标，复用Lucide及现有accent/hover/focus/disabled/空间Token；悬浮/聚焦可读版本，下载进度具文字和aria语义。紧凑侧栏可上下排列；无更新不留空占位。完成后复用Modal，说明版本/校验/关闭重启，提供“立即更新”“下次启动自动更新”，初始焦点后者；等待现有业务Modal结束再显示。960×640/125%正文内滚、按钮可达，reduced-motion去除非必要旋转。行为/错误/安装资格及U系列见 [GITHUB-UPDATES.md](../../docs/GITHUB-UPDATES.md)。
+
 ## 2026-10-26 已有入口接管
 
 复用现有设置行、宽 Modal、accent 主动作、中性次动作、warning 状态、body/caption/path 和空间 Token。其他工具/特殊配置提供“接管现有入口…”；确认清晰展示当前命令与本目录目标，说明覆盖现有入口、取消只恢复 Windows 标准任务管理器且不恢复旧工具。初始焦点为“暂不更改”，原生 Escape/Tab/焦点恢复保持；忙/错误/成功有文本反馈。真实路径可折行，960×640/125%时对话框内部滚动、底部操作可达；无新增色值、字号或视觉体系。首次提示可前往设置明确接管，合同及 T 系列见 [TASK-MANAGER-TAKEOVER.md](../../docs/TASK-MANAGER-TAKEOVER.md)。

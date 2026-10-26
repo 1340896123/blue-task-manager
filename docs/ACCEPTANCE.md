@@ -1,5 +1,9 @@
 # 真实链路验收矩阵
 
+## GitHub下载与更新（U系列）
+
+[GITHUB-UPDATES.md](GITHUB-UPDATES.md) 定义U01～U08：发布身份/不降级、真实Release/compare与官方附件散列、后台下载/取消/错误、导航图标/tooltip/完成选择、保护ACL/输入/权限、立即与下次启动NSIS交接、防循环/清理。只在专用安装与身份跑写入成功链；算法fixture、专用本地安装器及未发布版本不能冒充官方更新成功。记录命令/SHA/hash/截图与未执行项。
+
 ## 已有任务管理器入口接管（T 系列）
 
 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md) 定义 T01～T08：真实已有目录状态与确认、显式替换任意工具/类型、UseFilter 过滤关闭、取消恢复 Windows 标准入口而非旧工具、权限/revision/部分错误、首次提示前往设置、键盘/窗口缩放、正式桌面/维护清理。记录命令、SHA、截图和未执行项；用户现有入口不自动覆盖。受控测试 finally 恢复现场仅用于清理，不能作为产品取消行为。覆盖历史“其他工具不可覆盖”的验收预期。
