@@ -496,7 +496,7 @@ try {
         'TaskManager.Host.exe', 'TaskManager.Host.dll', 'TaskManager.Host.deps.json', 'TaskManager.Host.runtimeconfig.json',
         'TaskManager.Launcher.exe', 'TaskManager.Launcher.dll', 'TaskManager.Launcher.deps.json', 'TaskManager.Launcher.runtimeconfig.json',
         'coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'System.Private.CoreLib.dll', 'Microsoft.AspNetCore.Server.Kestrel.Core.dll',
-        'Newtonsoft.Json.dll', 'wwwroot/index.html', 'wwwroot/favicon.ico',
+        'Newtonsoft.Json.dll', 'restore-windows-task-manager.cmd', 'wwwroot/index.html', 'wwwroot/favicon.ico',
         '.electron/main.js', '.electron/custom_main.js', '.electron/task-manager.ico', '.electron/package-lock.json',
         '.electron/node_modules/electron/dist/electron.exe', '.electron/node_modules/electron/dist/LICENSE', '.electron/node_modules/electron/dist/LICENSES.chromium.html'
     )
