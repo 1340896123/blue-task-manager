@@ -63,6 +63,11 @@
           "Newtonsoft.Json": "12.0.1"
         }
       },
+      "NuGet.Versioning": {
+        "type": "Transitive",
+        "resolved": "6.14.0",
+        "contentHash": "4v4blkhCv8mpKtfx+z0G/X0daVCzdIaHSC51GkUspugi5JIMn2Bo8xm5PdZYF0U68gOBfz/+aPWMnpRd85Jbow=="
+      },
       "SocketIO.Core": {
         "type": "Transitive",
         "resolved": "3.1.2",
@@ -109,6 +114,7 @@
           "ElectronNET.Core.AspNet": "[0.6.0, )",
           "Microsoft.AspNetCore.Mvc.NewtonsoftJson": "[10.0.10, )",
           "Newtonsoft.Json": "[13.0.4, )",
+          "NuGet.Versioning": "[6.14.0, )",
           "System.Drawing.Common": "[10.0.10, )"
         }
       }
