@@ -20,7 +20,9 @@ export default function FirstLaunchIntegration({ preferences, connected, notify,
     if (!required) { setInitialReadComplete(false); setState(null); return; }
     const controller = new AbortController();
     setReading(true); setInitialReadComplete(false); setState(null); setError(null);
-    void api.get<TaskManagerIntegrationState>(route, controller.signal).then(setState).catch(caught => {
+    void api.get<TaskManagerIntegrationState>(route, controller.signal).then(result => {
+      if (!controller.signal.aborted) setState(result);
+    }).catch(caught => {
       if (!controller.signal.aborted) setError(errorMessage(caught));
     }).finally(() => { if (!controller.signal.aborted) { setReading(false); setInitialReadComplete(true); } });
     return () => controller.abort();
