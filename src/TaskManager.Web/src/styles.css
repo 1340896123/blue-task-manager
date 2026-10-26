@@ -442,6 +442,8 @@ select { min-width: var(--width-setting-control); min-height: var(--height-contr
 .performance-heading { margin-bottom: var(--space-5); align-items: baseline; min-width: 0; }
 .performance-heading h2 { font-size: var(--font-size-large-metric); font-weight: var(--font-weight-semibold); }
 .performance-heading > span { max-width: 60%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--font-size-control); }
+.performance-heading.disk-heading { align-items: flex-start; flex-wrap: wrap; }
+.performance-heading.disk-heading > span { flex: 1 1 50%; min-width: 0; max-width: 100%; overflow: visible; white-space: normal; overflow-wrap: anywhere; line-height: var(--line-height-body); user-select: text; }
 .resource-content .resource-chart { height: var(--height-performance-chart); }
 .resource-content .chart-panel { margin-bottom: var(--space-5); }
 .resource-fact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4) var(--space-6); }
