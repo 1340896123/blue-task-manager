@@ -1,5 +1,7 @@
 # 修复 IFEO 接管入口的 Windows 740 错误
 
+> 2026-10-26 已有入口接管扩展见 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md)：显式 takeOver 可替换任何工具与特殊配置，取消/卸载恢复 Windows 标准入口，不恢复旧工具。Launcher/UAC/参数保护继续适用；历史拒绝第三方写入的范围由最新要求覆盖，历史测试事实不改写。
+
 日期：2026-10-23。此专项是 [管理员交付合同](ADMIN-INSTALLER.md) 和 [任务栏入口合同](TASKBAR-INTEGRATION.md) 的修正增量；保留 Host 必须提升的要求，修正“IFEO 直接指向 requireAdministrator Host”这一不可工作的启动方式。本文为诊断和实施规格，实际通过项仍以本轮真实 E2E 证据为准。
 
 ## 1. 根因与只读现场

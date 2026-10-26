@@ -1,5 +1,7 @@
 # 后端 API 合同
 
+已有入口接管增量（2026-10-26）：GET `desktop/task-manager-integration` 增加 `canTakeOver:boolean`；POST 增加 `takeOver?:boolean=false`，仅与 `enabled:true,repair:false` 合法。显式接管可替换其他工具/目录、类型异常及特殊配置；关闭现有非零/异常 UseFilter，固定写本目录 Launcher。取消/卸载恢复 Windows 标准入口，不恢复旧工具。最新读回/错误/界面合同见 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md)，覆盖历史“一律拒绝其他工具/特殊配置”条款。
+
 首次启动偏好增量（2026-10-25）：UiPreferences 增加 `taskManagerPromptDismissed:boolean`，缺失默认 false，GET/POST preferences 使用 JSON.NET 持久化；它表示已完成首次选择，与实际 IFEO 状态独立。桌面提示复用下文既有 task-manager-integration，不新增写入接口，界面重置保留该标记。完整行为见 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)。
 
 网络吞吐增量（2026-10-25）见 [NETWORK-THROUGHPUT.md](NETWORK-THROUGHPUT.md)：process新增 `networkReceiveBytesPerSecond/networkSendBytesPerSecond:number|null`、`networkCapturedAtUtc:string|null`；既有 `networkBytesPerSecond` 为真实收发合计（双方有效才相加）。snapshot新增 `processNetwork` 状态（`capturedAtUtc/status/eventsLost/buffersLost/collectionDurationMs/unavailable`）；详情沿用最近同identity网络值/来源/原因。`capabilities.processNetwork.available:true` 表示接入，当前权限/预热/丢失/过期看字段原因；覆盖下文历史network=null/notCollected条款。ETW进程流量与GetIfTable2硬件总量不相互替代。

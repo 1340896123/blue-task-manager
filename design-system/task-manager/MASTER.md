@@ -1,5 +1,9 @@
 # Task Manager — Windows Blue Design System
 
+## 2026-10-26 已有入口接管
+
+复用现有设置行、宽 Modal、accent 主动作、中性次动作、warning 状态、body/caption/path 和空间 Token。其他工具/特殊配置提供“接管现有入口…”；确认清晰展示当前命令与本目录目标，说明覆盖现有入口、取消只恢复 Windows 标准任务管理器且不恢复旧工具。初始焦点为“暂不更改”，原生 Escape/Tab/焦点恢复保持；忙/错误/成功有文本反馈。真实路径可折行，960×640/125%时对话框内部滚动、底部操作可达；无新增色值、字号或视觉体系。首次提示可前往设置明确接管，合同及 T 系列见 [TASK-MANAGER-TAKEOVER.md](../../docs/TASK-MANAGER-TAKEOVER.md)。
+
 ## 2026-10-25 首次启动替换提示
 
 正式桌面首次提示复用既有 Modal/宽对话框、surface、accent、caption、body、subtitle、space 和 command-button Token；标题“替换标准任务管理器？”，一个蓝色主动作与中性“暂不替换”。标题/正文/影响说明/实际状态/底部动作分层，真实路径可折行，读取/写入/错误均有文本反馈。原生 dialog 的可见焦点、Tab 约束、Escape 暂不和焦点恢复保持；初始焦点放暂不，避免回车误改全机设置。960×640/125%时限制视口内高度并内部滚动，底部动作始终可达，遵循 reduced-motion；不新增插画、渐变、颜色或字号。行为及 F 系列见 [FIRST-LAUNCH-INTEGRATION.md](../../docs/FIRST-LAUNCH-INTEGRATION.md)。

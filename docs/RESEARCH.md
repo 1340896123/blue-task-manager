@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 已有任务管理器入口接管（2026-10-26）
+
+本轮实际在线重新核验 TaskExplorer 固定提交 `9f3f95d22f07f759dd1e0114417529ba51decb01` 的 CustomSetupTool/util.c（`SetupHasTaskMgrDebuggerIfeo` / `SetupCreateTaskMgrDebuggerIfeo`），以及 Microsoft RegSetValueExW / RegQueryValueExW / GFlags 文档源码。采用标准 HKLM64 IFEO、正确引用的固定 Launcher REG_SZ、实际权限与错误、字节/类型有界读取；不移植专有协议/驱动，不复制 GPL 源码。核验链接和取舍见 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md)。用户新要求覆盖历史“不覆盖其他工具”策略：显式接管允许替换，取消恢复 Windows 标准入口、不恢复旧工具。UseFilter 关闭及过滤子键行为由 T04 真实 Windows 场景补验，不把仅支持根 Debugger 的参考实现当作该分支已通过证据。
+
 ## 首次启动替换提示（2026-10-25）
 
 实际通过 GitHub API 获取 SystemInformer 固定提交 `b059589e4dc5d7dbffc3d3c68190b3c226505659`，读取 [options.c](https://github.com/winsiderss/systeminformer/blob/b059589e4dc5d7dbffc3d3c68190b3c226505659/SystemInformer/options.c) 的 PhpIsDefaultTaskManager/PhpSetDefaultTaskManager，核验标准 IFEO Debugger、先读实际状态、明确替换/恢复确认、固定安全目录提醒与真实写错误。仅借鉴交互及公开 Windows 来源，复用本项目既有更严格冲突/自有值/revision/读回服务。UI/UX Pro Max 定向 keyboard focus modal 查询命中可见焦点；复用现有 React/Tailwind 原生 dialog 与 Windows 蓝色 Token，不生成新设计系统。完整取舍和 F 系列见 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)。
