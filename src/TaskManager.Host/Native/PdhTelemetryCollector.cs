@@ -35,6 +35,7 @@ internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> setti
     private DateTime _previousCapture;
     private double? _initializationDurationMs;
     private readonly GpuIdentityCache _gpuIdentity = new();
+    private readonly DiskIdentityCache _diskIdentity = new();
 
     public PdhSample Current { get { lock (_gate) return _current; } }
     public void Request(IReadOnlyList<ProcessDto> processes)
@@ -190,13 +191,18 @@ internal sealed partial class PdhTelemetryCollector(Func<SamplingSettings> setti
         }).OrderBy(item => item.Id, StringComparer.Ordinal).ToArray();
         var names = read.Keys.Concat(write.Keys).Concat(idle.Keys).Where(name => !name.Equals("_Total", StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.Ordinal).ToArray();
         if (names.Length > 256) { errors["disk"] = new("capacity", "物理磁盘实例超过256项边界。"); names = []; }
+        var diskIdentities = _diskIdentity.Resolve(names);
         var disks = names.Select(name =>
         {
             var missing = new Dictionary<string, Unavailable>();
             var r = Value(read, name, readError, "readBytesPerSecond", missing);
             var w = Value(write, name, writeError, "writeBytesPerSecond", missing);
             var i = Value(idle, name, idleError, "activePercent", missing);
-            return new PhysicalDiskDto(name, name, false, r, w, i.HasValue ? 100 - Math.Clamp(i.Value, 0, 100) : null, missing);
+            var identity = diskIdentities[name];
+            foreach (var field in identity.Unavailable) missing[field.Key] = field.Value;
+            return new PhysicalDiskDto(name, name, false, r, w, i.HasValue ? 100 - Math.Clamp(i.Value, 0, 100) : null, missing)
+            { DeviceNumber = identity.DeviceNumber, Model = identity.Model, MediaType = identity.MediaType,
+                BusType = identity.BusType, IdentityCapturedAtUtc = identity.CapturedAtUtc };
         }).OrderBy(item => item.Id, StringComparer.Ordinal).ToArray();
         if (gpu.Count == 0 && !errors.ContainsKey("gpu")) errors["gpu"] = new("notSupported", "当前GPU驱动未提供GPU Engine实例。");
         if (disks.Length == 0 && !errors.ContainsKey("disk")) errors["disk"] = new("notSupported", "当前系统未提供PhysicalDisk实例。");

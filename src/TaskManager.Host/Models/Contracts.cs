@@ -20,7 +20,14 @@ public sealed record HistoryPoint(DateTime CapturedAtUtc, double? CpuPercent, do
 public sealed record NetworkAdapterDto(string Id, uint InterfaceIndex, string Alias, string Description, string Status, uint InterfaceType,
     bool IsHardware, bool IsVirtual, bool IsLoopback, bool IsTunnel, string ReceiveLinkSpeedBitsPerSecond, string TransmitLinkSpeedBitsPerSecond,
     string ReceivedBytes, string SentBytes, double? ReceiveBytesPerSecond, double? SendBytesPerSecond, IReadOnlyDictionary<string, Unavailable> Unavailable);
-public sealed record PhysicalDiskDto(string Id, string Name, bool IsTotal, double? ReadBytesPerSecond, double? WriteBytesPerSecond, double? ActivePercent, IReadOnlyDictionary<string, Unavailable> Unavailable);
+public sealed record PhysicalDiskDto(string Id, string Name, bool IsTotal, double? ReadBytesPerSecond, double? WriteBytesPerSecond, double? ActivePercent, IReadOnlyDictionary<string, Unavailable> Unavailable)
+{
+    public uint? DeviceNumber { get; init; }
+    public string? Model { get; init; }
+    public string? MediaType { get; init; }
+    public string? BusType { get; init; }
+    public DateTime? IdentityCapturedAtUtc { get; init; }
+}
 public sealed record GpuAdapterDto(string Id, string AdapterLuid, uint PhysicalIndex, double? UtilizationPercent, string? BusiestEngine, int EngineCount, IReadOnlyDictionary<string, Unavailable> Unavailable)
 {
     public string? Description { get; init; }

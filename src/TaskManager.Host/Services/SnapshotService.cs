@@ -48,7 +48,8 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         ["gpuAdapters"] = new(true, "CsWin32 PDH；同适配器引擎先跨PID汇总，再取最忙引擎，含软件适配器", "按计数器LUID/phys索引标识；phys索引不是Windows GPU编号或实体硬件保证，真实DXGI描述单独匹配。"),
         ["gpuIdentity"] = new(true, "CsWin32 DXGI CreateDXGIFactory1 / IDXGIAdapter1.GetDesc1，按完整AdapterLuid精确匹配", "描述/软件标志按实际读取，失败不影响PDH指标；不推断Windows GPU编号。"),
         ["networkAdapters"] = new(true, "CsWin32 GetIfTable2；HardwareInterface且非FilterInterface、非回环/隧道，仅真实硬件；断开硬件保留原状态"),
-        ["diskActivity"] = new(true, "CsWin32 PDH English PhysicalDisk；100-% Idle Time", "系统活动百分比为最忙物理磁盘；系统读写为非_Total实例吞吐之和，进程I/O不参与。")
+        ["diskActivity"] = new(true, "CsWin32 PDH English PhysicalDisk；100-% Idle Time", "系统活动百分比为最忙物理磁盘；系统读写为非_Total实例吞吐之和，进程I/O不参与。"),
+        ["diskIdentity"] = new(true, "CsWin32 CreateFile / DeviceIoControl；核验STORAGE_DEVICE_NUMBER后读取存储描述符和寻道惩罚", "型号与总线来自设备报告；HDD/SSD按Windows寻道惩罚判定，复合或虚拟设备介质保持未知。")
     };
 
     public SamplingSettings Settings { get { lock (_gate) return _settings; } }
@@ -219,6 +220,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
 
     private static PdhSample FreshTelemetry(PdhSample sample, int intervalMs)
     {
+        sample = sample with { Disks = sample.Disks.Select(DiskIdentityCache.FreshIdentity).ToArray() };
         if (sample.Status.CpuCapturedAtUtc is { } cpuCaptured && DateTime.UtcNow - cpuCaptured > TimeSpan.FromMilliseconds(Math.Max(5000, intervalMs * 3)))
         {
             var cpuStale = new Unavailable("stale", "逻辑处理器最新PDH采样已过期，等待后台查询恢复。");
@@ -236,7 +238,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
             Processes = new Dictionary<string, GpuReading>(),
             Gpus = sample.Gpus.Select(row => row with { UtilizationPercent = null, BusiestEngine = null, Unavailable = new Dictionary<string, Unavailable>(row.Unavailable) { ["utilizationPercent"] = stale } }).ToArray(),
             Disks = sample.Disks.Select(row => row with { ReadBytesPerSecond = null, WriteBytesPerSecond = null, ActivePercent = null,
-                Unavailable = new Dictionary<string, Unavailable> { ["readBytesPerSecond"] = stale, ["writeBytesPerSecond"] = stale, ["activePercent"] = stale } }).ToArray()
+                Unavailable = new Dictionary<string, Unavailable>(row.Unavailable) { ["readBytesPerSecond"] = stale, ["writeBytesPerSecond"] = stale, ["activePercent"] = stale } }).ToArray()
         };
     }
 
