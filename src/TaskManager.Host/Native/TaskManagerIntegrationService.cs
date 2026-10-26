@@ -54,6 +54,7 @@ public sealed class TaskManagerIntegrationService
     public TaskManagerIntegrationResult Apply(TaskManagerIntegrationRequest request)
     {
         if (request.Repair && !request.Enabled) throw new ApiException(400, "integrationRepairInvalid", "修复接管必须明确请求启用新的本目录入口。");
+        if (request.TakeOver && (!request.Enabled || request.Repair)) throw new ApiException(400, "integrationTakeOverInvalid", "接管现有入口必须明确请求启用，不能同时请求修复或取消接管。");
         if (request.ExpectedRevision is null || request.ExpectedRevision.Length != 64 || !request.ExpectedRevision.All(Uri.IsHexDigit)) throw new ApiException(400, "integrationRevisionRequired", "请先读取任务管理器入口的实际状态，再确认操作。");
         lock (gate)
         {
@@ -63,9 +64,7 @@ public sealed class TaskManagerIntegrationService
             if (request.Enabled)
             {
                 if (before.Status == "enabled") return new(before, false, "本目录程序已接管任务管理器入口，未重复写入。");
-                if (before.MigrationRequired && !request.Repair) throw new ApiException(409, "integrationRepairRequired", "旧接管需要明确确认修复，未自动迁移。");
-                if (before.Status != (request.Repair ? "migrationRequired" : "disabled")) throw new ApiException(409, "integrationConflict", before.ConflictReason ?? "已有其他或特殊IFEO配置，未覆盖。");
-                if (!before.ExecutableAvailable) throw new ApiException(409, "integrationExecutableUnavailable", "当前目录缺少 TaskManager.Launcher.exe 或 TaskManager.Host.exe，请恢复完整程序目录后重试。");
+                ValidateEnableRequest(before, request);
             }
             else if (!before.OwnsDebugger)
             {
@@ -84,18 +83,24 @@ public sealed class TaskManagerIntegrationService
             {
                 if (opened != WIN32_ERROR.ERROR_SUCCESS) throw Error(NativeSupport.Error((int)opened, "Windows拒绝写入任务管理器入口；请以管理员身份运行后重试"));
                 // Re-read the complete key through this exact write handle immediately before mutation.
-                var actual = Describe(ReadConfiguration(key), true, null);
+                var actualConfiguration = ReadConfiguration(key);
+                var actual = Describe(actualConfiguration, true, null);
                 if (!actual.CanRead) throw Error(actual.ReadError!);
                 CheckRevision(actual, request.ExpectedRevision);
-                if (request.Enabled && actual.Status != (request.Repair ? "migrationRequired" : "disabled")) throw new ApiException(409, "integrationConflict", "写入前发现其他或特殊配置，未覆盖。");
+                if (request.Enabled) ValidateEnableRequest(actual, request);
                 if (!request.Enabled && !actual.OwnsDebugger) throw new ApiException(409, "integrationConflict", "写入前Debugger已不属于本目录程序，未删除。");
+
+                // A filtered child can otherwise override the root Debugger. Keep its
+                // settings for diagnostics, but disable path filtering for takeover/reset.
+                if (request.TakeOver || !request.Enabled) DisableFilterIfNeeded(key, actualConfiguration);
                 var result = request.Enabled ? PInvoke.RegSetValueEx(key, "Debugger", REG_VALUE_TYPE.REG_SZ, Encoding.Unicode.GetBytes(RegistrationCommand + '\0')) : PInvoke.RegDeleteValue(key, "Debugger");
-                if (result != WIN32_ERROR.ERROR_SUCCESS) throw Error(NativeSupport.Error((int)result, request.Enabled ? "注册任务管理器入口失败" : "取消任务管理器入口失败"));
-                var after = Describe(ReadConfiguration(key), true, null);
-                if (!after.CanRead) throw new ApiException(503, "integrationReadbackFailed", "Windows已受理配置修改，但读回失败；操作可能已生效，请刷新实际状态，不要盲目重试。", after.ReadError?.NativeErrorCode);
-                if (request.Enabled ? after.Status != "enabled" : after.OwnsDebugger || after.CurrentDebugger is not null)
-                    throw new ApiException(409, "integrationChangedAfterWrite", "修改后的实际配置与请求不一致；可能有其他工具同时更改，请刷新确认，不再自动写入。");
-                return new(after, true, request.Enabled ? request.Repair ? "已修复旧接管并读回确认；系统入口将通过 Windows 管理员授权启动。" : "已读回确认本目录程序接管任务管理器入口。" : "已读回确认仅删除本目录程序的Debugger，其他Windows配置保持原样。");
+                CheckMutation(result, request.Enabled ? "注册任务管理器入口失败" : "恢复Windows标准任务管理器入口失败");
+                var afterConfiguration = ReadConfiguration(key);
+                var after = Describe(afterConfiguration, true, null);
+                CheckReadback(after);
+                if (request.Enabled ? after.Status != "enabled" : afterConfiguration.Values.ContainsKey("Debugger") || RequiresFilterReset(afterConfiguration))
+                    throw ChangedAfterWrite();
+                return new(after, true, request.Enabled ? request.Repair ? "已修复旧接管并读回确认；系统入口将通过 Windows 管理员授权启动。" : request.TakeOver ? "已接管现有任务管理器入口并读回确认；取消接管将恢复Windows标准任务管理器，不恢复此前工具。" : "已读回确认本目录程序接管任务管理器入口。" : "已读回确认恢复Windows标准任务管理器入口，不恢复此前工具。");
             }
         }
     }
@@ -104,6 +109,44 @@ public sealed class TaskManagerIntegrationService
     private static void CheckRevision(TaskManagerIntegrationState state, string expected)
     { if (!string.Equals(state.Revision, expected, StringComparison.Ordinal)) throw new ApiException(409, "integrationChanged", "Windows任务管理器入口配置已经变化，未执行修改；请刷新后重新确认。"); }
     private static ApiException Error(Unavailable error) => new(error.NativeErrorCode == 5 ? 403 : 503, error.NativeErrorCode == 5 ? "integrationAccessDenied" : "integrationUnavailable", error.Message, error.NativeErrorCode);
+
+    private static void ValidateEnableRequest(TaskManagerIntegrationState state, TaskManagerIntegrationRequest request)
+    {
+        if (state.MigrationRequired && !request.Repair && !request.TakeOver) throw new ApiException(409, "integrationRepairRequired", "旧接管需要明确确认修复，未自动迁移。");
+        var requiredStatus = request.TakeOver ? "conflict" : request.Repair ? "migrationRequired" : "disabled";
+        if (state.Status != requiredStatus) throw new ApiException(409, "integrationConflict", request.TakeOver ? "现有入口状态已变化，请刷新后重新选择接管或修复。" : state.ConflictReason ?? "已有其他入口配置，请明确确认接管现有入口。");
+        if (!state.ExecutableAvailable) throw new ApiException(409, "integrationExecutableUnavailable", "当前目录缺少 TaskManager.Launcher.exe 或 TaskManager.Host.exe，请恢复完整程序目录后重试。");
+    }
+
+    private static bool RequiresFilterReset(Configuration configuration) => configuration.Values.TryGetValue("UseFilter", out var value)
+        && (value.Type != (uint)REG_VALUE_TYPE.REG_DWORD || value.Data.Length != sizeof(uint) || System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(value.Data) != 0);
+
+    private static void DisableFilterIfNeeded(SafeRegistryHandle key, Configuration before)
+    {
+        if (!RequiresFilterReset(before)) return;
+        var zero = new byte[sizeof(uint)];
+        CheckMutation(PInvoke.RegSetValueEx(key, "UseFilter", REG_VALUE_TYPE.REG_DWORD, zero), "关闭任务管理器入口过滤失败");
+
+        // Before the second mutation, verify that only our filter write occurred.
+        // Registry writes provide no cross-tool compare-and-swap operation.
+        var expectedValues = new Dictionary<string, RegistryValue>(before.Values, StringComparer.OrdinalIgnoreCase) { ["UseFilter"] = new((uint)REG_VALUE_TYPE.REG_DWORD, zero) };
+        var expected = Describe(new(expectedValues, before.Subkeys, null), true, null);
+        var actual = Describe(ReadConfiguration(key), true, null);
+        CheckReadback(actual);
+        if (actual.Revision != expected.Revision) throw ChangedAfterWrite();
+    }
+
+    private static void CheckMutation(WIN32_ERROR result, string action)
+    {
+        if (result != WIN32_ERROR.ERROR_SUCCESS) throw Error(NativeSupport.Error((int)result, $"{action}；配置可能部分生效，请刷新实际状态，不要盲目重试"));
+    }
+
+    private static void CheckReadback(TaskManagerIntegrationState state)
+    {
+        if (!state.CanRead) throw new ApiException(503, "integrationReadbackFailed", "Windows已受理配置修改，但读回失败；配置可能部分生效，请刷新实际状态，不要盲目重试。", state.ReadError?.NativeErrorCode);
+    }
+
+    private static ApiException ChangedAfterWrite() => new(409, "integrationChangedAfterWrite", "修改后的实际配置与请求不一致；可能有其他工具同时更改，配置可能部分生效，请刷新后重新确认，不再自动写入。");
 
     private static (bool? CanWrite, Unavailable? Error) ProbeWrite(SafeRegistryHandle root, bool missing)
     {
@@ -146,28 +189,29 @@ public sealed class TaskManagerIntegrationService
         string? debugger = null, conflict = null; uint? filter = null;
         if (configuration.Values.TryGetValue("Debugger", out var value))
         {
-            if (value.Type != (uint)REG_VALUE_TYPE.REG_SZ || (value.Data.Length & 1) != 0) conflict = "现有Debugger不是普通REG_SZ文本，不能安全覆盖。";
+            if (value.Type != (uint)REG_VALUE_TYPE.REG_SZ || (value.Data.Length & 1) != 0) conflict = "现有Debugger不是普通REG_SZ文本；可明确接管并替换为本目录入口。";
             else
             {
-                try { debugger = Unicode.GetString(value.Data); if (debugger.EndsWith('\0')) debugger = debugger[..^1]; if (debugger.Contains('\0')) conflict = "现有Debugger包含异常空字符，不能安全覆盖。"; }
-                catch (DecoderFallbackException) { conflict = "现有Debugger的Unicode文本无效，不能安全覆盖。"; }
+                try { debugger = Unicode.GetString(value.Data); if (debugger.EndsWith('\0')) debugger = debugger[..^1]; if (debugger.Contains('\0')) conflict = "现有Debugger包含异常空字符；可明确接管并替换为本目录入口。"; }
+                catch (DecoderFallbackException) { conflict = "现有Debugger的Unicode文本无效；可明确接管并替换为本目录入口。"; }
             }
         }
         var migrationRequired = conflict is null && debugger == LegacyRegistrationCommand && value?.Type == (uint)REG_VALUE_TYPE.REG_SZ;
         var owns = conflict is null && (debugger == RegistrationCommand || migrationRequired) && value?.Type == (uint)REG_VALUE_TYPE.REG_SZ;
         if (configuration.Values.TryGetValue("UseFilter", out var useFilter))
         {
-            if (useFilter.Type != (uint)REG_VALUE_TYPE.REG_DWORD || useFilter.Data.Length != 4) conflict ??= "UseFilter不是有效DWORD，无法确定实际入口，未允许接管。";
-            else { filter = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(useFilter.Data); if (filter != 0) conflict ??= "已启用UseFilter过滤入口，本应用不覆盖其特殊配置。"; }
+            if (useFilter.Type != (uint)REG_VALUE_TYPE.REG_DWORD || useFilter.Data.Length != 4) conflict ??= "UseFilter不是有效DWORD；接管时将关闭入口过滤。";
+            else { filter = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(useFilter.Data); if (filter != 0) conflict ??= "已启用UseFilter入口过滤；接管时将关闭过滤并使用本目录入口。"; }
         }
-        if (configuration.Subkeys.Count != 0 || configuration.Values.Keys.Any(name => !name.Equals("Debugger", StringComparison.OrdinalIgnoreCase) && !name.Equals("UseFilter", StringComparison.OrdinalIgnoreCase))) conflict ??= "当前存在过滤子键或其他特殊IFEO配置，本应用不覆盖；仅可取消精确属于本程序的Debugger。";
-        if (!string.IsNullOrEmpty(debugger) && !owns) conflict ??= "任务管理器入口已配置为其他工具或其他目录/命令，本应用不会覆盖。";
+        // Other diagnostic values and dormant filter children do not select an
+        // alternate entry when UseFilter is absent or a valid DWORD zero.
+        if (!string.IsNullOrEmpty(debugger) && !owns) conflict ??= "任务管理器入口已配置为其他工具或其他目录/命令；可明确接管到本目录程序。";
         var status = configuration.Error is not null ? "unavailable" : conflict is not null ? "conflict" : migrationRequired ? "migrationRequired" : owns ? "enabled" : "disabled";
         var executableAvailable = File.Exists(ExecutablePath) && File.Exists(LauncherPath);
         var fingerprint = JsonConvert.SerializeObject(new { command = RegistrationCommand, canWrite, values = configuration.Values.OrderBy(p => p.Key, StringComparer.OrdinalIgnoreCase).Select(p => new { name = p.Key.ToUpperInvariant(), type = p.Value.Type, data = Convert.ToBase64String(p.Value.Data) }), subkeys = configuration.Subkeys.Order(StringComparer.OrdinalIgnoreCase), error = configuration.Error });
         var revision = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(fingerprint)));
         return new(status, status == "enabled" ? true : status == "disabled" ? false : null, owns, configuration.Error is null, canWrite, status == "disabled" && canWrite == true && executableAvailable, configuration.Error is null && owns && canWrite == true,
-            executableAvailable, "machine", LauncherPath, RegistrationCommand, debugger, filter, revision, DateTime.UtcNow, conflict, configuration.Error, writeError, migrationRequired, status == "migrationRequired" && canWrite == true && executableAvailable);
+            executableAvailable, "machine", LauncherPath, RegistrationCommand, debugger, filter, revision, DateTime.UtcNow, conflict, configuration.Error, writeError, migrationRequired, status == "migrationRequired" && canWrite == true && executableAvailable, status == "conflict" && canWrite == true && executableAvailable);
     }
     private sealed record RegistryValue(uint Type, byte[] Data);
     private sealed record Configuration(Dictionary<string, RegistryValue> Values, List<string> Subkeys, Unavailable? Error);
