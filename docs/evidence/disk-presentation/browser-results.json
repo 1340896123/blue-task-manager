@@ -1,0 +1,575 @@
+{
+  "result": "PASS",
+  "mode": "browser",
+  "checkedAtUtc": "2026-10-26T16:10:49.822Z",
+  "checkoutAtRun": "81dc0f43a45924152c3635715f84124c2bafd74e",
+  "assertions": 100,
+  "checks": [
+    "acceptance controller has a real elevated Windows token",
+    "dedicated test listeners are free",
+    "production Host retains its administrator requirement",
+    "production API reports CsWin32 and JSON.NET",
+    "disk identity capability exposes its native source",
+    "disk 0 D:: actual PDH identity has a verified native number or an explicit failure",
+    "disk 0 D:: each model/media/bus field matches a definite independent Windows result or has an explicit reason",
+    "disk 0 D:: available physical index is confirmed by Get-Disk and Win32_DiskDrive",
+    "disk 0 D:: each identity field has a value or a reason",
+    "disk 0 D:: live PDH metrics have valid values or explicit reasons",
+    "disk 1 E:: actual PDH identity has a verified native number or an explicit failure",
+    "disk 1 E:: each model/media/bus field matches a definite independent Windows result or has an explicit reason",
+    "disk 1 E:: available physical index is confirmed by Get-Disk and Win32_DiskDrive",
+    "disk 1 E:: each identity field has a value or a reason",
+    "disk 1 E:: live PDH metrics have valid values or explicit reasons",
+    "disk 2 G:: actual PDH identity has a verified native number or an explicit failure",
+    "disk 2 G:: each model/media/bus field matches a definite independent Windows result or has an explicit reason",
+    "disk 2 G:: available physical index is confirmed by Get-Disk and Win32_DiskDrive",
+    "disk 2 G:: each identity field has a value or a reason",
+    "disk 2 G:: live PDH metrics have valid values or explicit reasons",
+    "disk 3 F:: actual PDH identity has a verified native number or an explicit failure",
+    "disk 3 F:: each model/media/bus field matches a definite independent Windows result or has an explicit reason",
+    "disk 3 F:: available physical index is confirmed by Get-Disk and Win32_DiskDrive",
+    "disk 3 F:: each identity field has a value or a reason",
+    "disk 3 F:: live PDH metrics have valid values or explicit reasons",
+    "disk 4 C:: actual PDH identity has a verified native number or an explicit failure",
+    "disk 4 C:: each model/media/bus field matches a definite independent Windows result or has an explicit reason",
+    "disk 4 C:: available physical index is confirmed by Get-Disk and Win32_DiskDrive",
+    "disk 4 C:: each identity field has a value or a reason",
+    "disk 4 C:: live PDH metrics have valid values or explicit reasons",
+    "B14: system activity is the busiest complete physical sample or explicitly unavailable",
+    "B14: read rates aggregate each complete physical instance once or remain explicitly unavailable",
+    "static identities are absent from bounded performance history",
+    "browser: actual bootstrap mode",
+    "disk 0 D:: keyboard selection targets the real resource",
+    "disk 0 D:: model heading or accessible unavailable reason matches the actual field",
+    "disk 0 D:: one read/write chart retains both labeled line styles",
+    "disk 0 D:: activity values, curves, percentages and explanatory text are absent",
+    "disk 0 D:: main and mini charts use the same two throughput series and scale",
+    "disk 0 D:: tile read/write rates agree with visible real disk facts",
+    "disk 1 E:: keyboard selection targets the real resource",
+    "disk 1 E:: model heading or accessible unavailable reason matches the actual field",
+    "disk 1 E:: one read/write chart retains both labeled line styles",
+    "disk 1 E:: activity values, curves, percentages and explanatory text are absent",
+    "disk 1 E:: main and mini charts use the same two throughput series and scale",
+    "disk 1 E:: tile read/write rates agree with visible real disk facts",
+    "disk 2 G:: keyboard selection targets the real resource",
+    "disk 2 G:: model heading or accessible unavailable reason matches the actual field",
+    "disk 2 G:: one read/write chart retains both labeled line styles",
+    "disk 2 G:: activity values, curves, percentages and explanatory text are absent",
+    "disk 2 G:: main and mini charts use the same two throughput series and scale",
+    "disk 2 G:: tile read/write rates agree with visible real disk facts",
+    "disk 3 F:: keyboard selection targets the real resource",
+    "disk 3 F:: model heading or accessible unavailable reason matches the actual field",
+    "disk 3 F:: one read/write chart retains both labeled line styles",
+    "disk 3 F:: activity values, curves, percentages and explanatory text are absent",
+    "disk 3 F:: main and mini charts use the same two throughput series and scale",
+    "disk 3 F:: tile read/write rates agree with visible real disk facts",
+    "disk 4 C:: keyboard selection targets the real resource",
+    "disk 4 C:: model heading or accessible unavailable reason matches the actual field",
+    "disk 4 C:: one read/write chart retains both labeled line styles",
+    "disk 4 C:: activity values, curves, percentages and explanatory text are absent",
+    "disk 4 C:: main and mini charts use the same two throughput series and scale",
+    "disk 4 C:: tile read/write rates agree with visible real disk facts",
+    "search WDC WD10EZEX-08WN4A0: only actual matching disk identities remain",
+    "search WDC WD10EZEX-08WN4A0: disk 0 D: remains reachable",
+    "search HDD: only actual matching disk identities remain",
+    "search HDD: disk 0 D: remains reachable",
+    "search HDD: disk 1 E: remains reachable",
+    "search SSD: only actual matching disk identities remain",
+    "search SSD: disk 2 G: remains reachable",
+    "search SSD: disk 3 F: remains reachable",
+    "search SSD: disk 4 C: remains reachable",
+    "search SATA: only actual matching disk identities remain",
+    "search SATA: disk 0 D: remains reachable",
+    "search SATA: disk 1 E: remains reachable",
+    "search SATA: disk 2 G: remains reachable",
+    "search SATA: disk 3 F: remains reachable",
+    "search NVMe: only actual matching disk identities remain",
+    "search NVMe: disk 4 C: remains reachable",
+    "1380: complete disk model fits without document horizontal overflow",
+    "1380: model supports wrapping and text selection",
+    "1380: one throughput chart and reduced-motion remain available",
+    "1380: disk tile contents fit their minimum 96px flow without clipping",
+    "1380: one read/write chart retains both labeled line styles",
+    "1380: activity values, curves, percentages and explanatory text are absent",
+    "1380: main and mini charts use the same two throughput series and scale",
+    "1380: tile read/write rates agree with visible real disk facts",
+    "1380: readable facts match the selected actual disk",
+    "960: complete disk model fits without document horizontal overflow",
+    "960: model supports wrapping and text selection",
+    "960: one throughput chart and reduced-motion remain available",
+    "960: disk tile contents fit their minimum 96px flow without clipping",
+    "960: one read/write chart retains both labeled line styles",
+    "960: activity values, curves, percentages and explanatory text are absent",
+    "960: main and mini charts use the same two throughput series and scale",
+    "960: tile read/write rates agree with visible real disk facts",
+    "960: readable facts match the selected actual disk",
+    "pause preserves the actual last disk snapshot and identity",
+    "disk browsing causes no IFEO/service mutations or UI runtime errors"
+  ],
+  "artifacts": [
+    {
+      "file": "TaskManager.Host.exe",
+      "sha256": "434170065e66f51db67575bcf79dec9f8aa75b141d537b91283ca561525be333",
+      "bytes": 184832
+    },
+    {
+      "file": "TaskManager.Host.dll",
+      "sha256": "ab13dd8303620875e64d7669627867ee7c0fa462a82683ee6f8316090eb57801",
+      "bytes": 925696
+    },
+    {
+      "file": "wwwroot/index.html",
+      "sha256": "b3cf44f9c9489bc2d8c2deac27034fa3e68a561939bd3384c4200bee392779c6",
+      "bytes": 649
+    },
+    {
+      "file": "wwwroot/assets/index-Dr2A9XtU.js",
+      "sha256": "6e9613a7bd43eaf3ecd4004fd9ca8f9de1dd9e5c5c01f9c1d773aa6f80442413",
+      "bytes": 420774
+    },
+    {
+      "file": "wwwroot/assets/index-VgmmjFWA.css",
+      "sha256": "e8be657ed14ab10752a5fb21aa0f0a28f6085c5eec64de67d7e677249ac9135b",
+      "bytes": 57152
+    }
+  ],
+  "disks": [
+    {
+      "id": "0 D:",
+      "name": "0 D:",
+      "isTotal": false,
+      "readBytesPerSecond": 0,
+      "writeBytesPerSecond": 0,
+      "activePercent": 0.06854772436561518,
+      "unavailable": {},
+      "deviceNumber": 0,
+      "model": "WDC WD10EZEX-08WN4A0",
+      "mediaType": "HDD",
+      "busType": "SATA",
+      "identityCapturedAtUtc": "2026-10-26T16:10:36.0241881Z"
+    },
+    {
+      "id": "1 E:",
+      "name": "1 E:",
+      "isTotal": false,
+      "readBytesPerSecond": 0,
+      "writeBytesPerSecond": 10983.715622592452,
+      "activePercent": 0.08237517775602043,
+      "unavailable": {},
+      "deviceNumber": 1,
+      "model": "ST4000VX007-2DT166",
+      "mediaType": "HDD",
+      "busType": "SATA",
+      "identityCapturedAtUtc": "2026-10-26T16:10:36.0244205Z"
+    },
+    {
+      "id": "2 G:",
+      "name": "2 G:",
+      "isTotal": false,
+      "readBytesPerSecond": 0,
+      "writeBytesPerSecond": 0,
+      "activePercent": 0.06856558929247569,
+      "unavailable": {},
+      "deviceNumber": 2,
+      "model": "QUANXING C201 256GB",
+      "mediaType": "SSD",
+      "busType": "SATA",
+      "identityCapturedAtUtc": "2026-10-26T16:10:36.024439Z"
+    },
+    {
+      "id": "3 F:",
+      "name": "3 F:",
+      "isTotal": false,
+      "readBytesPerSecond": 0,
+      "writeBytesPerSecond": 0,
+      "activePercent": 0.06856558929247569,
+      "unavailable": {},
+      "deviceNumber": 3,
+      "model": "GALAX T0480A",
+      "mediaType": "SSD",
+      "busType": "SATA",
+      "identityCapturedAtUtc": "2026-10-26T16:10:36.0244509Z"
+    },
+    {
+      "id": "4 C:",
+      "name": "4 C:",
+      "isTotal": false,
+      "readBytesPerSecond": 29289.908326913206,
+      "writeBytesPerSecond": 900207.026234973,
+      "activePercent": 1.2682936851056468,
+      "unavailable": {},
+      "deviceNumber": 4,
+      "model": "Great Wall GT70 2TB",
+      "mediaType": "SSD",
+      "busType": "NVMe",
+      "identityCapturedAtUtc": "2026-10-26T16:10:36.0244634Z"
+    }
+  ],
+  "independent": {
+    "physical": [
+      {
+        "DeviceId": "1",
+        "FriendlyName": "ST4000VX007-2DT166",
+        "MediaType": "HDD",
+        "BusType": "SATA"
+      },
+      {
+        "DeviceId": "4",
+        "FriendlyName": "NVMe Great Wall GT70 2TB",
+        "MediaType": "SSD",
+        "BusType": "NVMe"
+      },
+      {
+        "DeviceId": "0",
+        "FriendlyName": "WDC WD10EZEX-08WN4A0",
+        "MediaType": "HDD",
+        "BusType": "SATA"
+      },
+      {
+        "DeviceId": "3",
+        "FriendlyName": "GALAX T0480A",
+        "MediaType": "SSD",
+        "BusType": "SATA"
+      },
+      {
+        "DeviceId": "2",
+        "FriendlyName": "QUANXING C201 256GB",
+        "MediaType": "SSD",
+        "BusType": "SATA"
+      }
+    ],
+    "disks": [
+      {
+        "Number": 3,
+        "FriendlyName": "GALAX T0480A",
+        "BusType": "SATA"
+      },
+      {
+        "Number": 2,
+        "FriendlyName": "QUANXING C201 256GB",
+        "BusType": "SATA"
+      },
+      {
+        "Number": 1,
+        "FriendlyName": "ST4000VX007-2DT166",
+        "BusType": "SATA"
+      },
+      {
+        "Number": 0,
+        "FriendlyName": "WDC WD10EZEX-08WN4A0",
+        "BusType": "SATA"
+      },
+      {
+        "Number": 4,
+        "FriendlyName": "NVMe Great Wall GT70 2TB",
+        "BusType": "NVMe"
+      }
+    ],
+    "win32": [
+      {
+        "Index": 3,
+        "Model": "GALAX T0480A"
+      },
+      {
+        "Index": 4,
+        "Model": "NVMe Great Wall GT70 2TB"
+      },
+      {
+        "Index": 1,
+        "Model": "ST4000VX007-2DT166"
+      },
+      {
+        "Index": 0,
+        "Model": "WDC WD10EZEX-08WN4A0"
+      },
+      {
+        "Index": 2,
+        "Model": "QUANXING C201 256GB"
+      }
+    ],
+    "instances": [
+      "0 d:",
+      "1 e:",
+      "2 g:",
+      "3 f:",
+      "4 c:"
+    ]
+  },
+  "geometry": [
+    {
+      "label": "1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "heading": {
+        "left": 449,
+        "right": 1356,
+        "top": 129,
+        "bottom": 177,
+        "width": 907,
+        "height": 48
+      },
+      "model": {
+        "left": 595.03125,
+        "right": 1356,
+        "top": 129,
+        "bottom": 149.296875,
+        "width": 760.96875,
+        "height": 20.296875
+      },
+      "modelWhiteSpace": "normal",
+      "modelSelectable": "text",
+      "reducedMotion": true,
+      "charts": 1,
+      "tiles": [
+        {
+          "tile": {
+            "left": 213,
+            "right": 416,
+            "top": 257,
+            "bottom": 353,
+            "width": 203,
+            "height": 96
+          },
+          "text": {
+            "left": 298,
+            "right": 407,
+            "top": 266.109375,
+            "bottom": 343.890625,
+            "width": 109,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "tile": {
+            "left": 213,
+            "right": 416,
+            "top": 353,
+            "bottom": 449,
+            "width": 203,
+            "height": 96
+          },
+          "text": {
+            "left": 298,
+            "right": 407,
+            "top": 362.109375,
+            "bottom": 439.890625,
+            "width": 109,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "tile": {
+            "left": 213,
+            "right": 416,
+            "top": 449,
+            "bottom": 545,
+            "width": 203,
+            "height": 96
+          },
+          "text": {
+            "left": 298,
+            "right": 407,
+            "top": 458.109375,
+            "bottom": 535.890625,
+            "width": 109,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "tile": {
+            "left": 213,
+            "right": 416,
+            "top": 545,
+            "bottom": 641,
+            "width": 203,
+            "height": 96
+          },
+          "text": {
+            "left": 298,
+            "right": 407,
+            "top": 554.109375,
+            "bottom": 631.890625,
+            "width": 109,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "tile": {
+            "left": 213,
+            "right": 416,
+            "top": 641,
+            "bottom": 737,
+            "width": 203,
+            "height": 96
+          },
+          "text": {
+            "left": 298,
+            "right": 407,
+            "top": 650.109375,
+            "bottom": 727.890625,
+            "width": 109,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        }
+      ]
+    },
+    {
+      "label": "960",
+      "viewport": [
+        960,
+        640
+      ],
+      "overflow": false,
+      "heading": {
+        "left": 249,
+        "right": 944,
+        "top": 121,
+        "bottom": 169,
+        "width": 695,
+        "height": 48
+      },
+      "model": {
+        "left": 395.03125,
+        "right": 944,
+        "top": 121,
+        "bottom": 141.296875,
+        "width": 548.96875,
+        "height": 20.296875
+      },
+      "modelWhiteSpace": "normal",
+      "modelSelectable": "text",
+      "reducedMotion": true,
+      "charts": 1,
+      "tiles": [
+        {
+          "tile": {
+            "left": 57,
+            "right": 224,
+            "top": 257,
+            "bottom": 353,
+            "width": 167,
+            "height": 96
+          },
+          "text": {
+            "left": 134,
+            "right": 219,
+            "top": 266.109375,
+            "bottom": 343.890625,
+            "width": 85,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "tile": {
+            "left": 57,
+            "right": 224,
+            "top": 353,
+            "bottom": 449,
+            "width": 167,
+            "height": 96
+          },
+          "text": {
+            "left": 134,
+            "right": 219,
+            "top": 362.109375,
+            "bottom": 439.890625,
+            "width": 85,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "tile": {
+            "left": 57,
+            "right": 224,
+            "top": 449,
+            "bottom": 545,
+            "width": 167,
+            "height": 96
+          },
+          "text": {
+            "left": 134,
+            "right": 219,
+            "top": 458.109375,
+            "bottom": 535.890625,
+            "width": 85,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "tile": {
+            "left": 57,
+            "right": 224,
+            "top": 545,
+            "bottom": 641,
+            "width": 167,
+            "height": 96
+          },
+          "text": {
+            "left": 134,
+            "right": 219,
+            "top": 554.109375,
+            "bottom": 631.890625,
+            "width": 85,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        },
+        {
+          "tile": {
+            "left": 57,
+            "right": 224,
+            "top": 641,
+            "bottom": 737,
+            "width": 167,
+            "height": 96
+          },
+          "text": {
+            "left": 134,
+            "right": 219,
+            "top": 650.109375,
+            "bottom": 727.890625,
+            "width": 85,
+            "height": 77.78125
+          },
+          "scrollHeight": 94,
+          "clientHeight": 94
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    "browser-1380-heading.png",
+    "browser-1380-facts.png",
+    "browser-960-heading.png",
+    "browser-960-facts.png"
+  ],
+  "errors": [],
+  "writes": [],
+  "cleanup": true,
+  "source": "production Release UI → HTTP → JSON.NET → CsWin32 → actual Windows devices; no business mocks",
+  "notExecuted": [
+    "physical hot unplug/replug and device-number reuse",
+    "real access-denied/unsupported/RAID or virtual disk identity branches; production parser/cache boundaries are covered separately by TaskManager.DiskTests",
+    "real idle-counter-only unavailable state was not induced; removed-field filtering was reviewed without business mocks"
+  ]
+}

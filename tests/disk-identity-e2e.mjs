@@ -12,10 +12,10 @@ import { probe, windows, nativeUi } from './native-ui-support.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const desktop = process.env.TASKMANAGER_DISK_MODE === 'desktop', mode = desktop ? 'desktop' : 'browser';
 const release = path.resolve(process.env.TASKMANAGER_DISK_RELEASE_DIRECTORY ?? path.join(root, 'src/TaskManager.Host/bin/Release/net10.0-windows10.0.19041.0'));
-const output = path.join(root, 'output/playwright/disk-identity');
+const output = path.join(root, 'output/playwright/disk-presentation');
 const port = 5342, cdp = 9342, origin = `http://127.0.0.1:${port}`;
 const checks = [], screenshots = [], geometry = [], errors = [], writes = [];
-const notExecuted = ['physical hot unplug/replug and device-number reuse', 'real access-denied/unsupported/RAID or virtual disk identity branches; production parser/cache boundaries are covered separately by TaskManager.DiskTests'];
+const notExecuted = ['physical hot unplug/replug and device-number reuse', 'real access-denied/unsupported/RAID or virtual disk identity branches; production parser/cache boundaries are covered separately by TaskManager.DiskTests', 'real idle-counter-only unavailable state was not induced; removed-field filtering was reviewed without business mocks'];
 const check = (condition, message) => { assert.ok(condition, message); checks.push(message); };
 const hash = value => createHash('sha256').update(value).digest('hex');
 await mkdir(output, { recursive: true });
@@ -51,18 +51,37 @@ async function capture(name, native = false) {
 }
 const tile = disk => page.locator('.resource-tile').filter({ has: page.getByText(`磁盘 ${disk.name}`, { exact: true }) });
 const fact = label => page.locator('.resource-fact-grid > div').filter({ has: page.getByText(label, { exact: true }) }).locator('dd');
+async function verifyDiskPresentation(disk, label) {
+  const value = await page.locator('.resource-content').evaluate((content, name) => {
+    const selected = [...document.querySelectorAll('.resource-tile-disk')].find(node => node.querySelector('strong')?.textContent === `磁盘 ${name}`);
+    const main = content.querySelector('.resource-chart'), mini = selected.querySelector('.resource-chart');
+    const paths = node => [...node.querySelectorAll('path')].map(path => path.getAttribute('d'));
+    const facts = [...content.querySelectorAll('.resource-fact-grid > div')];
+    const factText = label => facts.find(node => node.querySelector('dt').textContent === label)?.querySelector('dd').textContent;
+    const rates = [...selected.querySelectorAll('small > span')].map(node => node.textContent);
+    const text = [content.textContent, selected.textContent, selected.getAttribute('aria-label'), selected.title, ...content.querySelectorAll('[aria-label]')].map(node => typeof node === 'string' ? node : node?.getAttribute('aria-label')).join(' ');
+    return { charts: content.querySelectorAll('.resource-chart').length, removedTextAbsent: !/活动时间|活动率|空闲时间|Idle Time|\d(?:\.\d+)?%/i.test(text), legend: content.querySelector('.chart-legend')?.textContent, scale: content.querySelector('.chart-scale')?.textContent, rates, read: factText('读取'), write: factText('写入'), mainSeries: main.querySelectorAll(':scope > g').length, miniSeries: mini.querySelectorAll(':scope > g').length, samePaths: JSON.stringify(paths(main)) === JSON.stringify(paths(mini)) };
+  }, disk.name);
+  check(value.charts === 1 && value.legend.includes('读取（实线）') && value.legend.includes('写入（虚线）'), `${label}: one read/write chart retains both labeled line styles`);
+  check(value.removedTextAbsent && value.scale.includes('字节 / 秒') && !value.scale.includes('%'), `${label}: activity values, curves, percentages and explanatory text are absent`);
+  check(value.mainSeries === 2 && value.miniSeries === 2 && value.samePaths, `${label}: main and mini charts use the same two throughput series and scale`);
+  check(value.rates.length === 2 && value.rates[0] === `读 ${value.read}` && value.rates[1] === `写 ${value.write}`, `${label}: tile read/write rates agree with visible real disk facts`);
+}
 async function verifyLayout(label, disk) {
   await page.getByRole('searchbox').fill(''); await tile(disk).click();
   await page.locator('.resource-content').evaluate(node => node.scrollTop = 0);
   const value = await page.evaluate(() => {
     const heading = document.querySelector('.disk-heading'), model = heading.querySelector('span');
-    const rect = element => { const box = element.getBoundingClientRect(); return { left: box.left, right: box.right, width: box.width, height: box.height }; };
-    return { viewport: [innerWidth, innerHeight], overflow: document.documentElement.scrollWidth > innerWidth + 1, heading: rect(heading), model: rect(model), modelWhiteSpace: getComputedStyle(model).whiteSpace, modelSelectable: getComputedStyle(model).userSelect, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, charts: document.querySelectorAll('.resource-content .resource-chart').length };
+    const rect = element => { const box = element.getBoundingClientRect(); return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height }; };
+    const tiles = [...document.querySelectorAll('.resource-tile-disk')].map(tile => ({ tile: rect(tile), text: rect(tile.querySelector('.resource-tile-text')), scrollHeight: tile.scrollHeight, clientHeight: tile.clientHeight }));
+    return { viewport: [innerWidth, innerHeight], overflow: document.documentElement.scrollWidth > innerWidth + 1, heading: rect(heading), model: rect(model), modelWhiteSpace: getComputedStyle(model).whiteSpace, modelSelectable: getComputedStyle(model).userSelect, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, charts: document.querySelectorAll('.resource-content .resource-chart').length, tiles };
   });
   geometry.push({ label, ...value });
   check(!value.overflow && value.model.right <= value.viewport[0] + 1, `${label}: complete disk model fits without document horizontal overflow`);
   check(value.modelWhiteSpace === 'normal' && value.modelSelectable === 'text', `${label}: model supports wrapping and text selection`);
-  check(value.charts === 2 && value.reducedMotion, `${label}: activity/read-write charts and reduced-motion remain available`);
+  check(value.charts === 1 && value.reducedMotion, `${label}: one throughput chart and reduced-motion remain available`);
+  check(value.tiles.every(({tile,text,scrollHeight,clientHeight}) => tile.height >= 95 && text.top >= tile.top && text.bottom <= tile.bottom && scrollHeight <= clientHeight + 1), `${label}: disk tile contents fit their minimum 96px flow without clipping`);
+  await verifyDiskPresentation(disk, label);
   await capture(`${label}-heading`, desktop && label === '125');
   await fact('型号').scrollIntoViewIfNeeded();
   check((await fact('型号').innerText()) === disk.model && (await fact('类型').innerText()) === disk.mediaType && (await fact('总线类型').innerText()) === disk.busType, `${label}: readable facts match the selected actual disk`);
@@ -106,6 +125,7 @@ try {
     await tile(disk).focus(); await tile(disk).press('Enter');
     check(await tile(disk).getAttribute('aria-pressed') === 'true', `disk ${disk.id}: keyboard selection targets the real resource`);
     check(disk.model === null ? await fact('型号').locator('.missing-value').getAttribute('aria-label') === `不可用：${disk.unavailable.model.message}` : (await page.locator('.disk-heading').innerText()).includes(disk.model), `disk ${disk.id}: model heading or accessible unavailable reason matches the actual field`);
+    await verifyDiskPresentation(disk, `disk ${disk.id}`);
   }
   const readable = snapshot.physicalDisks.filter(disk => disk.model && disk.mediaType && disk.busType);
   const selected = [...readable].sort((a,b) => b.model.length - a.model.length)[0];

@@ -1,0 +1,12 @@
+{
+    "complete":  true,
+    "elevated":  true,
+    "pid":  65960,
+    "results":  [
+                    {
+                        "suite":  "pages-ui-v11",
+                        "durationSeconds":  13.930556,
+                        "exitCode":  0
+                    }
+                ]
+}

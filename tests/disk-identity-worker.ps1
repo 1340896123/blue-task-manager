@@ -2,7 +2,7 @@ param([ValidateSet('browser','desktop')][string]$Mode = 'browser', [string]$Rele
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $root
-$output = Join-Path $root 'output/playwright/disk-identity'
+$output = Join-Path $root 'output/playwright/disk-presentation'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 trap { [IO.File]::WriteAllText((Join-Path $output "worker-$Mode-error.txt"), ($_ | Out-String), [Text.UTF8Encoding]::new($false)); exit 1 }
 $probe = Join-Path $root 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe'
