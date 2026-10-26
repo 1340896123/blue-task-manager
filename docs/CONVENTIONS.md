@@ -2,7 +2,7 @@
 
 已有入口接管按 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md) 的最新用户要求实现：任何工具均可经明确确认接管；不做产品旧命令备份恢复，取消/卸载恢复 Windows 标准入口。测试 finally 恢复原现场仅用于清理，不能混淆为产品取消语义。多值写失败明确可能部分生效，不自动重试；交付记录 T 系列真实执行范围。
 
-首次启动提示遵循 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)：区分偏好 ready 与读取成功，未确认不写 IFEO；错误/未知/冲突不转未接管，写失败不标已选择；重置界面默认保留提示完成标记。复用原生 dialog 焦点/忙态与既有接管服务，交付记录 F 系列实际执行和未执行分支。
+首次启动提示遵循 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)：区分偏好 ready 与读取成功，初次真实入口读取完成前不创建 dialog；当前目录正常 enabled:true 时静默完成偏好，不弹提示、不写 IFEO，保存失败仍保留偏好错误。错误/未知/冲突不转已接管或未接管，系统写失败不标已选择；重置界面默认保留提示完成标记。复用原生 dialog 焦点/忙态与既有接管服务，交付记录 F 系列实际执行和未执行分支。
 
 标题与数据视觉层级遵循 [VISUAL-HIERARCHY.md](VISUAL-HIERARCHY.md) 和 MASTER 顶部排版增量：每页一个 h1、设置一级分组用 h2，标题/分组/正文/说明形成稳定字阶；静态视觉强调不改变表头或虚拟行几何量。交付记录本轮 V 系列及相关真实链路回归证据。
 

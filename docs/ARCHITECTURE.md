@@ -2,7 +2,7 @@
 
 > 2026-10-26 已有入口接管增量见 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md)：GET 增加 canTakeOver，POST 增加显式 takeOver；可替换任意现有 Debugger 并关闭已存在的非零/异常 UseFilter，保留无关 IFEO 配置。取消/卸载只恢复标准 Windows 入口、不恢复旧工具。覆盖历史特殊配置一律拒绝规则，CsWin32/JSON.NET、权限、版本重验、读回与 Launcher 链保持。
 
-> 首次启动入口增量见 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)：仅正式桌面且偏好读取成功后展示，复用已有 GET/POST task-manager-integration；UiPreferences 增加向后兼容的 taskManagerPromptDismissed:false，经 JSON.NET 保存。跳过仅保存偏好；替换需显式操作且真实读回；不新增系统协议/绑定，界面重置保留完成标记。
+> 首次启动入口增量见 [FIRST-LAUNCH-INTEGRATION.md](FIRST-LAUNCH-INTEGRATION.md)：仅正式桌面且偏好读取成功后读取真实入口，首次 GET 完成前不创建提示；status=enabled 且 enabled=true 时静默保存 taskManagerPromptDismissed:true，不弹窗或提交 IFEO 写请求。其他状态保持既有提示与错误恢复。UiPreferences 的兼容默认仍为 false，经 JSON.NET 保存；替换需显式操作且真实读回，不新增系统协议/绑定，界面重置保留完成标记。
 
 > 网络吞吐当前增量见 [NETWORK-THROUGHPUT.md](NETWORK-THROUGHPUT.md)：CsWin32管理本实例独立命名ETW系统实时会话，后台消费TCP/UDP IPv4/IPv6所属PID与字节数，再按创建身份及完整窗口计算收发合计。只控制本次创建会话，有界状态/缓冲，丢失/过期/预热明确，关闭释放。此用户增量覆盖下文历史“不增加持续ETW/逐进程网络未接入”边界；保持GetIfTable2硬件网卡口径。
 
