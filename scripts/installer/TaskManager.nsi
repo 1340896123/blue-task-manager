@@ -7,9 +7,29 @@ Unicode true
 !include "WinVer.nsh"
 !include "x64.nsh"
 
-!define PRODUCT_NAME "蓝域任务管理器"
-!define PRODUCT_ID "BlueDomainTaskManager.Admin.x64"
-!define PRODUCT_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\BlueDomainTaskManager"
+!ifdef TASKMANAGER_INSTALLER_TEST
+    ; Compile-time fixtures have their own product identity and no shortcuts.
+    ; The production builder never supplies this define.
+    !ifndef TEST_PRODUCT_ID
+        !error "TEST_PRODUCT_ID is required for the isolated installer fixture."
+    !endif
+    !ifndef TEST_PRODUCT_KEY
+        !error "TEST_PRODUCT_KEY is required for the isolated installer fixture."
+    !endif
+    !define PRODUCT_NAME "Task Manager Update Installer Fixture"
+    !define PRODUCT_ID "${TEST_PRODUCT_ID}"
+    !define PRODUCT_KEY "${TEST_PRODUCT_KEY}"
+!else
+    !define PRODUCT_NAME "蓝域任务管理器"
+    !define PRODUCT_ID "BlueDomainTaskManager.Admin.x64"
+    !define PRODUCT_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\BlueDomainTaskManager"
+!endif
+!ifndef RELEASE_TAG
+    !define RELEASE_TAG ""
+!endif
+!ifndef SOURCE_COMMIT
+    !define SOURCE_COMMIT ""
+!endif
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "${INSTALLER_PATH}"
 InstallDir "$PROGRAMFILES64\BlueDomainTaskManager"
@@ -24,6 +44,7 @@ VIAddVersionKey /LANG=2052 "ProductVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey /LANG=2052 "FileVersion" "${PRODUCT_VERSION}.0"
 VIAddVersionKey /LANG=2052 "FileDescription" "${PRODUCT_NAME} 安装程序"
 VIAddVersionKey /LANG=2052 "LegalCopyright" "BlueDomainTaskManager contributors"
+VIAddVersionKey /LANG=2052 "Comments" "ReleaseTag=${RELEASE_TAG}; SourceCommit=${SOURCE_COMMIT}"
 !define MUI_ICON "${PROJECT_ROOT}\assets\branding\task-manager.ico"
 !define MUI_UNICON "${PROJECT_ROOT}\assets\branding\task-manager.ico"
 !define MUI_ABORTWARNING
@@ -48,8 +69,24 @@ Var HashRead
 Var HashResult
 Var HashIndex
 Var HashActual
+Var UpdateRequested
+Var UpdateMode
+Var UpdateRecording
+Var UpdateAttemptId
+Var UpdateWaitStarted
+Var UpdateFailureRecorded
+
+!macro RecordUpdateFailure Error
+    ${If} $UpdateRecording == 1
+        WriteRegStr HKLM "${PRODUCT_KEY}" "LastUpdateAttemptId" "$UpdateAttemptId"
+        WriteRegStr HKLM "${PRODUCT_KEY}" "LastUpdateResult" "failed"
+        WriteRegStr HKLM "${PRODUCT_KEY}" "LastUpdateError" "${Error}"
+        StrCpy $UpdateFailureRecorded 1
+    ${EndIf}
+!macroend
 
 !macro Fail Message
+    !insertmacro RecordUpdateFailure "${Message}"
     MessageBox MB_ICONSTOP|MB_OK "${Message}" /SD IDOK
     SetErrorLevel 2
     Abort
@@ -126,15 +163,29 @@ FunctionEnd
     ${EndIf}
 !macroend
 
-; An executable image mapped by a running Host/Electron cannot be opened for
-; exclusive writing. Fail conservatively for any lock, without killing a PID.
+; Standard installation and uninstall still refuse an occupied image immediately.
+; An authenticated update handoff has one shared 60-second budget for all images.
+; GetTickCount subtraction remains valid across its 32-bit wrap for this interval.
 !macro CheckImageLock RelativePath
     ${If} ${FileExists} "$INSTDIR\${RelativePath}"
-    System::Call 'kernel32::CreateFileW(w "$INSTDIR\${RelativePath}", i 0x40000000, i 0, p 0, i 3, i 0, p 0) p .r0'
-    ${If} $0 == -1
-        !insertmacro Fail "应用正在运行或文件被占用。请先关闭本安装目录中的蓝域任务管理器，再重试。"
-    ${EndIf}
-    System::Call 'kernel32::CloseHandle(p r0)'
+        ${Do}
+            System::Call 'kernel32::CreateFileW(w "$INSTDIR\${RelativePath}", i 0x40000000, i 0, p 0, i 3, i 0, p 0) p .r0'
+            ${If} $0 != -1
+                System::Call 'kernel32::CloseHandle(p r0)'
+                ${ExitDo}
+            ${EndIf}
+            ${If} $UpdateMode != 1
+                !insertmacro Fail "应用正在运行或文件被占用。请先关闭本安装目录中的蓝域任务管理器，再重试。"
+            ${EndIf}
+            System::Call 'kernel32::GetTickCount() i .r1'
+            IntOp $1 $1 - $UpdateWaitStarted
+            ${If} $1 >= 60000
+                !insertmacro RecordUpdateFailure "imageLockTimeout"
+                SetErrorLevel 2
+                Abort
+            ${EndIf}
+            Sleep 250
+        ${Loop}
     ${EndIf}
 !macroend
 
@@ -149,17 +200,103 @@ FunctionEnd
 !macroend
 
 Function .onInit
+    StrCpy $UpdateRequested 0
+    StrCpy $UpdateMode 0
+    StrCpy $UpdateRecording 0
+    StrCpy $UpdateFailureRecorded 0
+    ; Only this exact fixed switch is accepted. Values are correlation IDs,
+    ; never paths, commands or URLs, and malformed requests cannot fall through
+    ; into an ordinary installation.
+    System::Call 'kernel32::GetCommandLineW() w .r0'
+    ClearErrors
+    ${GetOptionsS} "$0" "/TASKMANAGERUPDATE=" $UpdateAttemptId
+    ${IfNot} ${Errors}
+        StrLen $1 $UpdateAttemptId
+        System::Call 'shlwapi::StrSpnW(w "$UpdateAttemptId", w "0123456789abcdef") i .r2'
+        ${If} $1 != 32
+        ${OrIf} $2 != 32
+            !insertmacro Fail "更新尝试标识无效。请从应用中重新选择更新。"
+        ${EndIf}
+        StrCpy $UpdateRequested 1
+    ${Else}
+        ClearErrors
+        ${GetOptions} "$0" "/TASKMANAGERUPDATE" $1
+        ${IfNot} ${Errors}
+            !insertmacro Fail "更新参数无效。请从应用中重新选择更新。"
+        ${EndIf}
+    ${EndIf}
     !insertmacro PlatformCheck
     ; NSIS consumes /D before exposing $CMDLINE. Inspect the original Windows
     ; command line only to detect that switch; retain NSIS's own parsed path.
     System::Call 'kernel32::GetCommandLineW() w .r0'
     ClearErrors
     ${GetOptions} "$0" "/D=" $1
+    ${If} $UpdateRequested == 1
+        ${IfNot} ${Errors}
+            !insertmacro Fail "自动更新不能指定其他安装目录。"
+        ${EndIf}
+        ${If} $RegisteredDirectory == ""
+            !insertmacro Fail "自动更新需要现有正式安装记录。"
+        ${EndIf}
+        ; A valid attempt can record damaged-directory/marker failures only
+        ; after this fixed product registration identifies our uninstaller.
+        ; Foreign/missing registrations and invalid parameters are not changed.
+        ReadRegStr $1 HKLM "${PRODUCT_KEY}" "DisplayName"
+        ReadRegStr $2 HKLM "${PRODUCT_KEY}" "UninstallString"
+        ${If} $1 != "${PRODUCT_NAME}"
+        ${OrIf} $2 != '"$RegisteredDirectory\Uninstall.exe"'
+            !insertmacro Fail "自动更新无法确认现有产品安装记录。"
+        ${EndIf}
+        StrCpy $UpdateRecording 1
+        StrCpy $INSTDIR $RegisteredDirectory
+        Call ValidateDirectory
+        !insertmacro ValidateMarker
+        StrCpy $UpdateMode 1
+        ClearErrors
+        WriteRegStr HKLM "${PRODUCT_KEY}" "LastUpdateAttemptId" "$UpdateAttemptId"
+        WriteRegStr HKLM "${PRODUCT_KEY}" "LastUpdateResult" "started"
+        WriteRegStr HKLM "${PRODUCT_KEY}" "LastUpdateError" ""
+        ${If} ${Errors}
+            !insertmacro Fail "无法记录更新尝试，未开始替换应用文件。"
+        ${EndIf}
+        SetSilent silent
+        System::Call 'kernel32::GetTickCount() i .r0'
+        StrCpy $UpdateWaitStarted $0
+        Return
+    ${EndIf}
     ${IfNot} ${Errors}
         Return
     ${EndIf}
     ${If} $RegisteredDirectory != ""
         StrCpy $INSTDIR $RegisteredDirectory
+    ${EndIf}
+FunctionEnd
+
+Function .onInstFailed
+    ${If} $UpdateFailureRecorded != 1
+        !insertmacro RecordUpdateFailure "installerFailed"
+    ${EndIf}
+FunctionEnd
+
+Function .onInstSuccess
+    ${If} $UpdateMode == 1
+        ClearErrors
+        WriteRegStr HKLM "${PRODUCT_KEY}" "LastUpdateAttemptId" "$UpdateAttemptId"
+        WriteRegStr HKLM "${PRODUCT_KEY}" "LastUpdateResult" "success"
+        WriteRegStr HKLM "${PRODUCT_KEY}" "LastUpdateError" ""
+        ${If} ${Errors}
+            !insertmacro RecordUpdateFailure "resultWriteFailed"
+            SetErrorLevel 2
+            Return
+        ${EndIf}
+        ; Every payload, product marker and registry write has finished. Start
+        ; only this installation; NSIS failures never launch a partial payload.
+        ClearErrors
+        Exec '"$INSTDIR\TaskManager.Host.exe"'
+        ${If} ${Errors}
+            !insertmacro RecordUpdateFailure "restartFailed"
+            SetErrorLevel 2
+        ${EndIf}
     ${EndIf}
 FunctionEnd
 
@@ -186,12 +323,17 @@ Section "蓝域任务管理器（必需）" MainSection
     ${If} ${Errors}
         !insertmacro Fail "写入应用文件失败。请检查磁盘空间或目录权限，然后重新安装。"
     ${EndIf}
+    ClearErrors
     WriteINIStr "$INSTDIR\.bluedomain-install.ini" "Product" "Id" "${PRODUCT_ID}"
     WriteINIStr "$INSTDIR\.bluedomain-install.ini" "Product" "Directory" "$INSTDIR"
     WriteINIStr "$INSTDIR\.bluedomain-install.ini" "Product" "Version" "${PRODUCT_VERSION}"
+    WriteINIStr "$INSTDIR\.bluedomain-install.ini" "Product" "ReleaseTag" "${RELEASE_TAG}"
+    WriteINIStr "$INSTDIR\.bluedomain-install.ini" "Product" "SourceCommit" "${SOURCE_COMMIT}"
     WriteUninstaller "$INSTDIR\Uninstall.exe"
     WriteRegStr HKLM "${PRODUCT_KEY}" "DisplayName" "${PRODUCT_NAME}"
     WriteRegStr HKLM "${PRODUCT_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+    WriteRegStr HKLM "${PRODUCT_KEY}" "ReleaseTag" "${RELEASE_TAG}"
+    WriteRegStr HKLM "${PRODUCT_KEY}" "SourceCommit" "${SOURCE_COMMIT}"
     WriteRegStr HKLM "${PRODUCT_KEY}" "Publisher" "BlueDomainTaskManager contributors"
     WriteRegStr HKLM "${PRODUCT_KEY}" "URLInfoAbout" "https://github.com/1340896123/blue-task-manager"
     WriteRegStr HKLM "${PRODUCT_KEY}" "InstallLocation" "$INSTDIR"
@@ -201,11 +343,22 @@ Section "蓝域任务管理器（必需）" MainSection
     WriteRegDWORD HKLM "${PRODUCT_KEY}" "EstimatedSize" ${PAYLOAD_SIZE_KB}
     WriteRegDWORD HKLM "${PRODUCT_KEY}" "NoModify" 1
     WriteRegDWORD HKLM "${PRODUCT_KEY}" "NoRepair" 1
-    CreateShortcut "$SMPROGRAMS\蓝域任务管理器.lnk" "$INSTDIR\TaskManager.Host.exe" "" "$INSTDIR\TaskManager.Host.exe" 0
+    !ifndef TASKMANAGER_INSTALLER_TEST
+        CreateShortcut "$SMPROGRAMS\蓝域任务管理器.lnk" "$INSTDIR\TaskManager.Host.exe" "" "$INSTDIR\TaskManager.Host.exe" 0
+    !endif
+    ${If} ${Errors}
+        !insertmacro Fail "写入安装标记、卸载记录或快捷方式失败。请修复安装后重试。"
+    ${EndIf}
 SectionEnd
 
 Section "桌面快捷方式" DesktopSection
-    CreateShortcut "$DESKTOP\蓝域任务管理器.lnk" "$INSTDIR\TaskManager.Host.exe" "" "$INSTDIR\TaskManager.Host.exe" 0
+    !ifndef TASKMANAGER_INSTALLER_TEST
+        ClearErrors
+        CreateShortcut "$DESKTOP\蓝域任务管理器.lnk" "$INSTDIR\TaskManager.Host.exe" "" "$INSTDIR\TaskManager.Host.exe" 0
+        ${If} ${Errors}
+            !insertmacro Fail "写入桌面快捷方式失败。请修复安装后重试。"
+        ${EndIf}
+    !endif
 SectionEnd
 
 Function un.onInit
@@ -318,8 +471,10 @@ Section "Uninstall"
     !include "${GENERATED_DIR}\remove-directories.nsh"
     ClearErrors
     Delete "$INSTDIR\.bluedomain-install.ini"
-    Delete "$SMPROGRAMS\蓝域任务管理器.lnk"
-    Delete "$DESKTOP\蓝域任务管理器.lnk"
+    !ifndef TASKMANAGER_INSTALLER_TEST
+        Delete "$SMPROGRAMS\蓝域任务管理器.lnk"
+        Delete "$DESKTOP\蓝域任务管理器.lnk"
+    !endif
     DeleteRegKey HKLM "${PRODUCT_KEY}"
     Delete "$INSTDIR\Uninstall.exe"
     RMDir "$INSTDIR"

@@ -41,6 +41,7 @@ $report = [ordered]@{
     workflowRunId = $env:GITHUB_RUN_ID
     environment = 'GitHub-hosted Windows; actual elevated token'
     installer = $null
+    releaseIdentity = $null
     payloadFiles = 0
     checks = [Collections.Generic.List[object]]::new()
     ifeoFingerprints = [ordered]@{}
@@ -144,6 +145,8 @@ function Get-UninstallRegistration {
             return [pscustomobject]@{
                 InstallLocation = $key.GetValue('InstallLocation', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
                 DisplayVersion = $key.GetValue('DisplayVersion', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+                ReleaseTag = $key.GetValue('ReleaseTag', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+                SourceCommit = $key.GetValue('SourceCommit', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
                 UninstallString = $key.GetValue('UninstallString', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
             }
         } finally { $key.Dispose() }
@@ -194,6 +197,7 @@ function Assert-Registration {
     $registration = Get-UninstallRegistration
     Assert-Condition ($null -ne $registration) 'Machine-wide 64-bit uninstall registration exists'
     Assert-Condition ([string]$registration.DisplayVersion -ceq $version) 'Uninstall registration version equals the Host project version'
+    Assert-Condition ([string]$registration.ReleaseTag -ceq $expectedReleaseTag -and [string]$registration.SourceCommit -ceq $expectedSourceCommit) 'Installed product registration preserves the accepted ReleaseTag and SourceCommit'
     Assert-Condition ([IO.Path]::GetFullPath([string]$registration.InstallLocation).TrimEnd('\').Equals($installDirectory, [StringComparison]::OrdinalIgnoreCase)) 'Uninstall registration identifies only the dedicated test installation'
     $expected = '"' + $uninstallerPath + '"'
     Assert-Condition ([string]$registration.UninstallString -ceq $expected) 'Uninstall registration points to the fixed installed uninstaller'
@@ -351,6 +355,8 @@ function Invoke-HeadlessAcceptance([string]$Stage) {
         }
         Assert-Condition ($null -ne $health -and $health.ready -and $health.platform -ceq 'Windows' -and $health.processId -eq $child.Id) "Installed Host exposes its own ready Windows API $Stage"
         Assert-Condition ($health.nativeSource -ceq 'Microsoft.Windows.CsWin32' -and $health.json -ceq 'Newtonsoft.Json') 'The installed API reports the production native collector and JSON.NET'
+        $updates = Invoke-RestMethod -Uri "$origin/api/updates" -TimeoutSec 10
+        Assert-Condition ([string]$updates.currentReleaseTag -ceq $expectedReleaseTag -and [string]$updates.currentSourceCommit -ceq $expectedSourceCommit) 'The installed API reads the accepted release identity from actual assembly metadata'
         $snapshot = Invoke-RestMethod -Uri "$origin/api/snapshot" -TimeoutSec 10
         $self = @($snapshot.processes | Where-Object { $_.pid -eq $child.Id -and [string]$_.creationTimeFileTime -ceq $identity.Created })
         Assert-Condition ($self.Count -eq 1 -and ([string]$self[0].path).Equals($hostExecutable, [StringComparison]::OrdinalIgnoreCase)) 'The real Windows snapshot contains the exact newly started Host PID, creation time, and installed path'
@@ -482,6 +488,12 @@ try {
     [xml]$project = Get-Content -LiteralPath (Join-Path $projectRoot 'src/TaskManager.Host/TaskManager.Host.csproj') -Raw
     $version = [string]$project.Project.PropertyGroup.Version
     if ($version -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Invalid Host project version.' }
+    $releaseIdentity = & (Join-Path $PSScriptRoot 'installer/Read-AssemblyReleaseIdentity.ps1') -Path (Join-Path $payload 'TaskManager.Host.dll')
+    $expectedReleaseTag = [string]$releaseIdentity.ReleaseTag
+    $expectedSourceCommit = [string]$releaseIdentity.SourceCommit
+    if (-not $expectedSourceCommit -and $releaseIdentity.InformationalVersion -cmatch '\+([0-9a-f]{40})(?:\.|$)') { $expectedSourceCommit = $Matches[1] }
+    if ([string]$env:TASKMANAGER_RELEASE_TAG -cne $expectedReleaseTag -or [string]$env:TASKMANAGER_SOURCE_COMMIT -cne $expectedSourceCommit) { throw 'Payload release identity differs from the validated workflow metadata.' }
+    $report.releaseIdentity = [ordered]@{ releaseTag=$expectedReleaseTag; sourceCommit=$expectedSourceCommit }
     $installerName = "BlueDomainTaskManager-v$version-win-x64-setup.exe"
     Assert-Condition ([IO.Path]::GetFileName($installer) -ceq $installerName) 'Installer filename uses the actual Host project version'
     $installerHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()

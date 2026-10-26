@@ -1,5 +1,6 @@
 param(
     [string]$Version,
+    [string]$PayloadDirectory,
     [string]$OutputDirectory
 )
 $ErrorActionPreference = 'Stop'
@@ -8,7 +9,8 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $Version) { $Version = [string]$project.Project.PropertyGroup.Version }
 if ($Version -ne [string]$project.Project.PropertyGroup.Version) { throw 'Release version must match the project.' }
 if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Invalid release version.' }
-$source = [IO.Path]::GetFullPath((Join-Path $projectRoot 'output/TaskManager-win-x64'))
+if (-not $PayloadDirectory) { $PayloadDirectory = Join-Path $projectRoot 'output/TaskManager-win-x64' }
+$source = [IO.Path]::GetFullPath($PayloadDirectory).TrimEnd('\', '/')
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $projectRoot 'output/releases' }
 $destination = [IO.Path]::GetFullPath($OutputDirectory)
 if ($destination -eq $source -or $destination.StartsWith($source + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Archive output must be outside the portable directory.' }

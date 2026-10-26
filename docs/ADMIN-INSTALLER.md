@@ -2,6 +2,8 @@
 
 2026-10-26 GitHub更新增量见 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：自动安装仅限注册记录/安装标记/当前Host路径一致的正式目录，受保护ProgramData暂存不依赖安装目录默认ACL。NSIS仅在明确更新模式有界等旧映像释放、完整成功后重启；普通手工运行中拒绝与卸载所有权/保留文件规则继续生效。
 
+更新模式的固定参数为 `/S /TASKMANAGERUPDATE=<32位小写hex>`，不允许 `/D` 改目录。合法尝试在固定产品注册记录确认后记录早期目录/标记失败，只有完整身份核验后才进入等待与替换；固定结果键和 60 秒超时已在独立产品机制测试验证。未确认产品身份或平台检查失败时不改产品记录。真实官方更高 Release 的整条更新仍以 [更新安装器验收](UPDATE-INSTALLER-RESULTS.md) 的执行范围为准。
+
 日期：2026-10-23。用户要求“调整权限，要求为管理员权限运行。并且制作 nsis 的安装包”。本增量覆盖旧文档的“普通用户运行”“无需安装器”要求；原验收结果保留为历史事实，新行为按 R 系列重新验收。
 
 > IFEO 740修复以 [IFEO-ELEVATION-FIX.md](IFEO-ELEVATION-FIX.md) 为当前专项合同，覆盖本页“唯一入口/IFEO直接Host/不另建launcher”旧描述。Host继续requireAdministrator与实际TokenElevation校验；仅系统IFEO先创建同目录asInvoker Launcher，由CsWin32 ShellExecuteEx runas固定Host与固定entry参数。Launcher取消1223不重试，不启动HTTP/Electron。新旧自有命令均可严格取消/卸载；旧Host值必须用户明确修复，不因升级自动迁移。

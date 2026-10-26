@@ -104,6 +104,8 @@ jobs:
           if ($null -ne $lookup.data.repository.release) { throw 'A published or draft Release already uses this tag. Choose a new tag.' }
           $artifact = "BlueDomainTaskManager-v$version-win-x64-$env:GITHUB_RUN_NUMBER-$env:GITHUB_RUN_ATTEMPT"
           "TASKMANAGER_PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
+          "TASKMANAGER_RELEASE_TAG=$tag" >> $env:GITHUB_ENV
+          "TASKMANAGER_SOURCE_COMMIT=$env:GITHUB_SHA" >> $env:GITHUB_ENV
           "release_tag=$tag" >> $env:GITHUB_OUTPUT
           "package_version=$version" >> $env:GITHUB_OUTPUT
           "delivery_artifact=$artifact" >> $env:GITHUB_OUTPUT
@@ -123,7 +125,7 @@ jobs:
           "TASKMANAGER_NSIS_COMPILER=$compiler" >> $env:GITHUB_ENV
 
       - name: Build the locked self-contained installer
-        run: ./scripts/build-installer.ps1 -MakeNsisPath $env:TASKMANAGER_NSIS_COMPILER
+        run: ./scripts/build-installer.ps1 -MakeNsisPath $env:TASKMANAGER_NSIS_COMPILER -ReleaseTag $env:TASKMANAGER_RELEASE_TAG -SourceCommit $env:TASKMANAGER_SOURCE_COMMIT
 
       - name: Verify the installed application and uninstall
         run: |

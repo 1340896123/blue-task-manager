@@ -1,5 +1,9 @@
 # 手动构建 Windows 安装包
 
+2026-10-26 更新交接：CI 在构建前把已核验标签和源码提交传为 `TASKMANAGER_RELEASE_TAG` / `TASKMANAGER_SOURCE_COMMIT`。构建脚本通过只读 PE 元数据核对 Host 的 AssemblyMetadata，再将同一身份写入 NSIS 版本资源、产品标记和卸载记录；CI 从实际安装 API 再读回。独立验收产物可用 `build-installer.ps1 -SkipBuild -PayloadDirectory <完整目录> -OutputDirectory <独立输出目录>`，默认构建路径保持原有约定。
+
+安装器只接受 `/S /TASKMANAGERUPDATE=<32位小写hex>` 的明确更新请求，无 `/D` 覆盖且现有产品记录与标记一致后才开启总计最多 60 秒的映像解锁等待。固定产品键保存 `LastUpdateAttemptId/Result/Error`，完整成功后重启固定 Host；普通安装和卸载仍立即拒绝占用。机制与验证边界见 [更新安装器验收](UPDATE-INSTALLER-RESULTS.md)。
+
 2026-10-26更新合同见 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：构建前将metadata阶段确定的ReleaseTag与完整SourceCommit嵌入应用/安装产品身份，不能只在构建后给同基础版本追加build.N标签而丢失来源。未来安装包保留标准手动模式，并提供明确更新模式等旧映像释放、一次尝试结果和成功重启；官方setup/SHA256SUMS仍须同源、完整验收后发布。
 
 ## 在 GitHub 上运行

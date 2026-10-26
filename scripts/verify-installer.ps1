@@ -1,7 +1,9 @@
 param(
     [string]$Version,
     [string]$SevenZipPath = 'C:\Program Files\7-Zip\7z.exe',
-    [string]$ManifestToolPath
+    [string]$ManifestToolPath,
+    [string]$InstallerPath,
+    [string]$PayloadDirectory
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -14,8 +16,15 @@ if (-not $ManifestToolPath) {
 }
 if (-not $ManifestToolPath -or -not (Test-Path -LiteralPath $ManifestToolPath -PathType Leaf)) { throw 'Windows SDK mt.exe is required.' }
 if (-not (Test-Path -LiteralPath $SevenZipPath -PathType Leaf)) { throw '7-Zip is required for independent NSIS extraction.' }
-$installer = Join-Path $root "output/releases/BlueDomainTaskManager-v$Version-win-x64-setup.exe"
-$payload = Join-Path $root 'output/TaskManager-win-x64'
+if (-not $InstallerPath) { $InstallerPath = Join-Path $root "output/releases/BlueDomainTaskManager-v$Version-win-x64-setup.exe" }
+if (-not $PayloadDirectory) { $PayloadDirectory = Join-Path $root 'output/TaskManager-win-x64' }
+$installer = (Resolve-Path -LiteralPath $InstallerPath).Path
+$payload = (Resolve-Path -LiteralPath $PayloadDirectory).Path.TrimEnd('\', '/')
+$identity = & (Join-Path $PSScriptRoot 'installer/Read-AssemblyReleaseIdentity.ps1') -Path (Join-Path $payload 'TaskManager.Host.dll')
+$sourceCommit = [string]$identity.SourceCommit
+if (-not $sourceCommit -and $identity.InformationalVersion -cmatch '\+([0-9a-f]{40})(?:\.|$)') { $sourceCommit = $Matches[1] }
+$expectedIdentity = "ReleaseTag=$($identity.ReleaseTag); SourceCommit=$sourceCommit"
+if ([Diagnostics.FileVersionInfo]::GetVersionInfo($installer).Comments -cne $expectedIdentity) { throw 'Installer release identity differs from the actual Host assembly.' }
 $evidence = Join-Path $root ('output/installer-verification-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 $extracted = Join-Path $evidence 'extracted'
 New-Item -ItemType Directory -Path $evidence -Force | Out-Null
@@ -58,6 +67,7 @@ $report = [ordered]@{
     installer = $installer
     installerBytes = (Get-Item -LiteralPath $installer).Length
     installerSha256 = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+    releaseIdentity = @{ releaseTag=$identity.ReleaseTag; sourceCommit=$sourceCommit }
     payloadFilesVerified = $verified
     manifests = $manifests
     uninstallerManifest = $uninstallerState
