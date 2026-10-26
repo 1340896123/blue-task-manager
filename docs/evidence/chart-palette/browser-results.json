@@ -1,0 +1,4410 @@
+{
+  "result": "PASS",
+  "mode": "browser",
+  "checkedAtUtc": "2026-10-26T16:34:23.117Z",
+  "checkoutAtRun": "5bddec0baeb751810e9264f111e8ab06e0743fc1",
+  "assertions": 120,
+  "checks": [
+    "controller has a real elevated Windows token",
+    "dedicated chart acceptance listeners are free",
+    "production Host retains the elevated CsWin32/JSON.NET chain",
+    "history retains its bounded real source timestamps",
+    "browser: actual bootstrap mode",
+    "1380-cpu: every rendered plot has a white surface and neutral boundary",
+    "1380-cpu: plot grids use neutral light gray",
+    "1380-cpu: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-cpu: primary solid and secondary dashed styles remain distinct",
+    "1380-cpu: axes, legends and state labels retain readable contrast",
+    "1380-cpu: reduced-motion, layout and existing heat/selection roles remain intact",
+    "all-mini: every rendered plot has a white surface and neutral boundary",
+    "all-mini: plot grids use neutral light gray",
+    "all-mini: visible data lines and points use opaque readable blue/gray tokens",
+    "all-mini: primary solid and secondary dashed styles remain distinct",
+    "all-mini: axes, legends and state labels retain readable contrast",
+    "all-mini: reduced-motion, layout and existing heat/selection roles remain intact",
+    "keyboard-selected resource keeps a visible focus outline",
+    "1380-logical-cpu: every rendered plot has a white surface and neutral boundary",
+    "1380-logical-cpu: plot grids use neutral light gray",
+    "1380-logical-cpu: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-logical-cpu: primary solid and secondary dashed styles remain distinct",
+    "1380-logical-cpu: axes, legends and state labels retain readable contrast",
+    "1380-logical-cpu: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-logical-cpu: CPU grid retains real bounded group/index identities",
+    "1380-memory: every rendered plot has a white surface and neutral boundary",
+    "1380-memory: plot grids use neutral light gray",
+    "1380-memory: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-memory: primary solid and secondary dashed styles remain distinct",
+    "1380-memory: axes, legends and state labels retain readable contrast",
+    "1380-memory: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-disk-0 D:: every rendered plot has a white surface and neutral boundary",
+    "1380-disk-0 D:: plot grids use neutral light gray",
+    "1380-disk-0 D:: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-disk-0 D:: primary solid and secondary dashed styles remain distinct",
+    "1380-disk-0 D:: axes, legends and state labels retain readable contrast",
+    "1380-disk-0 D:: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-disk-0 D:: both throughput series and matching named legends remain available",
+    "disk 0 D:: D08 keeps one throughput plot without activity UI",
+    "1380-disk-1 E:: every rendered plot has a white surface and neutral boundary",
+    "1380-disk-1 E:: plot grids use neutral light gray",
+    "1380-disk-1 E:: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-disk-1 E:: primary solid and secondary dashed styles remain distinct",
+    "1380-disk-1 E:: axes, legends and state labels retain readable contrast",
+    "1380-disk-1 E:: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-disk-1 E:: both throughput series and matching named legends remain available",
+    "disk 1 E:: D08 keeps one throughput plot without activity UI",
+    "1380-disk-2 G:: every rendered plot has a white surface and neutral boundary",
+    "1380-disk-2 G:: plot grids use neutral light gray",
+    "1380-disk-2 G:: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-disk-2 G:: primary solid and secondary dashed styles remain distinct",
+    "1380-disk-2 G:: axes, legends and state labels retain readable contrast",
+    "1380-disk-2 G:: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-disk-2 G:: both throughput series and matching named legends remain available",
+    "disk 2 G:: D08 keeps one throughput plot without activity UI",
+    "1380-disk-3 F:: every rendered plot has a white surface and neutral boundary",
+    "1380-disk-3 F:: plot grids use neutral light gray",
+    "1380-disk-3 F:: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-disk-3 F:: primary solid and secondary dashed styles remain distinct",
+    "1380-disk-3 F:: axes, legends and state labels retain readable contrast",
+    "1380-disk-3 F:: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-disk-3 F:: both throughput series and matching named legends remain available",
+    "disk 3 F:: D08 keeps one throughput plot without activity UI",
+    "1380-disk-4 C:: every rendered plot has a white surface and neutral boundary",
+    "1380-disk-4 C:: plot grids use neutral light gray",
+    "1380-disk-4 C:: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-disk-4 C:: primary solid and secondary dashed styles remain distinct",
+    "1380-disk-4 C:: axes, legends and state labels retain readable contrast",
+    "1380-disk-4 C:: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-disk-4 C:: both throughput series and matching named legends remain available",
+    "disk 4 C:: D08 keeps one throughput plot without activity UI",
+    "1380-network-1689399666409472: every rendered plot has a white surface and neutral boundary",
+    "1380-network-1689399666409472: plot grids use neutral light gray",
+    "1380-network-1689399666409472: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-network-1689399666409472: primary solid and secondary dashed styles remain distinct",
+    "1380-network-1689399666409472: axes, legends and state labels retain readable contrast",
+    "1380-network-1689399666409472: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-network-1689399666409472: both throughput series and matching named legends remain available",
+    "1380-network-1689399733518336: every rendered plot has a white surface and neutral boundary",
+    "1380-network-1689399733518336: plot grids use neutral light gray",
+    "1380-network-1689399733518336: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-network-1689399733518336: primary solid and secondary dashed styles remain distinct",
+    "1380-network-1689399733518336: axes, legends and state labels retain readable contrast",
+    "1380-network-1689399733518336: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-network-1689399733518336: both throughput series and matching named legends remain available",
+    "1380-gpu-0: every rendered plot has a white surface and neutral boundary",
+    "1380-gpu-0: plot grids use neutral light gray",
+    "1380-gpu-0: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-gpu-0: primary solid and secondary dashed styles remain distinct",
+    "1380-gpu-0: axes, legends and state labels retain readable contrast",
+    "1380-gpu-0: reduced-motion, layout and existing heat/selection roles remain intact",
+    "1380-gpu-1: every rendered plot has a white surface and neutral boundary",
+    "1380-gpu-1: plot grids use neutral light gray",
+    "1380-gpu-1: visible data lines and points use opaque readable blue/gray tokens",
+    "1380-gpu-1: primary solid and secondary dashed styles remain distinct",
+    "1380-gpu-1: axes, legends and state labels retain readable contrast",
+    "1380-gpu-1: reduced-motion, layout and existing heat/selection roles remain intact",
+    "real primary and secondary data paths were both observed, beyond empty-state styling",
+    "960-cpu: every rendered plot has a white surface and neutral boundary",
+    "960-cpu: plot grids use neutral light gray",
+    "960-cpu: visible data lines and points use opaque readable blue/gray tokens",
+    "960-cpu: primary solid and secondary dashed styles remain distinct",
+    "960-cpu: axes, legends and state labels retain readable contrast",
+    "960-cpu: reduced-motion, layout and existing heat/selection roles remain intact",
+    "960-logical-cpu: every rendered plot has a white surface and neutral boundary",
+    "960-logical-cpu: plot grids use neutral light gray",
+    "960-logical-cpu: visible data lines and points use opaque readable blue/gray tokens",
+    "960-logical-cpu: primary solid and secondary dashed styles remain distinct",
+    "960-logical-cpu: axes, legends and state labels retain readable contrast",
+    "960-logical-cpu: reduced-motion, layout and existing heat/selection roles remain intact",
+    "960-logical-cpu: CPU grid retains real bounded group/index identities",
+    "960-disk: every rendered plot has a white surface and neutral boundary",
+    "960-disk: plot grids use neutral light gray",
+    "960-disk: visible data lines and points use opaque readable blue/gray tokens",
+    "960-disk: primary solid and secondary dashed styles remain distinct",
+    "960-disk: axes, legends and state labels retain readable contrast",
+    "960-disk: reduced-motion, layout and existing heat/selection roles remain intact",
+    "960-disk: both throughput series and matching named legends remain available",
+    "pause retains the real last history without fabricating plot points",
+    "palette browsing has no IFEO/service writes or UI runtime errors"
+  ],
+  "artifacts": [
+    {
+      "file": "TaskManager.Host.exe",
+      "sha256": "1f91123db93622a49ef142ba94ce3cdb9260c678e2fbea567ac0084e2c695b85",
+      "bytes": 184832
+    },
+    {
+      "file": "TaskManager.Host.dll",
+      "sha256": "f11dbb8dfc5633f060e0c67eaf88d5426de55ad4123518d8bfcc54d9c0a8a426",
+      "bytes": 925696
+    },
+    {
+      "file": "wwwroot/index.html",
+      "sha256": "a5d52f35ad9ec3da60033e96ff95e1dec9931d7fc1d83066814db9806b317e06",
+      "bytes": 649
+    },
+    {
+      "file": "wwwroot/assets/index-CLI3_v_Y.js",
+      "sha256": "6e9613a7bd43eaf3ecd4004fd9ca8f9de1dd9e5c5c01f9c1d773aa6f80442413",
+      "bytes": 420774
+    },
+    {
+      "file": "wwwroot/assets/index-oa6ckQmH.css",
+      "sha256": "0ae86cdbe9b54a585c8eddf80a9fda465de3a50696305ad63fdd507db0d9e9ef",
+      "bytes": 57149
+    }
+  ],
+  "firstSourceState": {
+    "sampleId": 1,
+    "telemetrySampleId": 0,
+    "unavailable": {
+      "gpu": {
+        "code": "warmingUp",
+        "message": "等待下一次有效采样以计算增量。",
+        "nativeErrorCode": null
+      },
+      "disk": {
+        "code": "warmingUp",
+        "message": "等待下一次有效采样以计算增量。",
+        "nativeErrorCode": null
+      },
+      "logicalProcessors": {
+        "code": "warmingUp",
+        "message": "等待下一次有效采样以计算增量。",
+        "nativeErrorCode": null
+      }
+    }
+  },
+  "resourceCounts": {
+    "disks": 5,
+    "network": 2,
+    "gpu": 2,
+    "logicalCpu": 28
+  },
+  "readings": [
+    {
+      "label": "1380-cpu",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "使用率100%",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:15",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "总体使用率（实线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "CPU 总体使用率，5 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "all-mini",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "使用率100%",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:15",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "总体使用率（实线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "CPU，5 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "内存，6 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "磁盘 0 D:，4 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "磁盘 1 E:，4 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "磁盘 2 G:，4 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "磁盘 3 F:，4 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "磁盘 4 C:，4 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "以太网 2，0 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [],
+              "points": []
+            },
+            {
+              "index": 1,
+              "paths": [],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "以太网 3，5 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "NVIDIA GeForce RTX 3080 Ti，4 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "Microsoft Basic Render Driver，4 个真实时间点，中断处保留缺口",
+          "mini": true,
+          "grid": [],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-logical-cpu",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "组 0 · CPU 05.2%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 10.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 210.9%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 32.4%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 45.2%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 50.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 612.3%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 70.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 866.1%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 90.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1066.1%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 110.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 126.7%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 130.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1413.7%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 150.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1642.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1730.7%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1816.6%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 198.1%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 2053.3%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 2140.6%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 226.7%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 235.2%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 2444.8%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 255.2%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 261.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 271.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        }
+      ],
+      "legend": [],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 0，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 1，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 2，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 3，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 4，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 5，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 6，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 7，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 8，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 9，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 10，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 11，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 12，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 13，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 14，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 15，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 16，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 17，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 18，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 19，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 20，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 21，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 22，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 23，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 24，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 25，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 26，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 27，0 到 100%，3 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        }
+      ],
+      "logicalCount": 28,
+      "logicalIds": [
+        "0,0",
+        "0,1",
+        "0,2",
+        "0,3",
+        "0,4",
+        "0,5",
+        "0,6",
+        "0,7",
+        "0,8",
+        "0,9",
+        "0,10",
+        "0,11",
+        "0,12",
+        "0,13",
+        "0,14",
+        "0,15",
+        "0,16",
+        "0,17",
+        "0,18",
+        "0,19",
+        "0,20",
+        "0,21",
+        "0,22",
+        "0,23",
+        "0,24",
+        "0,25",
+        "0,26",
+        "0,27"
+      ]
+    },
+    {
+      "label": "1380-memory",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "使用率100%",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:15",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "使用率（实线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "内存，6 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-disk-0 D:",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "字节 / 秒 · 按当前可见样本自动缩放1.0 KB/秒",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:14",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "读取（实线）写入（虚线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        },
+        {
+          "color": "rgb(88, 99, 111)",
+          "style": "dashed"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "物理磁盘吞吐，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-disk-1 E:",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "字节 / 秒 · 按当前可见样本自动缩放14.4 KB/秒",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:14",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "读取（实线）写入（虚线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        },
+        {
+          "color": "rgb(88, 99, 111)",
+          "style": "dashed"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "物理磁盘吞吐，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-disk-2 G:",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "字节 / 秒 · 按当前可见样本自动缩放1.0 KB/秒",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:15",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "读取（实线）写入（虚线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        },
+        {
+          "color": "rgb(88, 99, 111)",
+          "style": "dashed"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "物理磁盘吞吐，5 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-disk-3 F:",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "字节 / 秒 · 按当前可见样本自动缩放1.0 KB/秒",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:15",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "读取（实线）写入（虚线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        },
+        {
+          "color": "rgb(88, 99, 111)",
+          "style": "dashed"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "物理磁盘吞吐，5 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-disk-4 C:",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "字节 / 秒 · 按当前可见样本自动缩放894.9 KB/秒",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:15",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "读取（实线）写入（虚线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        },
+        {
+          "color": "rgb(88, 99, 111)",
+          "style": "dashed"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "物理磁盘吞吐，5 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-network-1689399666409472",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "字节 / 秒 · 按当前可见样本自动缩放1.0 KB/秒",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "等待有效采样，未知值保留为空",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:16",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "接收（实线）发送（虚线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        },
+        {
+          "color": "rgb(88, 99, 111)",
+          "style": "dashed"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "选中网卡吞吐，0 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [],
+              "points": []
+            },
+            {
+              "index": 1,
+              "paths": [],
+              "points": []
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-network-1689399733518336",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "字节 / 秒 · 按当前可见样本自动缩放250.1 KB/秒",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:16",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "接收（实线）发送（虚线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        },
+        {
+          "color": "rgb(88, 99, 111)",
+          "style": "dashed"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "选中网卡吞吐，6 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-gpu-0",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "使用率100%",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:15",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "最忙引擎（实线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "GPU，5 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "1380-gpu-1",
+      "viewport": [
+        1380,
+        860
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "使用率100%",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:15",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "最忙引擎（实线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "GPU，5 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "960-cpu",
+      "viewport": [
+        960,
+        640
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "使用率100%",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:16",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "总体使用率（实线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "CPU 总体使用率，6 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    },
+    {
+      "label": "960-logical-cpu",
+      "viewport": [
+        960,
+        640
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "组 0 · CPU 019.4%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 11.1%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 212.4%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 30.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 46.7%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 50.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 63.9%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 70.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 849.1%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 90.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1078.8%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 110.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 126.7%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 130.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1418.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 150.0%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1640.6%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1730.8%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 1815.2%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 191.1%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 2060.4%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 2140.6%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 225.3%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 231.1%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 2440.6%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 255.3%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 262.5%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        },
+        {
+          "text": "组 0 · CPU 273.9%",
+          "color": "rgb(26, 26, 26)",
+          "contrast": 17.40432753274219
+        }
+      ],
+      "legend": [],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 0，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 1，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 2，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 3，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 4，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 5，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 6，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 7，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 8，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 9，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 10，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 11，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 12，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 13，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 14，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 15，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 16，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 17，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 18，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 19，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 20，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 21，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 22，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 23，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 24，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 25，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 26，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        },
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "组 0 逻辑处理器 27，0 到 100%，4 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": []
+            }
+          ]
+        }
+      ],
+      "logicalCount": 28,
+      "logicalIds": [
+        "0,0",
+        "0,1",
+        "0,2",
+        "0,3",
+        "0,4",
+        "0,5",
+        "0,6",
+        "0,7",
+        "0,8",
+        "0,9",
+        "0,10",
+        "0,11",
+        "0,12",
+        "0,13",
+        "0,14",
+        "0,15",
+        "0,16",
+        "0,17",
+        "0,18",
+        "0,19",
+        "0,20",
+        "0,21",
+        "0,22",
+        "0,23",
+        "0,24",
+        "0,25",
+        "0,26",
+        "0,27"
+      ]
+    },
+    {
+      "label": "960-disk",
+      "viewport": [
+        960,
+        640
+      ],
+      "overflow": false,
+      "reducedMotion": true,
+      "heat": "#f5f9ff",
+      "selection": "#e8eef5",
+      "labels": [
+        {
+          "text": "字节 / 秒 · 按当前可见样本自动缩放894.9 KB/秒",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "00:34:1000:34:15",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        },
+        {
+          "text": "读取（实线）写入（虚线）",
+          "color": "rgb(95, 95, 95)",
+          "contrast": 6.385487353255615
+        }
+      ],
+      "legend": [
+        {
+          "color": "rgb(0, 103, 192)",
+          "style": "solid"
+        },
+        {
+          "color": "rgb(88, 99, 111)",
+          "style": "dashed"
+        }
+      ],
+      "charts": [
+        {
+          "background": "rgb(255, 255, 255)",
+          "border": "rgb(229, 229, 229)",
+          "aria": "物理磁盘吞吐，5 个真实时间点，中断处保留缺口",
+          "mini": false,
+          "grid": [
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)",
+            "rgb(236, 239, 242)"
+          ],
+          "series": [
+            {
+              "index": 0,
+              "paths": [
+                {
+                  "stroke": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826,
+                  "dash": "none",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                },
+                {
+                  "color": "rgb(0, 103, 192)",
+                  "contrast": 5.673753670293826
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "paths": [
+                {
+                  "stroke": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029,
+                  "dash": "6px, 4px",
+                  "opacity": "1"
+                }
+              ],
+              "points": [
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                },
+                {
+                  "color": "rgb(88, 99, 111)",
+                  "contrast": 6.123847065898029
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "logicalCount": null,
+      "logicalIds": []
+    }
+  ],
+  "screenshots": [
+    "browser-1380-cpu.png",
+    "browser-1380-logical-cpu.png",
+    "browser-1380-memory.png",
+    "browser-1380-disk.png",
+    "browser-1380-network.png",
+    "browser-1380-gpu.png",
+    "browser-960-cpu.png",
+    "browser-960-logical-cpu.png",
+    "browser-960-disk.png"
+  ],
+  "errors": [],
+  "writes": [],
+  "cleanup": true,
+  "notExecuted": [],
+  "source": "production Release UI → HTTP → JSON.NET → CsWin32 → actual Windows resources; no business mocks"
+}
