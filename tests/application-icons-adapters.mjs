@@ -1,4 +1,4 @@
-import { stopOwnedHost } from './etw-support.mjs';
+import { networkSessions } from './etw-support.mjs';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -19,7 +19,7 @@ const workloadExe = path.join(root, 'tests/TaskManager.TestWorkload/bin/Release/
 const output = path.join(root, 'output/playwright/application-icons-adapters');
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-icons-adapters-'));
 const fixtureName = `TaskManagerIconAcceptance-${path.basename(temporary)}`;
-const port = 5371, cdp = 9371, historyPort = 5372, origin = `http://127.0.0.1:${port}`;
+const port = Number(process.env.TASKMANAGER_ICONS_PORT ?? 5371), cdp = Number(process.env.TASKMANAGER_ICONS_CDP_PORT ?? 9371), historyPort = port + 1, origin = `http://127.0.0.1:${port}`;
 const checks = [], screenshots = [], geometry = [], errors = [], cspErrors = [], apiFacts = [], networkFacts = {}, coverage = {};
 const check = (ok, message) => { assert.ok(ok, message); checks.push(message); };
 const ps = command => {
@@ -37,7 +37,23 @@ const host = spawn(hostExe, [...(desktop ? [] : ['--headless']), `--port=${port}
 const workload = spawn(workloadExe, [path.join(temporary, 'workload'), '180', 'tree'], { cwd: root, windowsHide: true, stdio: 'ignore' });
 let browser, page, token, tree = [], workloadTree = [], historyHost, historyTree = [], failure;
 const get = async route => { const r = await fetch(`${origin}/api/${route}`, { signal: AbortSignal.timeout(12000) }); assert.ok(r.ok, `${route}: ${r.status}`); return r.json(); };
-const post = async (route, body) => { const r = await fetch(`${origin}/api/${route}`, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', 'X-TaskManager-Token': token }, body: JSON.stringify(body) }); assert.ok(r.ok, `${route}: ${r.status}`); return r.json(); };
+const post = async (route, body) => { const r = await fetch(`${origin}/api/${route}`, { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', 'X-TaskManager-Token': token }, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) }); assert.ok(r.ok, `${route}: ${r.status}`); return r.json(); };
+async function stopIconHost(child) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  let identity;
+  try { identity = probe('process-elevation', child.pid); }
+  catch (error) { await until(() => child.exitCode !== null || child.signalCode !== null, 'test Host already exited', 5000); return; }
+  const prefix = `BlueDomain-Network-${child.pid}-${identity.creationTimeFileTime}-`;
+  // Window close can exit the Host during native queries. Poll the child state so a
+  // missed exit event cannot leave this suite awaiting forever.
+  child.kill();
+  await until(() => child.exitCode !== null || child.signalCode !== null, 'test-owned Host exited', 15000);
+  for (const name of (await networkSessions()).filter(name => name.startsWith(prefix))) {
+    const stopped = spawnSync('logman.exe', ['stop', name, '-ets'], { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+    assert.equal(stopped.status, 0, 'stop only the exact icon test Host ETW session');
+  }
+  assert.ok(!(await networkSessions()).some(name => name.startsWith(prefix)), 'exact icon test Host ETW sessions released');
+}
 async function icon(kind, id, expected = 200) {
   const r = await fetch(`${origin}/api/application-icon?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(id)}`);
   check(r.status === expected, `${kind} application-icon returns ${expected}`);
@@ -51,7 +67,8 @@ async function pngFacts(bytes) {
     const blob = new Blob([Uint8Array.from(atob(data), c => c.charCodeAt(0))], { type: 'image/png' });
     const bitmap = await createImageBitmap(blob), canvas = document.createElement('canvas'); canvas.width = bitmap.width; canvas.height = bitmap.height;
     const c = canvas.getContext('2d'); c.drawImage(bitmap, 0, 0); const pixels = c.getImageData(0,0,canvas.width,canvas.height).data; bitmap.close();
-    return { width: canvas.width, height: canvas.height, nontransparent: [...pixels].filter((_, i) => i % 4 === 3 && pixels[i] > 0).length, pixels: Array.from(pixels) };
+    let visibleOnWhite=0;for(let i=0;i<pixels.length;i+=4)if((255-Math.min(pixels[i],pixels[i+1],pixels[i+2]))*pixels[i+3]/255>=48)visibleOnWhite++;
+    return { width: canvas.width, height: canvas.height, nontransparent: [...pixels].filter((_, i) => i % 4 === 3 && pixels[i] > 0).length, visibleOnWhite, pixels: Array.from(pixels) };
   }, bytes.toString('base64'));
 }
 async function decoded(locator, label) {
@@ -90,6 +107,7 @@ try {
   page.on('pageerror', error => errors.push(error.message)); page.on('console', message => { if (/content.security.policy|violates.*directive|refused to load.*blob:/i.test(message.text())) cspErrors.push(message.text()); });
   const writes=[]; page.on('request', request => { if(request.method()==='POST' && /\/services\/.*\/control$|\/desktop\/task-manager-integration$/.test(request.url())) writes.push(request.url().split('/api/')[1]); });
   await page.goto(origin); await page.getByRole('table', { name:'进程列表',exact:true }).waitFor();
+  if(desktop){const firstLaunch=page.getByRole('dialog',{name:'替换标准任务管理器？',exact:true});await firstLaunch.waitFor();await firstLaunch.getByRole('button',{name:'暂不替换',exact:true}).click();await firstLaunch.waitFor({state:'detached'});check(true,'defer first-launch replacement in isolated preferences without changing the system entry');}
   tree = processTree(host.pid); workloadTree = processTree(workload.pid);
   let snapshot = await get('snapshot'); const own = snapshot.processes.find(p => p.pid === host.pid), target = snapshot.processes.find(p => p.pid === workload.pid);
   check(Boolean(own?.path && target?.identity), 'test-owned exact Windows identities and real executable paths available');
@@ -110,7 +128,7 @@ try {
   // Start a second real Host, observe it, stop it, THEN request its history icon
   // for the first time. The browser is still on processes, never history.
   historyHost=spawn(hostExe,['--headless',`--port=${historyPort}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:path.join(temporary,'history')},windowsHide:true,stdio:'ignore'});
-  let past; await until(async()=>{past=(await get('snapshot')).processes.find(p=>p.pid===historyHost.pid&&p.path);return Boolean(past);},'second real Host path observed'); historyTree=processTree(historyHost.pid); await stopOwnedHost(historyHost); await until(async()=>!(await get('snapshot')).processes.some(p=>p.identity===past.identity),'dedicated history identity exited');
+  let past; await until(async()=>{past=(await get('snapshot')).processes.find(p=>p.pid===historyHost.pid&&p.path);return Boolean(past);},'second real Host path observed'); historyTree=processTree(historyHost.pid); await stopIconHost(historyHost); await until(async()=>!(await get('snapshot')).processes.some(p=>p.identity===past.identity),'dedicated history identity exited');
   const historical=await icon('history',past.identity); const historicalPixels=await pngFacts(historical); check(JSON.stringify(historicalPixels.pixels)===JSON.stringify(shell.pixels),'first historical icon request after exit retains exact executable resource pixels');
   await nav('应用历史记录'); await search.fill(String(past.pid)); row=page.locator(`tr[data-row-key="${past.identity}"]`); await row.waitFor(); await decoded(row,'exited history list displays real retained PNG'); await capture('exited-history');
   await icon('history',`${past.pid}:1`,204); await icon('process','2147483647:1',204); await icon('service',fixtureName,204); await icon('startup',fixtureName,204); await icon('invalid',own.identity,400);
@@ -123,7 +141,19 @@ try {
   snapshot=await get('snapshot'); const serviceProcess=snapshot.processes.find(p=>p.pid===running.pid&&p.creationTimeFileTime);
   check(Boolean(serviceProcess),'running SCM service has readable exact process identity'); await nav('进程'); await search.fill(String(serviceProcess.pid)); row=page.locator(`tr[data-row-key="${serviceProcess.identity}"]`); await row.dblclick(); await page.getByRole('tab',{name:'关联服务',exact:true}).click(); await decoded(page.getByRole('dialog').locator('.related-list'),'process associated service buttons display real service PNGs'); await capture('associated-services'); await page.keyboard.press('Escape');
   const packaged=(await get('snapshot')).processes.filter(p=>p.path&&/\\WindowsApps\\/i.test(p.path)); coverage.packagedApp={observed:packaged.length,verified:0};
-  if(packaged.length){for(const candidate of packaged.slice(0,20)){const r=await fetch(`${origin}/api/application-icon?kind=process&id=${encodeURIComponent(candidate.identity)}`);if(r.status!==200)continue;const packagedIcon=await pngFacts(Buffer.from(await r.arrayBuffer()));if(packagedIcon.width===32&&packagedIcon.height===32&&packagedIcon.nontransparent>0){coverage.packagedApp.verified=1;coverage.packagedApp.nontransparentPixels=packagedIcon.nontransparent;break;}}check(coverage.packagedApp.verified===1,'real WindowsApps process returns nontransparent 32px AppsFolder application PNG');}
+  if(packaged.length){for(const candidate of packaged.slice(0,20)){const r=await fetch(`${origin}/api/application-icon?kind=process&id=${encodeURIComponent(candidate.identity)}`);if(r.status!==200)continue;const packagedIcon=await pngFacts(Buffer.from(await r.arrayBuffer()));if(packagedIcon.width===32&&packagedIcon.height===32&&packagedIcon.visibleOnWhite>32){coverage.packagedApp.verified=1;coverage.packagedApp.nontransparentPixels=packagedIcon.nontransparent;coverage.packagedApp.visibleOnWhite=packagedIcon.visibleOnWhite;break;}}check(coverage.packagedApp.verified===1,'real WindowsApps process returns 32px AppsFolder PNG visible on the white application surface');}
+  // A nontransparent PNG can still be an invisible white unplated glyph. Cover
+  // the reported real package explicitly instead of passing on another app.
+  const codex=packaged.filter(p=>/\\WindowsApps\\OpenAI\.Codex_[^\\]+\\app\\ChatGPT\.exe$/i.test(p.path));
+  coverage.codexApp={observed:codex.length,verified:0};
+  if(codex.length){
+    let minimumVisibleOnWhite=Infinity;
+    for(const candidate of codex){const bytes=await icon('process',candidate.identity);const facts=await pngFacts(bytes);check(facts.width===32&&facts.height===32&&facts.visibleOnWhite>32,'reported Codex process icon has visible pixels after compositing on white');minimumVisibleOnWhite=Math.min(minimumVisibleOnWhite,facts.visibleOnWhite);coverage.codexApp.verified++;if(coverage.codexApp.verified===1)await writeFile(path.join(output,`${mode}-codex-api.png`),bytes);}
+    coverage.codexApp.minimumVisibleOnWhite=minimumVisibleOnWhite;
+    await nav('进程');await search.fill(String(codex[0].pid));row=page.locator(`tr[data-row-key="${codex[0].identity}"]`);await decoded(row,'reported Codex process row displays its real decoded application PNG');
+    const visible=await row.locator('.process-icon img').evaluate(img=>{const canvas=document.createElement('canvas');canvas.width=canvas.height=16;const c=canvas.getContext('2d');c.fillStyle=getComputedStyle(img.parentElement).backgroundColor;c.fillRect(0,0,16,16);c.drawImage(img,0,0,16,16);const pixels=c.getImageData(0,0,16,16).data;let count=0;for(let i=0;i<pixels.length;i+=4)if(255-Math.min(pixels[i],pixels[i+1],pixels[i+2])>=48)count++;return count;});
+    check(visible>8,'reported Codex row icon is visibly distinct from its actual white frame');coverage.codexApp.renderedVisiblePixels=visible;await capture('codex-process');
+  }
   // Full independent interface set, with flags from Windows rather than names.
   const native=probe('network-counters'), hardware=native.filter(a=>a.hardware&&!a.filter&&![24,131].includes(a.type)&&a.status!=='IfOperStatusNotPresent'); snapshot=await get('snapshot');
   check(JSON.stringify(snapshot.networkAdapters.map(a=>a.id).sort())===JSON.stringify(hardware.map(a=>a.id).sort()),'networkAdapters equals independent complete present Windows hardware/nonfilter/nonloopback/nontunnel set');
@@ -137,7 +167,7 @@ try {
   // Every application-bearing page plus performance/user: dimensions and
   // fixed icon/frame tokens at both required native window sizes.
   for(const size of [[1380,860],[960,640]]){await viewport(...size);for(const name of ['进程','详细信息','应用历史记录','启动应用','服务','用户','性能']){await nav(name);await page.getByRole('searchbox').fill('');await delay(300);if(!['用户','性能'].includes(name))await decoded(page.locator('.data-table'),`${name} ${size[0]} screenshot waits for actual decoded PNG`);if(name==='性能'&&hardware.length)await page.locator('.resource-tile').filter({has:page.getByText((hardware.find(a=>a.status==='IfOperStatusUp')??hardware[0]).alias,{exact:true})}).click();const facts=await page.evaluate(()=>({viewport:[innerWidth,innerHeight],dpr:devicePixelRatio,overflow:document.documentElement.scrollWidth>innerWidth,icons:[...document.querySelectorAll('.data-table .process-icon')].map(el=>{const r=el.getBoundingClientRect();const child=el.firstElementChild?.getBoundingClientRect();return{frame:[r.width,r.height],image:child?[child.width,child.height]:null};}),rows:[...document.querySelectorAll('tr[data-row-key]')].map(el=>el.getBoundingClientRect().height)})); geometry.push({size:size[0],name,...facts});check(!facts.overflow,`${name} ${size[0]} has no document overflow`);check(facts.icons.every(i=>Math.abs(i.frame[0]-21)<.2&&Math.abs(i.frame[1]-21)<.2&&i.image?.every(n=>Math.abs(n-16)<.2)),`${name} ${size[0]} preserves 21px frame and 16px application/account glyph`);check(facts.rows.every(h=>Math.abs(h-32)<.2),`${name} ${size[0]} keeps 32px compact row height`);await capture(`${size[0]}-${name}`);}}
-  if(desktop){await viewport(1380,860);await page.keyboard.press('Control+0');const base=await page.evaluate(()=>devicePixelRatio);await page.keyboard.press('Control+=');await until(async()=>Math.abs((await page.evaluate(()=>devicePixelRatio))/base-1.25)<.02,'actual Electron 125% zoom');for(const name of ['进程','详细信息','应用历史记录','启动应用','服务','用户','性能']){await nav(name);await delay(250);if(!['用户','性能'].includes(name))await decoded(page.locator('.data-table'),`${name} 125% screenshot waits for actual decoded PNG`);check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} actual Electron 125% has no document overflow`);await capture(`125-${name}`);}const window=windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid));nativeUi(window,'capture',path.join(output,'desktop-125-native.png'));screenshots.push('desktop-125-native.png');await page.keyboard.press('Control+0');}
+  if(desktop){await viewport(1380,860);await post('window/zoom-reset',{});const base=await page.evaluate(()=>devicePixelRatio);await post('window/zoom-in',{});await until(async()=>(await get('desktop/window-state')).zoomFactor===1.25&&Math.abs((await page.evaluate(()=>devicePixelRatio))/base-1.25)<.02,'actual Electron 125% zoom');for(const name of ['进程','详细信息','应用历史记录','启动应用','服务','用户','性能']){await nav(name);await delay(250);if(!['用户','性能'].includes(name))await decoded(page.locator('.data-table'),`${name} 125% screenshot waits for actual decoded PNG`);check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${name} actual Electron 125% has no document overflow`);await capture(`125-${name}`);}const window=windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid));nativeUi(window,'capture',path.join(output,'desktop-125-native.png'));screenshots.push('desktop-125-native.png');await post('window/zoom-reset',{});}
   await nav('进程');await page.getByRole('searchbox').fill(String(own.pid));await decoded(page.locator(`tr[data-row-key="${own.identity}"]`),'same visible identity still decodes after all navigation');const before=await page.evaluate(()=>window.__iconAcceptance.requests);await delay(3500);const after=await page.evaluate(()=>window.__iconAcceptance.requests);check(after-before<=1,'real per-second snapshots do not repeatedly refetch the unchanged visible icon');
   await page.getByRole('searchbox').fill('');for(const name of ['进程','应用历史记录','服务','详细信息']){await nav(name);for(const fraction of [1,.5,0]){await page.locator('.table-scroll').evaluate((el,f)=>el.scrollTop=f*(el.scrollHeight-el.clientHeight),fraction);await delay(180);}}
   await nav('设置');const stats=await page.evaluate(()=>{const s=window.__iconAcceptance;return{...s,live:s.live.length};});check(stats.maximumInflight<=2,'real icon fetch concurrency stays at two across rapid scroll/page changes');check(stats.maximumLive<=512&&stats.live<=512,'observable live Blob URLs stay within 512 entries');coverage.blob=stats;
@@ -148,7 +178,7 @@ finally {
   tree=[...new Map([...tree,...processTree(host.pid)].map(p=>[`${p.pid}:${p.fileTime}`,p])).values()];if(!workloadTree.length)workloadTree=processTree(workload.pid);
   if(desktop&&page&&!page.isClosed())await post('window/close',{}).catch(()=>{});
   await browser?.close().catch(()=>{});
-  for(const child of [historyHost,host])if(child&&child.exitCode===null)await stopOwnedHost(child);
+  for(const child of [historyHost,host])try{await stopIconHost(child);}catch(error){failure??={message:`test Host cleanup: ${error.message}`};}
   if(workload.exitCode===null)workload.kill();
   await delay(700);
   for(const entry of [...historyTree,...workloadTree,...tree].reverse())if(ownedAlive(entry)){try{process.kill(entry.pid);}catch{}}

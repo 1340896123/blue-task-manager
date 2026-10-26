@@ -120,7 +120,9 @@ public sealed class ProcessIconService([FromKeyedServices("icons")] ShellDispatc
         {
             var folder = new Guid("1e87508d-89c2-42f0-8a7e-645a0f50ca58");
             if (PInvoke.SHCreateItemInKnownFolder(folder, 0, appId, out item).Failed || item is null) return null;
-            item.GetImage(new SIZE(32, 32), SIIGBF.SIIGBF_ICONONLY, &nativeBitmap);
+            // Packaged apps can expose a white unplated glyph. Ask Shell for
+            // the application background so it stays visible on our light surface.
+            item.GetImage(new SIZE(32, 32), SIIGBF.SIIGBF_ICONONLY | SIIGBF.SIIGBF_ICONBACKGROUND, &nativeBitmap);
             if (nativeBitmap.IsNull) return null;
             // Shell returns a 32-bit DIB with premultiplied alpha. FromHbitmap loses
             // that alpha; copy its actual BGRA pixels into a managed PNG instead.
