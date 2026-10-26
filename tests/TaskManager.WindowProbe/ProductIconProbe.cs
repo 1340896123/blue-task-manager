@@ -11,6 +11,14 @@ internal static class ProductIconProbe
 {
     internal static unsafe bool TryRun(string[] args)
     {
+        if (args[0] == "icon-resource-count")
+        {
+            var path = Path.GetFullPath(args[1]);
+            uint count;
+            fixed (char* source = path) count = PInvoke.ExtractIconEx(source, -1, null, null, 0);
+            Console.WriteLine(JsonConvert.SerializeObject(new { count }));
+            return true;
+        }
         if (args[0] == "icon-exe")
         {
             var path = Path.GetFullPath(args[1]);

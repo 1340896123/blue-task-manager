@@ -39,7 +39,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         ["processConnections"] = new(true, "CsWin32 GetExtendedTcpTable/GetExtendedUdpTable IPv4/IPv6 OWNER_PID；端点不是吞吐"),
         ["processPriority"] = new(true, "CsWin32 SetPriorityClass/GetPriorityClass，五档非实时优先级"),
         ["processTree"] = new(true, "Toolhelp真实关系/FILETIME身份/同句柄预检/叶到根退出确认"),
-        ["processIcons"] = new(true, "CsWin32 SHGetFileInfo / AppsFolder IShellItemImageFactory；独立COM STA按需PNG，覆盖进程/历史/启动/服务"),
+        ["processIcons"] = new(true, "CsWin32 EXE ExtractIconEx / SHGetFileInfo / AppsFolder IShellItemImageFactory；独立COM STA按需PNG，覆盖进程/历史/启动/服务"),
         ["serviceControl"] = new(true, "CsWin32 SCM；最小动作权限、同句柄状态/PID核验、15秒有界观察", "成功取决于当前用户权限，不自动提权或停止依赖服务。"),
         ["shellLocations"] = new(true, "CsWin32 Shell公开接口/固定Windows系统入口"),
         ["efficiency"] = new(true, "CsWin32 ProcessPowerThrottling + SetPriorityClass + 原生读回", "每个目标需按身份读取实际能力；外部效率模式不覆盖，没有恢复基线不关闭。"),

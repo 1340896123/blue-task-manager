@@ -7,6 +7,7 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Gdi;
 using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace TaskManager.Host.Native;
 
@@ -94,7 +95,11 @@ public sealed class ProcessIconService([FromKeyedServices("icons")] ShellDispatc
         try { key = $"{appId}|{(path is null ? null : Path.GetFullPath(path))}|{(path is null ? 0 : File.GetLastWriteTimeUtc(path).Ticks)}"; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException) { return null; }
         if (cache.TryGetValue(key, out var cached) && (!cached.Retry || DateTime.UtcNow - cached.ReadAt < TimeSpan.FromSeconds(15))) return cached.Png;
-        var png = appId is null ? null : ReadPackaged(appId);
+        // A packaged desktop executable can have its own file icon, as shown
+        // by Windows Properties. Only a real resource outranks the package icon;
+        // SHGetFileInfo also succeeds with a generic icon for resource-less EXEs.
+        var png = appId is not null && path is not null && File.Exists(path) ? ReadEmbedded(path) : null;
+        if (png is null && appId is not null) png = ReadPackaged(appId);
         var retry = appId is not null && png is null;
         var info = new SHFILEINFOW();
         if (png is null && path is not null && File.Exists(path) && PInvoke.SHGetFileInfo(path, 0, ref info, SHGFI_FLAGS.SHGFI_ICON | SHGFI_FLAGS.SHGFI_SMALLICON) != 0 && !info.hIcon.IsNull)
@@ -110,6 +115,21 @@ public sealed class ProcessIconService([FromKeyedServices("icons")] ShellDispatc
         }
         if (cache.Count >= 512) cache.Remove(cache.Keys.First()); cache[key] = (png, DateTime.UtcNow, retry || png is null);
         return png;
+    }
+
+    private static unsafe byte[]? ReadEmbedded(string path)
+    {
+        HICON nativeIcon = default;
+        try
+        {
+            fixed (char* source = path)
+                if (PInvoke.ExtractIconEx(source, 0, null, &nativeIcon, 1) == 0 || nativeIcon.IsNull) return null;
+            using var icon = Icon.FromHandle((nint)nativeIcon.Value);
+            using var bitmap = icon.ToBitmap();
+            using var stream = new MemoryStream(); bitmap.Save(stream, ImageFormat.Png); return stream.ToArray();
+        }
+        catch (Exception ex) when (ex is ExternalException or ArgumentException) { return null; }
+        finally { if (!nativeIcon.IsNull) PInvoke.DestroyIcon(nativeIcon); }
     }
 
     private static unsafe byte[]? ReadPackaged(string appId)

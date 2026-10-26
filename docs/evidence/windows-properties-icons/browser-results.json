@@ -1,0 +1,3516 @@
+{
+  "result": "PASS",
+  "mode": "browser",
+  "assertions": 143,
+  "checks": [
+    "test-owned exact Windows identities and real executable paths available",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "Host Shell PNG and independent ExtractIconEx resource both contain actual blue/white product pixels",
+    "independent product resource and Shell icon match opaque pixels and exact alpha silhouette",
+    "process list displays decoded real executable icon",
+    "process overview displays decoded real executable icon",
+    "details list displays decoded real executable icon",
+    "Windows account row keeps UserRound account semantics",
+    "user session process navigation displays exact executable icon",
+    "real preview includes exact creation identities of root and both explicitly created workload children",
+    "end-tree preview displays decoded real member PNGs",
+    "UI tree preview preserves complete actual native member set",
+    "history application-icon returns 200",
+    "history icon is a nonempty real PNG",
+    "first historical icon request after exit retains exact executable resource pixels",
+    "exited history list displays real retained PNG",
+    "history application-icon returns 204",
+    "process application-icon returns 204",
+    "service application-icon returns 204",
+    "startup application-icon returns 204",
+    "invalid application-icon returns 400",
+    "startup application-icon returns 200",
+    "startup icon is a nonempty real PNG",
+    "real Startup .lnk displays executable PNG",
+    "real Startup detail displays executable PNG",
+    "real running and stopped SCM services expose readable binary icon resources",
+    "service application-icon returns 200",
+    "service icon is a nonempty real PNG",
+    "running service list displays real binary PNG",
+    "running service detail displays real binary PNG",
+    "service application-icon returns 200",
+    "service icon is a nonempty real PNG",
+    "stopped service list displays real binary PNG",
+    "stopped service detail displays real binary PNG",
+    "running SCM service has readable exact process identity",
+    "process associated service buttons display real service PNGs",
+    "real WindowsApps process returns a native PNG visible on the white application surface",
+    "independent Codex EXE resource has a visible glyph and transparent background like Windows Properties",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "process application-icon returns 200",
+    "process icon is a nonempty real PNG",
+    "reported Codex process icon matches independent EXE opaque pixels and alpha silhouette",
+    "reported Codex process row displays its real decoded application PNG",
+    "reported Codex row icon is visibly distinct from its actual white frame",
+    "real packaged process without EXE icon resources keeps its visible 32px AppsFolder image",
+    "networkAdapters equals independent complete present Windows hardware/nonfilter/nonloopback/nontunnel set",
+    "all returned network adapters are independently verified hardware",
+    "disconnected hardware remains present with null rates and explicit reasons",
+    "system network aggregate equals Up hardware parts or honest null",
+    "system network aggregate equals Up hardware parts or honest null",
+    "real network performance history contains no excluded virtual IDs",
+    "old virtual network preference selects available real resource",
+    "进程 1380 screenshot waits for actual decoded PNG",
+    "进程 1380 has no document overflow",
+    "进程 1380 preserves 21px frame and 16px application/account glyph",
+    "进程 1380 keeps 32px compact row height",
+    "详细信息 1380 screenshot waits for actual decoded PNG",
+    "详细信息 1380 has no document overflow",
+    "详细信息 1380 preserves 21px frame and 16px application/account glyph",
+    "详细信息 1380 keeps 32px compact row height",
+    "应用历史记录 1380 screenshot waits for actual decoded PNG",
+    "应用历史记录 1380 has no document overflow",
+    "应用历史记录 1380 preserves 21px frame and 16px application/account glyph",
+    "应用历史记录 1380 keeps 32px compact row height",
+    "启动应用 1380 screenshot waits for actual decoded PNG",
+    "启动应用 1380 has no document overflow",
+    "启动应用 1380 preserves 21px frame and 16px application/account glyph",
+    "启动应用 1380 keeps 32px compact row height",
+    "服务 1380 screenshot waits for actual decoded PNG",
+    "服务 1380 has no document overflow",
+    "服务 1380 preserves 21px frame and 16px application/account glyph",
+    "服务 1380 keeps 32px compact row height",
+    "用户 1380 has no document overflow",
+    "用户 1380 preserves 21px frame and 16px application/account glyph",
+    "用户 1380 keeps 32px compact row height",
+    "性能 1380 has no document overflow",
+    "性能 1380 preserves 21px frame and 16px application/account glyph",
+    "性能 1380 keeps 32px compact row height",
+    "进程 960 screenshot waits for actual decoded PNG",
+    "进程 960 has no document overflow",
+    "进程 960 preserves 21px frame and 16px application/account glyph",
+    "进程 960 keeps 32px compact row height",
+    "详细信息 960 screenshot waits for actual decoded PNG",
+    "详细信息 960 has no document overflow",
+    "详细信息 960 preserves 21px frame and 16px application/account glyph",
+    "详细信息 960 keeps 32px compact row height",
+    "应用历史记录 960 screenshot waits for actual decoded PNG",
+    "应用历史记录 960 has no document overflow",
+    "应用历史记录 960 preserves 21px frame and 16px application/account glyph",
+    "应用历史记录 960 keeps 32px compact row height",
+    "启动应用 960 screenshot waits for actual decoded PNG",
+    "启动应用 960 has no document overflow",
+    "启动应用 960 preserves 21px frame and 16px application/account glyph",
+    "启动应用 960 keeps 32px compact row height",
+    "服务 960 screenshot waits for actual decoded PNG",
+    "服务 960 has no document overflow",
+    "服务 960 preserves 21px frame and 16px application/account glyph",
+    "服务 960 keeps 32px compact row height",
+    "用户 960 has no document overflow",
+    "用户 960 preserves 21px frame and 16px application/account glyph",
+    "用户 960 keeps 32px compact row height",
+    "性能 960 has no document overflow",
+    "性能 960 preserves 21px frame and 16px application/account glyph",
+    "性能 960 keeps 32px compact row height",
+    "same visible identity still decodes after all navigation",
+    "real per-second snapshots do not repeatedly refetch the unchanged visible icon",
+    "real icon fetch concurrency stays at two across rapid scroll/page changes",
+    "observable live Blob URLs stay within 512 entries",
+    "window unload revokes every observed Blob URL",
+    "history application-icon returns 204",
+    "read-only suite sends no service-control or IFEO writes",
+    "no browser runtime errors",
+    "no CSP violations"
+  ],
+  "networkFacts": {
+    "nativeCount": 54,
+    "hardwareCount": 2,
+    "upCount": 1,
+    "disconnectedCount": 1,
+    "notPresentExcluded": 3,
+    "excludedCount": 52,
+    "historyPoints": 11
+  },
+  "coverage": {
+    "productIcon": {
+      "shell": {
+        "width": 16,
+        "height": 16,
+        "blue": 92,
+        "white": 4
+      },
+      "resource": {
+        "width": 16,
+        "height": 16,
+        "blue": 92,
+        "white": 4
+      },
+      "difference": {
+        "pixels": 64,
+        "opaque": 0,
+        "alpha": 0
+      }
+    },
+    "packagedApp": {
+      "observed": 23,
+      "verified": 1,
+      "nontransparentPixels": 1024,
+      "visibleOnWhite": 1024
+    },
+    "codexApp": {
+      "observed": 11,
+      "verified": 11,
+      "resource": {
+        "width": 16,
+        "height": 16,
+        "nontransparent": 175,
+        "visibleOnWhite": 101
+      },
+      "difference": {
+        "opaque": 0,
+        "alpha": 0
+      },
+      "minimumVisibleOnWhite": 101,
+      "renderedVisiblePixels": 101
+    },
+    "packagedFallback": {
+      "observed": 8,
+      "verified": 1,
+      "name": "cowork-svc.exe",
+      "width": 32,
+      "height": 32,
+      "visibleOnWhite": 1024
+    },
+    "blob": {
+      "requests": 195,
+      "inflight": 0,
+      "maximumInflight": 2,
+      "aborted": 1,
+      "created": 189,
+      "revoked": 0,
+      "live": 189,
+      "maximumLive": 189
+    },
+    "unload": {
+      "created": 189,
+      "revoked": 189,
+      "remaining": 0
+    },
+    "readOnlyWrites": 0,
+    "cleanup": {
+      "observedOwnedIdentities": 8,
+      "remainingOwnedIdentities": 0,
+      "listenersReleased": true
+    }
+  },
+  "apiFacts": [
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 702
+    },
+    {
+      "kind": "history",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 702
+    },
+    {
+      "kind": "history",
+      "status": 204
+    },
+    {
+      "kind": "process",
+      "status": 204
+    },
+    {
+      "kind": "service",
+      "status": 204
+    },
+    {
+      "kind": "startup",
+      "status": 204
+    },
+    {
+      "kind": "invalid",
+      "status": 400
+    },
+    {
+      "kind": "startup",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 779
+    },
+    {
+      "kind": "service",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 355
+    },
+    {
+      "kind": "service",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 355
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "process",
+      "status": 200,
+      "width": 16,
+      "height": 16,
+      "bytes": 846
+    },
+    {
+      "kind": "history",
+      "status": 204
+    }
+  ],
+  "geometry": [
+    {
+      "size": 1380,
+      "name": "进程",
+      "viewport": [
+        1380,
+        860
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 1380,
+      "name": "详细信息",
+      "viewport": [
+        1380,
+        860
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 1380,
+      "name": "应用历史记录",
+      "viewport": [
+        1380,
+        860
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 1380,
+      "name": "启动应用",
+      "viewport": [
+        1380,
+        860
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 1380,
+      "name": "服务",
+      "viewport": [
+        1380,
+        860
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 1380,
+      "name": "用户",
+      "viewport": [
+        1380,
+        860
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32
+      ]
+    },
+    {
+      "size": 1380,
+      "name": "性能",
+      "viewport": [
+        1380,
+        860
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [],
+      "rows": []
+    },
+    {
+      "size": 960,
+      "name": "进程",
+      "viewport": [
+        960,
+        640
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 960,
+      "name": "详细信息",
+      "viewport": [
+        960,
+        640
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 960,
+      "name": "应用历史记录",
+      "viewport": [
+        960,
+        640
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 960,
+      "name": "启动应用",
+      "viewport": [
+        960,
+        640
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 960,
+      "name": "服务",
+      "viewport": [
+        960,
+        640
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        },
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32
+      ]
+    },
+    {
+      "size": 960,
+      "name": "用户",
+      "viewport": [
+        960,
+        640
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [
+        {
+          "frame": [
+            21,
+            21
+          ],
+          "image": [
+            16,
+            16
+          ]
+        }
+      ],
+      "rows": [
+        32
+      ]
+    },
+    {
+      "size": 960,
+      "name": "性能",
+      "viewport": [
+        960,
+        640
+      ],
+      "dpr": 1,
+      "overflow": false,
+      "icons": [],
+      "rows": []
+    }
+  ],
+  "screenshots": [
+    "browser-process-detail.png",
+    "browser-tree-preview.png",
+    "browser-exited-history.png",
+    "browser-startup-detail.png",
+    "browser-running-service-detail.png",
+    "browser-stopped-service-detail.png",
+    "browser-associated-services.png",
+    "browser-codex-process.png",
+    "browser-1380-进程.png",
+    "browser-1380-详细信息.png",
+    "browser-1380-应用历史记录.png",
+    "browser-1380-启动应用.png",
+    "browser-1380-服务.png",
+    "browser-1380-用户.png",
+    "browser-1380-性能.png",
+    "browser-960-进程.png",
+    "browser-960-详细信息.png",
+    "browser-960-应用历史记录.png",
+    "browser-960-启动应用.png",
+    "browser-960-服务.png",
+    "browser-960-用户.png",
+    "browser-960-性能.png"
+  ],
+  "errors": [],
+  "cspErrors": [],
+  "source": "real production Release UI → HTTP → JSON.NET → CsWin32; independent Windows probe; no mocked data"
+}

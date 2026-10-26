@@ -54,6 +54,7 @@ SERVICE_QUERY_CONFIG
 SERVICE_QUERY_STATUS
 SC_MANAGER_CONNECT
 SHGetFileInfoW
+ExtractIconExW
 GetApplicationUserModelId
 SHCreateItemInKnownFolder
 IShellItemImageFactory

@@ -71,6 +71,14 @@ async function pngFacts(bytes) {
     return { width: canvas.width, height: canvas.height, nontransparent: [...pixels].filter((_, i) => i % 4 === 3 && pixels[i] > 0).length, visibleOnWhite, pixels: Array.from(pixels) };
   }, bytes.toString('base64'));
 }
+function pixelDifference(left, right) {
+  const difference={opaque:0,alpha:0};
+  for(let i=0;i<left.pixels.length;i+=4){
+    if(left.pixels[i+3]!==right.pixels[i+3])difference.alpha++;
+    if(left.pixels[i+3]===255&&right.pixels[i+3]===255&&left.pixels.slice(i,i+3).some((value,j)=>value!==right.pixels[i+j]))difference.opaque++;
+  }
+  return difference;
+}
 async function decoded(locator, label) {
   await until(async () => await locator.locator('.process-icon img').evaluateAll(images => images.length > 0 && images.every(img => img.complete && img.naturalWidth > 0)), label, 20000);
   check(true, label);
@@ -141,19 +149,29 @@ try {
   snapshot=await get('snapshot'); const serviceProcess=snapshot.processes.find(p=>p.pid===running.pid&&p.creationTimeFileTime);
   check(Boolean(serviceProcess),'running SCM service has readable exact process identity'); await nav('进程'); await search.fill(String(serviceProcess.pid)); row=page.locator(`tr[data-row-key="${serviceProcess.identity}"]`); await row.dblclick(); await page.getByRole('tab',{name:'关联服务',exact:true}).click(); await decoded(page.getByRole('dialog').locator('.related-list'),'process associated service buttons display real service PNGs'); await capture('associated-services'); await page.keyboard.press('Escape');
   const packaged=(await get('snapshot')).processes.filter(p=>p.path&&/\\WindowsApps\\/i.test(p.path)); coverage.packagedApp={observed:packaged.length,verified:0};
-  if(packaged.length){for(const candidate of packaged.slice(0,20)){const r=await fetch(`${origin}/api/application-icon?kind=process&id=${encodeURIComponent(candidate.identity)}`);if(r.status!==200)continue;const packagedIcon=await pngFacts(Buffer.from(await r.arrayBuffer()));if(packagedIcon.width===32&&packagedIcon.height===32&&packagedIcon.visibleOnWhite>32){coverage.packagedApp.verified=1;coverage.packagedApp.nontransparentPixels=packagedIcon.nontransparent;coverage.packagedApp.visibleOnWhite=packagedIcon.visibleOnWhite;break;}}check(coverage.packagedApp.verified===1,'real WindowsApps process returns 32px AppsFolder PNG visible on the white application surface');}
-  // A nontransparent PNG can still be an invisible white unplated glyph. Cover
-  // the reported real package explicitly instead of passing on another app.
+  if(packaged.length){for(const candidate of packaged.slice(0,20)){const r=await fetch(`${origin}/api/application-icon?kind=process&id=${encodeURIComponent(candidate.identity)}`);if(r.status!==200)continue;const packagedIcon=await pngFacts(Buffer.from(await r.arrayBuffer()));if([16,32].includes(packagedIcon.width)&&packagedIcon.height===packagedIcon.width&&packagedIcon.visibleOnWhite>32){coverage.packagedApp.verified=1;coverage.packagedApp.nontransparentPixels=packagedIcon.nontransparent;coverage.packagedApp.visibleOnWhite=packagedIcon.visibleOnWhite;break;}}check(coverage.packagedApp.verified===1,'real WindowsApps process returns a native PNG visible on the white application surface');}
+  // Match the actual executable resource shown by Windows Properties rather
+  // than merely accepting a visible package tile from AppsFolder.
   const codex=packaged.filter(p=>/\\WindowsApps\\OpenAI\.Codex_[^\\]+\\app\\ChatGPT\.exe$/i.test(p.path));
   coverage.codexApp={observed:codex.length,verified:0};
   if(codex.length){
+    const resourceDirectory=path.join(output,`${mode}-codex-independent`);probe('icon-exe',codex[0].path,resourceDirectory);
+    const resource=await pngFacts(await readFile(path.join(resourceDirectory,'product-exe-small.png')));
+    check(resource.width===16&&resource.height===16&&resource.nontransparent<256&&resource.visibleOnWhite>32,'independent Codex EXE resource has a visible glyph and transparent background like Windows Properties');
+    coverage.codexApp.resource={width:resource.width,height:resource.height,nontransparent:resource.nontransparent,visibleOnWhite:resource.visibleOnWhite};
     let minimumVisibleOnWhite=Infinity;
-    for(const candidate of codex){const bytes=await icon('process',candidate.identity);const facts=await pngFacts(bytes);check(facts.width===32&&facts.height===32&&facts.visibleOnWhite>32,'reported Codex process icon has visible pixels after compositing on white');minimumVisibleOnWhite=Math.min(minimumVisibleOnWhite,facts.visibleOnWhite);coverage.codexApp.verified++;if(coverage.codexApp.verified===1)await writeFile(path.join(output,`${mode}-codex-api.png`),bytes);}
+    for(const candidate of codex){const bytes=await icon('process',candidate.identity);const facts=await pngFacts(bytes),difference=pixelDifference(facts,resource);check(facts.width===resource.width&&facts.height===resource.height&&difference.opaque===0&&difference.alpha===0,'reported Codex process icon matches independent EXE opaque pixels and alpha silhouette');minimumVisibleOnWhite=Math.min(minimumVisibleOnWhite,facts.visibleOnWhite);coverage.codexApp.verified++;if(coverage.codexApp.verified===1){coverage.codexApp.difference=difference;await writeFile(path.join(output,`${mode}-codex-api.png`),bytes);}}
     coverage.codexApp.minimumVisibleOnWhite=minimumVisibleOnWhite;
     await nav('进程');await search.fill(String(codex[0].pid));row=page.locator(`tr[data-row-key="${codex[0].identity}"]`);await decoded(row,'reported Codex process row displays its real decoded application PNG');
     const visible=await row.locator('.process-icon img').evaluate(img=>{const canvas=document.createElement('canvas');canvas.width=canvas.height=16;const c=canvas.getContext('2d');c.fillStyle=getComputedStyle(img.parentElement).backgroundColor;c.fillRect(0,0,16,16);c.drawImage(img,0,0,16,16);const pixels=c.getImageData(0,0,16,16).data;let count=0;for(let i=0;i<pixels.length;i+=4)if(255-Math.min(pixels[i],pixels[i+1],pixels[i+2])>=48)count++;return count;});
     check(visible>8,'reported Codex row icon is visibly distinct from its actual white frame');coverage.codexApp.renderedVisiblePixels=visible;await capture('codex-process');
   }
+  // A resource-less EXE can still get a nonempty generic icon from SHGetFileInfo.
+  // Preserve the package application image for this real Windows case.
+  const resourceCounts=new Map(),withoutResources=packaged.filter(candidate=>{if(!resourceCounts.has(candidate.path))resourceCounts.set(candidate.path,probe('icon-resource-count',candidate.path).count);return resourceCounts.get(candidate.path)===0;});
+  coverage.packagedFallback={observed:withoutResources.length,verified:0};
+  for(const candidate of withoutResources){const response=await fetch(`${origin}/api/application-icon?kind=process&id=${encodeURIComponent(candidate.identity)}`);if(response.status!==200)continue;const bytes=Buffer.from(await response.arrayBuffer()),facts=await pngFacts(bytes);if(facts.width===32&&facts.height===32&&facts.visibleOnWhite>32){coverage.packagedFallback={observed:withoutResources.length,verified:1,name:candidate.name,width:facts.width,height:facts.height,visibleOnWhite:facts.visibleOnWhite};await writeFile(path.join(output,`${mode}-packaged-fallback-api.png`),bytes);break;}}
+  if(withoutResources.length)check(coverage.packagedFallback.verified===1,'real packaged process without EXE icon resources keeps its visible 32px AppsFolder image');
   // Full independent interface set, with flags from Windows rather than names.
   const native=probe('network-counters'), hardware=native.filter(a=>a.hardware&&!a.filter&&![24,131].includes(a.type)&&a.status!=='IfOperStatusNotPresent'); snapshot=await get('snapshot');
   check(JSON.stringify(snapshot.networkAdapters.map(a=>a.id).sort())===JSON.stringify(hardware.map(a=>a.id).sort()),'networkAdapters equals independent complete present Windows hardware/nonfilter/nonloopback/nontunnel set');
