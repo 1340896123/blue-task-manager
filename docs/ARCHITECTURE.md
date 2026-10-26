@@ -2,6 +2,8 @@
 
 > 磁盘身份增量见 [DISK-IDENTITY.md](DISK-IDENTITY.md)：CsWin32 CreateFile/DeviceIoControl、IOCTL_STORAGE_GET_DEVICE_NUMBER 读回验证PDH实例编号，StorageDeviceProperty 型号/总线和seek-penalty介质口径；元数据有界后台缓存、逐字段失败及真实时间独立于PDH动态指标，不向性能历史复制。
 
+> 磁盘展示调整（2026-10-26）：性能页仅消费磁盘读/写历史绘制吞吐大小曲线，删除活动时间的可见数值、曲线与口径文案。现有PDH活动采集、DTO及系统聚合合同继续保留；UI只呈现已展示字段的可用状态，活动率单字段失败不生成吞吐错误提示。具体行为与D08见 [DISK-IDENTITY.md](DISK-IDENTITY.md)。
+
 > GitHub更新增量见 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：固定公开Releases/Compare REST与HTTPS，JSON.NET解析元数据/pending，可信ReleaseTag/SourceCommit与旧版commit比较；单后台任务流下载并核对SHA256，ProgramData管理员/SYSTEM保护暂存。正式安装通过现有NSIS明确更新模式等旧实例释放、成功重启；scheduled仅自动尝试一次，失败可诊断。沿用同源HTTP/令牌与CsWin32，不将更新数据放入采样历史。
 
 > 2026-10-26 已有入口接管增量见 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md)：GET 增加 canTakeOver，POST 增加显式 takeOver；可替换任意现有 Debugger 并关闭已存在的非零/异常 UseFilter，保留无关 IFEO 配置。取消/卸载只恢复标准 Windows 入口、不恢复旧工具。覆盖历史特殊配置一律拒绝规则，CsWin32/JSON.NET、权限、版本重验、读回与 Launcher 链保持。
