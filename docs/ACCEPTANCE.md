@@ -4,6 +4,8 @@
 
 [DISK-IDENTITY.md](DISK-IDENTITY.md) 定义D01～D07：Release/前端构建、逐真实磁盘与Get-Counter/Get-PhysicalDisk等独立对照、原生编号/描述符/介质/总线部分失败、搜索与长型号、960/1380/正式Electron125%、缓存/暂停/热插拔可执行条件与真实桌面链路。记录命令、Git SHA、截图和未执行条件；不为验收拔除用户磁盘，不以fixture代替真实设备结果。
 
+2026-10-26 [磁盘验收结果](DISK-IDENTITY-RESULTS.md)：静态3项、原生56项、浏览器70项、正式Electron75项通过；实际热插拔、拒绝访问、不支持与RAID/虚拟设备分支未执行。
+
 ## GitHub下载与更新（U系列）
 
 [GITHUB-UPDATES.md](GITHUB-UPDATES.md) 定义U01～U08：发布身份/不降级、真实Release/compare与官方附件散列、后台下载/取消/错误、导航图标/tooltip/完成选择、保护ACL/输入/权限、立即与下次启动NSIS交接、防循环/清理。只在专用安装与身份跑写入成功链；算法fixture、专用本地安装器及未发布版本不能冒充官方更新成功。记录命令/SHA/hash/截图与未执行项。
