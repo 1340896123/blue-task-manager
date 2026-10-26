@@ -12,16 +12,22 @@ export default function FirstLaunchIntegration({ preferences, connected, notify,
   const deferButton = useRef<HTMLButtonElement>(null);
   const [state, setState] = useState<TaskManagerIntegrationState | null>(null);
   const [reading, setReading] = useState(true), [writing, setWriting] = useState(false);
+  const [initialReadComplete, setInitialReadComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const currentIntegration = state?.status === 'enabled' && state.enabled === true;
+  const completeTaskManagerPrompt = preferences.completeTaskManagerPrompt;
   useEffect(() => {
-    if (!required) return;
+    if (!required) { setInitialReadComplete(false); setState(null); return; }
     const controller = new AbortController();
-    setReading(true); setState(null); setError(null);
+    setReading(true); setInitialReadComplete(false); setState(null); setError(null);
     void api.get<TaskManagerIntegrationState>(route, controller.signal).then(setState).catch(caught => {
       if (!controller.signal.aborted) setError(errorMessage(caught));
-    }).finally(() => { if (!controller.signal.aborted) setReading(false); });
+    }).finally(() => { if (!controller.signal.aborted) { setReading(false); setInitialReadComplete(true); } });
     return () => controller.abort();
   }, [required]);
+  useEffect(() => {
+    if (required && initialReadComplete && currentIntegration && !writing) void completeTaskManagerPrompt();
+  }, [required, initialReadComplete, currentIntegration, writing, completeTaskManagerPrompt]);
   const refresh = async () => {
     setReading(true); setState(null); setError(null);
     try { setState(await api.get<TaskManagerIntegrationState>(route)); }
@@ -52,7 +58,7 @@ export default function FirstLaunchIntegration({ preferences, connected, notify,
       catch (readError) { setError(`${message} 重新核验失败：${errorMessage(readError)}`); }
     } finally { setWriting(false); }
   };
-  if (!required) return null;
+  if (!required || !initialReadComplete || currentIntegration) return null;
   const label = reading ? '正在读取系统入口…' : state ? ({ disabled: '尚未替换标准任务管理器', enabled: '本目录程序已替换标准任务管理器', migrationRequired: '旧接管需要修复', conflict: '现有入口需要明确接管', unavailable: '暂时无法确认系统入口' })[state.status] : '暂时无法确认系统入口';
   const requiresTakeOver = state?.status === 'conflict';
   const canReplace = Boolean(connected && !reading && !writing && state?.status === 'disabled' && state.canEnable && state.canWrite === true && state.executableAvailable);
