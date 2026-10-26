@@ -435,6 +435,9 @@ select { min-width: var(--width-setting-control); min-height: var(--height-contr
 .resource-tile[aria-pressed="true"] .resource-tile-text strong { color: var(--color-accent); font-weight: var(--font-weight-semibold); }
 .resource-tile-text small, .resource-device-name { color: var(--color-text-secondary); font-size: var(--font-size-caption); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .resource-tile-text small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; line-height: var(--line-height-body); }
+.resource-tile-disk { height: auto; min-height: calc(var(--height-resource-tile) + var(--space-6)); }
+.resource-tile-disk .resource-tile-text small { display: flex; flex-direction: column; overflow: visible; }
+.resource-tile-disk .resource-tile-text small > span { overflow-wrap: anywhere; }
 .resource-tile .mini-chart { flex: 0 0 var(--width-resource-sparkline); width: var(--width-resource-sparkline); height: var(--height-resource-sparkline); }
 .mini-chart .resource-chart { height: var(--height-resource-sparkline); border-color: var(--color-chart-line); background: var(--color-surface); }
 .mini-chart .chart-grid { stroke: transparent; }
