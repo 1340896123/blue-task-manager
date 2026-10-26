@@ -75,10 +75,12 @@ try {
   const cardText = await card.innerText();
   check(cardText.includes('Ctrl+Shift+Esc') && cardText.includes('所有用户') && cardText.includes('管理员') && cardText.includes('移动或删除'), 'settings states shortcut, machine-wide scope, permission and move-directory consequences');
   if (state.status === 'disabled' && state.canWrite === false) check(await card.getByRole('button', { name: '启用接管…', exact: true }).isDisabled() && cardText.includes('当前账户没有写权限'), 'no-write-permission UI disables actual registration and explains the observed permission');
-  await card.getByRole('button', { name: state.ownsDebugger ? '查看取消接管的影响' : '查看启用接管的影响', exact: true }).click();
+  const impact = state.status === 'conflict' ? '查看接管现有入口的影响' : state.ownsDebugger ? '查看取消接管的影响' : '查看启用接管的影响';
+  const confirm = state.status === 'conflict' ? '确认接管现有入口' : state.ownsDebugger ? '确认取消接管' : '确认启用接管';
+  await card.getByRole('button', { name: impact, exact: true }).click();
   const dialog = page.getByRole('dialog'); await dialog.waitFor();
   check((await dialog.innerText()).includes('不是新增菜单项') && (await dialog.innerText()).includes('Ctrl+Shift+Esc') && (await dialog.innerText()).includes('原目录'), 'confirmation explains real takeover and safe restoration before moving the program');
-  if (state.canWrite === false) check(await dialog.getByRole('button', { name: state.ownsDebugger ? '确认取消接管' : '确认启用接管', exact: true }).isDisabled(), 'permission explanation cannot bypass the disabled native write action');
+  if (state.canWrite === false) check(await dialog.getByRole('button', { name: confirm, exact: true }).isDisabled(), 'permission explanation cannot bypass the disabled native write action');
   await page.screenshot({ path: path.join(output, 'taskbar-integration-confirmation.png') });
   await dialog.getByRole('button', { name: '暂不更改', exact: true }).click();
   check(await dialog.count() === 0 && writes.length === 0, 'canceling the impact dialog sends no write request');

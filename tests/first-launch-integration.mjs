@@ -108,7 +108,7 @@ try{
   const desktopDirectory=path.join(temporary,'desktop');page=await open(desktopDirectory);await prompt();
   const state=await api('desktop/task-manager-integration'), independent=JSON.parse(before);
   check(state.currentDebugger===(independent.values.find(v=>v.name==='Debugger')?.data??null),'native integration state matches independent HKLM64 Debugger');
-  check(state.status==='conflict'&&state.canEnable===false&&await dialog().getByRole('button',{name:'替换标准任务管理器',exact:true}).isDisabled(),'existing other-directory takeover is shown as conflict with replacement disabled');
+  check(state.status==='conflict'&&state.canEnable===false&&await dialog().getByRole('button',{name:'前往设置接管现有入口',exact:true}).isEnabled(),'existing other-directory takeover offers an explicit settings takeover path');
   check((await dialog().innerText()).includes(state.conflictReason),'actual backend conflict reason is visible');
   const text=await dialog().innerText();check(['Ctrl+Shift+Esc','所有用户','管理员','取消接管','移动或删除'].every(t=>text.includes(t)),'prompt explains shortcuts, scope, authorization and restoration before moving');
   check(await dialog().getByRole('button',{name:'暂不替换',exact:true}).evaluate(el=>el===document.activeElement),'initial keyboard focus is on the safe defer action');
@@ -134,7 +134,7 @@ try{
 
   await rearm();await page.keyboard.press('Escape');await saved();check(await dialog().count()===0,'Escape defers and saves without a system write');
   await rearm();await dialog().getByRole('button',{name:'关闭对话框',exact:true}).click();await saved();check(await dialog().count()===0,'close button defers and saves without a system write');
-  await rearm();await dialog().getByRole('button',{name:'前往设置管理',exact:true}).click();await saved();
+  await rearm();await dialog().getByRole('button',{name:state.status==='conflict'?'前往设置接管现有入口':'前往设置管理',exact:true}).click();await saved();
   await page.getByRole('heading',{name:'任务管理器入口',exact:true}).waitFor();check(await page.getByRole('searchbox').inputValue()==='','go to settings reveals the real integration section with cleared shared search');
 
   const preferences=(await api('preferences')).preferences;await api('preferences',{...preferences,taskManagerPromptDismissed:false});

@@ -58,6 +58,11 @@ function Remember-State([string]$State) {
     $parsed = $State | ConvertFrom-Json
     $withoutDebugger = [ordered]@{ exists=$parsed.exists; values=@($parsed.values | Where-Object { $_.name -cne 'Debugger' }); subkeys=@($parsed.subkeys) }
     [void]$allowedStates.Add(($withoutDebugger | ConvertTo-Json -Depth 50 -Compress))
+    if ($parsed.values | Where-Object { $_.name -ceq 'UseFilter' }) {
+        $filterDisabled = @($parsed.values | ForEach-Object { if ($_.name -ceq 'UseFilter') { [ordered]@{ name=$_.name; kind='DWord'; data='0' } } else { $_ } })
+        [void]$allowedStates.Add(([ordered]@{ exists=$parsed.exists; values=@($filterDisabled); subkeys=@($parsed.subkeys) } | ConvertTo-Json -Depth 50 -Compress))
+        [void]$allowedStates.Add(([ordered]@{ exists=$parsed.exists; values=@($filterDisabled | Where-Object { $_.name -cne 'Debugger' }); subkeys=@($parsed.subkeys) } | ConvertTo-Json -Depth 50 -Compress))
+    }
 }
 function Assert-OwnedState {
     $state = Snapshot

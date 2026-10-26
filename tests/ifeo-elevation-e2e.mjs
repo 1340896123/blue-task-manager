@@ -174,10 +174,10 @@ try {
     check(state.status === 'conflict' && state.ownsDebugger && !state.canRepair, 'special UseFilter/default/binary/multi-string/nested-key config blocks enable/repair but preserves strict ownership');
     await api('desktop/task-manager-integration', { enabled: true, repair: true, expectedRevision: state.revision }, 409);
     const maintenance = (await worker('maintenance')).data;
-    const expected = JSON.parse(before); expected.values = expected.values.filter(row => row.name !== 'Debugger');
+    const expected = JSON.parse(before); expected.values = expected.values.filter(row => row.name !== 'Debugger').map(row => row.name === 'UseFilter' ? { ...row, kind: 'DWord', data: '0' } : row);
     check(maintenance.exitCode === 0, 'fixed production maintenance exits successfully for exact owned old/new command');
     assert.deepEqual(JSON.parse(independentRegistry()), expected);
-    check(true, 'maintenance removes only owned Debugger and retains every other value/type/nested child');
+    check(true, 'maintenance removes owned Debugger, disables entry filtering and retains unrelated value/type/nested children');
   }
   await fixture(null);
   state = await api('desktop/task-manager-integration');
