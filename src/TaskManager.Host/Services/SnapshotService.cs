@@ -33,7 +33,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         ["network"] = new(true, "CsWin32 GetIfTable2：仅Up状态真实硬件适配器总量；排除过滤、虚拟、回环和隧道接口"),
         ["services"] = new(true, "CsWin32 SCM EnumServicesStatusEx"),
         ["users"] = new(true, "CsWin32 WTS + 进程令牌 SID，按明确用户/会话聚合"),
-        ["startup"] = new(true, "只读 Registry Run/RunOnce + Startup 文件夹"),
+        ["startup"] = new(true, "CsWin32只读Registry Run/RunOnce、Startup文件夹及Shell StartupApproved状态", "启用/禁用来自可识别的Windows记录；未知、读取失败、范围冲突及RunOnce保留原因，不保证最终执行。"),
         ["history"] = new(true, "本次会话相邻观测样本的 CPU/I/O 增量"),
         ["processDetails"] = new(true, "CsWin32 身份句柄实时查询；速率来自最近成功快照"),
         ["processConnections"] = new(true, "CsWin32 GetExtendedTcpTable/GetExtendedUdpTable IPv4/IPv6 OWNER_PID；端点不是吞吐"),

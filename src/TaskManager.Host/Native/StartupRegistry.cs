@@ -9,7 +9,7 @@ namespace TaskManager.Host.Native;
 
 internal static class StartupRegistry
 {
-    internal static List<StartupDto> Read(List<Unavailable> warnings)
+    internal static List<StartupDto> Read(List<Unavailable> warnings, StartupApprovalReader approvals)
     {
         var result = new List<StartupDto>(); var totalBytes = 0;
         var name = new char[16384]; var data = new byte[65536];
@@ -17,6 +17,8 @@ internal static class StartupRegistry
         foreach (var (view, viewName) in new[] { (REG_SAM_FLAGS.KEY_WOW64_64KEY, "Registry64"), (REG_SAM_FLAGS.KEY_WOW64_32KEY, "Registry32") })
         foreach (var subkey in new[] { @"Software\Microsoft\Windows\CurrentVersion\Run", @"Software\Microsoft\Windows\CurrentVersion\RunOnce" })
         {
+            // HKCU Run/RunOnce are shared views; HKLM views remain separate sources.
+            if (rootName == "HKCU" && view == REG_SAM_FLAGS.KEY_WOW64_32KEY) continue;
             using var root = new SafeRegistryHandle((nint)hive, false);
             var source = $"{rootName}\\{subkey} ({viewName})";
             var opened = PInvoke.RegOpenKeyEx(root, subkey, 0, REG_SAM_FLAGS.KEY_QUERY_VALUE | view, out var key);
@@ -40,7 +42,10 @@ internal static class StartupRegistry
                     totalBytes += (int)dataLength;
                     if (result.Count >= 4096 || totalBytes > 4 * 1024 * 1024) { warnings.Add(new("capacity", "启动注册项目达到4096项/4MiB总量上限。")); return result; }
                     var valueName = new string(name, 0, (int)nameLength); var command = Encoding.Unicode.GetString(data, 0, (int)dataLength).TrimEnd('\0');
-                    result.Add(new($"{source}\\{valueName}", valueName, command, source, null, "只读枚举启动注册项；未解析 StartupApproved/组策略的最终启用状态。"));
+                    var approval = subkey.EndsWith(@"\RunOnce", StringComparison.OrdinalIgnoreCase)
+                        ? new StartupApprovalReader.ApprovalState(null, "RunOnce为一次性启动来源，不适用Run的StartupApproved启用/禁用记录；不推断其最终执行状态。")
+                        : approvals.Read(rootName == "HKLM", rootName == "HKLM" && view == REG_SAM_FLAGS.KEY_WOW64_32KEY ? "Run32" : "Run", valueName);
+                    result.Add(new($"{source}\\{valueName}", valueName, command, source, approval.Enabled, approval.Reason));
                     if (index == 4095) warnings.Add(new("capacity", $"启动注册项达到单键4096项上限：{source}。"));
                 }
             }

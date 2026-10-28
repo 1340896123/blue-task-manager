@@ -77,7 +77,8 @@ internal static class SlowDataReader
 
     internal static List<StartupDto> ReadStartup(List<Unavailable> warnings)
     {
-        var result = StartupRegistry.Read(warnings);
+        using var approvals = new StartupApprovalReader();
+        var result = StartupRegistry.Read(warnings, approvals);
         foreach (var location in new[] { Environment.SpecialFolder.Startup, Environment.SpecialFolder.CommonStartup })
         {
             var path = Environment.GetFolderPath(location);
@@ -85,12 +86,14 @@ internal static class SlowDataReader
             {
                 if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) continue;
                 foreach (var file in Directory.EnumerateFiles(path).Where(file => !Path.GetFileName(file).Equals("desktop.ini", StringComparison.OrdinalIgnoreCase)))
-                    result.Add(new(file, Path.GetFileNameWithoutExtension(file), file, location == Environment.SpecialFolder.Startup ? "当前用户 Startup 文件夹" : "公共 Startup 文件夹", null, "只读枚举真实文件；不推断快捷方式/策略最终启用状态。"));
+                {
+                    var approval = approvals.Read(location == Environment.SpecialFolder.CommonStartup, "StartupFolder", Path.GetFileName(file));
+                    result.Add(new(file, Path.GetFileNameWithoutExtension(file), file, location == Environment.SpecialFolder.Startup ? "当前用户 Startup 文件夹" : "公共 Startup 文件夹", approval.Enabled, approval.Reason));
+                }
             }
             catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
             { warnings.Add(new("accessDenied", $"读取 {location} 启动文件夹失败。")); }
         }
-        // On 64-bit Windows HKCU Run views can point to the same physical key; keep distinct actual values once.
-        return result.DistinctBy(item => (item.Source.Replace(" (Registry32)", "").Replace(" (Registry64)", ""), item.Name, item.Command)).OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase).Select(StartupLocationResolver.Describe).ToList();
+        return result.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ThenBy(item => item.Source, StringComparer.OrdinalIgnoreCase).Select(StartupLocationResolver.Describe).ToList();
     }
 }

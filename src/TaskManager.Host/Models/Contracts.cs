@@ -105,7 +105,7 @@ public sealed class SystemDto
     public Dictionary<string, Unavailable> Unavailable { get; init; } = new();
 }
 public sealed record ServiceDto(string Name, string DisplayName, string State, uint Pid);
-public sealed record StartupDto(string Id, string Name, string Command, string Source, string? Enabled, string EnabledReason)
+public sealed record StartupDto(string Id, string Name, string Command, string Source, bool? Enabled, string EnabledReason)
 {
     public string? LocationPath { get; init; }
     public bool CanOpenLocation { get; init; }

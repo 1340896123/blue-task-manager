@@ -109,6 +109,7 @@ IsWindow
 GetWindowLongPtrW
 SetWindowPos
 RegOpenKeyExW
+RegQueryValueExW
 RegEnumValueW
 RegCloseKey
 HKEY_CURRENT_USER
