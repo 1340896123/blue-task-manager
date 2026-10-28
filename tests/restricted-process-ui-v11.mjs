@@ -14,7 +14,7 @@ if (await portOpen(port) || await portOpen(cdp)) throw new Error('Restricted-pro
 const temporary = await mkdtemp(path.join(tmpdir(), 'blue-restricted-ui-'));
 const output = path.join(root, 'output/playwright');
 await mkdir(output, { recursive: true });
-const host = spawn(path.join(root, 'output/TaskManager-win-x64/TaskManager.Host.exe'), [`--port=${port}`], {
+const host = spawn(path.join(root, 'output/Takao-win-x64/Takao.Host.exe'), [`--port=${port}`], {
   cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: temporary, TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore'
 });
 let browser, page, runtime = [];

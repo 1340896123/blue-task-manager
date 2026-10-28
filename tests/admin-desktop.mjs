@@ -9,10 +9,10 @@ import { chromium } from 'playwright';
 import { until, processTree, ownedAlive, portOpen } from './e2e-support.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/TaskManager-win-x64'));
+const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/Takao-win-x64'));
 const framework = 'net10.0-windows10.0.19041.0';
-const probeExe = path.join(root, 'tests/TaskManager.WindowProbe/bin/Release', framework, 'TaskManager.WindowProbe.exe');
-const workloadExe = path.join(root, 'tests/TaskManager.TestWorkload/bin/Release', framework, 'TaskManager.TestWorkload.exe');
+const probeExe = path.join(root, 'tests/Takao.WindowProbe/bin/Release', framework, 'Takao.WindowProbe.exe');
+const workloadExe = path.join(root, 'tests/Takao.TestWorkload/bin/Release', framework, 'Takao.TestWorkload.exe');
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-admin-'));
 const output = path.join(root, 'output/admin-installer');
 const evidenceName = process.env.TASKMANAGER_ADMIN_EVIDENCE_PREFIX ?? 'administrator-desktop';
@@ -31,7 +31,7 @@ const elevation = pid => {
 assert.ok(elevation(process.pid), 'Run this acceptance with a Windows elevated token.');
 if (await portOpen(port) || await portOpen(cdp)) throw new Error('Administrator acceptance ports occupied.');
 await mkdir(output, { recursive: true });
-const host = spawn(path.join(directory, 'TaskManager.Host.exe'), [`--port=${port}`], {
+const host = spawn(path.join(directory, 'Takao.Host.exe'), [`--port=${port}`], {
   cwd: tmpdir(), windowsHide: true, stdio: 'ignore',
   env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences'), TASKMANAGER_CDP_PORT: String(cdp), DOTNET_ROOT: path.join(temporary, 'no-global-dotnet'), DOTNET_ROOT_X64: path.join(temporary, 'no-global-dotnet'), DOTNET_MULTILEVEL_LOOKUP: '0' }
 });

@@ -4,9 +4,9 @@ $root = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $root
 $output = Join-Path $root 'output/playwright/task-manager-takeover'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
-$probe = Join-Path $root 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe'
+$probe = Join-Path $root 'tests/Takao.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/Takao.WindowProbe.exe'
 if (-not (& $probe process-elevation $PID | ConvertFrom-Json).elevated) { throw 'Takeover acceptance requires a real elevated Windows token.' }
-if (-not $ReleaseDirectory) { $ReleaseDirectory = Join-Path $root 'output/takeover/TaskManager-win-x64' }
+if (-not $ReleaseDirectory) { $ReleaseDirectory = Join-Path $root 'output/takeover/Takao-win-x64' }
 $env:TASKMANAGER_TAKEOVER_RELEASE = [IO.Path]::GetFullPath($ReleaseDirectory)
 $status = Join-Path $output 'worker-status.json'
 [IO.File]::WriteAllText($status, (@{elevated=$true;pid=$PID;running='task-manager-takeover'} | ConvertTo-Json), [Text.UTF8Encoding]::new($false))

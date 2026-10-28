@@ -10,16 +10,16 @@ import { check, assertions, until, delay, processTree, ownedAlive, portOpen, ali
 import { probe, windows, nativeUi } from './native-ui-support.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const release = process.env.TASKMANAGER_NATIVE_DIRECTORY ?? path.join(root, 'output/TaskManager-win-x64');
+const release = process.env.TASKMANAGER_NATIVE_DIRECTORY ?? path.join(root, 'output/Takao-win-x64');
 const temporary = await mkdtemp(path.join(tmpdir(), 'blue-native-v11-'));
 const fixture = path.join(temporary, 'owned,fixture'); await mkdir(fixture);
-await cp(path.join(root, 'tests/TaskManager.TestWorkload/bin/Release/net10.0-windows10.0.19041.0'), fixture, { recursive: true });
+await cp(path.join(root, 'tests/Takao.TestWorkload/bin/Release/net10.0-windows10.0.19041.0'), fixture, { recursive: true });
 const fileName = `=BlueNative-${path.basename(temporary)}.exe`, exe = path.join(fixture, fileName);
-await rename(path.join(fixture, 'TaskManager.TestWorkload.exe'), exe);
+await rename(path.join(fixture, 'Takao.TestWorkload.exe'), exe);
 const output = path.join(root, 'output/playwright'); await mkdir(output, { recursive: true });
 const port = 5195, cdp = 9225, origin = `http://127.0.0.1:${port}`, preferences = path.join(temporary, 'preferences');
 if (await portOpen(port) || await portOpen(cdp)) throw new Error('Native desktop ports busy');
-const start = () => spawn(path.join(release, 'TaskManager.Host.exe'), [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: preferences, TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore' });
+const start = () => spawn(path.join(release, 'Takao.Host.exe'), [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: preferences, TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore' });
 let host, browser, page, tree = [], created, ownedWindows = [];
 const checks = [], images = [];
 const record = (condition, text) => { check(condition, text); checks.push(text); console.log(text); };
@@ -30,7 +30,7 @@ async function connect() {
   await until(async () => (await (await fetch(origin + '/api/health')).json()).ready && await portOpen(cdp), 'native release ready', 45000);
   browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`); await until(() => browser.contexts()[0]?.pages().length > 0, 'window created'); page = browser.contexts()[0].pages()[0];
   await page.getByRole('table', { name: '进程列表', exact: true }).waitFor(); tree = processTree(host.pid);
-  await until(()=>windows('蓝域').some(window=>tree.some(entry=>entry.pid===window.pid)), 'actual native BrowserWindow becomes visible');
+  await until(()=>windows('Takao').some(window=>tree.some(entry=>entry.pid===window.pid)), 'actual native BrowserWindow becomes visible');
 }
 async function close() {
   const userTasks = new Set(created && alive(created.pid) ? processTree(created.pid).map(p => p.pid) : []); const exact = processTree(host.pid).filter(p => !userTasks.has(p.pid)); await page.getByRole('button', { name: '关闭窗口', exact: true }).click();
@@ -74,12 +74,12 @@ try {
   }, 'actual Explorer selects exact unique owned executable', 30000);
   if (!shellBefore.has(explorer.hwnd)) ownedWindows.push(explorer); record(locationInfo.elements.some(e => e.selected === true && e.name.includes(path.parse(fileName).name)), 'B06 standard Windows Explorer select command visibly selects unique test executable');
   nativeUi(explorer, 'capture', path.join(output, 'v11-native-file-location.png')); images.push('v11-native-file-location.png');
-  nativeUi(windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid)), 'foreground'); await page.bringToFront(); await row.click(); await page.locator('.command-menu > summary').click(); await clickCommand(page, 'Windows 属性', {menu:true});
+  nativeUi(windows('Takao').find(w=>tree.some(p=>p.pid===w.pid)), 'foreground'); await page.bringToFront(); await row.click(); await page.locator('.command-menu > summary').click(); await clickCommand(page, 'Windows 属性', {menu:true});
   let properties, propInfo;
   await until(() => { properties = windows(path.parse(fileName).name).find(w => w.className === '#32770'); if (!properties) return false; propInfo = nativeUi(properties, 'inspect'); return propInfo.elements.some(e => (e.name ?? '').includes(fileName) || (e.value ?? '').includes(fileName)); }, 'actual Windows properties for exact test file', 30000);
   ownedWindows.push(properties); record(propInfo.elements.some(e => (e.name ?? '').includes(fileName) || (e.value ?? '').includes(fileName)), 'B06 actual Windows property sheet identifies owned filename');
   nativeUi(properties, 'capture', path.join(output, 'v11-native-properties.png')); images.push('v11-native-properties.png');
-  nativeUi(properties, 'close'); ownedWindows = ownedWindows.filter(w => w.hwnd !== properties.hwnd); if (!shellBefore.has(explorer.hwnd)) nativeUi(explorer, 'close'); ownedWindows = ownedWindows.filter(w => w.hwnd !== explorer.hwnd); nativeUi(windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid)), 'foreground'); await page.bringToFront();
+  nativeUi(properties, 'close'); ownedWindows = ownedWindows.filter(w => w.hwnd !== properties.hwnd); if (!shellBefore.has(explorer.hwnd)) nativeUi(explorer, 'close'); ownedWindows = ownedWindows.filter(w => w.hwnd !== explorer.hwnd); nativeUi(windows('Takao').find(w=>tree.some(p=>p.pid===w.pid)), 'foreground'); await page.bringToFront();
   await page.getByRole('searchbox').fill('');await page.getByRole('button', { name: '设置', exact: true }).click(); await page.getByRole('switch', { name: '始终置顶', exact: true }).click();
   await until(() => main().topmost, 'independent native topmost style'); record(main().topmost, 'B10 actual WS_EX_TOPMOST matches enabled UI readback');
   probe(tree.map(p => `${p.pid}:${p.fileTime}`).join(','), 'resize', 960, 640); await delay(800); await page.keyboard.press('Control+='); await delay(500);

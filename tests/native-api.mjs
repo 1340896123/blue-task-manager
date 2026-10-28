@@ -9,8 +9,8 @@ import http from 'node:http';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const framework = 'net10.0-windows10.0.19041.0';
-const hostExe = path.join(root, 'src', 'TaskManager.Host', 'bin', 'Release', framework, 'TaskManager.Host.exe');
-const workloadExe = path.join(root, 'tests', 'TaskManager.TestWorkload', 'bin', 'Release', framework, 'TaskManager.TestWorkload.exe');
+const hostExe = path.join(root, 'src', 'Takao.Host', 'bin', 'Release', framework, 'Takao.Host.exe');
+const workloadExe = path.join(root, 'tests', 'Takao.TestWorkload', 'bin', 'Release', framework, 'Takao.TestWorkload.exe');
 const port = Number(process.env.TASKMANAGER_TEST_PORT ?? 5191);
 const origin = `http://127.0.0.1:${port}`;
 const directory = await mkdtemp(path.join(tmpdir(), 'taskmanager-native-'));
@@ -85,7 +85,7 @@ try {
   check(target.identity === `${target.pid}:${target.creationTimeFileTime}`, 'exact creation identity');
   let sampled = await snapshotWhere(value => value.processes.some(row => row.identity === target.identity));
   const fresh = sampled.processes.find(row => row.identity === target.identity);
-  check(fresh.name === 'TaskManager.TestWorkload.exe' && fresh.cpuPercent === null && fresh.unavailable.cpuPercent.code === 'warmingUp', 'new identity starts at warmup');
+  check(fresh.name === 'Takao.TestWorkload.exe' && fresh.cpuPercent === null && fresh.unavailable.cpuPercent.code === 'warmingUp', 'new identity starts at warmup');
   sampled = await snapshotWhere(value => value.processes.some(row => row.identity === target.identity && row.cpuPercent > 0 && row.ioWriteBytesPerSecond > 0));
   const row = sampled.processes.find(row => row.identity === target.identity);
   check(row.canTerminate, 'registered real Run identity remains actionable after later native sampling');

@@ -11,8 +11,8 @@ import { alive, delay, ownedAlive, portOpen, processTree, until } from './e2e-su
 import { nativeUi, probe, windows } from './native-ui-support.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/TaskManager-win-x64')), output = path.join(root, 'output/taskbar-integration');
-const executable = path.join(directory, 'TaskManager.Host.exe');
+const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/Takao-win-x64')), output = path.join(root, 'output/taskbar-integration');
+const executable = path.join(directory, 'Takao.Host.exe');
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-entry-'));
 const port = 5203, cdp = 9231, forwardPort = 5204, forwardCdp = 9232, origin = `http://127.0.0.1:${port}`;
 const target = path.join(process.env.SystemRoot, 'System32', 'taskmgr.exe');
@@ -50,7 +50,7 @@ try {
   const actualDebugger = before.values.find(row => row.name === 'Debugger');
   const actualFilter = before.values.find(row => row.name === 'UseFilter');
   check(state.canRead && state.currentDebugger === (actualDebugger?.data ?? null) && state.useFilter === (actualFilter?.data ?? null), 'CsWin32 Debugger and UseFilter status match independent HKLM64 read');
-  check(state.registrationCommand === `"${path.join(directory, 'TaskManager.Launcher.exe')}" --task-manager-entry` && state.executableAvailable, 'registration command is the quoted trusted portable Launcher plus fixed marker');
+  check(state.registrationCommand === `"${path.join(directory, 'Takao.Launcher.exe')}" --task-manager-entry` && state.executableAvailable, 'registration command is the quoted trusted portable Launcher plus fixed marker');
   check(state.scope === 'machine' && typeof state.canWrite === 'boolean', 'readability and actual machine-wide write permission are reported separately');
   const badRevision = state.revision === '0'.repeat(64) ? '1'.repeat(64) : '0'.repeat(64);
   await api('desktop/task-manager-integration', { enabled: true, expectedRevision: badRevision }, 409);
@@ -88,7 +88,7 @@ try {
   await until(async () => await card.getByRole('button', { name: '刷新入口实际状态', exact: true }).isEnabled(), 'settings state refresh');
   await page.screenshot({ path: path.join(output, 'taskbar-integration-settings.png') });
   tree = processTree(host.pid); const ids = new Set(tree.map(row => row.pid));
-  const candidates = windows('蓝域', true).filter(row => ids.has(row.pid));
+  const candidates = windows('Takao', true).filter(row => ids.has(row.pid));
   const observed = candidates.map(window => ({ ...window, state: nativeUi(window, 'state') }));
   await writeFile(path.join(output, 'window-diagnostic.json'), JSON.stringify({ hostPid: host.pid, descendants: tree.map(({ pid, imagePath, fileTime }) => ({ pid, imagePath, fileTime })), windows: observed, actualDocumentTitle: await page.title() }, null, 2));
   const window = candidates.find(row => observed.find(item => item.hwnd === row.hwnd)?.state.visible); check(Boolean(window), 'independent HWND query identifies only this test-owned visible product window');
@@ -108,7 +108,7 @@ try {
   foregroundState = nativeUi(window, 'state');
   check(foregroundState.visible && !foregroundState.minimized && (await api('health')).processId === host.pid, 'entry restores the existing HWND while preserving the original host PID');
   check(!await portOpen(forwardPort) && !await portOpen(forwardCdp), 'forwarded entry creates neither a duplicate HTTP host nor another Electron CDP listener');
-  check(windows('蓝域').filter(row => ids.has(row.pid)).length === 1, 'same-directory repeated entry retains exactly one test-owned native product window');
+  check(windows('Takao').filter(row => ids.has(row.pid)).length === 1, 'same-directory repeated entry retains exactly one test-owned native product window');
   const invalid = await entry(['--task-manager-entry', 'C:\\untrusted\\not-taskmgr.exe', '--port=1']);
   check(invalid.code === 2 && !await portOpen(forwardPort), 'unrecognized appended executable is rejected before ASP.NET startup');
   check(fingerprint(independentRegistry()) === beforeHash && errors.length === 0, 'UI/entry E2E changes no global IFEO value and raises no renderer runtime error');

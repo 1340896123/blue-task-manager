@@ -35,8 +35,8 @@ if (-not (& $ProbePath process-elevation $PID | ConvertFrom-Json).elevated) { th
 $SessionDirectory = [IO.Path]::GetFullPath($SessionDirectory)
 $ReleaseDirectory = [IO.Path]::GetFullPath($ReleaseDirectory)
 if (-not ([IO.Path]::GetFileName($SessionDirectory) -match '^taskmanager-ifeo-[a-zA-Z0-9]+$')) { throw 'Invalid dedicated session directory.' }
-$hostPath = Join-Path $ReleaseDirectory 'TaskManager.Host.exe'
-$launcherPath = Join-Path $ReleaseDirectory 'TaskManager.Launcher.exe'
+$hostPath = Join-Path $ReleaseDirectory 'Takao.Host.exe'
+$launcherPath = Join-Path $ReleaseDirectory 'Takao.Launcher.exe'
 if (-not (Test-Path -LiteralPath $hostPath) -or -not (Test-Path -LiteralPath $launcherPath)) { throw 'Complete portable release required.' }
 $startedAt = [DateTime]::UtcNow
 $controller = Get-Process -Id $ControllerPid
@@ -228,7 +228,7 @@ try {
 finally {
     try {
         if ($entryBoundary) {
-            foreach ($candidate in @(Get-CimInstance Win32_Process -Filter "Name='TaskManager.Host.exe'" | Where-Object { $_.ExecutablePath -ieq $hostPath -and $_.CreationDate.ToUniversalTime() -ge $entryBoundary -and $_.CommandLine -match '\s--task-manager-entry\s*$' })) {
+            foreach ($candidate in @(Get-CimInstance Win32_Process -Filter "Name='Takao.Host.exe'" | Where-Object { $_.ExecutablePath -ieq $hostPath -and $_.CreationDate.ToUniversalTime() -ge $entryBoundary -and $_.CommandLine -match '\s--task-manager-entry\s*$' })) {
                 if (-not ($roots | Where-Object { $_.pid -eq [int]$candidate.ProcessId -and $_.fileTime -eq $candidate.CreationDate.ToFileTimeUtc().ToString() })) { [void](Track-Host $candidate.ProcessId) }
             }
         }

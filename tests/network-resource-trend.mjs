@@ -8,7 +8,7 @@ import { probe } from './native-ui-support.mjs';
 import { networkSessions, stopOwnedHost } from './etw-support.mjs';
 
 const root=path.resolve(import.meta.dirname,'..');
-const release=process.env.TASKMANAGER_NETWORK_RELEASE_DIRECTORY??path.join(root,'output/TaskManager-win-x64');
+const release=process.env.TASKMANAGER_NETWORK_RELEASE_DIRECTORY??path.join(root,'output/Takao-win-x64');
 const output=path.join(root,'output/playwright/network-throughput');
 const directory=await mkdtemp(path.join(tmpdir(),'taskmanager-network-resources-'));
 const port=5418,origin=`http://127.0.0.1:${port}`;
@@ -19,7 +19,7 @@ try{
   await writeFile(path.join(directory,'preferences.json'),JSON.stringify({version:1,intervalMs:1000,ui:{version:1,density:'compact',sidebarCollapsed:false,processView:'flat',taskManagerPromptDismissed:true,pages:{}}}));
   const environment={...process.env,TASKMANAGER_DATA_DIR:directory};
   if(process.env.TASKMANAGER_VERIFY_SELF_CONTAINED==='1')for(const key of Object.keys(environment))if(key.startsWith('DOTNET_ROOT'))delete environment[key];
-  host=spawn(path.join(release,'TaskManager.Host.exe'),[`--port=${port}`],{cwd:release,env:environment,windowsHide:true,stdio:'ignore'});
+  host=spawn(path.join(release,'Takao.Host.exe'),[`--port=${port}`],{cwd:release,env:environment,windowsHide:true,stdio:'ignore'});
   await until(async()=>(await get('health')).ready,'real resource test Host',45000);
   token=(await get('bootstrap')).token;
   await until(async()=>{const value=await get('snapshot');return value.sampleId>=5&&value.processNetwork.status==='available';},'ETW warmup before thread measurement',45000);
@@ -35,7 +35,7 @@ try{
   for(let index=0;index<3;index++){await delay(10000);samples.push(await capture());}
   const after=processTree(host.pid);
   assert.ok(after.length===tree.length&&after.every(entry=>tree.some(original=>original.pid===entry.pid&&original.fileTime===entry.fileTime)),'original whole-application identity set remains stable');
-  const identity=probe('process-elevation',host.pid),prefix=`BlueDomain-Network-${host.pid}-${identity.creationTimeFileTime}-`;
+  const identity=probe('process-elevation',host.pid),prefix=`Takao-Network-${host.pid}-${identity.creationTimeFileTime}-`;
   assert.equal((await networkSessions()).filter(name=>name.startsWith(prefix)).length,1);
   const response=await fetch(`${origin}/api/window/close`,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-TaskManager-Token':token},body:'{}'});
   assert.ok(response.ok);

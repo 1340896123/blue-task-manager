@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { assertions, check, delay, until, portOpen } from './e2e-support.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const hostExe = path.join(root, 'src/TaskManager.Host/bin/Release/net10.0-windows10.0.19041.0/TaskManager.Host.exe');
+const hostExe = path.join(root, 'src/Takao.Host/bin/Release/net10.0-windows10.0.19041.0/Takao.Host.exe');
 const port = 5194, origin = `http://127.0.0.1:${port}`, output = path.join(root, 'output/playwright');
 await mkdir(output, { recursive: true });
 if (await portOpen(port)) throw new Error('Recovery test port already in use');

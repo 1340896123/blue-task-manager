@@ -11,7 +11,7 @@ import { probe, windows, nativeUi } from './native-ui-support.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const desktop = process.env.TASKMANAGER_CHART_MODE === 'desktop', mode = desktop ? 'desktop' : 'browser';
-const release = path.resolve(process.env.TASKMANAGER_CHART_RELEASE_DIRECTORY ?? path.join(root, 'src/TaskManager.Host/bin/Release/net10.0-windows10.0.19041.0'));
+const release = path.resolve(process.env.TASKMANAGER_CHART_RELEASE_DIRECTORY ?? path.join(root, 'src/Takao.Host/bin/Release/net10.0-windows10.0.19041.0'));
 const output = path.join(root, 'output/playwright/chart-palette');
 const port = 5343, cdp = 9343, origin = `http://127.0.0.1:${port}`;
 const checks = [], screenshots = [], readings = [], errors = [], writes = [], notExecuted = [];
@@ -22,10 +22,10 @@ check(probe('process-elevation', process.pid).elevated, 'controller has a real e
 check(!await portOpen(port) && !await portOpen(cdp), 'dedicated chart acceptance listeners are free');
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-chart-palette-'));
 const artifacts = [], index = await readFile(path.join(release, 'wwwroot/index.html'), 'utf8');
-for (const file of ['TaskManager.Host.exe', 'TaskManager.Host.dll', 'wwwroot/index.html', ...[...index.matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))]) {
+for (const file of ['Takao.Host.exe', 'Takao.Host.dll', 'wwwroot/index.html', ...[...index.matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))]) {
   const bytes = await readFile(path.join(release, file)); artifacts.push({ file, sha256: hash(bytes), bytes: bytes.length });
 }
-const host = spawn(path.join(release, 'TaskManager.Host.exe'), [...(desktop ? [] : ['--headless']), `--port=${port}`], {
+const host = spawn(path.join(release, 'Takao.Host.exe'), [...(desktop ? [] : ['--headless']), `--port=${port}`], {
   cwd: release, windowsHide: true, stdio: 'ignore', env: { ...process.env, TASKMANAGER_DATA_DIR: temporary, TASKMANAGER_CDP_PORT: String(cdp) }
 });
 let browser, page, token, failure, first, snapshot, tree = [], cleanup = false;
@@ -42,7 +42,7 @@ async function capture(name, native = false) {
   } else await page.screenshot({ path: destination });
   screenshots.push(file);
   if (native) {
-    const window = windows('蓝域').find(window => tree.some(entry => entry.pid === window.pid));
+    const window = windows('Takao').find(window => tree.some(entry => entry.pid === window.pid));
     check(Boolean(window), 'native screenshot belongs to the test-owned Electron process tree');
     const nativeFile = `${mode}-${name}-native.png`; nativeUi(window, 'capture', path.join(output, nativeFile)); screenshots.push(nativeFile);
   }

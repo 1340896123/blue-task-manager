@@ -10,7 +10,7 @@ import { stopOwnedHost } from './etw-support.mjs';
 import { nativeUi, probe, windows } from './native-ui-support.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
-const release = path.resolve(process.env.TASKMANAGER_TAKEOVER_RELEASE ?? path.join(root, 'output/takeover/TaskManager-win-x64'));
+const release = path.resolve(process.env.TASKMANAGER_TAKEOVER_RELEASE ?? path.join(root, 'output/takeover/Takao-win-x64'));
 const output = path.join(root, 'output/playwright/task-manager-takeover');
 const port = 15333, cdp = 19333, origin = `http://127.0.0.1:${port}`;
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-takeover-'));
@@ -40,7 +40,7 @@ async function capture(name) {
   const result = await session.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false });
   await session.detach(); await writeFile(path.join(output, name + '.png'), Buffer.from(result.data, 'base64')); screenshots.push(name + '.png');
   if (name.endsWith('-125')) {
-    const window = windows('蓝域').find(candidate => tree.some(row => row.pid === candidate.pid));
+    const window = windows('Takao').find(candidate => tree.some(row => row.pid === candidate.pid));
     assert.ok(window, 'native screenshot belongs to the dedicated test window');
     nativeUi(window, 'capture', path.join(output, name + '-native.png')); screenshots.push(name + '-native.png');
   }
@@ -59,10 +59,10 @@ try {
   check(probe('process-elevation', process.pid).elevated, 'test controller has a real elevated Windows token');
   for (const listener of [port, cdp]) assert.ok(!await portOpen(listener), 'dedicated acceptance port is occupied: ' + listener);
   const index = await readFile(path.join(release, 'wwwroot/index.html'), 'utf8');
-  for (const relative of ['TaskManager.Host.exe', 'TaskManager.Host.dll', 'TaskManager.Launcher.exe', 'wwwroot/index.html', ...[...index.matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))]) {
+  for (const relative of ['Takao.Host.exe', 'Takao.Host.dll', 'Takao.Launcher.exe', 'wwwroot/index.html', ...[...index.matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))]) {
     const bytes = await readFile(path.join(release, relative)); artifacts.push({ path: relative, bytes: bytes.length, sha256: hash(bytes) });
   }
-  host = spawn(path.join(release, 'TaskManager.Host.exe'), [`--port=${port}`], { cwd: release, env: { ...process.env, TASKMANAGER_DATA_DIR: temporary, TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  host = spawn(path.join(release, 'Takao.Host.exe'), [`--port=${port}`], { cwd: release, env: { ...process.env, TASKMANAGER_DATA_DIR: temporary, TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
   const record = data => { startupText = (startupText + data).slice(-32768); };
   host.stdout.on('data', record); host.stderr.on('data', record);
   await until(async () => host.exitCode !== null || (await api('health')).ready && await portOpen(cdp), 'dedicated real Host/Electron ready', 60000);
@@ -76,7 +76,7 @@ try {
   check(state.canRead && state.currentDebugger === (debuggerRow?.data ?? null), 'CsWin32 GET matches the independent HKLM64 Debugger');
   check(state.status === 'conflict' && !state.ownsDebugger && !state.canEnable, 'actual installed-directory entry requires explicit takeover');
   check(state.canTakeOver === (state.canWrite === true && state.executableAvailable), 'canTakeOver follows actual permission and complete application files');
-  check(state.registrationCommand === `"${path.join(release, 'TaskManager.Launcher.exe')}" --task-manager-entry`, 'target command is the trusted quoted Launcher and fixed marker');
+  check(state.registrationCommand === `"${path.join(release, 'Takao.Launcher.exe')}" --task-manager-entry`, 'target command is the trusted quoted Launcher and fixed marker');
   for (const body of [{ enabled: false, takeOver: true }, { enabled: true, repair: true, takeOver: true }]) {
     const result = await api('desktop/task-manager-integration', { ...body, expectedRevision: state.revision }, 400);
     check(result.error.code === 'integrationTakeOverInvalid', 'invalid takeover combination is rejected before mutation');

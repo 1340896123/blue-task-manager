@@ -11,7 +11,7 @@ import { probe } from './native-ui-support.mjs';
 import { networkSessions, stopOwnedHost } from './etw-support.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
-const release = path.resolve(process.env.TASKMANAGER_RECOVERY_RELEASE ?? path.join(root, 'output/connection-recovery/TaskManager-win-x64'));
+const release = path.resolve(process.env.TASKMANAGER_RECOVERY_RELEASE ?? path.join(root, 'output/connection-recovery/Takao-win-x64'));
 const smoke = process.argv.includes('--smoke');
 const output = path.resolve(process.env.TASKMANAGER_RECOVERY_OUTPUT ?? path.join(root, 'output/playwright', smoke ? 'connection-recovery-installed' : 'connection-recovery'));
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-window-recovery-'));
@@ -40,7 +40,7 @@ async function open(name, desktop = true) {
   assert.ok(!await portOpen(port) && !await portOpen(cdp), 'dedicated test ports free');
   const directory = path.join(temporary, name); await mkdir(directory);
   await writeFile(path.join(directory, 'preferences.json'), JSON.stringify({ version: 1, intervalMs: 1000, ui: { version: 1, density: 'compact', sidebarCollapsed: false, processView: 'flat', searchQuery: '', taskManagerPromptDismissed: true, pages: {} } }));
-  const host = spawn(path.join(release, 'TaskManager.Host.exe'), [...(desktop ? [] : ['--headless']), `--port=${port}`], {
+  const host = spawn(path.join(release, 'Takao.Host.exe'), [...(desktop ? [] : ['--headless']), `--port=${port}`], {
     cwd: release, env: { ...process.env, TASKMANAGER_DATA_DIR: directory, TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore',
   });
   current = { name, host, desktop, directory, tree: [], requests: [], token: null, browser: null, page: null };
@@ -57,7 +57,7 @@ async function open(name, desktop = true) {
     current.browser = await chromium.launch({ headless: true }); current.page = await current.browser.newPage({ viewport: { width: 1380, height: 860 } }); await current.page.goto(origin);
   }
   current.tree = processTree(host.pid); launches.push({ name, hostPid: host.pid, desktop, identities: current.tree.map(p => ({ pid: p.pid, fileTime: p.fileTime })) });
-  const identity = probe('process-elevation', host.pid); current.etwPrefix = `BlueDomain-Network-${host.pid}-${identity.creationTimeFileTime}-`;
+  const identity = probe('process-elevation', host.pid); current.etwPrefix = `Takao-Network-${host.pid}-${identity.creationTimeFileTime}-`;
   check(identity.elevated, name + ': actual elevated Host token');
   current.page.on('pageerror', error => rendererErrors.push({ scenario: name, message: error.message }));
   current.page.on('request', request => { if (request.url().includes('/api/window/')) current.requests.push(request.url().split('/api/')[1]); });
@@ -111,7 +111,7 @@ async function cleanup() {
 
 await mkdir(output, { recursive: true });
 const webIndex = await readFile(path.join(release, 'wwwroot/index.html'));
-const artifactNames = ['TaskManager.Host.dll', '.electron/custom_main.js', '.electron/window-preload.js', 'wwwroot/index.html', ...[...webIndex.toString().matchAll(/(?:src|href)="([^"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))];
+const artifactNames = ['Takao.Host.dll', '.electron/custom_main.js', '.electron/window-preload.js', 'wwwroot/index.html', ...[...webIndex.toString().matchAll(/(?:src|href)="([^"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))];
 const artifacts = await Promise.all(artifactNames.map(async relative => { const data = await readFile(path.join(release, relative)); return { path: relative, bytes: data.length, sha256: hash(data) }; }));
 await writeFile(path.join(output, 'artifacts.json'), JSON.stringify({ release, artifacts, note: 'Production binaries include the pre-existing network working-tree baseline; hashes identify tested files.' }, null, 2));
 try {
@@ -169,8 +169,8 @@ try {
   check(await page.evaluate(() => typeof window.taskManagerWindow === 'undefined') && await page.getByRole('button', { name: '关闭窗口', exact: true }).isDisabled(), 'ordinary browser: bridge absent and desktop controls disabled');
   await cleanup();
 
-  const ts = await import(pathToFileURL(path.join(root, 'src/TaskManager.Web/node_modules/typescript/lib/typescript.js')).href);
-  const source = await readFile(path.join(root, 'src/TaskManager.Web/src/api.ts'), 'utf8');
+  const ts = await import(pathToFileURL(path.join(root, 'src/Takao.Web/node_modules/typescript/lib/typescript.js')).href);
+  const source = await readFile(path.join(root, 'src/Takao.Web/src/api.ts'), 'utf8');
   const compiled = ts.default.transpileModule(source, { compilerOptions: { target: ts.default.ScriptTarget.ES2022, module: ts.default.ModuleKind.ES2022 } }).outputText;
   const moduleFile = path.join(temporary, 'api-classification.mjs'); await writeFile(moduleFile, compiled);
   const module = await import(pathToFileURL(moduleFile).href);

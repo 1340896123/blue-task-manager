@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
-[xml]$project = Get-Content -LiteralPath (Join-Path $root 'src/TaskManager.Host/TaskManager.Host.csproj') -Raw
+[xml]$project = Get-Content -LiteralPath (Join-Path $root 'src/Takao.Host/Takao.Host.csproj') -Raw
 $projectVersion = [string]$project.Project.PropertyGroup.Version
 if (-not $Version) { $Version = $projectVersion }
 if ($Version -notmatch '^\d+\.\d+\.\d+$' -or $Version -ne $projectVersion) { throw 'Installer Version must exactly match the project Version (major.minor.patch).' }
@@ -43,16 +43,16 @@ if (-not $SkipBuild) {
         $env:TASKMANAGER_SOURCE_COMMIT = $previousCommit
     }
 }
-if (-not $PayloadDirectory) { $PayloadDirectory = Join-Path $root 'output/TaskManager-win-x64' }
+if (-not $PayloadDirectory) { $PayloadDirectory = Join-Path $root 'output/Takao-win-x64' }
 $payload = (Resolve-Path -LiteralPath $PayloadDirectory).Path.TrimEnd('\', '/')
 $customOutput = -not [string]::IsNullOrWhiteSpace($OutputDirectory)
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $root 'output/releases' }
 $releases = [IO.Path]::GetFullPath($OutputDirectory).TrimEnd('\', '/')
 if ($releases.Equals($payload, [StringComparison]::OrdinalIgnoreCase) -or $releases.StartsWith($payload + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Installer output must be outside the payload directory.' }
-$hostExe = Join-Path $payload 'TaskManager.Host.exe'
-$assembly = [Reflection.AssemblyName]::GetAssemblyName((Join-Path $payload 'TaskManager.Host.dll'))
+$hostExe = Join-Path $payload 'Takao.Host.exe'
+$assembly = [Reflection.AssemblyName]::GetAssemblyName((Join-Path $payload 'Takao.Host.dll'))
 if ($assembly.Version.ToString() -ne "$Version.0" -or (Get-Item -LiteralPath $hostExe).VersionInfo.FileVersion -ne "$Version.0") { throw 'Actual Host payload version does not match installer version.' }
-$identity = & (Join-Path $PSScriptRoot 'installer/Read-AssemblyReleaseIdentity.ps1') -Path (Join-Path $payload 'TaskManager.Host.dll')
+$identity = & (Join-Path $PSScriptRoot 'installer/Read-AssemblyReleaseIdentity.ps1') -Path (Join-Path $payload 'Takao.Host.dll')
 if (($requestedTag -and $identity.ReleaseTag -cne $requestedTag) -or ($requestedCommit -and $identity.SourceCommit -cne $requestedCommit)) {
     throw 'Host AssemblyMetadata does not match the requested ReleaseTag/SourceCommit. Rebuild the payload before packaging.'
 }
@@ -62,15 +62,20 @@ if (-not $requestedCommit) {
     if (-not $SourceCommit -and $identity.InformationalVersion -cmatch '\+([0-9a-f]{40})(?:\.|$)') { $SourceCommit = $Matches[1] }
 }
 Assert-ReleaseIdentity $ReleaseTag $SourceCommit
-$config = Get-Content -LiteralPath (Join-Path $payload 'TaskManager.Host.runtimeconfig.json') -Raw | ConvertFrom-Json
+$config = Get-Content -LiteralPath (Join-Path $payload 'Takao.Host.runtimeconfig.json') -Raw | ConvertFrom-Json
 if ($config.runtimeOptions.framework -or $config.runtimeOptions.frameworks -or @($config.runtimeOptions.includedFrameworks).Count -lt 2) { throw 'Payload must include self-contained .NET and ASP.NET frameworks.' }
 foreach ($framework in $config.runtimeOptions.includedFrameworks) {
     if ($framework.version -ne [string]$project.Project.PropertyGroup.DesktopRuntimeVersion) { throw "Runtime version mismatch: $($framework.name)" }
 }
-foreach ($file in @('restore-windows-task-manager.cmd','TaskManager.Launcher.exe','TaskManager.Launcher.dll','TaskManager.Launcher.deps.json','TaskManager.Launcher.runtimeconfig.json','coreclr.dll','hostfxr.dll','hostpolicy.dll','System.Private.CoreLib.dll','Microsoft.AspNetCore.dll','licenses/Microsoft.NETCore.App/LICENSE.txt','licenses/Microsoft.NETCore.App/THIRD-PARTY-NOTICES.TXT','licenses/Microsoft.AspNetCore.App/LICENSE.txt','licenses/Microsoft.AspNetCore.App/THIRD-PARTY-NOTICES.TXT','wwwroot/index.html','.electron/main.js','.electron/custom_main.js','.electron/node_modules/electron/dist/electron.exe','.electron/node_modules/electron/dist/LICENSE','.electron/node_modules/electron/dist/LICENSES.chromium.html')) {
+foreach ($file in @('restore-windows-task-manager.cmd','Takao.Launcher.exe','Takao.Launcher.dll','Takao.Launcher.deps.json','Takao.Launcher.runtimeconfig.json','coreclr.dll','hostfxr.dll','hostpolicy.dll','System.Private.CoreLib.dll','Microsoft.AspNetCore.dll','licenses/Microsoft.NETCore.App/LICENSE.txt','licenses/Microsoft.NETCore.App/THIRD-PARTY-NOTICES.TXT','licenses/Microsoft.AspNetCore.App/LICENSE.txt','licenses/Microsoft.AspNetCore.App/THIRD-PARTY-NOTICES.TXT','wwwroot/index.html','.electron/main.js','.electron/custom_main.js','.electron/node_modules/electron/dist/electron.exe','.electron/node_modules/electron/dist/LICENSE','.electron/node_modules/electron/dist/LICENSES.chromium.html')) {
     if (-not (Test-Path -LiteralPath (Join-Path $payload $file) -PathType Leaf)) { throw "Missing installer payload file: $file" }
 }
-$launcherConfig = Get-Content -LiteralPath (Join-Path $payload 'TaskManager.Launcher.runtimeconfig.json') -Raw | ConvertFrom-Json
+$launcherConfig = Get-Content -LiteralPath (Join-Path $payload 'Takao.Launcher.runtimeconfig.json') -Raw | ConvertFrom-Json
+foreach ($entryAlias in @(@('Takao.Host.exe','TaskManager.Host.exe'), @('Takao.Launcher.exe','TaskManager.Launcher.exe'))) {
+    $currentEntry = Join-Path $payload $entryAlias[0]
+    $legacyEntry = Join-Path $payload $entryAlias[1]
+    if (-not (Test-Path -LiteralPath $legacyEntry -PathType Leaf) -or (Get-FileHash -LiteralPath $legacyEntry -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $currentEntry -Algorithm SHA256).Hash) { throw 'Legacy entry aliases must load the same current Takao application.' }
+}
 if ($launcherConfig.runtimeOptions.framework -or $launcherConfig.runtimeOptions.frameworks -or @($launcherConfig.runtimeOptions.includedFrameworks).Count -ne 1 -or $launcherConfig.runtimeOptions.includedFrameworks[0].version -ne [string]$project.Project.PropertyGroup.DesktopRuntimeVersion) { throw 'Launcher must share the pinned self-contained .NET runtime.' }
 $bridge = Get-Content -LiteralPath (Join-Path $payload '.electron/package.json') -Raw | ConvertFrom-Json
 if ($bridge.version -ne $Version -or $bridge.devDependencies.electron -ne [string]$project.Project.PropertyGroup.ElectronVersion) { throw 'Electron bridge version does not match project.' }
@@ -116,13 +121,13 @@ $utf8 = [Text.UTF8Encoding]::new($false)
 [IO.File]::WriteAllLines((Join-Path $staging 'verify-maintenance.nsh'), $verify, $utf8)
 [IO.File]::WriteAllLines((Join-Path $staging 'payload.sha256'), $hashes, $utf8)
 [IO.File]::WriteAllText((Join-Path $staging 'release-identity.json'), (@{ version=$Version; releaseTag=$ReleaseTag; sourceCommit=$SourceCommit } | ConvertTo-Json), $utf8)
-$installer = Join-Path $releases "BlueDomainTaskManager-v$Version-win-x64-setup.exe"
+$installer = Join-Path $releases "Takao-v$Version-win-x64-setup.exe"
 $size = [int][Math]::Ceiling(($files | Measure-Object Length -Sum).Sum / 1024)
-& $MakeNsisPath '/V3' '/WX' '/INPUTCHARSET' 'UTF8' "/DPRODUCT_VERSION=$Version" "/DRELEASE_TAG=$ReleaseTag" "/DSOURCE_COMMIT=$SourceCommit" "/DPAYLOAD_DIR=$payload" "/DGENERATED_DIR=$staging" "/DINSTALLER_PATH=$installer" "/DPROJECT_ROOT=$root" "/DPAYLOAD_SIZE_KB=$size" (Join-Path $PSScriptRoot 'installer/TaskManager.nsi')
+& $MakeNsisPath '/V3' '/WX' '/INPUTCHARSET' 'UTF8' "/DPRODUCT_VERSION=$Version" "/DRELEASE_TAG=$ReleaseTag" "/DSOURCE_COMMIT=$SourceCommit" "/DPAYLOAD_DIR=$payload" "/DGENERATED_DIR=$staging" "/DINSTALLER_PATH=$installer" "/DPROJECT_ROOT=$root" "/DPAYLOAD_SIZE_KB=$size" (Join-Path $PSScriptRoot 'installer/Takao.nsi')
 if ($LASTEXITCODE -ne 0) { throw "makensis failed: $LASTEXITCODE" }
 # Reuse the exact tree for ZIP and installer. Existing differently named ZIPs
 # stay in place; overwrite only the artifacts for this exact version.
-$archive = Join-Path $releases "BlueDomainTaskManager-v$Version-win-x64.zip"
+$archive = Join-Path $releases "Takao-v$Version-win-x64.zip"
 if (Test-Path -LiteralPath $archive) { Remove-Item -LiteralPath $archive -Force }
 & (Join-Path $PSScriptRoot 'package-release.ps1') -Version $Version -PayloadDirectory $payload -OutputDirectory $releases
 $sums = @(Get-ChildItem -LiteralPath $releases -File | Where-Object { $_.Extension -in @('.exe','.zip') } | Sort-Object Name | ForEach-Object { (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + $_.Name })

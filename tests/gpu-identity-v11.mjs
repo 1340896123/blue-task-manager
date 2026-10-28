@@ -9,8 +9,8 @@ import { chromium } from 'playwright';
 import { portOpen } from './e2e-support.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'), framework='net10.0-windows10.0.19041.0';
-const hostExe=path.join(root,'src/TaskManager.Host/bin/Release',framework,'TaskManager.Host.exe');
-const probeExe=path.join(root,'tests/TaskManager.WindowProbe/bin/Release',framework,'TaskManager.WindowProbe.exe');
+const hostExe=path.join(root,'src/Takao.Host/bin/Release',framework,'Takao.Host.exe');
+const probeExe=path.join(root,'tests/Takao.WindowProbe/bin/Release',framework,'Takao.WindowProbe.exe');
 const port=Number(process.env.TASKMANAGER_GPU_IDENTITY_PORT??5201), origin=`http://127.0.0.1:${port}`;
 const directory=await mkdtemp(path.join(tmpdir(),'taskmanager-gpu-identity-'));
 const output=path.join(root,'output/playwright');await mkdir(output,{recursive:true});

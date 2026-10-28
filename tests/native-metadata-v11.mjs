@@ -8,8 +8,8 @@ import { check, assertions, until, delay, portOpen } from './e2e-support.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'), framework='net10.0-windows10.0.19041.0';
 const temporary=await mkdtemp(path.join(tmpdir(),'blue-metadata-')),port=5200,origin=`http://127.0.0.1:${port}`;
 if(await portOpen(port))throw new Error('Metadata test port busy');
-const host=spawn(path.join(root,'src/TaskManager.Host/bin/Release',framework,'TaskManager.Host.exe'),['--headless',`--port=${port}`],{env:{...process.env,TASKMANAGER_DATA_DIR:temporary},stdio:'ignore',windowsHide:true});
-const target=spawn(path.join(root,'tests/TaskManager.TestWorkload/bin/Release',framework,'TaskManager.TestWorkload.exe'),[path.join(temporary,'load'),'90'],{stdio:'ignore',windowsHide:true});
+const host=spawn(path.join(root,'src/Takao.Host/bin/Release',framework,'Takao.Host.exe'),['--headless',`--port=${port}`],{env:{...process.env,TASKMANAGER_DATA_DIR:temporary},stdio:'ignore',windowsHide:true});
+const target=spawn(path.join(root,'tests/Takao.TestWorkload/bin/Release',framework,'Takao.TestWorkload.exe'),[path.join(temporary,'load'),'90'],{stdio:'ignore',windowsHide:true});
 try{
  await until(async()=>(await(await fetch(origin+'/api/health')).json()).ready,'metadata host ready');
  let snapshot;

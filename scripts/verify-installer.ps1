@@ -7,7 +7,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-[xml]$project = Get-Content -LiteralPath (Join-Path $root 'src/TaskManager.Host/TaskManager.Host.csproj') -Raw
+[xml]$project = Get-Content -LiteralPath (Join-Path $root 'src/Takao.Host/Takao.Host.csproj') -Raw
 if (-not $Version) { $Version = [string]$project.Project.PropertyGroup.Version }
 if ($Version -ne [string]$project.Project.PropertyGroup.Version) { throw 'Version must match the project.' }
 if (-not $ManifestToolPath) {
@@ -16,11 +16,11 @@ if (-not $ManifestToolPath) {
 }
 if (-not $ManifestToolPath -or -not (Test-Path -LiteralPath $ManifestToolPath -PathType Leaf)) { throw 'Windows SDK mt.exe is required.' }
 if (-not (Test-Path -LiteralPath $SevenZipPath -PathType Leaf)) { throw '7-Zip is required for independent NSIS extraction.' }
-if (-not $InstallerPath) { $InstallerPath = Join-Path $root "output/releases/BlueDomainTaskManager-v$Version-win-x64-setup.exe" }
-if (-not $PayloadDirectory) { $PayloadDirectory = Join-Path $root 'output/TaskManager-win-x64' }
+if (-not $InstallerPath) { $InstallerPath = Join-Path $root "output/releases/Takao-v$Version-win-x64-setup.exe" }
+if (-not $PayloadDirectory) { $PayloadDirectory = Join-Path $root 'output/Takao-win-x64' }
 $installer = (Resolve-Path -LiteralPath $InstallerPath).Path
 $payload = (Resolve-Path -LiteralPath $PayloadDirectory).Path.TrimEnd('\', '/')
-$identity = & (Join-Path $PSScriptRoot 'installer/Read-AssemblyReleaseIdentity.ps1') -Path (Join-Path $payload 'TaskManager.Host.dll')
+$identity = & (Join-Path $PSScriptRoot 'installer/Read-AssemblyReleaseIdentity.ps1') -Path (Join-Path $payload 'Takao.Host.dll')
 $sourceCommit = [string]$identity.SourceCommit
 if (-not $sourceCommit -and $identity.InformationalVersion -cmatch '\+([0-9a-f]{40})(?:\.|$)') { $sourceCommit = $Matches[1] }
 $expectedIdentity = "ReleaseTag=$($identity.ReleaseTag); SourceCommit=$sourceCommit"
@@ -31,7 +31,7 @@ New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 & $SevenZipPath 'x' '-y' "-o$extracted" $installer | Out-File -LiteralPath (Join-Path $evidence '7z-extract.txt') -Encoding utf8
 if ($LASTEXITCODE -ne 0) { throw "7-Zip extraction failed: $LASTEXITCODE" }
 $manifests = [ordered]@{}
-foreach ($target in @(@{ Name='host'; Path=(Join-Path $payload 'TaskManager.Host.exe'); Level='requireAdministrator' }, @{ Name='launcher'; Path=(Join-Path $payload 'TaskManager.Launcher.exe'); Level='asInvoker' }, @{ Name='installer'; Path=$installer; Level='requireAdministrator' })) {
+foreach ($target in @(@{ Name='host'; Path=(Join-Path $payload 'Takao.Host.exe'); Level='requireAdministrator' }, @{ Name='launcher'; Path=(Join-Path $payload 'Takao.Launcher.exe'); Level='asInvoker' }, @{ Name='installer'; Path=$installer; Level='requireAdministrator' })) {
     $manifest = Join-Path $evidence ($target.Name + '.manifest.xml')
     & $ManifestToolPath "-inputresource:$($target.Path);#1" "-out:$manifest" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Manifest extraction failed: $($target.Name)" }
@@ -72,7 +72,7 @@ $report = [ordered]@{
     manifests = $manifests
     uninstallerManifest = $uninstallerState
     signature = [string](Get-AuthenticodeSignature -LiteralPath $installer).Status
-    runtimeConfiguration = (Get-Content -LiteralPath (Join-Path $payload 'TaskManager.Host.runtimeconfig.json') -Raw | ConvertFrom-Json).runtimeOptions
+    runtimeConfiguration = (Get-Content -LiteralPath (Join-Path $payload 'Takao.Host.runtimeconfig.json') -Raw | ConvertFrom-Json).runtimeOptions
     lifecycle = 'Not executed by this static verifier. No installer, uninstaller or IFEO change is run.'
 }
 $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $evidence 'results.json') -Encoding utf8

@@ -35,6 +35,8 @@
 
 下载ZIP后完整解压，双击`Takao-win-x64/start.cmd`，或直接运行同目录的`Takao.Host.exe`；源码构建对应`output/Takao-win-x64`。目录包含生产UI、Electron45.0.0和Electron.NET桥接依赖，可以移动整个目录运行；不要只复制exe。启用了任务栏接管时，移动前须先在原目录取消。
 
+目录内的旧名 `TaskManager.Host.exe` 和 `TaskManager.Launcher.exe` 仅用于兼容已有 Windows 入口，加载的仍是当前 Takao 程序；改名升级不会自动改写系统接管配置或重置偏好。
+
 目标为 Windows 10（19041）/11 x64。1.1.1 安装包和配套 ZIP 已内置 **Microsoft.NETCore.App / Microsoft.AspNetCore.App 10.0.12** 与 Electron 45.0.0，运行无需预装 .NET、Node/npm 或联网。首次源码构建需要下载 NuGet/npm/Electron 依赖。
 
 运行 `Takao-v1.1.1-win-x64-setup.exe`，由 Windows UAC 请求管理员权限，新安装默认每机安装到 `Program Files\Takao`，已有安装沿用注册记录中的原目录，创建直接启动管理员 Host 的开始菜单和可选桌面快捷方式。安装完成不自动启动，也不启用任务栏入口接管。运行中的本安装应用会阻止覆盖；重装/升级使用原目录，更换目录须先卸载。通过 Windows“已安装的应用”卸载；卸载先验证维护文件并由生产 CsWin32 链路清理本目录精确自有任务栏接管，不能确认成功即中止。额外文件及各账户 LocalAppData 偏好保留。安装器尚未数字签名。

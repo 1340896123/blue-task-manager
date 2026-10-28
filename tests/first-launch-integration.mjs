@@ -9,7 +9,7 @@ import { alive, delay, ownedAlive, portOpen, processTree, until } from './e2e-su
 import { nativeUi, probe, windows } from './native-ui-support.mjs';
 
 const root=path.resolve(import.meta.dirname,'..');
-const release=path.resolve(process.env.TASKMANAGER_FIRST_LAUNCH_RELEASE ?? path.join(root,'output/first-launch/TaskManager-win-x64'));
+const release=path.resolve(process.env.TASKMANAGER_FIRST_LAUNCH_RELEASE ?? path.join(root,'output/first-launch/Takao-win-x64'));
 const output=path.join(root,'output/playwright/first-launch');
 const temporary=await mkdtemp(path.join(tmpdir(),'taskmanager-first-launch-'));
 const port=5321, cdp=9321, origin=`http://127.0.0.1:${port}`;
@@ -19,7 +19,7 @@ const check=(condition,message)=>{assert.ok(condition,message);checks.push(messa
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const webIndex=await readFile(path.join(release,'wwwroot/index.html'));
 const artifacts=[];
-for(const relative of ['TaskManager.Host.exe','TaskManager.Host.dll','wwwroot/index.html',...[...webIndex.toString().matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match=>'wwwroot/'+match[1].replace(/^\//,''))]){
+for(const relative of ['Takao.Host.exe','Takao.Host.dll','wwwroot/index.html',...[...webIndex.toString().matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match=>'wwwroot/'+match[1].replace(/^\//,''))]){
   const content=await readFile(path.join(release,relative));artifacts.push({path:relative,bytes:content.length,sha256:hash(content)});
 }
 const checkoutAtRun=spawnSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',windowsHide:true}).stdout.trim();
@@ -38,12 +38,12 @@ async function capture(name,native=false){
   const session=await current.page.context().newCDPSession(current.page);
   const result=await session.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});await session.detach();
   await writeFile(destination,Buffer.from(result.data,'base64'));screenshots.push(name+'.png');
-  if(native){const window=windows('蓝域').find(w=>current.tree.some(p=>p.pid===w.pid));assert.ok(window,'test-owned native window');nativeUi(window,'capture',path.join(output,name+'-native.png'));screenshots.push(name+'-native.png');}
+  if(native){const window=windows('Takao').find(w=>current.tree.some(p=>p.pid===w.pid));assert.ok(window,'test-owned native window');nativeUi(window,'capture',path.join(output,name+'-native.png'));screenshots.push(name+'-native.png');}
 }
 async function open(directory,{desktop=true}={}){
   assert.ok(!await portOpen(port)&&!await portOpen(cdp),'dedicated test ports free');
   await mkdir(directory,{recursive:true});
-  const host=spawn(path.join(release,'TaskManager.Host.exe'),[...(!desktop?['--headless']:[]),`--port=${port}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:directory,TASKMANAGER_CDP_PORT:String(cdp)},windowsHide:true,stdio:'ignore'});
+  const host=spawn(path.join(release,'Takao.Host.exe'),[...(!desktop?['--headless']:[]),`--port=${port}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:directory,TASKMANAGER_CDP_PORT:String(cdp)},windowsHide:true,stdio:'ignore'});
   current={host,directory,desktop,tree:[],browser:null,page:null,token:null};
   await until(async()=>{const response=await fetch(`${origin}/api/health`,{signal:AbortSignal.timeout(1500)});return response.ok&&(await response.json()).ready;},'real production Host ready',45000);
   const bootstrap=await api('bootstrap');current.token=bootstrap.token;current.tree=processTree(host.pid);launches.push({pid:host.pid,fileTime:current.tree.find(p=>p.pid===host.pid)?.fileTime,desktop});
@@ -62,7 +62,7 @@ async function open(directory,{desktop=true}={}){
   await current.page.getByRole('table',{name:'进程列表',exact:true}).waitFor();
   return current.page;
 }
-function ownedSessions(prefix){const result=spawnSync('logman.exe',['query','-ets'],{windowsHide:true,encoding:'utf8',timeout:15000});assert.equal(result.status,0,'independent ETW query');return [...new Set(result.stdout.match(/BlueDomain-Network-\d+-\d+-[a-f0-9]{32}/g)??[])].filter(name=>name.startsWith(prefix));}
+function ownedSessions(prefix){const result=spawnSync('logman.exe',['query','-ets'],{windowsHide:true,encoding:'utf8',timeout:15000});assert.equal(result.status,0,'independent ETW query');return [...new Set(result.stdout.match(/Takao-Network-\d+-\d+-[a-f0-9]{32}/g)??[])].filter(name=>name.startsWith(prefix));}
 async function close(){
   if(!current)return;
   const app=current;
@@ -70,7 +70,7 @@ async function close(){
   if(app.desktop)await until(()=>app.host.exitCode!==null||app.host.signalCode!==null,'desktop Host exit',25000).catch(()=>{});
   await app.browser?.close().catch(()=>{});
   if(alive(app.host.pid)){
-    const identity=probe('process-elevation',app.host.pid);const prefix=`BlueDomain-Network-${app.host.pid}-${identity.creationTimeFileTime}-`;
+    const identity=probe('process-elevation',app.host.pid);const prefix=`Takao-Network-${app.host.pid}-${identity.creationTimeFileTime}-`;
     app.host.kill();await until(()=>app.host.exitCode!==null||app.host.signalCode!==null,'owned Host exits');
     for(const name of ownedSessions(prefix)){const stopped=spawnSync('logman.exe',['stop',name,'-ets'],{windowsHide:true,encoding:'utf8',timeout:15000});assert.equal(stopped.status,0,'stop exact test-owned ETW session');}
   }

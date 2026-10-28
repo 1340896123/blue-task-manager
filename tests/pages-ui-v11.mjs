@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),framework='net10.0-windows10.0.19041.0';
-const hostExe=path.join(root,'src/TaskManager.Host/bin/Release',framework,'TaskManager.Host.exe');
+const hostExe=path.join(root,'src/Takao.Host/bin/Release',framework,'Takao.Host.exe');
 const port=Number(process.env.TASKMANAGER_PAGES_UI_PORT??5194),origin=`http://127.0.0.1:${port}`;
 const temporary=await mkdtemp(path.join(tmpdir(),'taskmanager-pages-ui-')),output=path.join(root,'output/playwright');await mkdir(output,{recursive:true});
 const host=spawn(hostExe,['--headless',`--port=${port}`],{cwd:path.dirname(hostExe),env:{...process.env,TASKMANAGER_DATA_DIR:path.join(temporary,'preferences')},stdio:'ignore',windowsHide:true});

@@ -10,7 +10,7 @@ if ($RuntimeDirectory) {
     if (-not (Test-Path -LiteralPath (Join-Path $networkRuntime 'host/fxr'))) { throw 'The optional .NET runtime directory must contain host/fxr.' }
     $env:DOTNET_ROOT = $networkRuntime; $env:DOTNET_ROOT_X64 = $networkRuntime
 }
-$probe = Join-Path $root 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe'
+$probe = Join-Path $root 'tests/Takao.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/Takao.WindowProbe.exe'
 if (-not (& $probe process-elevation $PID | ConvertFrom-Json).elevated) { throw 'Network acceptance requires an actual elevated Windows token.' }
 $env:TASKMANAGER_NETWORK_MODE = $Mode
 if ($VerifySelfContained) { $env:TASKMANAGER_VERIFY_SELF_CONTAINED = '1' }

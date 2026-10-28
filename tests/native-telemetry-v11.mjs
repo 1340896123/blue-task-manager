@@ -8,9 +8,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const framework = 'net10.0-windows10.0.19041.0';
-const executable = path.join(root, 'src/TaskManager.Host/bin/Release', framework, 'TaskManager.Host.exe');
-const workload = path.join(root, 'tests/TaskManager.TestWorkload/bin/Release', framework, 'TaskManager.TestWorkload.exe');
-const probe = path.join(root, 'tests/TaskManager.WindowProbe/bin/Release', framework, 'TaskManager.WindowProbe.exe');
+const executable = path.join(root, 'src/Takao.Host/bin/Release', framework, 'Takao.Host.exe');
+const workload = path.join(root, 'tests/Takao.TestWorkload/bin/Release', framework, 'Takao.TestWorkload.exe');
+const probe = path.join(root, 'tests/Takao.WindowProbe/bin/Release', framework, 'Takao.WindowProbe.exe');
 const port = Number(process.env.TASKMANAGER_TEST_PORT ?? 5199), origin = `http://127.0.0.1:${port}`;
 const directory = await mkdtemp(path.join(tmpdir(), 'taskmanager-telemetry-'));
 const started = performance.now();

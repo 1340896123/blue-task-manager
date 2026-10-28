@@ -14,10 +14,10 @@ const port = 5196, cdp = 9226, origin = `http://127.0.0.1:${port}`;
 if (await portOpen(port) || await portOpen(cdp)) throw new Error('Performance ports in use');
 const temporary = await mkdtemp(path.join(tmpdir(), 'blue-performance-'));
 await writeFile(path.join(temporary,'preferences.json'),JSON.stringify({version:1,intervalMs:1000,ui:{version:1,density:'compact',sidebarCollapsed:false,processView:'flat',taskManagerPromptDismissed:true,pages:{}}}));
-const release = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root,'output/TaskManager-win-x64'));
+const release = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root,'output/Takao-win-x64'));
 const hostEnvironment = { ...process.env, TASKMANAGER_DATA_DIR: temporary, TASKMANAGER_CDP_PORT: String(cdp) };
 if (process.env.TASKMANAGER_VERIFY_SELF_CONTAINED === '1') for (const key of Object.keys(hostEnvironment)) if (key.startsWith('DOTNET_ROOT')) delete hostEnvironment[key];
-const host = spawn(path.join(release, 'TaskManager.Host.exe'), [`--port=${port}`], { cwd: tmpdir(), env: hostEnvironment, windowsHide: true, stdio: 'ignore' });
+const host = spawn(path.join(release, 'Takao.Host.exe'), [`--port=${port}`], { cwd: tmpdir(), env: hostEnvironment, windowsHide: true, stdio: 'ignore' });
 const started = performance.now(); let browser, page, tree = [], last;
 const output = path.join(root, 'output/performance');
 await mkdir(output, { recursive: true });
@@ -29,7 +29,7 @@ async function wire(encoding, etag) { const start = performance.now(); return ne
 try {
   await until(async () => (await (await fetch(origin+'/api/health')).json()).ready && await portOpen(cdp), 'release desktop ready', 45000); const startupMs = performance.now()-started;
   browser = await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`, { noDefaults: true }); await until(()=>browser.contexts()[0]?.pages().length,'desktop page'); page=browser.contexts()[0].pages()[0];
-  tree=processTree(host.pid);const window=windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid));check(Boolean(window),'performance native app window observed');nativeUi(window,'foreground');await page.bringToFront();await page.waitForFunction(()=>!document.hidden);check(await page.evaluate(()=>!document.hidden),'performance window is genuinely visible without CDP focus emulation');
+  tree=processTree(host.pid);const window=windows('Takao').find(w=>tree.some(p=>p.pid===w.pid));check(Boolean(window),'performance native app window observed');nativeUi(window,'foreground');await page.bringToFront();await page.waitForFunction(()=>!document.hidden);check(await page.evaluate(()=>!document.hidden),'performance window is genuinely visible without CDP focus emulation');
   // Keep the real surface unobscured by the automation app while waiting. This
   // uses the product's genuine temporary preference, never visibility spoofing.
   await page.getByRole('button',{name:'设置',exact:true}).click();await page.getByRole('switch',{name:'始终置顶',exact:true}).click();await until(()=>probe(tree.map(p=>`${p.pid}:${p.fileTime}`).join(',')).topmost,'performance native topmost readback');await page.getByRole('button',{name:'进程',exact:true}).click();

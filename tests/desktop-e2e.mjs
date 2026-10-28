@@ -46,10 +46,10 @@ async function boundedDiagnostic(promise, label, timeout = 2500) {
 }
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/TaskManager-win-x64'));
-const executable = path.join(directory, 'TaskManager.Host.exe');
-const workloadExe = path.join(root, 'tests/TaskManager.TestWorkload/bin/Release/net10.0-windows10.0.19041.0/TaskManager.TestWorkload.exe');
-const probeExe = path.join(root, 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe');
+const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/Takao-win-x64'));
+const executable = path.join(directory, 'Takao.Host.exe');
+const workloadExe = path.join(root, 'tests/Takao.TestWorkload/bin/Release/net10.0-windows10.0.19041.0/Takao.TestWorkload.exe');
+const probeExe = path.join(root, 'tests/Takao.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/Takao.WindowProbe.exe');
 const output = path.join(root, 'output/playwright'), temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-desktop-'));
 const port = Number(process.env.TASKMANAGER_DESKTOP_PORT ?? 5193), cdp = Number(process.env.TASKMANAGER_CDP_PORT ?? 9224);
 const origin = `http://127.0.0.1:${port}`;
@@ -144,6 +144,7 @@ try {
     return JSON.parse(result.stdout);
   };
   const bounds = () => native();
+  check(await page.title() === 'Takao' && (await page.locator('.titlebar .brand').innerText()).trim() === 'Takao' && native().title === 'Takao', 'Takao name is consistent in the document, visible titlebar and real native window');
   const resize = async (width, height) => {
     native('resize', width, height);
     await delay(450);
@@ -176,7 +177,7 @@ try {
   check(await search.evaluate(element => element === document.activeElement), 'A16 Ctrl+F focuses accessible global search');
   await search.fill(String(independent.pid));
   await until(async () => await page.locator('tbody tr[data-row-key]').count() === 1, 'real PID search');
-  check(await page.locator('tbody').innerText().then(text => text.includes('TaskManager.TestWorkload')), 'A18 exact PID search finds independently spawned real test process');
+  check(await page.locator('tbody').innerText().then(text => text.includes('Takao.TestWorkload')), 'A18 exact PID search finds independently spawned real test process');
   await search.fill('');
   await clickCommand(page, '冻结显示');
   await page.getByRole('button', { name: '继续显示最新数据', exact: true }).waitFor();
@@ -211,7 +212,7 @@ try {
   check(target.pid > 0 && alive(target.pid), 'A09/A18 desktop UI CreateProcess produces independently live Windows PID');
   check(processTree(host.pid).some(entry => entry.pid === target.pid), 'A09 independent Windows process-tree query confirms UI-created target');
   await search.fill(String(target.pid));
-  await until(async () => await page.locator('tbody tr[data-row-key]').count() === 1 && await page.locator('tbody').innerText().then(text => text.includes('TaskManager.TestWorkload')), 'UI-created target enters actual collector snapshot');
+  await until(async () => await page.locator('tbody tr[data-row-key]').count() === 1 && await page.locator('tbody').innerText().then(text => text.includes('Takao.TestWorkload')), 'UI-created target enters actual collector snapshot');
   await page.locator('tbody tr[data-row-key]').first().click();
   await page.getByRole('button', { name: '结束任务', exact: true }).click();
   await dialog.getByRole('button', { name: '取消', exact: true }).click();

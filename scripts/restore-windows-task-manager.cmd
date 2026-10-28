@@ -1,9 +1,9 @@
 @echo off
 setlocal DisableDelayedExpansion
-set "TASKMANAGER_RESTORE_HOST=%~dp0TaskManager.Host.exe"
+set "TASKMANAGER_RESTORE_HOST=%~dp0Takao.Host.exe"
 set "restoreExitCode=2"
 if not exist "%TASKMANAGER_RESTORE_HOST%" (
-    echo ERROR: TaskManager.Host.exe is missing from this directory.
+    echo ERROR: Takao.Host.exe is missing from this directory.
     echo Restore the complete application directory and try again.
     goto finish
 )

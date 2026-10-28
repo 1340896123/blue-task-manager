@@ -9,13 +9,13 @@ import { delay, until, portOpen, processTree, ownedAlive } from './e2e-support.m
 import { probe, windows, nativeUi } from './native-ui-support.mjs';
 
 const root=path.resolve(import.meta.dirname,'..'), desktop=process.env.TASKMANAGER_LAYOUT_DESKTOP==='1', mode=desktop?'desktop':'browser';
-const release=path.join(root,'output/TaskManager-win-x64'), port=5296, cdp=9296, origin=`http://127.0.0.1:${port}`;
+const release=path.join(root,'output/Takao-win-x64'), port=5296, cdp=9296, origin=`http://127.0.0.1:${port}`;
 const output=path.join(root,'output/playwright/windows-layout'), temporary=await mkdtemp(path.join(tmpdir(),'taskmanager-layout-'));
 await mkdir(output,{recursive:true});
 assert.ok(!await portOpen(port)&&!await portOpen(cdp),'dedicated layout ports are free');
 const checks=[], screenshots=[], errors=[], geometry=[], viewportFacts=[], imageSizes=[], controls=[];
 const check=(ok,message)=>{assert.ok(ok,message);checks.push(message);};
-const host=spawn(path.join(release,'TaskManager.Host.exe'),[...(desktop?[]:['--headless']),`--port=${port}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:temporary,TASKMANAGER_CDP_PORT:String(cdp)},stdio:'ignore',windowsHide:true});
+const host=spawn(path.join(release,'Takao.Host.exe'),[...(desktop?[]:['--headless']),`--port=${port}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:temporary,TASKMANAGER_CDP_PORT:String(cdp)},stdio:'ignore',windowsHide:true});
 let browser,page,token,tree=[],failure;
 const get=async route=>(await fetch(`${origin}/api/${route}`,{signal:AbortSignal.timeout(10000)})).json();
 async function post(route,body){const response=await fetch(`${origin}/api/${route}`,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-TaskManager-Token':token},body:JSON.stringify(body)});assert.ok(response.ok,`${route}: ${response.status}`);return response.json();}
@@ -27,7 +27,7 @@ async function capture(name){
   if(desktop){const session=await page.context().newCDPSession(page);const result=await session.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});await session.detach();await writeFile(destination,Buffer.from(result.data,'base64'));}
   else await page.screenshot({path:destination});
   const bytes=await readFile(destination);imageSizes.push({file,width:bytes.readUInt32BE(16),height:bytes.readUInt32BE(20)});screenshots.push(file);
-  if(desktop&&name.startsWith('125-')){const window=windows('蓝域').find(w=>tree.some(p=>p.pid===w.pid));assert.ok(window,'native capture belongs to exact test application tree');const nativeFile=`${mode}-${name}-native.png`;nativeUi(window,'capture',path.join(output,nativeFile));const nativeBytes=await readFile(path.join(output,nativeFile));imageSizes.push({file:nativeFile,width:nativeBytes.readUInt32BE(16),height:nativeBytes.readUInt32BE(20)});screenshots.push(nativeFile);}
+  if(desktop&&name.startsWith('125-')){const window=windows('Takao').find(w=>tree.some(p=>p.pid===w.pid));assert.ok(window,'native capture belongs to exact test application tree');const nativeFile=`${mode}-${name}-native.png`;nativeUi(window,'capture',path.join(output,nativeFile));const nativeBytes=await readFile(path.join(output,nativeFile));imageSizes.push({file:nativeFile,width:nativeBytes.readUInt32BE(16),height:nativeBytes.readUInt32BE(20)});screenshots.push(nativeFile);}
 }
 const tableColumns={
   '进程':['name','state','cpuPercent','workingSetBytes','io','networkBytesPerSecond','gpuPercent','pid'],

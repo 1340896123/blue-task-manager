@@ -5,7 +5,7 @@ Set-Location -LiteralPath $root
 $output = Join-Path $root 'output/playwright/application-icons-adapters'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 $mode = if ($Desktop) { 'desktop' } else { 'browser' }
-$probe = Join-Path $root 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe'
+$probe = Join-Path $root 'tests/Takao.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/Takao.WindowProbe.exe'
 $elevation = & $probe process-elevation $PID | ConvertFrom-Json
 if (-not $elevation.elevated) { throw 'Acceptance worker requires a real elevated Windows token.' }
 $env:TASKMANAGER_ICONS_DESKTOP = if ($Desktop) { '1' } else { '0' }

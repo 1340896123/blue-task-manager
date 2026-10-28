@@ -9,9 +9,9 @@ import { chromium } from 'playwright';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const framework = 'net10.0-windows10.0.19041.0';
-const hostDirectory = path.join(root, 'src', 'TaskManager.Host');
-const hostExe = path.join(hostDirectory, 'bin', 'Release', framework, 'TaskManager.Host.exe');
-const workloadExe = path.join(root, 'tests', 'TaskManager.TestWorkload', 'bin', 'Release', framework, 'TaskManager.TestWorkload.exe');
+const hostDirectory = path.join(root, 'src', 'Takao.Host');
+const hostExe = path.join(hostDirectory, 'bin', 'Release', framework, 'Takao.Host.exe');
+const workloadExe = path.join(root, 'tests', 'Takao.TestWorkload', 'bin', 'Release', framework, 'Takao.TestWorkload.exe');
 const port = Number(process.env.TASKMANAGER_UI_PORT ?? 5192);
 const origin = `http://127.0.0.1:${port}`;
 const output = path.join(root, 'output', 'playwright');
@@ -49,7 +49,7 @@ try {
   const search = page.getByRole('searchbox', { name: '搜索名称、发布者、路径或 PID' });
   await search.fill(String(workload.pid));
   await until(async () => (await page.locator('tbody tr[data-row-key]').count()) === 1, 'PID search filters actual workload');
-  check(await page.locator('tbody').innerText().then(text => text.includes('TaskManager.TestWorkload')), 'PID search finds correct real process name');
+  check(await page.locator('tbody').innerText().then(text => text.includes('Takao.TestWorkload')), 'PID search finds correct real process name');
   const row = page.locator('tbody tr[data-row-key]').first(); await row.click();
   check(await page.getByRole('button', { name: '结束任务', exact: true }).isEnabled(), 'actual terminable identity selected');
   check(await row.locator('[aria-label^="不可用："]').count() >= 1, 'unavailable process metrics expose actual reasons');
@@ -96,7 +96,7 @@ try {
   launchedTarget = await (await launchedResponse).json();
   check(launchedTarget.pid > 0 && process.kill(launchedTarget.pid, 0), 'UI creates dedicated real Windows process');
   await search.fill(String(launchedTarget.pid));
-  await until(async () => await page.locator('tbody tr[data-row-key]').count() === 1 && await page.locator('tbody').innerText().then(text => text.includes('TaskManager.TestWorkload')), 'new UI-created process sampled');
+  await until(async () => await page.locator('tbody tr[data-row-key]').count() === 1 && await page.locator('tbody').innerText().then(text => text.includes('Takao.TestWorkload')), 'new UI-created process sampled');
   await page.locator('tbody tr[data-row-key]').first().click();
   await page.getByRole('button', { name: '结束任务', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: '取消', exact: true }).click();

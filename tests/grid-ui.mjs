@@ -16,9 +16,9 @@ const framework = 'net10.0-windows10.0.19041.0';
 const desktop = process.env.TASKMANAGER_GRID_DESKTOP === '1';
 const mode = desktop ? 'desktop' : 'browser';
 const hostExe = desktop
-  ? path.join(process.env.TASKMANAGER_GRID_RELEASE_DIRECTORY ?? path.join(root, 'output/grid-acceptance/desktop'), 'TaskManager.Host.exe')
-  : path.join(root, 'src/TaskManager.Host/bin/Release', framework, 'TaskManager.Host.exe');
-const workloadExe = path.join(root, 'tests/TaskManager.TestWorkload/bin/Release', framework, 'TaskManager.TestWorkload.exe');
+  ? path.join(process.env.TASKMANAGER_GRID_RELEASE_DIRECTORY ?? path.join(root, 'output/grid-acceptance/desktop'), 'Takao.Host.exe')
+  : path.join(root, 'src/Takao.Host/bin/Release', framework, 'Takao.Host.exe');
+const workloadExe = path.join(root, 'tests/Takao.TestWorkload/bin/Release', framework, 'Takao.TestWorkload.exe');
 const port = Number(process.env.TASKMANAGER_GRID_PORT ?? 5230), cdp = Number(process.env.TASKMANAGER_GRID_CDP ?? 9250);
 const origin = `http://127.0.0.1:${port}`;
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-grid-'));
@@ -233,7 +233,7 @@ try {
   await screenshot('services-1380');
 
   phase = 'tree'; table = await nav('进程', '进程列表'); await clickCommand(page, '进程树');
-  await page.getByRole('searchbox').fill('TaskManager.TestWorkload'); table = page.getByRole('treegrid', { name: '进程列表', exact: true });
+  await page.getByRole('searchbox').fill('Takao.TestWorkload'); table = page.getByRole('treegrid', { name: '进程列表', exact: true });
   const childIds = children.map(child => child.join(':'));
   const rootRow = table.locator(`tr[data-row-key="${target.identity}"]`); await rootRow.click();
   for (const direction of ['ascending', 'descending']) {

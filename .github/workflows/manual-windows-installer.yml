@@ -77,7 +77,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
-          [xml]$project = Get-Content -LiteralPath src/TaskManager.Host/TaskManager.Host.csproj -Raw
+          [xml]$project = Get-Content -LiteralPath src/Takao.Host/Takao.Host.csproj -Raw
           $version = [string]$project.Project.PropertyGroup.Version
           $identifier = '(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
           $semver = '^(?<core>(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-(?<pre>' + $identifier + '(?:\.' + $identifier + ')*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$'
@@ -102,7 +102,7 @@ jobs:
           $lookup = Invoke-RestMethod -Uri $env:GITHUB_GRAPHQL_URL -Method Post -Headers $headers -ContentType 'application/json' -Body $body -TimeoutSec 30
           if (($lookup.PSObject.Properties.Name -contains 'errors') -or $null -eq $lookup.data.repository) { throw 'GitHub could not confirm Release availability.' }
           if ($null -ne $lookup.data.repository.release) { throw 'A published or draft Release already uses this tag. Choose a new tag.' }
-          $artifact = "BlueDomainTaskManager-v$version-win-x64-$env:GITHUB_RUN_NUMBER-$env:GITHUB_RUN_ATTEMPT"
+          $artifact = "Takao-v$version-win-x64-$env:GITHUB_RUN_NUMBER-$env:GITHUB_RUN_ATTEMPT"
           "TASKMANAGER_PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
           "TASKMANAGER_RELEASE_TAG=$tag" >> $env:GITHUB_ENV
           "TASKMANAGER_SOURCE_COMMIT=$env:GITHUB_SHA" >> $env:GITHUB_ENV
@@ -130,14 +130,14 @@ jobs:
       - name: Verify the installed application and uninstall
         run: |
           ./scripts/test-installer-ci.ps1 `
-            -InstallerPath "output/releases/BlueDomainTaskManager-v$env:TASKMANAGER_PACKAGE_VERSION-win-x64-setup.exe" `
-            -PayloadDirectory output/TaskManager-win-x64
+            -InstallerPath "output/releases/Takao-v$env:TASKMANAGER_PACKAGE_VERSION-win-x64-setup.exe" `
+            -PayloadDirectory output/Takao-win-x64
 
       - name: Require the complete delivery set
         run: |
           $ErrorActionPreference = 'Stop'
           $required = @(
-            "output/installer-ci/delivery/BlueDomainTaskManager-v$env:TASKMANAGER_PACKAGE_VERSION-win-x64-setup.exe",
+            "output/installer-ci/delivery/Takao-v$env:TASKMANAGER_PACKAGE_VERSION-win-x64-setup.exe",
             'output/installer-ci/delivery/SHA256SUMS',
             'output/installer-ci/delivery/acceptance.json',
             'output/installer-ci/delivery/acceptance.md'
@@ -207,7 +207,7 @@ jobs:
           Set-StrictMode -Version Latest
           if ($env:SOURCE_SHA -cnotmatch '^[0-9a-f]{40}$') { throw 'Source commit must be the complete workflow commit SHA.' }
           $delivery = Join-Path $env:RUNNER_TEMP 'verified-delivery'
-          $installerName = "BlueDomainTaskManager-v$env:PACKAGE_VERSION-win-x64-setup.exe"
+          $installerName = "Takao-v$env:PACKAGE_VERSION-win-x64-setup.exe"
           $expected = @($installerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md')
           $entries = @(Get-ChildItem -LiteralPath $delivery -Force)
           if ($entries.Count -ne $expected.Count) { throw 'The delivery must contain exactly the four expected release files.' }
@@ -259,7 +259,7 @@ jobs:
           if (($lookup.PSObject.Properties.Name -contains 'errors') -or $null -eq $lookup.data.repository) { throw 'GitHub could not recheck published and draft releases.' }
           if ($null -ne $lookup.data.repository.release) { throw 'The target published or draft Release already exists; publication stopped.' }
           $delivery = Join-Path $env:RUNNER_TEMP 'verified-delivery'
-          $installerName = "BlueDomainTaskManager-v$env:PACKAGE_VERSION-win-x64-setup.exe"
+          $installerName = "Takao-v$env:PACKAGE_VERSION-win-x64-setup.exe"
           $files = @($installerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md') | ForEach-Object { Join-Path $delivery $_ }
           $runUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
           $notes = @(
@@ -290,7 +290,7 @@ jobs:
           $reference = Invoke-RestMethod -Uri "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/git/ref/tags/$encodedTag" -Headers $headers -TimeoutSec 30
           if ($reference.object.type -cne 'commit' -or $reference.object.sha -cne $env:SOURCE_SHA) { throw 'The new tag does not point to the verified workflow commit.' }
           "Reserved tag $tag at source commit $env:SOURCE_SHA. If publication fails, this tag and any draft are retained; rerun with a new tag." >> $env:GITHUB_STEP_SUMMARY
-          gh release create $tag @files --repo $env:GITHUB_REPOSITORY --verify-tag --target $env:SOURCE_SHA --draft --prerelease=$isPrerelease --title "BlueDomainTaskManager $tag" --notes-file $notesPath
+          gh release create $tag @files --repo $env:GITHUB_REPOSITORY --verify-tag --target $env:SOURCE_SHA --draft --prerelease=$isPrerelease --title "Takao $tag" --notes-file $notesPath
           if ($LASTEXITCODE -ne 0) { throw 'Draft creation or asset upload failed; any created draft is retained for inspection.' }
           # The REST release-by-tag endpoint cannot find drafts. The official CLI
           # resolves the draft through GraphQL; then pin every operation to its ID.

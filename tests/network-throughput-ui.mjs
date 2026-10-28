@@ -12,10 +12,10 @@ import { clickCommand } from './layout-ui-support.mjs';
 
 const root=path.resolve(import.meta.dirname,'..'),mode=process.argv.includes('--desktop')?'desktop':process.env.TASKMANAGER_NETWORK_MODE??'browser',desktop=mode==='desktop';
 assert.ok(['browser','desktop'].includes(mode));
-const release=process.env.TASKMANAGER_NETWORK_RELEASE_DIRECTORY??path.join(root,'output/TaskManager-win-x64');
+const release=process.env.TASKMANAGER_NETWORK_RELEASE_DIRECTORY??path.join(root,'output/Takao-win-x64');
 const selfContained=process.env.TASKMANAGER_VERIFY_SELF_CONTAINED==='1',runName=mode+(selfContained?'-selfcontained':'');
 const port=5416,cdp=9416,origin=`http://127.0.0.1:${port}`,output=path.join(root,'output/playwright/network-throughput');
-const temporary=await mkdtemp(path.join(tmpdir(),'taskmanager-network-ui-')),fixtureExe=path.join(root,'tests/TaskManager.NetworkTests/bin/Release/net10.0-windows10.0.19041.0/TaskManager.NetworkTests.exe');
+const temporary=await mkdtemp(path.join(tmpdir(),'taskmanager-network-ui-')),fixtureExe=path.join(root,'tests/Takao.NetworkTests/bin/Release/net10.0-windows10.0.19041.0/Takao.NetworkTests.exe');
 await mkdir(output,{recursive:true});
 const pageDefaults={query:'',sortKey:'name',sortDirection:'ascending',visibleColumns:null,columnWidths:null,filters:null,scrollTop:0,selectedIdentity:null,resourceType:null,resourceId:null,cpuGraphMode:'total'};
 await writeFile(path.join(temporary,'preferences.json'),JSON.stringify({version:1,intervalMs:1000,ui:{version:1,density:'compact',sidebarCollapsed:false,processView:'flat',taskManagerPromptDismissed:true,pages:{processes:{...pageDefaults,sortKey:'networkBytesPerSecond',sortDirection:'descending'},performance:{...pageDefaults,resourceType:'cpu'}}}}));
@@ -33,8 +33,8 @@ async function sampledTarget(after=0){let value;try{await until(async()=>{value=
 try{
   check(!await portOpen(port)&&!await portOpen(cdp),'dedicated network UI ports are free');
   const hostEnvironment={...process.env,TASKMANAGER_DATA_DIR:temporary,TASKMANAGER_CDP_PORT:String(cdp)};
-  if(selfContained){const config=JSON.parse(await readFile(path.join(release,'TaskManager.Host.runtimeconfig.json'),'utf8'));check(!config.runtimeOptions.framework&&!config.runtimeOptions.frameworks&&config.runtimeOptions.includedFrameworks.length===2,'published Host declares both self-contained frameworks');for(const key of Object.keys(hostEnvironment))if(key.startsWith('DOTNET_ROOT'))delete hostEnvironment[key];}
-  host=spawn(path.join(release,'TaskManager.Host.exe'),[...(desktop?[]:['--headless']),`--port=${port}`],{cwd:release,env:hostEnvironment,stdio:'ignore',windowsHide:true});
+  if(selfContained){const config=JSON.parse(await readFile(path.join(release,'Takao.Host.runtimeconfig.json'),'utf8'));check(!config.runtimeOptions.framework&&!config.runtimeOptions.frameworks&&config.runtimeOptions.includedFrameworks.length===2,'published Host declares both self-contained frameworks');for(const key of Object.keys(hostEnvironment))if(key.startsWith('DOTNET_ROOT'))delete hostEnvironment[key];}
+  host=spawn(path.join(release,'Takao.Host.exe'),[...(desktop?[]:['--headless']),`--port=${port}`],{cwd:release,env:hostEnvironment,stdio:'ignore',windowsHide:true});
   await until(async()=>(await get('health')).ready,'real elevated production Host ready',45000);token=(await get('bootstrap')).token;
   if(selfContained){const clr=spawnSync('powershell.exe',['-NoProfile','-Command',`(Get-Process -Id ${host.pid}).Modules | Where-Object ModuleName -eq 'coreclr.dll' | Select-Object -ExpandProperty FileName`],{encoding:'utf8',windowsHide:true,timeout:15000});check(clr.status===0&&clr.stdout.trim().toLowerCase()===path.join(release,'coreclr.dll').toLowerCase(),'Host loads its own published CLR with DOTNET_ROOT variables removed');}
   const health=await get('health');check(/CsWin32/.test(health.nativeSource)&&/Newtonsoft/.test(health.json),'production CsWin32 and JSON.NET chain');
@@ -81,7 +81,7 @@ try{
   if(adapter){await page.locator('.resource-tile').filter({has:page.locator('strong').getByText(adapter.alias,{exact:true})}).click();check(await page.locator('.resource-content svg[aria-label^="选中网卡吞吐"]').count()===1&&(await page.locator('.resource-content .chart-legend').innerText()).includes('发送（虚线）'),'hardware adapter performance retains its independent dual-series chart and legend');await capture('adapter');}
   await nav('设置');await search.fill('逐进程网络');check((await page.locator('.settings-page').innerText()).includes('Windows ETW TCP/UDP IPv4/IPv6')&&(await page.locator('.settings-page').innerText()).includes('来源'),'settings exposes actual ETW source and update time');
   check(errors.length===0&&controls.length===0,'no renderer errors or IFEO writes');
-  const identity=probe('process-elevation',host.pid),prefix=`BlueDomain-Network-${host.pid}-${identity.creationTimeFileTime}-`,ownedSessions=(await sessions()).filter(name=>name.startsWith(prefix));check(ownedSessions.length===1,'exact test Host owns one live ETW session');
+  const identity=probe('process-elevation',host.pid),prefix=`Takao-Network-${host.pid}-${identity.creationTimeFileTime}-`,ownedSessions=(await sessions()).filter(name=>name.startsWith(prefix));check(ownedSessions.length===1,'exact test Host owns one live ETW session');
   if(desktop){await page.getByRole('button',{name:'关闭窗口',exact:true}).click();await until(()=>host.exitCode!==null||host.signalCode!==null,'normal Electron close stops the Host',25000);check(!(await sessions()).some(name=>name.startsWith(prefix)),'normal production desktop close releases its own ETW session without test cleanup');}
   else await stopOwnedHost(host);
   await until(async()=>!await portOpen(port)&&!await portOpen(cdp),'owned listeners released');check(tree.every(item=>!ownedAlive(item)),'all exact owned application identities exited');

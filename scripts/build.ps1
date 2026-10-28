@@ -5,13 +5,13 @@ Set-Location $root
 function Invoke-Checked([scriptblock]$Command) { & $Command; if ($LASTEXITCODE -ne 0) { throw "Build command failed with exit code $LASTEXITCODE" } }
 if (-not $SkipRestore) {
     Invoke-Checked { npm ci }
-    Invoke-Checked { npm --prefix src/TaskManager.Web ci }
-    Invoke-Checked { dotnet restore TaskManager.sln --locked-mode }
+    Invoke-Checked { npm --prefix src/Takao.Web ci }
+    Invoke-Checked { dotnet restore Takao.sln --locked-mode }
 }
 Invoke-Checked { npm run typecheck }
 Invoke-Checked { npm run build }
-Invoke-Checked { dotnet build TaskManager.sln -c Release --no-restore -p:ElectronSkipExecCommands=true }
-$release = Join-Path $root 'src/TaskManager.Host/bin/Release/net10.0-windows10.0.19041.0'
+Invoke-Checked { dotnet build Takao.sln -c Release --no-restore -p:ElectronSkipExecCommands=true }
+$release = Join-Path $root 'src/Takao.Host/bin/Release/net10.0-windows10.0.19041.0'
 $electron = Join-Path $release '.electron'
 Copy-Item -LiteralPath (Join-Path $root 'scripts/electron-runtime/package-lock.json') -Destination (Join-Path $electron 'package-lock.json') -Force
 Push-Location $electron
@@ -23,10 +23,10 @@ try {
     # Electron >=42 downloads its binary in a separate explicit installation step.
     Invoke-Checked { node node_modules/electron/install.js }
 } finally { Pop-Location }
-$destination = Join-Path $root 'output/TaskManager-win-x64'
+$destination = Join-Path $root 'output/Takao-win-x64'
 if (Test-Path -LiteralPath $destination) {
     $resolved = (Resolve-Path -LiteralPath $destination).Path
-    $expected = [System.IO.Path]::GetFullPath((Join-Path $root 'output/TaskManager-win-x64'))
+    $expected = [System.IO.Path]::GetFullPath((Join-Path $root 'output/Takao-win-x64'))
     if ($resolved -ne $expected -or -not $resolved.StartsWith([System.IO.Path]::GetFullPath((Join-Path $root 'output')) + [System.IO.Path]::DirectorySeparatorChar)) { throw 'Refusing cleanup outside expected release directory.' }
     Remove-Item -LiteralPath $resolved -Recurse -Force
 }

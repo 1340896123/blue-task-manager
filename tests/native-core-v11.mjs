@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const framework = 'net10.0-windows10.0.19041.0';
-const executable = path.join(root, 'src/TaskManager.Host/bin/Release', framework, 'TaskManager.Host.exe');
+const executable = path.join(root, 'src/Takao.Host/bin/Release', framework, 'Takao.Host.exe');
 const port = Number(process.env.TASKMANAGER_TEST_PORT ?? 5197), origin = `http://127.0.0.1:${port}`;
 const directory = await mkdtemp(path.join(tmpdir(), 'taskmanager-core11-'));
 let host, token, assertions = 0;

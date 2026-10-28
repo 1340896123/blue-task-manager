@@ -10,13 +10,13 @@ import { delay, portOpen, until } from './e2e-support.mjs';
 import { nativeUi, probe, probeExe, windows } from './native-ui-support.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/TaskManager-win-x64'));
+const directory = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'output/Takao-win-x64'));
 const prefix = process.env.TASKMANAGER_IFEO_EVIDENCE_PREFIX ?? 'portable';
 assert.match(prefix, /^[a-z0-9-]+$/);
 const output = path.join(root, 'output/playwright/ifeo-elevation', prefix);
 const session = await mkdtemp(path.join(tmpdir(), 'taskmanager-ifeo-'));
 const workerScript = path.join(root, 'tests/ifeo-elevation-worker.ps1');
-const hostExe = path.join(directory, 'TaskManager.Host.exe'), launcherExe = path.join(directory, 'TaskManager.Launcher.exe');
+const hostExe = path.join(directory, 'Takao.Host.exe'), launcherExe = path.join(directory, 'Takao.Launcher.exe');
 const legacyCommand = `"${hostExe}" --task-manager-entry`, launcherCommand = `"${launcherExe}" --task-manager-entry`;
 const systemTarget = path.join(process.env.SystemRoot, 'System32/taskmgr.exe');
 const wow64Target = path.join(process.env.SystemRoot, 'SysWOW64/taskmgr.exe');
@@ -100,7 +100,7 @@ try {
   const direct = mediumLaunch(hostExe, ['--headless']);
   check(!direct.success && direct.nativeErrorCode === 740, 'Medium CreateProcess of requireAdministrator Host returns native Windows 740');
   for (const args of [[], ['--headless'], ['--task-manager-entry'], ['--uninstall-task-manager-integration']]) {
-    const denied = spawnSync('dotnet.exe', [path.join(directory, 'TaskManager.Host.dll'), ...args], { encoding: 'utf8', windowsHide: true, timeout: 15000, env: { ...process.env, TASKMANAGER_PORT: String(forwardPort), TASKMANAGER_CDP_PORT: String(forwardCdp), TASKMANAGER_DATA_DIR: path.join(session, 'denied-preferences') } });
+    const denied = spawnSync('dotnet.exe', [path.join(directory, 'Takao.Host.dll'), ...args], { encoding: 'utf8', windowsHide: true, timeout: 15000, env: { ...process.env, TASKMANAGER_PORT: String(forwardPort), TASKMANAGER_CDP_PORT: String(forwardCdp), TASKMANAGER_DATA_DIR: path.join(session, 'denied-preferences') } });
     check(denied.status !== 0 && /administratorRequired|740/.test(denied.stderr), `Medium DLL startup rejects before business setup (${args.join(' ') || 'normal'})`);
   }
   const invalidArguments = [[], ['--headless'], ['--task-manager-entry', 'C:\\untrusted\\taskmgr.exe'], ['--task-manager-entry', systemTarget, '--port=5263'], ['--task-manager-entry', systemTarget, '--headless'], ['--task-manager-entry', '--task-manager-entry'], ['--task-manager-entry', systemTarget, '--uninstall-task-manager-integration'], ['--task-manager-entry', systemTarget, '/contains space'], ['--task-manager-entry', systemTarget, ...Array(33).fill('/7')]];
@@ -153,9 +153,9 @@ try {
   await api('desktop/task-manager-integration', { enabled: false, expectedRevision: state.revision });
   check(JSON.parse(independentRegistry()).values.length === 0, 'production cancel also recognizes the exact legacy owned Debugger');
   const variants = [
-    { name: 'other directory', value: `"C:\\Other\\TaskManager.Launcher.exe" --task-manager-entry` },
+    { name: 'other directory', value: `"C:\\Other\\Takao.Launcher.exe" --task-manager-entry` },
     { name: 'additional argument', value: launcherCommand + ' /7' },
-    { name: 'different command casing', value: launcherCommand.replace('TaskManager.Launcher.exe', 'taskmanager.launcher.exe') },
+    { name: 'different command casing', value: launcherCommand.replace('Takao.Launcher.exe', 'takao.launcher.exe') },
     { name: 'REG_EXPAND_SZ', value: launcherCommand, kind: 'ExpandString' },
     { name: 'REG_DWORD', value: 1, kind: 'DWord' },
     { name: 'embedded null', value: launcherCommand + '\0unexpected' }
@@ -204,11 +204,11 @@ try {
   await until(async () => (await api('snapshot')).sampleId > sample.sampleId, 'real native sample progresses');
   check(true, 'native telemetry advances through the production HTTP/JSON.NET/UI chain');
   const ids = new Set(tree.map(row => row.pid));
-  const window = windows('蓝域').find(row => ids.has(row.pid));
+  const window = windows('Takao').find(row => ids.has(row.pid));
   check(window && nativeUi(window, 'state').visible, 'independent CsWin32 HWND query finds the visible test-owned product window');
   await worker('native-ui', { ...window, command: 'foreground' }); await delay(300);
   await worker('native-ui', { ...window, command: 'capture-visible', argument: path.join(output, 'real-ifeo-first-window.png') }); evidence.push('real-ifeo-first-window.png');
-  const workload = path.join(root, 'tests/TaskManager.TestWorkload/bin/Release/net10.0-windows10.0.19041.0/TaskManager.TestWorkload.exe');
+  const workload = path.join(root, 'tests/Takao.TestWorkload/bin/Release/net10.0-windows10.0.19041.0/Takao.TestWorkload.exe');
   const target = await api('processes/start', { executable: workload, arguments: `${windowsQuote(path.join(session, 'workload'))} 60` });
   try {
     check((await worker('elevation', { pid: target.pid })).data.elevated, 'real dedicated new-task process inherits the elevated token');
@@ -222,7 +222,7 @@ try {
     const forwarded = mediumLaunch(targetPath, ['/7'], { TASKMANAGER_PORT: String(forwardPort), TASKMANAGER_CDP_PORT: String(forwardCdp), TASKMANAGER_DATA_DIR: path.join(session, 'forward-preferences') }, bare);
     check(forwarded.success && forwarded.exited && forwarded.exitCode === 0, `real repeated ${bare ? 'bare taskmgr.exe' : targetPath} Launcher exits successfully`);
     await until(() => !nativeUi(window, 'state').minimized, 'production IFEO entry restores same HWND', 20000);
-    check((await api('health')).processId === bootstrap.hostPid && windows('蓝域').filter(row => ids.has(row.pid)).length === 1, 'repeated system entry restores the same HWND and preserves the original Host PID');
+    check((await api('health')).processId === bootstrap.hostPid && windows('Takao').filter(row => ids.has(row.pid)).length === 1, 'repeated system entry restores the same HWND and preserves the original Host PID');
     check(!await portOpen(forwardPort) && !await portOpen(forwardCdp), 'repeated entry opens neither another HTTP host nor another CDP listener');
   }
   await worker('native-ui', { ...window, command: 'foreground' }); await delay(300);

@@ -11,11 +11,11 @@ import { probe, windows, nativeUi } from './native-ui-support.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const desktop = process.env.TASKMANAGER_DISK_MODE === 'desktop', mode = desktop ? 'desktop' : 'browser';
-const release = path.resolve(process.env.TASKMANAGER_DISK_RELEASE_DIRECTORY ?? path.join(root, 'src/TaskManager.Host/bin/Release/net10.0-windows10.0.19041.0'));
+const release = path.resolve(process.env.TASKMANAGER_DISK_RELEASE_DIRECTORY ?? path.join(root, 'src/Takao.Host/bin/Release/net10.0-windows10.0.19041.0'));
 const output = path.join(root, 'output/playwright/disk-presentation');
 const port = 5342, cdp = 9342, origin = `http://127.0.0.1:${port}`;
 const checks = [], screenshots = [], geometry = [], errors = [], writes = [];
-const notExecuted = ['physical hot unplug/replug and device-number reuse', 'real access-denied/unsupported/RAID or virtual disk identity branches; production parser/cache boundaries are covered separately by TaskManager.DiskTests', 'real idle-counter-only unavailable state was not induced; removed-field filtering was reviewed without business mocks'];
+const notExecuted = ['physical hot unplug/replug and device-number reuse', 'real access-denied/unsupported/RAID or virtual disk identity branches; production parser/cache boundaries are covered separately by Takao.DiskTests', 'real idle-counter-only unavailable state was not induced; removed-field filtering was reviewed without business mocks'];
 const check = (condition, message) => { assert.ok(condition, message); checks.push(message); };
 const hash = value => createHash('sha256').update(value).digest('hex');
 await mkdir(output, { recursive: true });
@@ -24,10 +24,10 @@ check(!await portOpen(port) && !await portOpen(cdp), 'dedicated test listeners a
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-disk-identity-'));
 const artifacts = [];
 const index = await readFile(path.join(release, 'wwwroot/index.html'), 'utf8');
-for (const file of ['TaskManager.Host.exe', 'TaskManager.Host.dll', 'wwwroot/index.html', ...[...index.matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))]) {
+for (const file of ['Takao.Host.exe', 'Takao.Host.dll', 'wwwroot/index.html', ...[...index.matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))]) {
   const bytes = await readFile(path.join(release, file)); artifacts.push({ file, sha256: hash(bytes), bytes: bytes.length });
 }
-const host = spawn(path.join(release, 'TaskManager.Host.exe'), [...(desktop ? [] : ['--headless']), `--port=${port}`], {
+const host = spawn(path.join(release, 'Takao.Host.exe'), [...(desktop ? [] : ['--headless']), `--port=${port}`], {
   cwd: release, windowsHide: true, stdio: 'ignore', env: { ...process.env, TASKMANAGER_DATA_DIR: temporary, TASKMANAGER_CDP_PORT: String(cdp) }
 });
 let browser, page, token, failure, snapshot, independent, tree = [], cleanup = false;
@@ -44,7 +44,7 @@ async function capture(name, native = false) {
   } else await page.screenshot({ path: destination });
   screenshots.push(file);
   if (native) {
-    const window = windows('蓝域').find(window => tree.some(entry => entry.pid === window.pid));
+    const window = windows('Takao').find(window => tree.some(entry => entry.pid === window.pid));
     check(Boolean(window), 'native screenshot belongs to the exact test-owned Electron tree');
     const nativeFile = `${mode}-${name}-native.png`; nativeUi(window, 'capture', path.join(output, nativeFile)); screenshots.push(nativeFile);
   }

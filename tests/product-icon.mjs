@@ -10,22 +10,22 @@ import { assertions, check, delay, until, alive, processTree, ownedAlive, portOp
 import { nativeUi, probe, windows } from './native-ui-support.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const directory = path.join(root, 'output/TaskManager-win-x64');
+const directory = path.join(root, 'output/Takao-win-x64');
 const output = path.join(root, 'output/product-icon');
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-product-icon-'));
 const port = 5198, cdp = 9230, origin = `http://127.0.0.1:${port}`;
 await mkdir(output, { recursive: true });
 if (await portOpen(port) || await portOpen(cdp)) throw new Error('Icon acceptance ports are occupied.');
-const executable = path.join(directory, 'TaskManager.Host.exe');
+const executable = path.join(directory, 'Takao.Host.exe');
 const host = spawn(executable, [`--port=${port}`], { cwd: tmpdir(), env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences'), TASKMANAGER_CDP_PORT: String(cdp) }, windowsHide: true, stdio: 'ignore' });
 let browser, tree = [], page;
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 try {
-  const ico = await readFile(path.join(root, 'assets/branding/task-manager.ico'));
+  const ico = await readFile(path.join(root, 'assets/branding/takao.ico'));
   const count = ico.readUInt16LE(4);
   const sizes = Array.from({ length: count }, (_, index) => ico[6 + index * 16] || 256);
   check(ico.readUInt16LE(0) === 0 && ico.readUInt16LE(2) === 1 && sizes.join(',') === '16,24,32,48,64,128,256', 'ICO contains all seven standard Windows image sizes');
-  for (const relative of ['.electron/task-manager.ico', 'wwwroot/favicon.ico']) {
+  for (const relative of ['.electron/takao.ico', 'wwwroot/favicon.ico']) {
     check(hash(await readFile(path.join(directory, relative))) === hash(ico), `portable ${relative} matches canonical generated ICO`);
   }
   const exeIcons = probe('icon-exe', executable, output);
@@ -46,7 +46,7 @@ try {
   check(await page.evaluate(() => typeof require === 'undefined' && typeof process === 'undefined'), 'branding preserves isolated renderer without Node globals');
   tree = processTree(host.pid);
   const identities = new Set(tree.map(entry => entry.pid));
-  const target = windows('蓝域').find(window => identities.has(window.pid));
+  const target = windows('Takao').find(window => identities.has(window.pid));
   check(Boolean(target), 'independent Win32 query identifies the test-owned native product window');
   const nativeIcons = probe('icon-window', target.hwnd, target.pid, target.fileTime, output);
   for (const [size, icon] of Object.entries(nativeIcons)) {

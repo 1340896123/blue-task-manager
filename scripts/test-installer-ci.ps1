@@ -5,8 +5,8 @@ param(
     [Parameter(Mandatory)][string]$PayloadDirectory,
     [string]$UninstallerName = 'Uninstall.exe',
     [string]$UninstallRegistryKeyName = 'BlueDomainTaskManager',
-    [string]$StartMenuRelativePath = '蓝域任务管理器.lnk',
-    [string]$DesktopShortcutName = '蓝域任务管理器.lnk'
+    [string]$StartMenuRelativePath = 'Takao.lnk',
+    [string]$DesktopShortcutName = 'Takao.lnk'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -30,8 +30,8 @@ $projectRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $output = Join-Path $projectRoot 'output/installer-ci'
 $runnerTemporary = [IO.Path]::GetFullPath($env:RUNNER_TEMP)
 if (-not (Test-Path -LiteralPath $runnerTemporary -PathType Container)) { throw 'RUNNER_TEMP is missing.' }
-$testRoot = Join-Path $runnerTemporary ('Blue Domain Installer Acceptance ' + [Guid]::NewGuid().ToString('N'))
-$installDirectory = Join-Path $testRoot 'BlueDomainTaskManager'
+$testRoot = Join-Path $runnerTemporary ('Takao Installer Acceptance ' + [Guid]::NewGuid().ToString('N'))
+$installDirectory = Join-Path $testRoot 'Takao'
 $ownedProcesses = [Collections.Generic.List[object]]::new()
 $report = [ordered]@{
     result = 'RUNNING'
@@ -485,16 +485,16 @@ try {
     [void](Assert-ContainedPath $payload (Join-Path $projectRoot 'output'))
     Assert-NoLinks $installer
     Assert-NoLinks $payload
-    [xml]$project = Get-Content -LiteralPath (Join-Path $projectRoot 'src/TaskManager.Host/TaskManager.Host.csproj') -Raw
+    [xml]$project = Get-Content -LiteralPath (Join-Path $projectRoot 'src/Takao.Host/Takao.Host.csproj') -Raw
     $version = [string]$project.Project.PropertyGroup.Version
     if ($version -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Invalid Host project version.' }
-    $releaseIdentity = & (Join-Path $PSScriptRoot 'installer/Read-AssemblyReleaseIdentity.ps1') -Path (Join-Path $payload 'TaskManager.Host.dll')
+    $releaseIdentity = & (Join-Path $PSScriptRoot 'installer/Read-AssemblyReleaseIdentity.ps1') -Path (Join-Path $payload 'Takao.Host.dll')
     $expectedReleaseTag = [string]$releaseIdentity.ReleaseTag
     $expectedSourceCommit = [string]$releaseIdentity.SourceCommit
     if (-not $expectedSourceCommit -and $releaseIdentity.InformationalVersion -cmatch '\+([0-9a-f]{40})(?:\.|$)') { $expectedSourceCommit = $Matches[1] }
     if ([string]$env:TASKMANAGER_RELEASE_TAG -cne $expectedReleaseTag -or [string]$env:TASKMANAGER_SOURCE_COMMIT -cne $expectedSourceCommit) { throw 'Payload release identity differs from the validated workflow metadata.' }
     $report.releaseIdentity = [ordered]@{ releaseTag=$expectedReleaseTag; sourceCommit=$expectedSourceCommit }
-    $installerName = "BlueDomainTaskManager-v$version-win-x64-setup.exe"
+    $installerName = "Takao-v$version-win-x64-setup.exe"
     Assert-Condition ([IO.Path]::GetFileName($installer) -ceq $installerName) 'Installer filename uses the actual Host project version'
     $installerHash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
     $report.installer = [ordered]@{ filename = $installerName; version = $version; sha256 = $installerHash; bytes = (Get-Item -LiteralPath $installer).Length }
@@ -505,22 +505,22 @@ try {
     Assert-Condition ((Get-FileHash -LiteralPath (Join-Path $delivery $installerName) -Algorithm SHA256).Hash.ToLowerInvariant() -ceq $installerHash) 'Downloadable Setup copy matches the SHA256SUMS entry'
 
     $required = @(
-        'TaskManager.Host.exe', 'TaskManager.Host.dll', 'TaskManager.Host.deps.json', 'TaskManager.Host.runtimeconfig.json',
-        'TaskManager.Launcher.exe', 'TaskManager.Launcher.dll', 'TaskManager.Launcher.deps.json', 'TaskManager.Launcher.runtimeconfig.json',
+        'Takao.Host.exe', 'Takao.Host.dll', 'Takao.Host.deps.json', 'Takao.Host.runtimeconfig.json',
+        'Takao.Launcher.exe', 'Takao.Launcher.dll', 'Takao.Launcher.deps.json', 'Takao.Launcher.runtimeconfig.json',
         'coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'System.Private.CoreLib.dll', 'Microsoft.AspNetCore.Server.Kestrel.Core.dll',
         'Newtonsoft.Json.dll', 'restore-windows-task-manager.cmd', 'wwwroot/index.html', 'wwwroot/favicon.ico',
-        '.electron/main.js', '.electron/custom_main.js', '.electron/task-manager.ico', '.electron/package-lock.json',
+        '.electron/main.js', '.electron/custom_main.js', '.electron/takao.ico', '.electron/package-lock.json',
         '.electron/node_modules/electron/dist/electron.exe', '.electron/node_modules/electron/dist/LICENSE', '.electron/node_modules/electron/dist/LICENSES.chromium.html'
     )
     foreach ($relative in $required) {
         if (-not (Test-Path -LiteralPath (Join-Path $payload $relative) -PathType Leaf)) { throw "Self-contained payload is incomplete: $relative" }
     }
-    $runtime = Get-Content -LiteralPath (Join-Path $payload 'TaskManager.Host.runtimeconfig.json') -Raw | ConvertFrom-Json
+    $runtime = Get-Content -LiteralPath (Join-Path $payload 'Takao.Host.runtimeconfig.json') -Raw | ConvertFrom-Json
     $frameworks = @($runtime.runtimeOptions.includedFrameworks | ForEach-Object { $_.name })
     Assert-Condition ($frameworks -ccontains 'Microsoft.NETCore.App' -and $frameworks -ccontains 'Microsoft.AspNetCore.App') 'Self-contained runtimeconfig includes .NET and ASP.NET Core frameworks'
     $manifest = @(Get-PayloadManifest $payload)
     $report.payloadFiles = $manifest.Count
-    $hostExecutable = Join-Path $installDirectory 'TaskManager.Host.exe'
+    $hostExecutable = Join-Path $installDirectory 'Takao.Host.exe'
     $uninstallerPath = Join-Path $installDirectory $UninstallerName
     $commonPrograms = [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonPrograms)
     $commonDesktop = [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonDesktopDirectory)

@@ -11,7 +11,7 @@ AssemblyLoadContext.Default.Resolving += (_, name) =>
     return File.Exists(candidate) ? AssemblyLoadContext.Default.LoadFromAssemblyPath(candidate) : null;
 };
 var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
-var parser = assembly.GetType("TaskManager.Host.Native.HwInfoSharedMemory", true)!
+var parser = assembly.GetType("Takao.Host.Native.HwInfoSharedMemory", true)!
     .GetMethod("Parse", BindingFlags.NonPublic | BindingFlags.Static)!;
 byte[] Header(int length = 44)
 {

@@ -14,9 +14,9 @@ import { delay, until, processTree, ownedAlive, portOpen } from './e2e-support.m
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const framework = 'net10.0-windows10.0.19041.0';
 const desktop = process.env.TASKMANAGER_SHARED_SEARCH_DESKTOP === '1';
-const release = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'src/TaskManager.Host/bin/Release', framework));
-const executable = path.join(release, 'TaskManager.Host.exe');
-const workload = path.join(root, 'tests/TaskManager.TestWorkload/bin/Release', framework, 'TaskManager.TestWorkload.exe');
+const release = path.resolve(process.env.TASKMANAGER_RELEASE_DIRECTORY ?? path.join(root, 'src/Takao.Host/bin/Release', framework));
+const executable = path.join(release, 'Takao.Host.exe');
+const workload = path.join(root, 'tests/Takao.TestWorkload/bin/Release', framework, 'Takao.TestWorkload.exe');
 const port = Number(process.env.TASKMANAGER_SHARED_SEARCH_PORT ?? 5290), cdp = Number(process.env.TASKMANAGER_SHARED_SEARCH_CDP ?? 9290);
 const origin = `http://127.0.0.1:${port}`, mode = desktop ? 'desktop' : 'browser';
 const temporary = await mkdtemp(path.join(tmpdir(), 'taskmanager-shared-search-'));

@@ -1,4 +1,4 @@
-﻿param([string]$InstallerPath)
+param([string]$InstallerPath)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 $output = Join-Path $taskRoot 'output/admin-installer'
@@ -8,16 +8,16 @@ $checks = [Collections.Generic.List[string]]::new()
 $runs = [Collections.Generic.List[object]]::new()
 $registration = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\BlueDomainTaskManager'
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('Blue Domain NSIS Test ' + [guid]::NewGuid().ToString('N'))
-$installation = Join-Path $testRoot 'BlueDomainTaskManager'
-$probeExe = Join-Path $taskRoot 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe'
+$installation = Join-Path $testRoot 'Takao'
+$probeExe = Join-Path $taskRoot 'tests/Takao.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/Takao.WindowProbe.exe'
 $workerToken = (& $probeExe process-elevation $PID | ConvertFrom-Json)
 if (-not $workerToken.elevated) { throw 'Run this test through standard Windows RunAs with an elevated token.' }
 if (Test-Path -LiteralPath $registration) { throw 'An existing installation is registered; lifecycle test refuses to replace it.' }
-if (-not $InstallerPath) { $InstallerPath = Join-Path $taskRoot 'output/releases/BlueDomainTaskManager-v1.1.1-win-x64-setup.exe' }
+if (-not $InstallerPath) { $InstallerPath = Join-Path $taskRoot 'output/releases/Takao-v1.1.1-win-x64-setup.exe' }
 $InstallerPath = (Resolve-Path -LiteralPath $InstallerPath).Path
 $shell = New-Object -ComObject WScript.Shell
-$commonMenu = Join-Path ([Environment]::GetFolderPath('CommonStartMenu')) 'Programs/蓝域任务管理器.lnk'
-$commonDesktop = Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) '蓝域任务管理器.lnk'
+$commonMenu = Join-Path ([Environment]::GetFolderPath('CommonStartMenu')) 'Programs/Takao.lnk'
+$commonDesktop = Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Takao.lnk'
 foreach ($link in @($commonMenu,$commonDesktop)) { if (Test-Path -LiteralPath $link) { throw 'A product shortcut already exists; test refuses to replace it.' } }
 function Check([bool]$Condition, [string]$Message) { if (-not $Condition) { throw $Message }; $checks.Add($Message) }
 function Run-Setup([string]$Executable, [string]$Arguments) {
@@ -42,7 +42,7 @@ $beforeIfeo = Ifeo-Fingerprint
 $runtimeConfig = $null
 try {
     Check ((Run-Setup $InstallerPath "/S /D=$installation") -eq 0) 'silent NSIS installation succeeds in a dedicated path containing spaces'
-    $installedHost = Join-Path $installation 'TaskManager.Host.exe'
+    $installedHost = Join-Path $installation 'Takao.Host.exe'
     Check ((Test-Path -LiteralPath $installedHost) -and (Test-Path -LiteralPath (Join-Path $installation 'coreclr.dll'))) 'installed payload contains the real Host and local .NET runtime'
     $record = Get-ItemProperty -LiteralPath $registration
     Check ($record.InstallLocation -eq $installation -and $record.DisplayVersion -eq '1.1.1') 'HKLM64 uninstall entry records the exact installed directory and version'
@@ -65,7 +65,7 @@ try {
     [IO.File]::WriteAllText($sentinel, 'This file belongs to this test and is outside the package inventory.')
     Check ((Run-Setup $InstallerPath "/S /D=$installation") -eq 0) 'same-version installation repairs the existing dedicated installation'
     Check (Test-Path -LiteralPath $sentinel) 'reinstallation preserves an extra file outside the package inventory'
-    $other = Join-Path $testRoot 'Other/BlueDomainTaskManager'
+    $other = Join-Path $testRoot 'Other/Takao'
     Check ((Run-Setup $InstallerPath "/S /D=$other") -ne 0 -and -not (Test-Path -LiteralPath $other)) 'an explicit alternate installation path is refused while an installation is registered'
     if ([Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners().Port -contains 5214) { throw 'Lifecycle test port 5214 is already in use.' }
     $hostStart = [Diagnostics.ProcessStartInfo]::new($installedHost, '--headless --port=5214')
@@ -83,7 +83,7 @@ try {
         Check ((Run-Setup $InstallerPath "/S /D=$installation") -ne 0 -and -not $ownHost.HasExited) 'running installed Host blocks reinstallation without terminating the test process'
         Check ((Run-Setup (Join-Path $installation 'Uninstall.exe') ('/S _?=' + $installation)) -ne 0 -and -not $ownHost.HasExited) 'running installed Host blocks uninstall without terminating the test process'
     } finally { if (-not $ownHost.HasExited) { $ownHost.Kill(); $ownHost.WaitForExit(10000) | Out-Null }; $ownHost.Dispose() }
-    $runtimeConfig = Join-Path $installation 'TaskManager.Host.runtimeconfig.json'
+    $runtimeConfig = Join-Path $installation 'Takao.Host.runtimeconfig.json'
     $originalConfig = [IO.File]::ReadAllBytes($runtimeConfig)
     try {
         [IO.File]::AppendAllText($runtimeConfig, ' ')
