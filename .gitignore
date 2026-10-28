@@ -9,6 +9,8 @@ test-results/
 playwright-report/
 output/
 src/Takao.Host/wwwroot/
+# Generated files left by a checkout built before the Takao rename.
+src/TaskManager.Host/wwwroot/
 
 # .NET
 bin/

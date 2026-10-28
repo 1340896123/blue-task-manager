@@ -1,6 +1,6 @@
 # Takao
 
-面向 Windows 的真实系统任务管理器。产品、项目与新发布产物统一使用 **Takao**；当前命名与兼容约定见[工程规范](docs/CONVENTIONS.md)。历史验收保留当时的名称与路径。
+面向 Windows 的真实系统任务管理器。产品、项目与新发布产物统一使用 **Takao**；当前命名与兼容约定见[工程规范](docs/CONVENTIONS.md)，真实桌面和迁移验证见[命名验收](docs/TAKAO-RENAME-RESULTS.md)。历史验收保留当时的名称与路径。
 
 本轮预览构建修复启动应用整列“无法确定”，接入 Windows 真实启用/禁用记录，状态排序和详情随真实刷新更新；未知格式、读取失败与一次性来源保留原因。见[本轮发布说明](docs/RELEASE-V1.1.1-STARTUP-STATUS.md)及[514项本机验收记录](docs/STARTUP-STATUS-RESULTS.md)。磁盘信息、读写吞吐与白底图表基线见[前轮说明](docs/RELEASE-V1.1.1-DISK-CHARTS.md)。
 

@@ -5,7 +5,7 @@ Set-Location -LiteralPath $root
 $output = Join-Path $root 'output/playwright/startup-status'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 trap { [IO.File]::WriteAllText((Join-Path $output "worker-$Mode-error.txt"), ($_ | Out-String), [Text.UTF8Encoding]::new($false)); exit 1 }
-$probe = Join-Path $root 'tests/TaskManager.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/TaskManager.WindowProbe.exe'
+$probe = Join-Path $root 'tests/Takao.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/Takao.WindowProbe.exe'
 if (-not (& $probe process-elevation $PID | ConvertFrom-Json).elevated) { throw 'Startup acceptance requires an actual elevated Windows token.' }
 $env:TASKMANAGER_STARTUP_MODE = $Mode
 if ($ReleaseDirectory) { $env:TASKMANAGER_STARTUP_RELEASE_DIRECTORY = [IO.Path]::GetFullPath($ReleaseDirectory); $env:TASKMANAGER_RELEASE_DIRECTORY = $env:TASKMANAGER_STARTUP_RELEASE_DIRECTORY }

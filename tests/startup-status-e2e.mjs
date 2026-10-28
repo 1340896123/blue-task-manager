@@ -13,7 +13,7 @@ import { clickCommand } from './layout-ui-support.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const mode = process.env.TASKMANAGER_STARTUP_MODE ?? 'browser', desktop = mode === 'desktop';
 assert.ok(['browser', 'desktop'].includes(mode));
-const release = path.resolve(process.env.TASKMANAGER_STARTUP_RELEASE_DIRECTORY ?? path.join(root, 'src/TaskManager.Host/bin/Release/net10.0-windows10.0.19041.0'));
+const release = path.resolve(process.env.TASKMANAGER_STARTUP_RELEASE_DIRECTORY ?? path.join(root, 'src/Takao.Host/bin/Release/net10.0-windows10.0.19041.0'));
 const output = path.join(root, 'output/playwright/startup-status');
 const port = 5354, cdp = 9354, origin = `http://127.0.0.1:${port}`;
 const checks = [], screenshots = [], errors = [], forbiddenWrites = [];
@@ -34,7 +34,7 @@ function fixtures(action, { state, rows } = {}) {
   return JSON.parse(result.stdout);
 }
 const artifacts = [], index = await readFile(path.join(release, 'wwwroot/index.html'), 'utf8');
-for (const file of ['TaskManager.Host.exe', 'TaskManager.Host.dll', 'wwwroot/index.html', ...[...index.matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))]) {
+for (const file of ['Takao.Host.exe', 'Takao.Host.dll', 'wwwroot/index.html', ...[...index.matchAll(/(?:src|href)="([^\"]+\.(?:js|css))"/g)].map(match => 'wwwroot/' + match[1].replace(/^\//, ''))]) {
   const bytes = await readFile(path.join(release, file)); artifacts.push({ file, sha256: hash(bytes), bytes: bytes.length });
 }
 const revision = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', windowsHide: true }).stdout.trim();
@@ -76,7 +76,7 @@ async function inspectViewport(name) {
 try {
   fixture = fixtures('create');
   check(fixture.values > 20 && fixture.files === 3, 'real isolated Run/RunOnce/Run32 and user/common Startup files were created');
-  host = spawn(path.join(release, 'TaskManager.Host.exe'), [...(desktop ? [] : ['--headless']), `--port=${port}`], { cwd: release, windowsHide: true, stdio: 'ignore', env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences'), TASKMANAGER_CDP_PORT: String(cdp) } });
+  host = spawn(path.join(release, 'Takao.Host.exe'), [...(desktop ? [] : ['--headless']), `--port=${port}`], { cwd: release, windowsHide: true, stdio: 'ignore', env: { ...process.env, TASKMANAGER_DATA_DIR: path.join(temporary, 'preferences'), TASKMANAGER_CDP_PORT: String(cdp) } });
   await until(async () => (await api('health')).ready, 'production host ready', 45000);
   const health = await api('health'); token = (await api('bootstrap')).token;
   check(probe('process-elevation', host.pid).elevated && /CsWin32/.test(health.nativeSource) && /Newtonsoft|JSON.NET/.test(health.json), 'production elevated Host uses CsWin32 and JSON.NET');
@@ -178,7 +178,7 @@ try {
   if (cleanup) await rm(temporary, { recursive: true, force: true });
   if (cleanupErrors.length) failure ??= { name: 'CleanupError', message: 'Acceptance cleanup did not fully succeed; see the bounded cleanupErrors and retained fixture manifest.' };
 }
-const report = { result: failure ? 'FAIL' : 'PASS', mode, checkedAtUtc: new Date().toISOString(), revision, testedProductionCommit: 'd7935d2', releaseDirectory: release, executable: 'TaskManager.Host.exe', platform: process.platform, node: process.version, assertions: checks.length, checks, comparisons, artifacts, screenshots, errors, forbiddenWrites, cleanup, cleanupFacts, cleanupErrors, ...(!cleanup ? { recoveryManifest: manifest } : {}), notExecuted: ['Actual user startup policy permissions failures were not forced; existing user policies were preserved.', 'States 6/7 are tested as unknown format values; their Windows Shell enabled/disabled semantics are not claimed.', 'No user startup command was executed and no startup-writing product endpoint was added.'], ...(failure ? { failure } : {}) };
+const report = { result: failure ? 'FAIL' : 'PASS', mode, checkedAtUtc: new Date().toISOString(), revision, testedProductionCommit: 'd7935d2', releaseDirectory: release, executable: 'Takao.Host.exe', platform: process.platform, node: process.version, assertions: checks.length, checks, comparisons, artifacts, screenshots, errors, forbiddenWrites, cleanup, cleanupFacts, cleanupErrors, ...(!cleanup ? { recoveryManifest: manifest } : {}), notExecuted: ['Actual user startup policy permissions failures were not forced; existing user policies were preserved.', 'States 6/7 are tested as unknown format values; their Windows Shell enabled/disabled semantics are not claimed.', 'No user startup command was executed and no startup-writing product endpoint was added.'], ...(failure ? { failure } : {}) };
 await writeFile(path.join(output, `${mode}-results.json`), JSON.stringify(report, null, 2));
 console.log(JSON.stringify({ result: report.result, assertions: report.assertions, mode, cleanup, comparisons, ...(failure ? { failure } : {}) }, null, 2));
 if (failure) process.exitCode = 1;
