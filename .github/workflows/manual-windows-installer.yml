@@ -265,6 +265,12 @@ jobs:
           $notes = @(
             "Windows x64 NSIS installer, package version $env:PACKAGE_VERSION.",
             '',
+            'Startup apps now display real Windows enabled/disabled states, with correct status sorting and live detail refresh. Run, 32-bit Run and Startup folders retain their exact state sources.',
+            'Only recognized Windows approval records are interpreted. Unknown formats, scope conflicts and RunOnce keep explicit reasons; status changes continue through Windows startup settings.',
+            "Startup fix and local Windows verification (514 assertions): $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/$env:SOURCE_SHA/docs/STARTUP-STATUS-RESULTS.md",
+            "Release details: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/$env:SOURCE_SHA/docs/RELEASE-V1.1.1-STARTUP-STATUS.md",
+            "Also includes the disk information, throughput-only disk charts and white performance chart baseline: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/$env:SOURCE_SHA/docs/RELEASE-V1.1.1-DISK-CHARTS.md",
+            '',
             'Includes .NET 10, ASP.NET Core and Electron. Installation and application startup require administrator permission. The installer is unsigned.',
             '',
             'The disposable Windows runner verified complete installed-file hashes, real Windows collection and local coreclr loading, at least 42 Electron desktop assertions, same-path reinstall, and uninstall with user-file preservation. IFEO configuration remained unchanged.',

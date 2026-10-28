@@ -23,7 +23,7 @@ $required = @(
     'TaskManager.Host.exe', 'TaskManager.Host.dll', 'TaskManager.Host.runtimeconfig.json',
     'TaskManager.Launcher.exe', 'TaskManager.Launcher.dll', 'TaskManager.Launcher.deps.json', 'TaskManager.Launcher.runtimeconfig.json',
     'Newtonsoft.Json.dll', 'start.cmd', 'restore-windows-task-manager.cmd', 'README.md', 'docs/ACCEPTANCE-RESULTS.md',
-    'docs/TASKBAR-INTEGRATION.md', 'design-system/task-manager/MASTER.md',
+    'docs/TASKBAR-INTEGRATION.md', 'design-system/takao/MASTER.md',
     'wwwroot/index.html', 'wwwroot/icon.svg', 'wwwroot/favicon.ico',
     '.electron/main.js', '.electron/custom_main.js', '.electron/task-manager.ico',
     '.electron/node_modules/electron/dist/electron.exe',

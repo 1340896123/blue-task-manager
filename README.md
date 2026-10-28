@@ -2,7 +2,7 @@
 
 面向 Windows 的真实系统任务管理器。产品、项目与新发布产物统一使用 **Takao**；当前命名与兼容约定见[工程规范](docs/CONVENTIONS.md)。历史验收保留当时的名称与路径。
 
-本轮预览构建补齐磁盘型号、HDD/SSD 与总线类型，磁盘性能聚焦读取/写入吞吐，全部性能图表统一为白底简约配色；见[本轮发布说明](docs/RELEASE-V1.1.1-DISK-CHARTS.md)。
+本轮预览构建修复启动应用整列“无法确定”，接入 Windows 真实启用/禁用记录，状态排序和详情随真实刷新更新；未知格式、读取失败与一次性来源保留原因。见[本轮发布说明](docs/RELEASE-V1.1.1-STARTUP-STATUS.md)及[514项本机验收记录](docs/STARTUP-STATUS-RESULTS.md)。磁盘信息、读写吞吐与白底图表基线见[前轮说明](docs/RELEASE-V1.1.1-DISK-CHARTS.md)。
 
 全部八页现采用 Windows 11 标准任务管理器布局：左侧导航、单一命令栏、性能资源磁贴与纵向设置。筛选、进程树、显示列、CSV 等扩展操作统一放在“更多”；见[布局规格](docs/WINDOWS-LAYOUT.md)与[本轮真实验收](docs/WINDOWS-LAYOUT-RESULTS.md)。
 
