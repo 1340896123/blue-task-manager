@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "assertions": 7,
+  "checks": [
+    "legacy Host apphost is identical to the Takao executable",
+    "legacy Host DLL is absent from the new payload",
+    "legacy Launcher apphost is identical to the Takao executable",
+    "legacy Launcher DLL is absent from the new payload",
+    "dedicated legacy alias port is free",
+    "legacy Host alias loads the production Takao assembly with the exact test PID",
+    "legacy alias exit releases its listener and exact owned ETW session"
+  ],
+  "checkedAtUtc": "2026-10-28T07:54:28.689Z"
+}

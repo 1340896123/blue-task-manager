@@ -13,7 +13,7 @@ const release=path.join(root,'output/Takao-win-x64'), port=5296, cdp=9296, origi
 const output=path.join(root,'output/playwright/windows-layout'), temporary=await mkdtemp(path.join(tmpdir(),'taskmanager-layout-'));
 await mkdir(output,{recursive:true});
 assert.ok(!await portOpen(port)&&!await portOpen(cdp),'dedicated layout ports are free');
-await writeFile(path.join(temporary,'preferences.json'),JSON.stringify({version:1,intervalMs:1000,ui:{version:1,taskManagerPromptDismissed:true}}));
+await writeFile(path.join(temporary,'preferences.json'),JSON.stringify({version:1,intervalMs:1000,ui:{version:1,density:'compact',sidebarCollapsed:false,processView:'flat',pages:{},taskManagerPromptDismissed:true}}));
 const checks=[], screenshots=[], errors=[], geometry=[], viewportFacts=[], imageSizes=[], controls=[];
 const check=(ok,message)=>{assert.ok(ok,message);checks.push(message);};
 const host=spawn(path.join(release,'Takao.Host.exe'),[...(desktop?[]:['--headless']),`--port=${port}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:temporary,TASKMANAGER_CDP_PORT:String(cdp)},stdio:'ignore',windowsHide:true});
@@ -65,6 +65,7 @@ async function layout(name,size){
 try{
   await until(async()=>(await get('health')).ready,'elevated production Host ready',45000);
   const health=await get('health'),bootstrap=await get('bootstrap');token=bootstrap.token;
+  const preferences=await get('preferences');check(preferences.warning===null&&preferences.preferences.taskManagerPromptDismissed===true,'isolated layout preferences are valid and dismiss the unrelated first-launch prompt');
   check(/CsWin32/.test(health.nativeSource)&&/Newtonsoft|JSON.NET/.test(health.json),'real Windows CsWin32 and JSON.NET production chain');
   await until(async()=>(await get('snapshot')).slowDataCapturedAtUtc&&(await get('snapshot')).telemetry?.sampleId>1,'real slow data and PDH warmup',45000);
   if(desktop){await until(()=>portOpen(cdp),'Electron CDP ready',45000);browser=await chromium.connectOverCDP(`http://127.0.0.1:${cdp}`);await until(()=>browser.contexts().flatMap(c=>c.pages()).some(p=>p.url().startsWith(origin)),'production Electron page',60000);page=browser.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith(origin));await until(async()=>(await get('bootstrap')).desktop,'real BrowserWindow registration');}
@@ -90,7 +91,7 @@ try{
     await columns.locator('..').getByRole('button',{name:'恢复默认列',exact:true}).click();await columns.press(key);check(!await columns.locator('..').evaluate(el=>el.open),`${key}: nested columns closes`);await page.keyboard.press('Escape');
     check(!await page.locator('.command-menu').evaluate(el=>el.open)&&await more().evaluate(el=>el===document.activeElement),`${key}: Escape closes menu and restores summary focus`);
   }
-  await openMore();check((await page.locator('.command-status').innerText()).includes('上次采样'),'sampling status exposes actual time and interval');
+  await openMore();check((await page.locator('.command-status').filter({has:page.getByText('采样状态',{exact:true})}).innerText()).includes('上次采样'),'sampling status exposes actual time and interval');
   await page.getByRole('button',{name:'冻结显示',exact:true}).click();const first=(await get('snapshot')).sampleId;await page.locator('.frozen-banner').waitFor();await delay(2200);check((await get('snapshot')).sampleId>first,'freezing display keeps real sampler advancing');await capture('frozen');await page.getByRole('button',{name:'继续显示最新数据',exact:true}).click();
   await nav('设置');await page.getByRole('switch',{name:'自动采样',exact:true}).click();await until(async()=>(await get('snapshot')).paused,'pause applied');await delay(1200);const paused=(await get('snapshot')).sampleId;await delay(1200);check((await get('snapshot')).sampleId===paused,'pause stops native sampling');check((await page.locator('.connection-banner').innerText()).includes('上次采样'),'pause displays last actual sample time');await capture('paused');await page.getByRole('button',{name:'继续采集',exact:true}).click();
   check(await page.locator('.settings-disclosure').count()===2,'sources and capability groups are native disclosures');

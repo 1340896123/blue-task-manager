@@ -1,0 +1,20 @@
+{
+  "result": "PASS",
+  "assertions": 25,
+  "checks": [
+    "standard weak ETag attached to actual paused representation across negotiated encodings",
+    "unchanged representation 304 has no body",
+    "same-sample history reset changes ETag",
+    "same-sample interval change changes ETag",
+    "allowlist persistence excludes token, snapshots and paused state",
+    "UI preferences survive host restart",
+    "interval persists while paused state resets",
+    "instance nonce prevents stale ETag reuse across restart",
+    "limited-query process handle reads working set, private commit and handle count",
+    "GetPerformanceInfo provides real system counters",
+    "sample duration exposes actual monotonic measurement",
+    "corrupt preference file recovers with visible reason",
+    "corrupt preferences restore default interval"
+  ],
+  "source": "real CsWin32 host; isolated preference directory; no mocks"
+}

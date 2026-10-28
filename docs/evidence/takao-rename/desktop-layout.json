@@ -1,0 +1,3857 @@
+{
+  "result": "PASS",
+  "mode": "desktop",
+  "assertions": 248,
+  "checks": [
+    "isolated layout preferences are valid and dismiss the unrelated first-launch prompt",
+    "real Windows CsWin32 and JSON.NET production chain",
+    "desktop: actual bootstrap mode",
+    "fixed Windows navigation order, settings last",
+    "1380 进程: no document horizontal overflow",
+    "1380 进程: one page title and no legacy permanent bars",
+    "1380 进程: 48px titlebar and 56px command bar",
+    "1380 进程: commands remain one line",
+    "1380 进程: native-window, command and settings controls stay inside logical viewport",
+    "进程: standard default column order",
+    "进程: matching metric/plain header height",
+    "进程: virtual cells align with independent header pixels",
+    "进程: rendered rows remain bounded",
+    "1380 性能: no document horizontal overflow",
+    "1380 性能: one page title and no legacy permanent bars",
+    "1380 性能: 48px titlebar and 56px command bar",
+    "1380 性能: commands remain one line",
+    "1380 性能: native-window, command and settings controls stay inside logical viewport",
+    "1380 应用历史记录: no document horizontal overflow",
+    "1380 应用历史记录: one page title and no legacy permanent bars",
+    "1380 应用历史记录: 48px titlebar and 56px command bar",
+    "1380 应用历史记录: commands remain one line",
+    "1380 应用历史记录: native-window, command and settings controls stay inside logical viewport",
+    "应用历史记录: standard default column order",
+    "应用历史记录: matching metric/plain header height",
+    "应用历史记录: virtual cells align with independent header pixels",
+    "应用历史记录: rendered rows remain bounded",
+    "1380 启动应用: no document horizontal overflow",
+    "1380 启动应用: one page title and no legacy permanent bars",
+    "1380 启动应用: 48px titlebar and 56px command bar",
+    "1380 启动应用: commands remain one line",
+    "1380 启动应用: native-window, command and settings controls stay inside logical viewport",
+    "启动应用: standard default column order",
+    "启动应用: matching metric/plain header height",
+    "启动应用: virtual cells align with independent header pixels",
+    "启动应用: rendered rows remain bounded",
+    "1380 用户: no document horizontal overflow",
+    "1380 用户: one page title and no legacy permanent bars",
+    "1380 用户: 48px titlebar and 56px command bar",
+    "1380 用户: commands remain one line",
+    "1380 用户: native-window, command and settings controls stay inside logical viewport",
+    "用户: standard default column order",
+    "用户: matching metric/plain header height",
+    "用户: virtual cells align with independent header pixels",
+    "用户: rendered rows remain bounded",
+    "1380 详细信息: no document horizontal overflow",
+    "1380 详细信息: one page title and no legacy permanent bars",
+    "1380 详细信息: 48px titlebar and 56px command bar",
+    "1380 详细信息: commands remain one line",
+    "1380 详细信息: native-window, command and settings controls stay inside logical viewport",
+    "详细信息: standard default column order",
+    "详细信息: matching metric/plain header height",
+    "详细信息: virtual cells align with independent header pixels",
+    "详细信息: rendered rows remain bounded",
+    "1380 服务: no document horizontal overflow",
+    "1380 服务: one page title and no legacy permanent bars",
+    "1380 服务: 48px titlebar and 56px command bar",
+    "1380 服务: commands remain one line",
+    "1380 服务: native-window, command and settings controls stay inside logical viewport",
+    "服务: standard default column order",
+    "服务: matching metric/plain header height",
+    "服务: virtual cells align with independent header pixels",
+    "服务: rendered rows remain bounded",
+    "1380 设置: no document horizontal overflow",
+    "1380 设置: one page title and no legacy permanent bars",
+    "1380 设置: 48px titlebar and 56px command bar",
+    "1380 设置: commands remain one line",
+    "1380 设置: native-window, command and settings controls stay inside logical viewport",
+    "960 进程: no document horizontal overflow",
+    "960 进程: one page title and no legacy permanent bars",
+    "960 进程: 48px titlebar and 56px command bar",
+    "960 进程: commands remain one line",
+    "960 进程: native-window, command and settings controls stay inside logical viewport",
+    "进程: compact 48px navigation at minimum width",
+    "进程: standard default column order",
+    "进程: matching metric/plain header height",
+    "进程: virtual cells align with independent header pixels",
+    "进程: rendered rows remain bounded",
+    "960 性能: no document horizontal overflow",
+    "960 性能: one page title and no legacy permanent bars",
+    "960 性能: 48px titlebar and 56px command bar",
+    "960 性能: commands remain one line",
+    "960 性能: native-window, command and settings controls stay inside logical viewport",
+    "性能: compact 48px navigation at minimum width",
+    "960 应用历史记录: no document horizontal overflow",
+    "960 应用历史记录: one page title and no legacy permanent bars",
+    "960 应用历史记录: 48px titlebar and 56px command bar",
+    "960 应用历史记录: commands remain one line",
+    "960 应用历史记录: native-window, command and settings controls stay inside logical viewport",
+    "应用历史记录: compact 48px navigation at minimum width",
+    "应用历史记录: standard default column order",
+    "应用历史记录: matching metric/plain header height",
+    "应用历史记录: virtual cells align with independent header pixels",
+    "应用历史记录: rendered rows remain bounded",
+    "960 启动应用: no document horizontal overflow",
+    "960 启动应用: one page title and no legacy permanent bars",
+    "960 启动应用: 48px titlebar and 56px command bar",
+    "960 启动应用: commands remain one line",
+    "960 启动应用: native-window, command and settings controls stay inside logical viewport",
+    "启动应用: compact 48px navigation at minimum width",
+    "启动应用: standard default column order",
+    "启动应用: matching metric/plain header height",
+    "启动应用: virtual cells align with independent header pixels",
+    "启动应用: rendered rows remain bounded",
+    "960 用户: no document horizontal overflow",
+    "960 用户: one page title and no legacy permanent bars",
+    "960 用户: 48px titlebar and 56px command bar",
+    "960 用户: commands remain one line",
+    "960 用户: native-window, command and settings controls stay inside logical viewport",
+    "用户: compact 48px navigation at minimum width",
+    "用户: standard default column order",
+    "用户: matching metric/plain header height",
+    "用户: virtual cells align with independent header pixels",
+    "用户: rendered rows remain bounded",
+    "960 详细信息: no document horizontal overflow",
+    "960 详细信息: one page title and no legacy permanent bars",
+    "960 详细信息: 48px titlebar and 56px command bar",
+    "960 详细信息: commands remain one line",
+    "960 详细信息: native-window, command and settings controls stay inside logical viewport",
+    "详细信息: compact 48px navigation at minimum width",
+    "详细信息: standard default column order",
+    "详细信息: matching metric/plain header height",
+    "详细信息: virtual cells align with independent header pixels",
+    "详细信息: rendered rows remain bounded",
+    "960 服务: no document horizontal overflow",
+    "960 服务: one page title and no legacy permanent bars",
+    "960 服务: 48px titlebar and 56px command bar",
+    "960 服务: commands remain one line",
+    "960 服务: native-window, command and settings controls stay inside logical viewport",
+    "服务: compact 48px navigation at minimum width",
+    "服务: standard default column order",
+    "服务: matching metric/plain header height",
+    "服务: virtual cells align with independent header pixels",
+    "服务: rendered rows remain bounded",
+    "960 设置: no document horizontal overflow",
+    "960 设置: one page title and no legacy permanent bars",
+    "960 设置: 48px titlebar and 56px command bar",
+    "960 设置: commands remain one line",
+    "960 设置: native-window, command and settings controls stay inside logical viewport",
+    "设置: compact 48px navigation at minimum width",
+    "Enter: native more disclosure opens without selection",
+    "Enter: disclosure does not invoke process freeze shortcut",
+    "Enter: nested filter opens",
+    "changing nested filter retains outer menu",
+    "Enter: nested columns opens",
+    "changing nested columns retains outer menu",
+    "Enter: nested columns closes",
+    "Enter: Escape closes menu and restores summary focus",
+    "Space: native more disclosure opens without selection",
+    "Space: disclosure does not invoke process freeze shortcut",
+    "Space: nested filter opens",
+    "changing nested filter retains outer menu",
+    "Space: nested columns opens",
+    "changing nested columns retains outer menu",
+    "Space: nested columns closes",
+    "Space: Escape closes menu and restores summary focus",
+    "sampling status exposes actual time and interval",
+    "freezing display keeps real sampler advancing",
+    "pause stops native sampling",
+    "pause displays last actual sample time",
+    "sources and capability groups are native disclosures",
+    "settings search opens matching collapsed source group",
+    "settings filtering keeps IFEO component mounted without rereads",
+    "real isolated preference I/O failure is visible below the header",
+    "preference recovery clears visible failure after real successful save",
+    "resource list includes CPU, memory, HWiNFO source and each actual enumerated device",
+    "no horizontal category tabs or nested device sidebar",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "each actual resource selects its chart/facts or HWiNFO sensor table",
+    "service primary command rereads native permissions and confirms fixed object",
+    "canceling user-service confirmation sends no control request",
+    "125 进程: no document horizontal overflow",
+    "125 进程: one page title and no legacy permanent bars",
+    "125 进程: 48px titlebar and 56px command bar",
+    "125 进程: commands remain one line",
+    "125 进程: native-window, command and settings controls stay inside logical viewport",
+    "进程: standard default column order",
+    "进程: matching metric/plain header height",
+    "进程: virtual cells align with independent header pixels",
+    "进程: rendered rows remain bounded",
+    "125 性能: no document horizontal overflow",
+    "125 性能: one page title and no legacy permanent bars",
+    "125 性能: 48px titlebar and 56px command bar",
+    "125 性能: commands remain one line",
+    "125 性能: native-window, command and settings controls stay inside logical viewport",
+    "125 应用历史记录: no document horizontal overflow",
+    "125 应用历史记录: one page title and no legacy permanent bars",
+    "125 应用历史记录: 48px titlebar and 56px command bar",
+    "125 应用历史记录: commands remain one line",
+    "125 应用历史记录: native-window, command and settings controls stay inside logical viewport",
+    "应用历史记录: standard default column order",
+    "应用历史记录: matching metric/plain header height",
+    "应用历史记录: virtual cells align with independent header pixels",
+    "应用历史记录: rendered rows remain bounded",
+    "125 启动应用: no document horizontal overflow",
+    "125 启动应用: one page title and no legacy permanent bars",
+    "125 启动应用: 48px titlebar and 56px command bar",
+    "125 启动应用: commands remain one line",
+    "125 启动应用: native-window, command and settings controls stay inside logical viewport",
+    "启动应用: standard default column order",
+    "启动应用: matching metric/plain header height",
+    "启动应用: virtual cells align with independent header pixels",
+    "启动应用: rendered rows remain bounded",
+    "125 用户: no document horizontal overflow",
+    "125 用户: one page title and no legacy permanent bars",
+    "125 用户: 48px titlebar and 56px command bar",
+    "125 用户: commands remain one line",
+    "125 用户: native-window, command and settings controls stay inside logical viewport",
+    "用户: standard default column order",
+    "用户: matching metric/plain header height",
+    "用户: virtual cells align with independent header pixels",
+    "用户: rendered rows remain bounded",
+    "125 详细信息: no document horizontal overflow",
+    "125 详细信息: one page title and no legacy permanent bars",
+    "125 详细信息: 48px titlebar and 56px command bar",
+    "125 详细信息: commands remain one line",
+    "125 详细信息: native-window, command and settings controls stay inside logical viewport",
+    "详细信息: standard default column order",
+    "详细信息: matching metric/plain header height",
+    "详细信息: virtual cells align with independent header pixels",
+    "详细信息: rendered rows remain bounded",
+    "125 服务: no document horizontal overflow",
+    "125 服务: one page title and no legacy permanent bars",
+    "125 服务: 48px titlebar and 56px command bar",
+    "125 服务: commands remain one line",
+    "125 服务: native-window, command and settings controls stay inside logical viewport",
+    "服务: standard default column order",
+    "服务: matching metric/plain header height",
+    "服务: virtual cells align with independent header pixels",
+    "服务: rendered rows remain bounded",
+    "125 设置: no document horizontal overflow",
+    "125 设置: one page title and no legacy permanent bars",
+    "125 设置: 48px titlebar and 56px command bar",
+    "125 设置: commands remain one line",
+    "125 设置: native-window, command and settings controls stay inside logical viewport",
+    "real Electron reduced-motion mode",
+    "layout/search validation sends no IFEO writes or user-service controls",
+    "no UI runtime errors"
+  ],
+  "screenshots": [
+    "desktop-1380-进程.png",
+    "desktop-1380-performance.png",
+    "desktop-1380-应用历史记录.png",
+    "desktop-1380-启动应用.png",
+    "desktop-1380-用户.png",
+    "desktop-1380-详细信息.png",
+    "desktop-1380-服务.png",
+    "desktop-1380-settings.png",
+    "desktop-960-进程.png",
+    "desktop-960-performance.png",
+    "desktop-960-应用历史记录.png",
+    "desktop-960-启动应用.png",
+    "desktop-960-用户.png",
+    "desktop-960-详细信息.png",
+    "desktop-960-服务.png",
+    "desktop-960-settings.png",
+    "desktop-frozen.png",
+    "desktop-paused.png",
+    "desktop-preference-save-failure.png",
+    "desktop-performance-devices.png",
+    "desktop-service-confirm-cancel.png",
+    "desktop-125-进程.png",
+    "desktop-125-进程-native.png",
+    "desktop-125-performance.png",
+    "desktop-125-performance-native.png",
+    "desktop-125-应用历史记录.png",
+    "desktop-125-应用历史记录-native.png",
+    "desktop-125-启动应用.png",
+    "desktop-125-启动应用-native.png",
+    "desktop-125-用户.png",
+    "desktop-125-用户-native.png",
+    "desktop-125-详细信息.png",
+    "desktop-125-详细信息-native.png",
+    "desktop-125-服务.png",
+    "desktop-125-服务-native.png",
+    "desktop-125-settings.png",
+    "desktop-125-settings-native.png"
+  ],
+  "imageSizes": [
+    {
+      "file": "desktop-1380-进程.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-1380-performance.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-1380-应用历史记录.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-1380-启动应用.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-1380-用户.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-1380-详细信息.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-1380-服务.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-1380-settings.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-960-进程.png",
+      "width": 960,
+      "height": 640
+    },
+    {
+      "file": "desktop-960-performance.png",
+      "width": 960,
+      "height": 640
+    },
+    {
+      "file": "desktop-960-应用历史记录.png",
+      "width": 960,
+      "height": 640
+    },
+    {
+      "file": "desktop-960-启动应用.png",
+      "width": 960,
+      "height": 640
+    },
+    {
+      "file": "desktop-960-用户.png",
+      "width": 960,
+      "height": 640
+    },
+    {
+      "file": "desktop-960-详细信息.png",
+      "width": 960,
+      "height": 640
+    },
+    {
+      "file": "desktop-960-服务.png",
+      "width": 960,
+      "height": 640
+    },
+    {
+      "file": "desktop-960-settings.png",
+      "width": 960,
+      "height": 640
+    },
+    {
+      "file": "desktop-frozen.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-paused.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-preference-save-failure.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-performance-devices.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-service-confirm-cancel.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-125-进程.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-125-进程-native.png",
+      "width": 1396,
+      "height": 868
+    },
+    {
+      "file": "desktop-125-performance.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-125-performance-native.png",
+      "width": 1396,
+      "height": 868
+    },
+    {
+      "file": "desktop-125-应用历史记录.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-125-应用历史记录-native.png",
+      "width": 1396,
+      "height": 868
+    },
+    {
+      "file": "desktop-125-启动应用.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-125-启动应用-native.png",
+      "width": 1396,
+      "height": 868
+    },
+    {
+      "file": "desktop-125-用户.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-125-用户-native.png",
+      "width": 1396,
+      "height": 868
+    },
+    {
+      "file": "desktop-125-详细信息.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-125-详细信息-native.png",
+      "width": 1396,
+      "height": 868
+    },
+    {
+      "file": "desktop-125-服务.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-125-服务-native.png",
+      "width": 1396,
+      "height": 868
+    },
+    {
+      "file": "desktop-125-settings.png",
+      "width": 1380,
+      "height": 860
+    },
+    {
+      "file": "desktop-125-settings-native.png",
+      "width": 1396,
+      "height": 868
+    }
+  ],
+  "geometry": [
+    {
+      "name": "进程",
+      "size": "1380",
+      "columns": [
+        "name",
+        "state",
+        "cpuPercent",
+        "workingSetBytes",
+        "io",
+        "networkBytesPerSecond",
+        "gpuPercent",
+        "pid"
+      ],
+      "header": 58,
+      "cells": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 112
+        },
+        {
+          "left": 589,
+          "width": 112
+        },
+        {
+          "left": 701,
+          "width": 112
+        },
+        {
+          "left": 813,
+          "width": 112
+        },
+        {
+          "left": 925,
+          "width": 112
+        },
+        {
+          "left": 1037,
+          "width": 112
+        },
+        {
+          "left": 1149,
+          "width": 80
+        }
+      ],
+      "heads": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 112
+        },
+        {
+          "left": 589,
+          "width": 112
+        },
+        {
+          "left": 701,
+          "width": 112
+        },
+        {
+          "left": 813,
+          "width": 112
+        },
+        {
+          "left": 925,
+          "width": 112
+        },
+        {
+          "left": 1037,
+          "width": 112
+        },
+        {
+          "left": 1149,
+          "width": 80
+        }
+      ],
+      "rows": 30
+    },
+    {
+      "name": "应用历史记录",
+      "size": "1380",
+      "columns": [
+        "name",
+        "cpu",
+        "observedIoReadBytes",
+        "observedIoWriteBytes",
+        "pid",
+        "state",
+        "last"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 180
+        },
+        {
+          "left": 657,
+          "width": 180
+        },
+        {
+          "left": 837,
+          "width": 180
+        },
+        {
+          "left": 1017,
+          "width": 80
+        },
+        {
+          "left": 1097,
+          "width": 112
+        },
+        {
+          "left": 1209,
+          "width": 180
+        }
+      ],
+      "heads": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 180
+        },
+        {
+          "left": 657,
+          "width": 180
+        },
+        {
+          "left": 837,
+          "width": 180
+        },
+        {
+          "left": 1017,
+          "width": 80
+        },
+        {
+          "left": 1097,
+          "width": 112
+        },
+        {
+          "left": 1209,
+          "width": 180
+        }
+      ],
+      "rows": 30
+    },
+    {
+      "name": "启动应用",
+      "size": "1380",
+      "columns": [
+        "name",
+        "enabled",
+        "source",
+        "command",
+        "location"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 180
+        },
+        {
+          "left": 657,
+          "width": 272
+        },
+        {
+          "left": 929,
+          "width": 420
+        },
+        {
+          "left": 1349,
+          "width": 420
+        }
+      ],
+      "heads": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 180
+        },
+        {
+          "left": 657,
+          "width": 272
+        },
+        {
+          "left": 929,
+          "width": 420
+        },
+        {
+          "left": 1349,
+          "width": 420
+        }
+      ],
+      "rows": 22
+    },
+    {
+      "name": "用户",
+      "size": "1380",
+      "columns": [
+        "name",
+        "state",
+        "cpu",
+        "memory",
+        "session",
+        "station",
+        "count"
+      ],
+      "header": 58,
+      "cells": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 112
+        },
+        {
+          "left": 589,
+          "width": 112
+        },
+        {
+          "left": 701,
+          "width": 112
+        },
+        {
+          "left": 813,
+          "width": 80
+        },
+        {
+          "left": 893,
+          "width": 180
+        },
+        {
+          "left": 1073,
+          "width": 112
+        }
+      ],
+      "heads": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 112
+        },
+        {
+          "left": 589,
+          "width": 112
+        },
+        {
+          "left": 701,
+          "width": 112
+        },
+        {
+          "left": 813,
+          "width": 80
+        },
+        {
+          "left": 893,
+          "width": 180
+        },
+        {
+          "left": 1073,
+          "width": 112
+        }
+      ],
+      "rows": 1
+    },
+    {
+      "name": "详细信息",
+      "size": "1380",
+      "columns": [
+        "name",
+        "pid",
+        "state",
+        "userName",
+        "cpuPercent",
+        "workingSetBytes",
+        "priority",
+        "threadCount",
+        "parentPid",
+        "sessionId",
+        "path"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 205,
+          "width": 240
+        },
+        {
+          "left": 445,
+          "width": 80
+        },
+        {
+          "left": 525,
+          "width": 112
+        },
+        {
+          "left": 637,
+          "width": 180
+        },
+        {
+          "left": 817,
+          "width": 112
+        },
+        {
+          "left": 929,
+          "width": 112
+        },
+        {
+          "left": 1041,
+          "width": 112
+        },
+        {
+          "left": 1153,
+          "width": 80
+        },
+        {
+          "left": 1233,
+          "width": 80
+        },
+        {
+          "left": 1313,
+          "width": 80
+        },
+        {
+          "left": 1393,
+          "width": 420
+        }
+      ],
+      "heads": [
+        {
+          "left": 205,
+          "width": 240
+        },
+        {
+          "left": 445,
+          "width": 80
+        },
+        {
+          "left": 525,
+          "width": 112
+        },
+        {
+          "left": 637,
+          "width": 180
+        },
+        {
+          "left": 817,
+          "width": 112
+        },
+        {
+          "left": 929,
+          "width": 112
+        },
+        {
+          "left": 1041,
+          "width": 112
+        },
+        {
+          "left": 1153,
+          "width": 80
+        },
+        {
+          "left": 1233,
+          "width": 80
+        },
+        {
+          "left": 1313,
+          "width": 80
+        },
+        {
+          "left": 1393,
+          "width": 420
+        }
+      ],
+      "rows": 31
+    },
+    {
+      "name": "服务",
+      "size": "1380",
+      "columns": [
+        "name",
+        "pid",
+        "display",
+        "state"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 80
+        },
+        {
+          "left": 557,
+          "width": 420
+        },
+        {
+          "left": 977,
+          "width": 180
+        }
+      ],
+      "heads": [
+        {
+          "left": 205,
+          "width": 272
+        },
+        {
+          "left": 477,
+          "width": 80
+        },
+        {
+          "left": 557,
+          "width": 420
+        },
+        {
+          "left": 977,
+          "width": 180
+        }
+      ],
+      "rows": 31
+    },
+    {
+      "name": "进程",
+      "size": "960",
+      "columns": [
+        "name",
+        "state",
+        "cpuPercent",
+        "workingSetBytes",
+        "io",
+        "networkBytesPerSecond",
+        "gpuPercent",
+        "pid"
+      ],
+      "header": 58,
+      "cells": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 112
+        },
+        {
+          "left": 433,
+          "width": 112
+        },
+        {
+          "left": 545,
+          "width": 112
+        },
+        {
+          "left": 657,
+          "width": 112
+        },
+        {
+          "left": 769,
+          "width": 112
+        },
+        {
+          "left": 881,
+          "width": 112
+        },
+        {
+          "left": 993,
+          "width": 80
+        }
+      ],
+      "heads": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 112
+        },
+        {
+          "left": 433,
+          "width": 112
+        },
+        {
+          "left": 545,
+          "width": 112
+        },
+        {
+          "left": 657,
+          "width": 112
+        },
+        {
+          "left": 769,
+          "width": 112
+        },
+        {
+          "left": 881,
+          "width": 112
+        },
+        {
+          "left": 993,
+          "width": 80
+        }
+      ],
+      "rows": 23
+    },
+    {
+      "name": "应用历史记录",
+      "size": "960",
+      "columns": [
+        "name",
+        "cpu",
+        "observedIoReadBytes",
+        "observedIoWriteBytes",
+        "pid",
+        "state",
+        "last"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 180
+        },
+        {
+          "left": 501,
+          "width": 180
+        },
+        {
+          "left": 681,
+          "width": 180
+        },
+        {
+          "left": 861,
+          "width": 80
+        },
+        {
+          "left": 941,
+          "width": 112
+        },
+        {
+          "left": 1053,
+          "width": 180
+        }
+      ],
+      "heads": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 180
+        },
+        {
+          "left": 501,
+          "width": 180
+        },
+        {
+          "left": 681,
+          "width": 180
+        },
+        {
+          "left": 861,
+          "width": 80
+        },
+        {
+          "left": 941,
+          "width": 112
+        },
+        {
+          "left": 1053,
+          "width": 180
+        }
+      ],
+      "rows": 23
+    },
+    {
+      "name": "启动应用",
+      "size": "960",
+      "columns": [
+        "name",
+        "enabled",
+        "source",
+        "command",
+        "location"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 180
+        },
+        {
+          "left": 501,
+          "width": 272
+        },
+        {
+          "left": 773,
+          "width": 420
+        },
+        {
+          "left": 1193,
+          "width": 420
+        }
+      ],
+      "heads": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 180
+        },
+        {
+          "left": 501,
+          "width": 272
+        },
+        {
+          "left": 773,
+          "width": 420
+        },
+        {
+          "left": 1193,
+          "width": 420
+        }
+      ],
+      "rows": 22
+    },
+    {
+      "name": "用户",
+      "size": "960",
+      "columns": [
+        "name",
+        "state",
+        "cpu",
+        "memory",
+        "session",
+        "station",
+        "count"
+      ],
+      "header": 58,
+      "cells": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 112
+        },
+        {
+          "left": 433,
+          "width": 112
+        },
+        {
+          "left": 545,
+          "width": 112
+        },
+        {
+          "left": 657,
+          "width": 80
+        },
+        {
+          "left": 737,
+          "width": 180
+        },
+        {
+          "left": 917,
+          "width": 112
+        }
+      ],
+      "heads": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 112
+        },
+        {
+          "left": 433,
+          "width": 112
+        },
+        {
+          "left": 545,
+          "width": 112
+        },
+        {
+          "left": 657,
+          "width": 80
+        },
+        {
+          "left": 737,
+          "width": 180
+        },
+        {
+          "left": 917,
+          "width": 112
+        }
+      ],
+      "rows": 1
+    },
+    {
+      "name": "详细信息",
+      "size": "960",
+      "columns": [
+        "name",
+        "pid",
+        "state",
+        "userName",
+        "cpuPercent",
+        "workingSetBytes",
+        "priority",
+        "threadCount",
+        "parentPid",
+        "sessionId",
+        "path"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 49,
+          "width": 240
+        },
+        {
+          "left": 289,
+          "width": 80
+        },
+        {
+          "left": 369,
+          "width": 112
+        },
+        {
+          "left": 481,
+          "width": 180
+        },
+        {
+          "left": 661,
+          "width": 112
+        },
+        {
+          "left": 773,
+          "width": 112
+        },
+        {
+          "left": 885,
+          "width": 112
+        },
+        {
+          "left": 997,
+          "width": 80
+        },
+        {
+          "left": 1077,
+          "width": 80
+        },
+        {
+          "left": 1157,
+          "width": 80
+        },
+        {
+          "left": 1237,
+          "width": 420
+        }
+      ],
+      "heads": [
+        {
+          "left": 49,
+          "width": 240
+        },
+        {
+          "left": 289,
+          "width": 80
+        },
+        {
+          "left": 369,
+          "width": 112
+        },
+        {
+          "left": 481,
+          "width": 180
+        },
+        {
+          "left": 661,
+          "width": 112
+        },
+        {
+          "left": 773,
+          "width": 112
+        },
+        {
+          "left": 885,
+          "width": 112
+        },
+        {
+          "left": 997,
+          "width": 80
+        },
+        {
+          "left": 1077,
+          "width": 80
+        },
+        {
+          "left": 1157,
+          "width": 80
+        },
+        {
+          "left": 1237,
+          "width": 420
+        }
+      ],
+      "rows": 24
+    },
+    {
+      "name": "服务",
+      "size": "960",
+      "columns": [
+        "name",
+        "pid",
+        "display",
+        "state"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 80
+        },
+        {
+          "left": 401,
+          "width": 420
+        },
+        {
+          "left": 821,
+          "width": 180
+        }
+      ],
+      "heads": [
+        {
+          "left": 49,
+          "width": 272
+        },
+        {
+          "left": 321,
+          "width": 80
+        },
+        {
+          "left": 401,
+          "width": 420
+        },
+        {
+          "left": 821,
+          "width": 180
+        }
+      ],
+      "rows": 24
+    },
+    {
+      "name": "进程",
+      "size": "125",
+      "columns": [
+        "name",
+        "state",
+        "cpuPercent",
+        "workingSetBytes",
+        "io",
+        "networkBytesPerSecond",
+        "gpuPercent",
+        "pid"
+      ],
+      "header": 58,
+      "cells": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 112
+        },
+        {
+          "left": 588.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 700.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 812.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 924.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 1036.800048828125,
+          "width": 112
+        },
+        {
+          "left": 1148.800048828125,
+          "width": 80
+        }
+      ],
+      "heads": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 112
+        },
+        {
+          "left": 588.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 700.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 812.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 924.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 1036.800048828125,
+          "width": 112
+        },
+        {
+          "left": 1148.800048828125,
+          "width": 80
+        }
+      ],
+      "rows": 25
+    },
+    {
+      "name": "应用历史记录",
+      "size": "125",
+      "columns": [
+        "name",
+        "cpu",
+        "observedIoReadBytes",
+        "observedIoWriteBytes",
+        "pid",
+        "state",
+        "last"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 180
+        },
+        {
+          "left": 656.7999877929688,
+          "width": 180
+        },
+        {
+          "left": 836.7999877929688,
+          "width": 180
+        },
+        {
+          "left": 1016.7999877929688,
+          "width": 80
+        },
+        {
+          "left": 1096.800048828125,
+          "width": 112
+        },
+        {
+          "left": 1208.800048828125,
+          "width": 180
+        }
+      ],
+      "heads": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 180
+        },
+        {
+          "left": 656.7999877929688,
+          "width": 180
+        },
+        {
+          "left": 836.7999877929688,
+          "width": 180
+        },
+        {
+          "left": 1016.7999877929688,
+          "width": 80
+        },
+        {
+          "left": 1096.800048828125,
+          "width": 112
+        },
+        {
+          "left": 1208.800048828125,
+          "width": 180
+        }
+      ],
+      "rows": 24
+    },
+    {
+      "name": "启动应用",
+      "size": "125",
+      "columns": [
+        "name",
+        "enabled",
+        "source",
+        "command",
+        "location"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 180
+        },
+        {
+          "left": 656.7999877929688,
+          "width": 272
+        },
+        {
+          "left": 928.7999877929688,
+          "width": 420
+        },
+        {
+          "left": 1348.800048828125,
+          "width": 420
+        }
+      ],
+      "heads": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 180
+        },
+        {
+          "left": 656.7999877929688,
+          "width": 272
+        },
+        {
+          "left": 928.7999877929688,
+          "width": 420
+        },
+        {
+          "left": 1348.800048828125,
+          "width": 420
+        }
+      ],
+      "rows": 22
+    },
+    {
+      "name": "用户",
+      "size": "125",
+      "columns": [
+        "name",
+        "state",
+        "cpu",
+        "memory",
+        "session",
+        "station",
+        "count"
+      ],
+      "header": 58,
+      "cells": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 112
+        },
+        {
+          "left": 588.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 700.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 812.7999877929688,
+          "width": 80
+        },
+        {
+          "left": 892.7999877929688,
+          "width": 180
+        },
+        {
+          "left": 1072.800048828125,
+          "width": 112
+        }
+      ],
+      "heads": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 112
+        },
+        {
+          "left": 588.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 700.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 812.7999877929688,
+          "width": 80
+        },
+        {
+          "left": 892.7999877929688,
+          "width": 180
+        },
+        {
+          "left": 1072.800048828125,
+          "width": 112
+        }
+      ],
+      "rows": 1
+    },
+    {
+      "name": "详细信息",
+      "size": "125",
+      "columns": [
+        "name",
+        "pid",
+        "state",
+        "userName",
+        "cpuPercent",
+        "workingSetBytes",
+        "priority",
+        "threadCount",
+        "parentPid",
+        "sessionId",
+        "path"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 204.8000030517578,
+          "width": 240
+        },
+        {
+          "left": 444.8000183105469,
+          "width": 80
+        },
+        {
+          "left": 524.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 636.7999877929688,
+          "width": 180
+        },
+        {
+          "left": 816.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 928.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 1040.800048828125,
+          "width": 112
+        },
+        {
+          "left": 1152.800048828125,
+          "width": 80
+        },
+        {
+          "left": 1232.800048828125,
+          "width": 80
+        },
+        {
+          "left": 1312.800048828125,
+          "width": 80
+        },
+        {
+          "left": 1392.800048828125,
+          "width": 420
+        }
+      ],
+      "heads": [
+        {
+          "left": 204.8000030517578,
+          "width": 240
+        },
+        {
+          "left": 444.8000183105469,
+          "width": 80
+        },
+        {
+          "left": 524.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 636.7999877929688,
+          "width": 180
+        },
+        {
+          "left": 816.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 928.7999877929688,
+          "width": 112
+        },
+        {
+          "left": 1040.800048828125,
+          "width": 112
+        },
+        {
+          "left": 1152.800048828125,
+          "width": 80
+        },
+        {
+          "left": 1232.800048828125,
+          "width": 80
+        },
+        {
+          "left": 1312.800048828125,
+          "width": 80
+        },
+        {
+          "left": 1392.800048828125,
+          "width": 420
+        }
+      ],
+      "rows": 25
+    },
+    {
+      "name": "服务",
+      "size": "125",
+      "columns": [
+        "name",
+        "pid",
+        "display",
+        "state"
+      ],
+      "header": 36,
+      "cells": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 80
+        },
+        {
+          "left": 556.7999877929688,
+          "width": 420
+        },
+        {
+          "left": 976.7999877929688,
+          "width": 180
+        }
+      ],
+      "heads": [
+        {
+          "left": 204.8000030517578,
+          "width": 272
+        },
+        {
+          "left": 476.8000183105469,
+          "width": 80
+        },
+        {
+          "left": 556.7999877929688,
+          "width": 420
+        },
+        {
+          "left": 976.7999877929688,
+          "width": 180
+        }
+      ],
+      "rows": 25
+    }
+  ],
+  "viewportFacts": [
+    {
+      "name": "进程",
+      "size": "1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "visualViewport": {
+        "width": 1380,
+        "height": 860,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 914,
+        "y": 0,
+        "width": 466,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1380,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 205,
+        "y": 49,
+        "width": 1175,
+        "height": 56,
+        "right": 1380,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 935,
+          "y": 60.5,
+          "width": 115,
+          "height": 32,
+          "right": 1050,
+          "bottom": 92.5
+        },
+        {
+          "x": 1058,
+          "y": 60.5,
+          "width": 102,
+          "height": 32,
+          "right": 1160,
+          "bottom": 92.5
+        },
+        {
+          "x": 1168,
+          "y": 60.5,
+          "width": 102,
+          "height": 32,
+          "right": 1270,
+          "bottom": 92.5
+        },
+        {
+          "x": 1278,
+          "y": 60.5,
+          "width": 78,
+          "height": 32,
+          "right": 1356,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 812,
+        "right": 204,
+        "bottom": 860
+      }
+    },
+    {
+      "name": "性能",
+      "size": "1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "visualViewport": {
+        "width": 1380,
+        "height": 860,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 914,
+        "y": 0,
+        "width": 466,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1380,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 205,
+        "y": 49,
+        "width": 1175,
+        "height": 56,
+        "right": 1380,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 1155,
+          "y": 60.5,
+          "width": 115,
+          "height": 32,
+          "right": 1270,
+          "bottom": 92.5
+        },
+        {
+          "x": 1278,
+          "y": 60.5,
+          "width": 78,
+          "height": 32,
+          "right": 1356,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 812,
+        "right": 204,
+        "bottom": 860
+      }
+    },
+    {
+      "name": "应用历史记录",
+      "size": "1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "visualViewport": {
+        "width": 1380,
+        "height": 860,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 914,
+        "y": 0,
+        "width": 466,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1380,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 205,
+        "y": 49,
+        "width": 1175,
+        "height": 56,
+        "right": 1380,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 1043,
+          "y": 60.5,
+          "width": 115,
+          "height": 32,
+          "right": 1158,
+          "bottom": 92.5
+        },
+        {
+          "x": 1166,
+          "y": 60.5,
+          "width": 104,
+          "height": 32,
+          "right": 1270,
+          "bottom": 92.5
+        },
+        {
+          "x": 1278,
+          "y": 60.5,
+          "width": 78,
+          "height": 32,
+          "right": 1356,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 812,
+        "right": 204,
+        "bottom": 860
+      }
+    },
+    {
+      "name": "启动应用",
+      "size": "1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "visualViewport": {
+        "width": 1380,
+        "height": 860,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 914,
+        "y": 0,
+        "width": 466,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1380,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 205,
+        "y": 49,
+        "width": 1175,
+        "height": 56,
+        "right": 1380,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 1109.59375,
+          "y": 60.5,
+          "width": 160.40625,
+          "height": 32,
+          "right": 1270,
+          "bottom": 92.5
+        },
+        {
+          "x": 1278,
+          "y": 60.5,
+          "width": 78,
+          "height": 32,
+          "right": 1356,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 812,
+        "right": 204,
+        "bottom": 860
+      }
+    },
+    {
+      "name": "用户",
+      "size": "1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "visualViewport": {
+        "width": 1380,
+        "height": 860,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 914,
+        "y": 0,
+        "width": 466,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1380,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 205,
+        "y": 49,
+        "width": 1175,
+        "height": 56,
+        "right": 1380,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 1140,
+          "y": 60.5,
+          "width": 130,
+          "height": 32,
+          "right": 1270,
+          "bottom": 92.5
+        },
+        {
+          "x": 1278,
+          "y": 60.5,
+          "width": 78,
+          "height": 32,
+          "right": 1356,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 812,
+        "right": 204,
+        "bottom": 860
+      }
+    },
+    {
+      "name": "详细信息",
+      "size": "1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "visualViewport": {
+        "width": 1380,
+        "height": 860,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 914,
+        "y": 0,
+        "width": 466,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1380,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 205,
+        "y": 49,
+        "width": 1175,
+        "height": 56,
+        "right": 1380,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 1045,
+          "y": 60.5,
+          "width": 115,
+          "height": 32,
+          "right": 1160,
+          "bottom": 92.5
+        },
+        {
+          "x": 1168,
+          "y": 60.5,
+          "width": 102,
+          "height": 32,
+          "right": 1270,
+          "bottom": 92.5
+        },
+        {
+          "x": 1278,
+          "y": 60.5,
+          "width": 78,
+          "height": 32,
+          "right": 1356,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 812,
+        "right": 204,
+        "bottom": 860
+      }
+    },
+    {
+      "name": "服务",
+      "size": "1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "visualViewport": {
+        "width": 1380,
+        "height": 860,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 914,
+        "y": 0,
+        "width": 466,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1380,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 205,
+        "y": 49,
+        "width": 1175,
+        "height": 56,
+        "right": 1380,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 1098,
+          "y": 60.5,
+          "width": 52,
+          "height": 32,
+          "right": 1150,
+          "bottom": 92.5
+        },
+        {
+          "x": 1158,
+          "y": 60.5,
+          "width": 52,
+          "height": 32,
+          "right": 1210,
+          "bottom": 92.5
+        },
+        {
+          "x": 1218,
+          "y": 60.5,
+          "width": 52,
+          "height": 32,
+          "right": 1270,
+          "bottom": 92.5
+        },
+        {
+          "x": 1278,
+          "y": 60.5,
+          "width": 78,
+          "height": 32,
+          "right": 1356,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 812,
+        "right": 204,
+        "bottom": 860
+      }
+    },
+    {
+      "name": "设置",
+      "size": "1380",
+      "viewport": [
+        1380,
+        860
+      ],
+      "visualViewport": {
+        "width": 1380,
+        "height": 860,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 914,
+        "y": 0,
+        "width": 466,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "settingsControls": [
+        {
+          "x": 1059,
+          "y": 181.75,
+          "width": 130,
+          "height": 32,
+          "right": 1189,
+          "bottom": 213.75
+        },
+        {
+          "x": 1145,
+          "y": 252.25,
+          "width": 44,
+          "height": 24,
+          "right": 1189,
+          "bottom": 276.25
+        },
+        {
+          "x": 1079,
+          "y": 314.75,
+          "width": 110,
+          "height": 32,
+          "right": 1189,
+          "bottom": 346.75
+        },
+        {
+          "x": 1145,
+          "y": 385.25,
+          "width": 44,
+          "height": 24,
+          "right": 1189,
+          "bottom": 409.25
+        },
+        {
+          "x": 1061.328125,
+          "y": 444.75,
+          "width": 127.671875,
+          "height": 38,
+          "right": 1189,
+          "bottom": 482.75
+        },
+        {
+          "x": 1085,
+          "y": 571.25,
+          "width": 104,
+          "height": 38,
+          "right": 1189,
+          "bottom": 609.25
+        },
+        {
+          "x": 1059,
+          "y": 640.75,
+          "width": 130,
+          "height": 32,
+          "right": 1189,
+          "bottom": 672.75
+        },
+        {
+          "x": 1145,
+          "y": 711.25,
+          "width": 44,
+          "height": 24,
+          "right": 1189,
+          "bottom": 735.25
+        },
+        {
+          "x": 1019,
+          "y": 829,
+          "width": 170,
+          "height": 103.5,
+          "right": 1189,
+          "bottom": 932.5
+        },
+        {
+          "x": 1083,
+          "y": 1203.5,
+          "width": 106,
+          "height": 32,
+          "right": 1189,
+          "bottom": 1235.5
+        },
+        {
+          "x": 776.34375,
+          "y": 1449.140625,
+          "width": 412.65625,
+          "height": 32,
+          "right": 1189,
+          "bottom": 1481.140625
+        }
+      ],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1380,
+        "height": 48,
+        "right": 1380,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 205,
+        "y": 49,
+        "width": 1175,
+        "height": 56,
+        "right": 1380,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 1278,
+          "y": 60.5,
+          "width": 78,
+          "height": 32,
+          "right": 1356,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 812,
+        "right": 204,
+        "bottom": 860
+      }
+    },
+    {
+      "name": "进程",
+      "size": "960",
+      "viewport": [
+        960,
+        640
+      ],
+      "visualViewport": {
+        "width": 960,
+        "height": 640,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 704,
+        "y": 0,
+        "width": 256,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 960,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 49,
+        "y": 49,
+        "width": 911,
+        "height": 56,
+        "right": 960,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 547,
+          "y": 60.5,
+          "width": 107,
+          "height": 32,
+          "right": 654,
+          "bottom": 92.5
+        },
+        {
+          "x": 662,
+          "y": 60.5,
+          "width": 94,
+          "height": 32,
+          "right": 756,
+          "bottom": 92.5
+        },
+        {
+          "x": 764,
+          "y": 60.5,
+          "width": 94,
+          "height": 32,
+          "right": 858,
+          "bottom": 92.5
+        },
+        {
+          "x": 866,
+          "y": 60.5,
+          "width": 70,
+          "height": 32,
+          "right": 936,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 48,
+        "height": 592,
+        "right": 48,
+        "bottom": 640
+      }
+    },
+    {
+      "name": "性能",
+      "size": "960",
+      "viewport": [
+        960,
+        640
+      ],
+      "visualViewport": {
+        "width": 960,
+        "height": 640,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 704,
+        "y": 0,
+        "width": 256,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 960,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 49,
+        "y": 49,
+        "width": 911,
+        "height": 56,
+        "right": 960,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 751,
+          "y": 60.5,
+          "width": 107,
+          "height": 32,
+          "right": 858,
+          "bottom": 92.5
+        },
+        {
+          "x": 866,
+          "y": 60.5,
+          "width": 70,
+          "height": 32,
+          "right": 936,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 48,
+        "height": 592,
+        "right": 48,
+        "bottom": 640
+      }
+    },
+    {
+      "name": "应用历史记录",
+      "size": "960",
+      "viewport": [
+        960,
+        640
+      ],
+      "visualViewport": {
+        "width": 960,
+        "height": 640,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 704,
+        "y": 0,
+        "width": 256,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 960,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 49,
+        "y": 49,
+        "width": 911,
+        "height": 56,
+        "right": 960,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 647,
+          "y": 60.5,
+          "width": 107,
+          "height": 32,
+          "right": 754,
+          "bottom": 92.5
+        },
+        {
+          "x": 762,
+          "y": 60.5,
+          "width": 96,
+          "height": 32,
+          "right": 858,
+          "bottom": 92.5
+        },
+        {
+          "x": 866,
+          "y": 60.5,
+          "width": 70,
+          "height": 32,
+          "right": 936,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 48,
+        "height": 592,
+        "right": 48,
+        "bottom": 640
+      }
+    },
+    {
+      "name": "启动应用",
+      "size": "960",
+      "viewport": [
+        960,
+        640
+      ],
+      "visualViewport": {
+        "width": 960,
+        "height": 640,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 704,
+        "y": 0,
+        "width": 256,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 960,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 49,
+        "y": 49,
+        "width": 911,
+        "height": 56,
+        "right": 960,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 705.59375,
+          "y": 60.5,
+          "width": 152.40625,
+          "height": 32,
+          "right": 858,
+          "bottom": 92.5
+        },
+        {
+          "x": 866,
+          "y": 60.5,
+          "width": 70,
+          "height": 32,
+          "right": 936,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 48,
+        "height": 592,
+        "right": 48,
+        "bottom": 640
+      }
+    },
+    {
+      "name": "用户",
+      "size": "960",
+      "viewport": [
+        960,
+        640
+      ],
+      "visualViewport": {
+        "width": 960,
+        "height": 640,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 704,
+        "y": 0,
+        "width": 256,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 960,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 49,
+        "y": 49,
+        "width": 911,
+        "height": 56,
+        "right": 960,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 736,
+          "y": 60.5,
+          "width": 122,
+          "height": 32,
+          "right": 858,
+          "bottom": 92.5
+        },
+        {
+          "x": 866,
+          "y": 60.5,
+          "width": 70,
+          "height": 32,
+          "right": 936,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 48,
+        "height": 592,
+        "right": 48,
+        "bottom": 640
+      }
+    },
+    {
+      "name": "详细信息",
+      "size": "960",
+      "viewport": [
+        960,
+        640
+      ],
+      "visualViewport": {
+        "width": 960,
+        "height": 640,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 704,
+        "y": 0,
+        "width": 256,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 960,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 49,
+        "y": 49,
+        "width": 911,
+        "height": 56,
+        "right": 960,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 649,
+          "y": 60.5,
+          "width": 107,
+          "height": 32,
+          "right": 756,
+          "bottom": 92.5
+        },
+        {
+          "x": 764,
+          "y": 60.5,
+          "width": 94,
+          "height": 32,
+          "right": 858,
+          "bottom": 92.5
+        },
+        {
+          "x": 866,
+          "y": 60.5,
+          "width": 70,
+          "height": 32,
+          "right": 936,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 48,
+        "height": 592,
+        "right": 48,
+        "bottom": 640
+      }
+    },
+    {
+      "name": "服务",
+      "size": "960",
+      "viewport": [
+        960,
+        640
+      ],
+      "visualViewport": {
+        "width": 960,
+        "height": 640,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 704,
+        "y": 0,
+        "width": 256,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 960,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 49,
+        "y": 49,
+        "width": 911,
+        "height": 56,
+        "right": 960,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 710,
+          "y": 60.5,
+          "width": 44,
+          "height": 32,
+          "right": 754,
+          "bottom": 92.5
+        },
+        {
+          "x": 762,
+          "y": 60.5,
+          "width": 44,
+          "height": 32,
+          "right": 806,
+          "bottom": 92.5
+        },
+        {
+          "x": 814,
+          "y": 60.5,
+          "width": 44,
+          "height": 32,
+          "right": 858,
+          "bottom": 92.5
+        },
+        {
+          "x": 866,
+          "y": 60.5,
+          "width": 70,
+          "height": 32,
+          "right": 936,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 48,
+        "height": 592,
+        "right": 48,
+        "bottom": 640
+      }
+    },
+    {
+      "name": "设置",
+      "size": "960",
+      "viewport": [
+        960,
+        640
+      ],
+      "visualViewport": {
+        "width": 960,
+        "height": 640,
+        "scale": 1
+      },
+      "dpr": 1,
+      "windowControls": {
+        "x": 704,
+        "y": 0,
+        "width": 256,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "settingsControls": [
+        {
+          "x": 791,
+          "y": 181.75,
+          "width": 130,
+          "height": 32,
+          "right": 921,
+          "bottom": 213.75
+        },
+        {
+          "x": 877,
+          "y": 252.25,
+          "width": 44,
+          "height": 24,
+          "right": 921,
+          "bottom": 276.25
+        },
+        {
+          "x": 825,
+          "y": 314.75,
+          "width": 96,
+          "height": 32,
+          "right": 921,
+          "bottom": 346.75
+        },
+        {
+          "x": 877,
+          "y": 385.25,
+          "width": 44,
+          "height": 24,
+          "right": 921,
+          "bottom": 409.25
+        },
+        {
+          "x": 793.328125,
+          "y": 444.75,
+          "width": 127.671875,
+          "height": 38,
+          "right": 921,
+          "bottom": 482.75
+        },
+        {
+          "x": 817,
+          "y": 571.25,
+          "width": 104,
+          "height": 38,
+          "right": 921,
+          "bottom": 609.25
+        },
+        {
+          "x": 791,
+          "y": 640.75,
+          "width": 130,
+          "height": 32,
+          "right": 921,
+          "bottom": 672.75
+        },
+        {
+          "x": 877,
+          "y": 711.25,
+          "width": 44,
+          "height": 24,
+          "right": 921,
+          "bottom": 735.25
+        },
+        {
+          "x": 767,
+          "y": 829,
+          "width": 154,
+          "height": 103.5,
+          "right": 921,
+          "bottom": 932.5
+        },
+        {
+          "x": 827,
+          "y": 1203.5,
+          "width": 94,
+          "height": 32,
+          "right": 921,
+          "bottom": 1235.5
+        },
+        {
+          "x": 555.109375,
+          "y": 1449.140625,
+          "width": 365.890625,
+          "height": 32,
+          "right": 921,
+          "bottom": 1481.140625
+        }
+      ],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 960,
+        "height": 48,
+        "right": 960,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 49,
+        "y": 49,
+        "width": 911,
+        "height": 56,
+        "right": 960,
+        "bottom": 105
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 866,
+          "y": 60.5,
+          "width": 70,
+          "height": 32,
+          "right": 936,
+          "bottom": 92.5
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 48,
+        "height": 592,
+        "right": 48,
+        "bottom": 640
+      }
+    },
+    {
+      "name": "进程",
+      "size": "125",
+      "viewport": [
+        1104,
+        688
+      ],
+      "visualViewport": {
+        "width": 1104,
+        "height": 688,
+        "scale": 1
+      },
+      "dpr": 1.25,
+      "windowControls": {
+        "x": 776,
+        "y": 0,
+        "width": 328,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1104,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 204.8000030517578,
+        "y": 48.79999923706055,
+        "width": 899.2000122070312,
+        "height": 56,
+        "right": 1104.000015258789,
+        "bottom": 104.79999923706055
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 660.6000366210938,
+          "y": 60.400001525878906,
+          "width": 114.5999984741211,
+          "height": 32,
+          "right": 775.2000350952148,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 783.2000122070312,
+          "y": 60.400001525878906,
+          "width": 101.5999984741211,
+          "height": 32,
+          "right": 884.8000106811523,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 892.7999877929688,
+          "y": 60.400001525878906,
+          "width": 101.5999984741211,
+          "height": 32,
+          "right": 994.3999862670898,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 1002.4000244140625,
+          "y": 60.400001525878906,
+          "width": 77.5999984741211,
+          "height": 32,
+          "right": 1080.0000228881836,
+          "bottom": 92.4000015258789
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 640,
+        "right": 204,
+        "bottom": 688
+      }
+    },
+    {
+      "name": "性能",
+      "size": "125",
+      "viewport": [
+        1104,
+        688
+      ],
+      "visualViewport": {
+        "width": 1104,
+        "height": 688,
+        "scale": 1
+      },
+      "dpr": 1.25,
+      "windowControls": {
+        "x": 776,
+        "y": 0,
+        "width": 328,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1104,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 204.8000030517578,
+        "y": 48.79999923706055,
+        "width": 899.2000122070312,
+        "height": 56,
+        "right": 1104.000015258789,
+        "bottom": 104.79999923706055
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 879.7999877929688,
+          "y": 60.400001525878906,
+          "width": 114.5999984741211,
+          "height": 32,
+          "right": 994.3999862670898,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 1002.4000244140625,
+          "y": 60.400001525878906,
+          "width": 77.5999984741211,
+          "height": 32,
+          "right": 1080.0000228881836,
+          "bottom": 92.4000015258789
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 640,
+        "right": 204,
+        "bottom": 688
+      }
+    },
+    {
+      "name": "应用历史记录",
+      "size": "125",
+      "viewport": [
+        1104,
+        688
+      ],
+      "visualViewport": {
+        "width": 1104,
+        "height": 688,
+        "scale": 1
+      },
+      "dpr": 1.25,
+      "windowControls": {
+        "x": 776,
+        "y": 0,
+        "width": 328,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1104,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 204.8000030517578,
+        "y": 48.79999923706055,
+        "width": 899.2000122070312,
+        "height": 56,
+        "right": 1104.000015258789,
+        "bottom": 104.79999923706055
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 768.2000122070312,
+          "y": 60.400001525878906,
+          "width": 114.5999984741211,
+          "height": 32,
+          "right": 882.8000106811523,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 890.7999877929688,
+          "y": 60.400001525878906,
+          "width": 103.5999984741211,
+          "height": 32,
+          "right": 994.3999862670898,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 1002.4000244140625,
+          "y": 60.400001525878906,
+          "width": 77.5999984741211,
+          "height": 32,
+          "right": 1080.0000228881836,
+          "bottom": 92.4000015258789
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 640,
+        "right": 204,
+        "bottom": 688
+      }
+    },
+    {
+      "name": "启动应用",
+      "size": "125",
+      "viewport": [
+        1104,
+        688
+      ],
+      "visualViewport": {
+        "width": 1104,
+        "height": 688,
+        "scale": 1
+      },
+      "dpr": 1.25,
+      "windowControls": {
+        "x": 776,
+        "y": 0,
+        "width": 328,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1104,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 204.8000030517578,
+        "y": 48.79999923706055,
+        "width": 899.2000122070312,
+        "height": 56,
+        "right": 1104.000015258789,
+        "bottom": 104.79999923706055
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 834.4000244140625,
+          "y": 60.400001525878906,
+          "width": 160,
+          "height": 32,
+          "right": 994.4000244140625,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 1002.4000244140625,
+          "y": 60.400001525878906,
+          "width": 77.5999984741211,
+          "height": 32,
+          "right": 1080.0000228881836,
+          "bottom": 92.4000015258789
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 640,
+        "right": 204,
+        "bottom": 688
+      }
+    },
+    {
+      "name": "用户",
+      "size": "125",
+      "viewport": [
+        1104,
+        688
+      ],
+      "visualViewport": {
+        "width": 1104,
+        "height": 688,
+        "scale": 1
+      },
+      "dpr": 1.25,
+      "windowControls": {
+        "x": 776,
+        "y": 0,
+        "width": 328,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1104,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 204.8000030517578,
+        "y": 48.79999923706055,
+        "width": 899.2000122070312,
+        "height": 56,
+        "right": 1104.000015258789,
+        "bottom": 104.79999923706055
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 864.7999877929688,
+          "y": 60.400001525878906,
+          "width": 129.60000610351562,
+          "height": 32,
+          "right": 994.3999938964844,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 1002.4000244140625,
+          "y": 60.400001525878906,
+          "width": 77.5999984741211,
+          "height": 32,
+          "right": 1080.0000228881836,
+          "bottom": 92.4000015258789
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 640,
+        "right": 204,
+        "bottom": 688
+      }
+    },
+    {
+      "name": "详细信息",
+      "size": "125",
+      "viewport": [
+        1104,
+        688
+      ],
+      "visualViewport": {
+        "width": 1104,
+        "height": 688,
+        "scale": 1
+      },
+      "dpr": 1.25,
+      "windowControls": {
+        "x": 776,
+        "y": 0,
+        "width": 328,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1104,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 204.8000030517578,
+        "y": 48.79999923706055,
+        "width": 899.2000122070312,
+        "height": 56,
+        "right": 1104.000015258789,
+        "bottom": 104.79999923706055
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 770.2000122070312,
+          "y": 60.400001525878906,
+          "width": 114.5999984741211,
+          "height": 32,
+          "right": 884.8000106811523,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 892.7999877929688,
+          "y": 60.400001525878906,
+          "width": 101.5999984741211,
+          "height": 32,
+          "right": 994.3999862670898,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 1002.4000244140625,
+          "y": 60.400001525878906,
+          "width": 77.5999984741211,
+          "height": 32,
+          "right": 1080.0000228881836,
+          "bottom": 92.4000015258789
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 640,
+        "right": 204,
+        "bottom": 688
+      }
+    },
+    {
+      "name": "服务",
+      "size": "125",
+      "viewport": [
+        1104,
+        688
+      ],
+      "visualViewport": {
+        "width": 1104,
+        "height": 688,
+        "scale": 1
+      },
+      "dpr": 1.25,
+      "windowControls": {
+        "x": 776,
+        "y": 0,
+        "width": 328,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "settingsControls": [],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1104,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 204.8000030517578,
+        "y": 48.79999923706055,
+        "width": 899.2000122070312,
+        "height": 56,
+        "right": 1104.000015258789,
+        "bottom": 104.79999923706055
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 823.6000366210938,
+          "y": 60.400001525878906,
+          "width": 51.60000228881836,
+          "height": 32,
+          "right": 875.2000389099121,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 883.2000122070312,
+          "y": 60.400001525878906,
+          "width": 51.60000228881836,
+          "height": 32,
+          "right": 934.8000144958496,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 942.7999877929688,
+          "y": 60.400001525878906,
+          "width": 51.60000228881836,
+          "height": 32,
+          "right": 994.3999900817871,
+          "bottom": 92.4000015258789
+        },
+        {
+          "x": 1002.4000244140625,
+          "y": 60.400001525878906,
+          "width": 77.5999984741211,
+          "height": 32,
+          "right": 1080.0000228881836,
+          "bottom": 92.4000015258789
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 640,
+        "right": 204,
+        "bottom": 688
+      }
+    },
+    {
+      "name": "设置",
+      "size": "125",
+      "viewport": [
+        1104,
+        688
+      ],
+      "visualViewport": {
+        "width": 1104,
+        "height": 688,
+        "scale": 1
+      },
+      "dpr": 1.25,
+      "windowControls": {
+        "x": 776,
+        "y": 0,
+        "width": 328,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "settingsControls": [
+        {
+          "x": 938,
+          "y": 181.5500030517578,
+          "width": 130,
+          "height": 32,
+          "right": 1068,
+          "bottom": 213.5500030517578
+        },
+        {
+          "x": 1024,
+          "y": 251.85000610351562,
+          "width": 44,
+          "height": 24,
+          "right": 1068,
+          "bottom": 275.8500061035156
+        },
+        {
+          "x": 958.4000244140625,
+          "y": 314.1499938964844,
+          "width": 109.5999984741211,
+          "height": 32,
+          "right": 1068.0000228881836,
+          "bottom": 346.1499938964844
+        },
+        {
+          "x": 1024,
+          "y": 384.45001220703125,
+          "width": 44,
+          "height": 24,
+          "right": 1068,
+          "bottom": 408.45001220703125
+        },
+        {
+          "x": 940.7374877929688,
+          "y": 443.95001220703125,
+          "width": 127.26250457763672,
+          "height": 37.60000228881836,
+          "right": 1067.9999923706055,
+          "bottom": 481.5500144958496
+        },
+        {
+          "x": 964.4000244140625,
+          "y": 570.25,
+          "width": 103.5999984741211,
+          "height": 37.60000228881836,
+          "right": 1068.0000228881836,
+          "bottom": 607.8500022888184
+        },
+        {
+          "x": 938,
+          "y": 639.3500366210938,
+          "width": 130,
+          "height": 32,
+          "right": 1068,
+          "bottom": 671.3500366210938
+        },
+        {
+          "x": 1024,
+          "y": 709.6500244140625,
+          "width": 44,
+          "height": 24,
+          "right": 1068,
+          "bottom": 733.6500244140625
+        },
+        {
+          "x": 898.4000244140625,
+          "y": 827.2000122070312,
+          "width": 169.60000610351562,
+          "height": 103.5,
+          "right": 1068.0000305175781,
+          "bottom": 930.7000122070312
+        },
+        {
+          "x": 962.4000244140625,
+          "y": 1201.9000244140625,
+          "width": 105.5999984741211,
+          "height": 32,
+          "right": 1068.0000228881836,
+          "bottom": 1233.9000244140625
+        },
+        {
+          "x": 690.3624877929688,
+          "y": 1433.5999755859375,
+          "width": 377.63751220703125,
+          "height": 72,
+          "right": 1068,
+          "bottom": 1505.5999755859375
+        }
+      ],
+      "overflow": false,
+      "title": {
+        "x": 0,
+        "y": 0,
+        "width": 1104,
+        "height": 48,
+        "right": 1104,
+        "bottom": 48
+      },
+      "toolbar": {
+        "x": 204.8000030517578,
+        "y": 48.79999923706055,
+        "width": 899.2000122070312,
+        "height": 56,
+        "right": 1104.000015258789,
+        "bottom": 104.79999923706055
+      },
+      "h1": 1,
+      "actions": [
+        {
+          "x": 1002.4000244140625,
+          "y": 60.400001525878906,
+          "width": 77.5999984741211,
+          "height": 32,
+          "right": 1080.0000228881836,
+          "bottom": 92.4000015258789
+        }
+      ],
+      "old": 0,
+      "sidebar": {
+        "x": 0,
+        "y": 48,
+        "width": 204,
+        "height": 640,
+        "right": 204,
+        "bottom": 688
+      }
+    }
+  ],
+  "errors": [],
+  "clean": true,
+  "source": "production Release UI → HTTP → JSON.NET → CsWin32; no mock data or IFEO writes"
+}

@@ -1,0 +1,59 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-28T08:10:43.890Z",
+  "applicationCommit": "cd0cdea7cdde40cb04be950d46ab4f1e788358e1",
+  "earlierUnchangedCoreSuitesCommit": "c1496071da57f6493a354a01be70337305773464",
+  "assertions": 497,
+  "suites": [
+    {
+      "suite": "static-v11",
+      "assertions": 3,
+      "result": "PASS"
+    },
+    {
+      "suite": "native-api",
+      "assertions": 80,
+      "result": "PASS"
+    },
+    {
+      "suite": "native-core-v11",
+      "assertions": 25,
+      "result": "PASS"
+    },
+    {
+      "suite": "ui-smoke",
+      "assertions": 36,
+      "result": "PASS"
+    },
+    {
+      "suite": "recovery-e2e",
+      "assertions": 4,
+      "result": "PASS"
+    },
+    {
+      "suite": "desktop-e2e",
+      "assertions": 44,
+      "result": "PASS"
+    },
+    {
+      "suite": "desktop-layout.json",
+      "assertions": 248,
+      "result": "PASS"
+    },
+    {
+      "suite": "legacy-alias.json",
+      "assertions": 7,
+      "result": "PASS"
+    },
+    {
+      "suite": "update-metadata.json",
+      "assertions": 17,
+      "result": "PASS"
+    },
+    {
+      "suite": "installer-migration.json",
+      "assertions": 33,
+      "result": "PASS"
+    }
+  ]
+}

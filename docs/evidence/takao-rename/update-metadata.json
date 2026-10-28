@@ -1,0 +1,24 @@
+{
+  "result": "PASS",
+  "algorithmFixturesOnly": true,
+  "assertions": 17,
+  "checks": [
+    "one canonical installer remains supported",
+    "one already-published legacy installer remains supported",
+    "identical exact aliases select Takao independently of asset order",
+    "aliases with different hashes are rejected",
+    "aliases with different lengths are rejected",
+    "duplicate canonical filenames are rejected",
+    "one asset identity cannot masquerade as two filenames",
+    "more than the two exact aliases is rejected",
+    "an alias from a foreign URL is rejected",
+    "an alias URL with untrusted query data is rejected",
+    "a malformed alias digest is rejected",
+    "alias bounds are enforced before download",
+    "both exact filename checksum rows match the same trusted digest",
+    "a historical single-installer checksum file remains supported",
+    "a missing legacy alias checksum is rejected",
+    "a conflicting alias checksum is rejected",
+    "duplicate alias checksum rows are rejected"
+  ]
+}

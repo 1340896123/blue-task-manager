@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "assertions": 3,
+  "checks": [
+    "application C# JSON uses JSON.NET; native bindings are CsWin32, including metadata/account/registry; no handwritten native imports",
+    "component colors/font sizes/shadows resolve semantic tokens; no random/mock business data or mocked API routes",
+    "metric header58/plain header36/compact32/standard40 originate from design tokens; actual DOM checked by UI suites"
+  ]
+}

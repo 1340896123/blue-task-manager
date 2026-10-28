@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "assertions": 4,
+  "checks": [
+    "A15 disconnect preserves last real paused identity and metric values without zero substitution",
+    "A15 last successful sampling time remains visible",
+    "A15 new host rotates in-memory operation token",
+    "A15 recovered UI rebootstrap authorizes real writes to replacement host"
+  ]
+}

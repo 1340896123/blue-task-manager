@@ -1,0 +1,16 @@
+{
+  "result": "PASS",
+  "assertions": 80,
+  "passed": [
+    "A02 real snapshots, A03 native PID, A04 warmup and deltas, A08 explicit unavailable network and valid/partial GPU",
+    "A12 missing/wrong token, external Origin and wrong Host port refused",
+    "A03 independent process/name/memory match, A04 CPU/I/O load, A09 real CreateProcess, A11 identity and protected targets",
+    "A13 session history reset, A14 pause/interval/resume",
+    "A10 test-owned target terminated and disappeared"
+  ],
+  "platform": "win32",
+  "node": "v24.16.0",
+  "hostPid": 49916,
+  "firstSampleId": 1,
+  "source": "production CsWin32 collector; no mocks"
+}
