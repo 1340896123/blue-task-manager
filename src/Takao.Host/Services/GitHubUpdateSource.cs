@@ -47,13 +47,12 @@ internal sealed class GitHubUpdateSource : IDisposable
             if (coreComparison < 0) continue;
             if (identity.ReleaseTag is not null && UpdateReleaseIdentity.TryTag(identity.ReleaseTag, out var current)
                 && VersionComparer.VersionRelease.Compare(version, current) <= 0) continue;
-            var installers = release.Assets?.Where(asset => asset is not null && asset.Id > 0 && IsInstallerAssetName(asset.Name, core) && asset.State == "uploaded").ToArray() ?? [];
+            var installers = InstallerAssets(release.Assets, core, release.TagName!);
             var sums = release.Assets?.Where(asset => asset is not null && asset.Id > 0 && asset.Name == "SHA256SUMS" && asset.State == "uploaded").ToArray() ?? [];
-            if (installers.Length != 1 || sums.Length != 1 || installers[0].Size is <= 0 or > 1024L * 1024 * 1024 || sums[0].Size is <= 0 or > 65536) continue;
+            if (installers is null || sums.Length != 1 || sums[0].Size is <= 0 or > 65536) continue;
             var asset = installers[0];
             var name = asset.Name!;
-            if (asset.Digest is null || !Regex.IsMatch(asset.Digest, "\\Asha256:[0-9a-f]{64}\\z", RegexOptions.CultureInvariant)
-                || !OfficialAssetUrl(asset.Url, release.TagName, name) || !OfficialAssetUrl(sums[0].Url, release.TagName, "SHA256SUMS")) continue;
+            if (!OfficialAssetUrl(sums[0].Url, release.TagName, "SHA256SUMS")) continue;
             var commit = await ApiAsync<Commit>(ApiRoot + "/commits/" + Uri.EscapeDataString(release.TagName), timeout.Token);
             if (commit.Sha is null || !UpdateReleaseIdentity.CommitPattern.IsMatch(commit.Sha)) throw Failure("无法确认发布标签对应的源码提交。");
             if (coreComparison == 0 && identity.ReleaseTag is null)
@@ -64,11 +63,10 @@ internal sealed class GitHubUpdateSource : IDisposable
                 if (comparison.Status is "identical" or "behind") return null;
                 if (comparison.Status != "ahead" || comparison.AheadBy <= 0 || comparison.BehindBy != 0) throw Failure("当前源码与发布版本分叉，无法确认更新方向。");
             }
-            var expected = asset.Digest[7..];
+            var expected = asset.Digest![7..];
             using var sumResponse = await DownloadResponseAsync(new Uri(sums[0].Url!), timeout.Token);
             var checksumText = await ReadTextAsync(sumResponse, 65536, timeout.Token);
-            var entries = checksumText.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.TrimEnd('\r')).Where(line => line.EndsWith("  " + name, StringComparison.Ordinal)).ToArray();
-            if (entries.Length != 1 || entries[0] != expected + "  " + name) throw Failure("Release的SHA256SUMS与安装包摘要不一致。");
+            ValidateInstallerChecksums(checksumText, installers);
             return new(release.Id, release.TagName, commit.Sha, "https://github.com/" + Repository + "/releases/tag/" + Uri.EscapeDataString(release.TagName), name,
                 asset.Id, asset.Url!, asset.Size, expected, sums[0].Url!);
         }
@@ -77,6 +75,27 @@ internal sealed class GitHubUpdateSource : IDisposable
     internal static bool IsInstallerAssetName(string? name, NuGetVersion version) =>
         name == $"Takao-v{version.Major}.{version.Minor}.{version.Patch}-win-x64-setup.exe"
         || name == $"BlueDomainTaskManager-v{version.Major}.{version.Minor}.{version.Patch}-win-x64-setup.exe";
+    private static Asset[]? InstallerAssets(List<Asset>? assets, NuGetVersion version, string tag)
+    {
+        var matches = assets?.Where(asset => asset is not null && IsInstallerAssetName(asset.Name, version)).ToArray() ?? [];
+        if (matches.Length is < 1 or > 2 || matches.Any(asset => asset.Id <= 0 || asset.State != "uploaded" || asset.Size is <= 0 or > 1024L * 1024 * 1024
+            || asset.Digest is null || !Regex.IsMatch(asset.Digest, "\\Asha256:[0-9a-f]{64}\\z", RegexOptions.CultureInvariant)
+            || !OfficialAssetUrl(asset.Url, tag, asset.Name!))) return null;
+        if (matches.Length == 2 && (matches[0].Name == matches[1].Name || matches[0].Id == matches[1].Id
+            || matches[0].Size != matches[1].Size || matches[0].Digest != matches[1].Digest)) return null;
+        // The second exact filename is a transition alias for already-shipped
+        // clients. It is accepted only when it identifies the very same bytes.
+        return matches.OrderBy(asset => asset.Name!.StartsWith("Takao-", StringComparison.Ordinal) ? 0 : 1).ToArray();
+    }
+    private static void ValidateInstallerChecksums(string text, Asset[] installers)
+    {
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.TrimEnd('\r')).ToArray();
+        foreach (var asset in installers)
+        {
+            var entries = lines.Where(line => line.EndsWith("  " + asset.Name, StringComparison.Ordinal)).ToArray();
+            if (entries.Length != 1 || entries[0] != asset.Digest![7..] + "  " + asset.Name) throw Failure("Release的SHA256SUMS与安装包或兼容别名摘要不一致。");
+        }
+    }
     internal async Task<HttpResponseMessage> DownloadResponseAsync(Uri initial, CancellationToken cancellationToken)
     {
         var address = initial;

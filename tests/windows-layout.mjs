@@ -13,6 +13,7 @@ const release=path.join(root,'output/Takao-win-x64'), port=5296, cdp=9296, origi
 const output=path.join(root,'output/playwright/windows-layout'), temporary=await mkdtemp(path.join(tmpdir(),'taskmanager-layout-'));
 await mkdir(output,{recursive:true});
 assert.ok(!await portOpen(port)&&!await portOpen(cdp),'dedicated layout ports are free');
+await writeFile(path.join(temporary,'preferences.json'),JSON.stringify({version:1,intervalMs:1000,ui:{version:1,taskManagerPromptDismissed:true}}));
 const checks=[], screenshots=[], errors=[], geometry=[], viewportFacts=[], imageSizes=[], controls=[];
 const check=(ok,message)=>{assert.ok(ok,message);checks.push(message);};
 const host=spawn(path.join(release,'Takao.Host.exe'),[...(desktop?[]:['--headless']),`--port=${port}`],{cwd:release,env:{...process.env,TASKMANAGER_DATA_DIR:temporary,TASKMANAGER_CDP_PORT:String(cdp)},stdio:'ignore',windowsHide:true});

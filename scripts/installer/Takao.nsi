@@ -253,6 +253,45 @@ FunctionEnd
     ${EndIf}
 !macroend
 
+; Only these obsolete product files may be removed. The two old EXEs are
+; current apphost aliases and must remain part of the installed payload.
+!macro LegacyProductFiles Action
+    !insertmacro ${Action} "TaskManager.Host.dll"
+    !insertmacro ${Action} "TaskManager.Host.deps.json"
+    !insertmacro ${Action} "TaskManager.Host.runtimeconfig.json"
+    !insertmacro ${Action} "TaskManager.Launcher.dll"
+    !insertmacro ${Action} "TaskManager.Launcher.deps.json"
+    !insertmacro ${Action} "TaskManager.Launcher.runtimeconfig.json"
+    !insertmacro ${Action} ".electron\task-manager.ico"
+    !insertmacro ${Action} "design-system\task-manager\MASTER.md"
+!macroend
+!macro CheckLegacyProductFile RelativePath
+    !insertmacro CheckPayloadPath "${RelativePath}"
+    !insertmacro CheckImageLock "${RelativePath}"
+!macroend
+!macro CheckLegacyProductFiles
+    !insertmacro CheckPayloadPath ".electron"
+    !insertmacro CheckPayloadPath "design-system"
+    !insertmacro CheckPayloadPath "design-system\task-manager"
+    !insertmacro LegacyProductFiles CheckLegacyProductFile
+!macroend
+!macro DeleteLegacyProductFile RelativePath
+    ${If} ${FileExists} "$INSTDIR\${RelativePath}"
+        ClearErrors
+        Delete "$INSTDIR\${RelativePath}"
+        ${If} ${Errors}
+            !insertmacro Fail "无法清理已确认安装目录中的旧产品文件：${RelativePath}。请关闭文件占用后重试，安装记录已保留。"
+        ${EndIf}
+    ${EndIf}
+!macroend
+!macro DeleteLegacyProductFiles
+    !insertmacro LegacyProductFiles DeleteLegacyProductFile
+    ; Never remove unknown files or recursively delete a legacy directory.
+    RMDir "$INSTDIR\design-system\task-manager"
+    RMDir "$INSTDIR\design-system"
+    ClearErrors
+!macroend
+
 Function .onInit
     StrCpy $UpdateRequested 0
     StrCpy $UpdateMode 0
@@ -372,6 +411,9 @@ Section "Takao（必需）" MainSection
     ${ElseIf} $RegisteredDirectory != ""
         !insertmacro Fail "现有安装记录与目录不一致。请先修复或卸载旧版。"
     ${EndIf}
+    ${If} $RegisteredDirectory == $INSTDIR
+        !insertmacro CheckLegacyProductFiles
+    ${EndIf}
     !include "${GENERATED_DIR}\check-paths.nsh"
     !insertmacro CheckImageLock "Takao.Host.exe"
     !insertmacro CheckImageLock "Takao.Launcher.exe"
@@ -383,6 +425,9 @@ Section "Takao（必需）" MainSection
     !include "${GENERATED_DIR}\install-files.nsh"
     ${If} ${Errors}
         !insertmacro Fail "写入应用文件失败。请检查磁盘空间或目录权限，然后重新安装。"
+    ${EndIf}
+    ${If} $RegisteredDirectory == $INSTDIR
+        !insertmacro DeleteLegacyProductFiles
     ${EndIf}
     ClearErrors
     WriteINIStr "$INSTDIR\.bluedomain-install.ini" "Product" "Id" "${PRODUCT_ID}"
@@ -516,6 +561,7 @@ FunctionEnd
 Section "Uninstall"
     Call un.ValidateDirectory
     !insertmacro ValidateMarker
+    !insertmacro CheckLegacyProductFiles
     !include "${GENERATED_DIR}\check-paths.nsh"
     !insertmacro CheckImageLock "Takao.Host.exe"
     !insertmacro CheckImageLock "Takao.Launcher.exe"
@@ -529,6 +575,7 @@ Section "Uninstall"
     ${OrIf} $0 != 0
         !insertmacro Fail "无法确认本安装目录的任务栏入口已安全清理。卸载已中止，应用文件保持原样。"
     ${EndIf}
+    !insertmacro DeleteLegacyProductFiles
     ClearErrors
     !include "${GENERATED_DIR}\delete-files.nsh"
     ${If} ${Errors}

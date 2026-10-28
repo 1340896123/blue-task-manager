@@ -260,7 +260,21 @@ jobs:
           if ($null -ne $lookup.data.repository.release) { throw 'The target published or draft Release already exists; publication stopped.' }
           $delivery = Join-Path $env:RUNNER_TEMP 'verified-delivery'
           $installerName = "Takao-v$env:PACKAGE_VERSION-win-x64-setup.exe"
-          $files = @($installerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md') | ForEach-Object { Join-Path $delivery $_ }
+          $legacyInstallerName = "BlueDomainTaskManager-v$env:PACKAGE_VERSION-win-x64-setup.exe"
+          # Preserve the independently accepted four-file delivery. The old
+          # filename is a byte-identical publication alias for shipped clients.
+          $publication = Join-Path $env:RUNNER_TEMP 'release-assets'
+          if (Test-Path -LiteralPath $publication) { throw 'Publication staging must be fresh.' }
+          New-Item -ItemType Directory -Path $publication | Out-Null
+          foreach ($name in @($installerName, 'acceptance.json', 'acceptance.md')) { Copy-Item -LiteralPath (Join-Path $delivery $name) -Destination $publication }
+          Copy-Item -LiteralPath (Join-Path $publication $installerName) -Destination (Join-Path $publication $legacyInstallerName)
+          $installerBytes = (Get-Item -LiteralPath (Join-Path $publication $installerName)).Length
+          foreach ($name in @($installerName, $legacyInstallerName)) {
+            $file = Get-Item -LiteralPath (Join-Path $publication $name)
+            if ($file.Length -ne $installerBytes -or (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant() -cne $env:VERIFIED_INSTALLER_SHA256) { throw 'Publication aliases must exactly match the accepted installer.' }
+          }
+          [IO.File]::WriteAllLines((Join-Path $publication 'SHA256SUMS'), @("$env:VERIFIED_INSTALLER_SHA256  $installerName", "$env:VERIFIED_INSTALLER_SHA256  $legacyInstallerName"), [Text.UTF8Encoding]::new($false))
+          $files = @($installerName, $legacyInstallerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md') | ForEach-Object { Join-Path $publication $_ }
           $runUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
           $notes = @(
             "Windows x64 NSIS installer, package version $env:PACKAGE_VERSION.",
@@ -279,7 +293,7 @@ jobs:
             "Build and acceptance: $runUrl",
             "Installer SHA256: $env:VERIFIED_INSTALLER_SHA256",
             '',
-            'Assets: Setup.exe, its SHA256SUMS, acceptance.json and acceptance.md. Application screenshots remain available in the workflow artifacts for 14 days.'
+            'Assets: Takao Setup.exe and its identical legacy filename alias, SHA256SUMS for both, acceptance.json and acceptance.md. Application screenshots remain available in the workflow artifacts for 14 days.'
           )
           $notesPath = Join-Path $env:RUNNER_TEMP 'installer-release-notes.md'
           [IO.File]::WriteAllLines($notesPath, $notes, [Text.UTF8Encoding]::new($false))
@@ -301,10 +315,15 @@ jobs:
           $releaseId = [long]$draftIdentity.databaseId
           $releaseApi = "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/releases/$releaseId"
           $draft = Invoke-RestMethod -Uri $releaseApi -Headers $headers -TimeoutSec 30
-          $expectedAssets = @($installerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md')
+          $expectedAssets = @($installerName, $legacyInstallerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md')
           if ($draft.id -ne $releaseId -or $draft.tag_name -cne $tag -or $draft.target_commitish -cne $env:SOURCE_SHA -or -not $draft.draft -or $draft.assets.Count -ne $expectedAssets.Count) { throw 'The fixed draft does not match this commit and the complete expected delivery.' }
           foreach ($asset in $draft.assets) {
-            if ($expectedAssets -cnotcontains $asset.name -or $asset.size -le 0) { throw 'Unexpected or empty uploaded release asset.' }
+            if ($expectedAssets -cnotcontains $asset.name -or $asset.size -le 0 -or $asset.state -cne 'uploaded' -or @($draft.assets | Where-Object name -CEQ $asset.name).Count -ne 1) { throw 'Unexpected, duplicate, incomplete or empty uploaded release asset.' }
+          }
+          foreach ($name in @($installerName, $legacyInstallerName)) {
+            $asset = @($draft.assets | Where-Object name -CEQ $name)[0]
+            $expectedUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/releases/download/$tag/$name"
+            if ($asset.size -ne $installerBytes -or $asset.digest -cne "sha256:$env:VERIFIED_INSTALLER_SHA256" -or [Uri]::UnescapeDataString($asset.browser_download_url) -cne $expectedUrl) { throw 'The uploaded aliases differ from the accepted installer or official release URL.' }
           }
           $reference = Invoke-RestMethod -Uri "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/git/ref/tags/$encodedTag" -Headers $headers -TimeoutSec 30
           if ($reference.object.type -cne 'commit' -or $reference.object.sha -cne $env:SOURCE_SHA) { throw 'The tag changed before publication; the draft remains unpublished.' }

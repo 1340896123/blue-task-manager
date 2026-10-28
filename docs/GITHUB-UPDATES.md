@@ -26,8 +26,9 @@
 
 ## 下载、完整性与暂存
 
-- 仅接受同Release的唯一uploaded安装附件：新名称 `Takao-v<core>-win-x64-setup.exe`，兼容历史名称 `BlueDomainTaskManager-v<core>-win-x64-setup.exe`；两种名称同时存在同样按重复候选拒绝，core等于tag core，size在有效范围且不超过1GiB。拒绝ZIP、其他架构、重复/空附件、任意命令或renderer路径。
-- 安装包必须有合法GitHub sha256 digest；同Release的SHA256SUMS精确文件名条目也必须存在并一致。元数据/校验文本有小型读取上限。实际文件字节数、size与计算SHA256全部匹配后才ready；散列一致不冒充当前未签名安装包的Authenticode发布者验证。
+- 安装附件的新名称为 `Takao-v<core>-win-x64-setup.exe`，兼容历史名称 `BlueDomainTaskManager-v<core>-win-x64-setup.exe`，core等于tag core，uploaded且size在有效范围、不超过1GiB。支持唯一单包；唯一双包例外是上述两个精确不同名称、不同asset ID、独立官方URL、相同size与合法GitHub SHA256 digest的字节别名，选择Takao为canonical。其他重复名称、多个候选、长度/散列冲突、ZIP/其他架构或任意命令/renderer路径一律拒绝。
+- 发布job在独立核验原始四文件delivery后，另建publication暂存，复制同一已验安装器为旧名称别名，SHA256SUMS写入两个精确文件名的同散列行。上传后再验证五附件完整、两个安装器size/digest和官方URL一致，再公开Release；兼容旧客户端只识别旧文件名的首次更新，不改原始验收交付集。
+- 安装包必须有合法GitHub sha256 digest；同Release的SHA256SUMS精确文件名条目也必须存在并一致。双名称别名必须各有唯一校验行且同一散列，缺行、重复或冲突都拒绝。元数据/校验文本有小型读取上限。实际选定文件字节数、size与计算SHA256全部匹配后才ready；散列一致不冒充当前未签名安装包的Authenticode发布者验证。
 - 初始下载URL必须为该固定仓库/tag的官方附件；仅HTTPS，重定向次数有界，只放行GitHub官方附件主机（github.com、release-assets.githubusercontent.com及确需的官方对象主机）。不保存带签名query的重定向URL，不转发凭据，不允许任意URL。
 - 用户点击后才流式下载到固定part；实际字节驱动进度，total未知为null，最多每秒发布进度；完整校验后同目录原子改名。后台任务不阻塞页面或采样，只保留一个候选包/part。取消、断流、超时、磁盘不足、校验失败不ready、不自动安装，并清理part；重启半包重新下载，不伪装断点续传。关闭应用取消下载，网络重试与总时限有界。
 - 暂存固定 `%ProgramData%\BlueDomainTaskManager\Updates`，提升Host创建受保护DACL，仅SYSTEM/Administrators可写，经CsWin32标准ACL/安全描述符调用；逐级拒绝reparse。已有目录也须核验权限/所有者/真实路径，不可信则不可用。安装目录可能自选，不能假设其都继承Program Files保护。

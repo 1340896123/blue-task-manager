@@ -69,6 +69,12 @@ $productionBefore=Fingerprint-Key $productionKey
 $ifeoBefore=Fingerprint-Key $ifeoKey
 $markerBytes=$null
 $heldProcess=$null
+$legacyFiles=@('TaskManager.Host.dll','TaskManager.Host.deps.json','TaskManager.Host.runtimeconfig.json','TaskManager.Launcher.dll','TaskManager.Launcher.deps.json','TaskManager.Launcher.runtimeconfig.json','.electron/task-manager.ico','design-system/task-manager/MASTER.md')
+$legacyUserFile=$null
+$legacyJunction=$null
+function Write-LegacyProductFiles {
+    foreach($relative in $legacyFiles){$file=Join-Path $installDirectory $relative;New-Item -ItemType Directory -Path (Split-Path -Parent $file) -Force | Out-Null;[IO.File]::WriteAllText($file,'obsolete fixture product file',$utf8)}
+}
 try {
     Check ($null -eq (Read-Registration)) 'The dedicated fixture product key does not exist'
     New-Item -ItemType Directory -Path $source,$generated,$payload -Force | Out-Null
@@ -86,6 +92,8 @@ if (args.Length == 1 && args[0].StartsWith("--hold=") && int.TryParse(args[0][7.
     Push-Location ([IO.Path]::GetTempPath())
     try { & dotnet build (Join-Path $source 'Fixture.csproj') -c Release -o $payload -v quiet; if($LASTEXITCODE -ne 0){throw 'Fixture build failed.'} } finally { Pop-Location }
     Copy-Item -LiteralPath (Join-Path $payload 'Takao.Host.exe') -Destination (Join-Path $payload 'Takao.Launcher.exe')
+    Copy-Item -LiteralPath (Join-Path $payload 'Takao.Host.exe') -Destination (Join-Path $payload 'TaskManager.Host.exe')
+    Copy-Item -LiteralPath (Join-Path $payload 'Takao.Host.exe') -Destination (Join-Path $payload 'TaskManager.Launcher.exe')
     $electron=Join-Path $payload '.electron/node_modules/electron/dist'
     New-Item -ItemType Directory -Path $electron -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $payload 'Takao.Host.exe') -Destination (Join-Path $electron 'electron.exe')
@@ -108,6 +116,13 @@ if (args.Length == 1 && args[0].StartsWith("--hold=") && int.TryParse(args[0][7.
     Check ((Launch-Count) -eq 0) 'Ordinary silent installation does not launch the Host'
     $registered=Read-Registration
     Check ($registered.directory -ceq $installDirectory -and $registered.tag -ceq 'v1.1.1-build.0' -and $registered.commit -ceq $sourceCommit) 'Installed identity records the exact ReleaseTag and SourceCommit'
+    $oldInstallDirectory=[IO.Path]::GetFullPath((Join-Path $RunDirectory 'BlueDomainTaskManager'))
+    if([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($installDirectory)) -cne $RunDirectory -or [IO.Path]::GetDirectoryName($oldInstallDirectory) -cne $RunDirectory){throw 'Fixture migration paths escaped their exact harness directory.'}
+    Move-Item -LiteralPath $installDirectory -Destination $oldInstallDirectory
+    $installDirectory=$oldInstallDirectory
+    $fixtureKey=$hive.OpenSubKey($productKey,$true)
+    try{$fixtureKey.SetValue('InstallLocation',$installDirectory);$fixtureKey.SetValue('DisplayName','蓝域任务管理器');$fixtureKey.SetValue('UninstallString','"'+$installDirectory+'\Uninstall.exe"');$fixtureKey.SetValue('QuietUninstallString','"'+$installDirectory+'\Uninstall.exe" /S')}finally{$fixtureKey.Dispose()}
+    [IO.File]::WriteAllText((Join-Path $installDirectory '.bluedomain-install.ini'),"[Product]`r`nId=$productId`r`nDirectory=$installDirectory`r`nVersion=1.1.1`r`nReleaseTag=v1.1.1-build.0`r`nSourceCommit=$sourceCommit`r`n",$utf8)
     $marker=Join-Path $installDirectory '.bluedomain-install.ini';$markerBytes=[IO.File]::ReadAllBytes($marker)
     [IO.File]::WriteAllText($marker,"[Product]`r`nId=incorrect-fixture-marker`r`nDirectory=$installDirectory`r`n",$utf8)
     $attempt=[Guid]::NewGuid().ToString('N')
@@ -116,6 +131,24 @@ if (args.Length == 1 && args[0].StartsWith("--hold=") && int.TryParse(args[0][7.
     Check ($registered.attempt -ceq $attempt -and $registered.result -ceq 'failed' -and $registered.error) 'A valid product registration records an early marker failure'
     Check ((Launch-Count) -eq 0) 'A failed identity check does not launch the Host'
     [IO.File]::WriteAllBytes($marker,$markerBytes)
+    $legacyTarget=Join-Path $RunDirectory 'legacy-link-target';New-Item -ItemType Directory -Path $legacyTarget -Force | Out-Null
+    $legacySentinel=Join-Path $legacyTarget 'MASTER.md';[IO.File]::WriteAllText($legacySentinel,'outside installation sentinel',$utf8)
+    New-Item -ItemType Directory -Path (Join-Path $installDirectory 'design-system') -Force | Out-Null
+    $legacyJunction=Join-Path $installDirectory 'design-system/task-manager'
+    New-Item -ItemType Junction -Path $legacyJunction -Target $legacyTarget | Out-Null
+    Check ((Run-Installer '/S').code -eq 2 -and [IO.File]::ReadAllText($legacySentinel) -ceq 'outside installation sentinel') 'Legacy cleanup refuses a reparse directory and leaves its target untouched'
+    Remove-Item -LiteralPath $legacyJunction -Force;$legacyJunction=$null
+    Write-LegacyProductFiles
+    $legacyUserFile=Join-Path $installDirectory 'design-system/task-manager/user-notes.txt';[IO.File]::WriteAllText($legacyUserFile,'preserve unknown user content',$utf8)
+    $legacyLock=[IO.File]::Open((Join-Path $installDirectory 'TaskManager.Host.dll'),[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::None)
+    try{$lockedLegacy=Run-Installer '/S'}finally{$legacyLock.Dispose()}
+    Check ($lockedLegacy.code -eq 2 -and (Test-Path -LiteralPath (Join-Path $installDirectory 'TaskManager.Host.dll'))) 'A locked obsolete product file stops upgrade before cleanup'
+    $beforeMigration=Launch-Count;$attempt=[Guid]::NewGuid().ToString('N')
+    Check ((Run-Installer "/S /TASKMANAGERUPDATE=$attempt").code -eq 0) 'An existing registered old-name directory and DisplayName upgrade in place'
+    Wait-Launch $beforeMigration
+    Check (@($legacyFiles|Where-Object {Test-Path -LiteralPath (Join-Path $installDirectory $_)}).Count -eq 0) 'Upgrade removes only the eight known obsolete product files'
+    Check ([IO.File]::ReadAllText($legacyUserFile) -ceq 'preserve unknown user content') 'Upgrade preserves an unknown file and its non-empty legacy directory'
+    Check ((Get-FileHash -LiteralPath (Join-Path $installDirectory 'TaskManager.Host.exe')).Hash -ceq (Get-FileHash -LiteralPath (Join-Path $installDirectory 'Takao.Host.exe')).Hash -and (Test-Path -LiteralPath (Join-Path $installDirectory 'TaskManager.Launcher.exe'))) 'Upgrade retains current old-name EXE entry aliases'
     $heldProcess=Start-Process -FilePath (Join-Path $installDirectory 'Takao.Host.exe') -ArgumentList '--hold=2200' -WindowStyle Hidden -PassThru
     $plain=Run-Installer '/S'
     Check ($plain.code -eq 2 -and -not $heldProcess.HasExited) 'Ordinary installation immediately rejects an actually running fixture Host'
@@ -141,8 +174,9 @@ if (args.Length == 1 && args[0].StartsWith("--hold=") && int.TryParse(args[0][7.
 finally {
     if($heldProcess){[void]$heldProcess.WaitForExit(10000);$heldProcess.Dispose()}
     try {
+        if($legacyJunction -and (Test-Path -LiteralPath $legacyJunction)){Remove-Item -LiteralPath $legacyJunction -Force;$legacyJunction=$null}
         if($markerBytes -and (Test-Path -LiteralPath (Join-Path $installDirectory '.bluedomain-install.ini'))){[IO.File]::WriteAllBytes((Join-Path $installDirectory '.bluedomain-install.ini'),$markerBytes)}
-        if(Read-Registration){$uninstaller=Join-Path $installDirectory 'Uninstall.exe';if(-not (Test-Path -LiteralPath $uninstaller)){throw 'Fixture uninstaller missing.'};$process=Start-Process -FilePath $uninstaller -ArgumentList '/S' -WindowStyle Hidden -PassThru -Wait;$process.Dispose();$deadline=[DateTime]::UtcNow.AddSeconds(20);while((Read-Registration) -and [DateTime]::UtcNow -lt $deadline){Start-Sleep -Milliseconds 100};if(Read-Registration){throw 'Dedicated fixture registration remains after uninstall.'}}
+        if(Read-Registration){Write-LegacyProductFiles;$uninstaller=Join-Path $installDirectory 'Uninstall.exe';if(-not (Test-Path -LiteralPath $uninstaller)){throw 'Fixture uninstaller missing.'};$process=Start-Process -FilePath $uninstaller -ArgumentList '/S' -WindowStyle Hidden -PassThru -Wait;$process.Dispose();$deadline=[DateTime]::UtcNow.AddSeconds(20);while((Read-Registration) -and [DateTime]::UtcNow -lt $deadline){Start-Sleep -Milliseconds 100};if(Read-Registration){throw 'Dedicated fixture registration remains after uninstall.'};Check (@($legacyFiles|Where-Object {Test-Path -LiteralPath (Join-Path $installDirectory $_)}).Count -eq 0) 'Uninstall also removes the exact known legacy product files';if($legacyUserFile){Check ([IO.File]::ReadAllText($legacyUserFile) -ceq 'preserve unknown user content') 'Uninstall preserves unknown content in the non-empty legacy directory'}}
         Check ((Fingerprint-Key $productionKey) -ceq $productionBefore) 'The real product uninstall key is unchanged'
         Check ((Fingerprint-Key $ifeoKey) -ceq $ifeoBefore) 'The complete real taskmgr IFEO key is unchanged'
     } catch { $report.cleanupError=$_.Exception.Message;$report.result='FAIL' }

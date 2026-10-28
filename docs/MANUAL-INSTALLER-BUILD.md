@@ -37,11 +37,11 @@ GitHub Actions仅由`workflow_dispatch`手动触发Windows x64 Release安装包�
 2. 隔离数据目录、DOTNET_ROOT无效路径下真实启动，确认从程序目录加载coreclr及真实API，不把框架依赖包称为自包含。
 3. 在一次性GitHub hosted Windows runner静默安装到带空格目录，核对payload/快捷方式，以安装目录执行真实Electron E2E；重装后仍可运行，关闭专用实例再卸载。
 4. IFEO前后只读对照，不为测试改变本机全局入口；清理仅针对测试创建且保存身份的实例。
-5. 提交推送后实际手动触发一次，核实构建/安装E2E/独立发布校验成功、tag指向该次源SHA、Release四个附件齐全；失败按日志修复。
+5. 提交推送后实际手动触发一次，核实构建/安装E2E/独立发布校验成功、tag指向该次源SHA、Release五个附件齐全（两种精确名称的相同安装器、SHA256SUMS及两份验收报告）；失败按日志修复。
 
 管理员/安装生命周期适用R系列验收；测试不得通过伪造环境变量绕过本机UAC。CI在开始时检查实际Windows管理员令牌，缺少提升权限应失败而非宣称成功。构建job只有仓库读取权限；`needs: installer`的独立发布job才具备`contents: write`，不检出源码或运行包内脚本，仅下载本次已验证交付集。以上是实施合同，实际验证结果在后续记录。
 
-发布job独立核对Setup的SHA256、单条SHA256SUMS、验收PASS、源提交SHA、安装器名称/版本/哈希及至少42项桌面断言。发布前再次检查目标不存在，再通过标准Git refs API原子创建固定SHA的新tag；冲突即失败。随后创建draft、上传并确认四个附件完整、再次确认tag指向，再公开Release。构建/安装验收失败不创建tag或Release；发布上传失败时保留本次tag和未公开draft供排查，重试须使用新的tag，不会将不完整draft公开。
+发布job独立核对原始四文件delivery中Setup的SHA256、单条SHA256SUMS、验收PASS、源提交SHA、安装器名称/版本/哈希及至少42项桌面断言。随后在新的发布暂存目录增加字节相同的旧文件名别名，生成双文件名同散列校验清单，原始delivery保持四文件。发布前再次检查目标不存在，再通过标准Git refs API原子创建固定SHA的新tag；冲突即失败。随后创建draft、上传并确认五个附件完整，两个安装器的size/digest和各自官方URL与已验文件一致，再次确认tag指向后公开Release。构建/安装验收失败不创建tag或Release；发布上传失败时保留本次tag和未公开draft供排查，重试须使用新的tag，不会将不完整draft公开。
 
 ## CI验收入口与下载内容
 

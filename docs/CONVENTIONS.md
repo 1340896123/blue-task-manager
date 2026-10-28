@@ -8,7 +8,8 @@
 - 新安装默认使用 `Program Files\Takao`；已有安装仍从注册记录沿用原目录，保留 `BlueDomainTaskManager` 安装注册键、安装标记、偏好目录和受保护更新暂存等兼容身份。升级不得仅因改名重置偏好、丢失卸载所有权或静默改写已有系统入口。
 - `TASKMANAGER_*` 环境变量、`X-TaskManager-Token`、`--task-manager-entry`、现有 HTTP 路由和 `taskManager*` 偏好字段属于稳定技术合同，继续兼容。Windows 应用身份 `taskmanager-host` 保持稳定，避免破坏已有任务栏/快捷方式身份。
 - 发布目录保留 `TaskManager.Host.exe` / `TaskManager.Launcher.exe` 两个精确旧入口别名，其 apphost 加载同目录当前 `Takao.*.dll`；默认启动和显示名称使用 Takao。旧入口可显式修复或取消，升级不得静默重写 IFEO；更新、单实例和卸载检查同样验证旧别名的真实目录与身份。
-- GitHub 仓库仍为 `1340896123/blue-task-manager`，源码与更新地址保持真实。新发布附件使用 Takao 名称；更新读取同时兼容已发布的 `BlueDomainTaskManager-v<版本>-win-x64-setup.exe`，不能把同一 Release 的多个候选包静默择一。
+- GitHub 仓库仍为 `1340896123/blue-task-manager`，源码与更新地址保持真实。新发布安装器使用 Takao 名称，并在发布阶段增加字节相同的 `BlueDomainTaskManager-v<版本>-win-x64-setup.exe` 兼容别名，让旧版客户端仍能首次更新。新客户端只接受单包，或精确两个不同名称、独立官方URL且size/SHA256 digest相同、SHA256SUMS各有唯一相同散列行的别名对；后者优先Takao。其他重复/冲突一律拒绝，受保护pending仍只记录选定的一份。
+- 已注册安装目录与旧产品标记验证通过后，升级/卸载只精确清理已知旧 `TaskManager.*.dll`、deps/runtimeconfig、旧图标和旧设计MASTER；逐路径拒绝重解析点并检查占用。保留两个EXE别名、未知用户文件与非空目录，不通配或递归删除旧目录。
 - “Windows 任务管理器”、`taskmgr.exe` 和 TaskExplorer 等系统/第三方名称保留本义。历史验收、截图、JSON 和已发布附件名保留现场原貌；历史结果页标注旧命名，当前构建命令以 README 为准。
 
 启动应用状态遵循 [STARTUP-STATUS.md](STARTUP-STATUS.md)：通过CsWin32只读解释真实Windows状态记录，2/3与默认缺失、未知/损坏、权限失败、RunOnce明确区分；HKLM不同视图不可误合并。当前不新增写入，仅用专用GUID来源测试并精确清理。前端复用现有状态/说明Token，所有启用/禁用状态都有文字，不按奇偶或存在性伪造最终执行状态。

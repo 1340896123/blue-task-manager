@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 
 // A test-only caller of the shipped production storage/downloader. It never
 // changes update version identity, installation eligibility or pending state.
-if (args.Length is < 3 or > 4 || args[0] is not ("download" or "deny")) throw new ArgumentException("Expected download|deny release-directory result-json [finish-file].");
+if (args.Length is < 3 or > 4 || args[0] is not ("download" or "deny" or "metadata")) throw new ArgumentException("Expected download|deny|metadata release-directory result-json [finish-file].");
 var release = Path.GetFullPath(args[1]); var resultFile = Path.GetFullPath(args[2]);
 var finishFile = args.Length == 4 ? Path.GetFullPath(args[3]) : null;
 Directory.CreateDirectory(Path.GetDirectoryName(resultFile)!);
@@ -19,6 +19,56 @@ var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(rel
 var storageType = assembly.GetType("Takao.Host.Native.ProtectedUpdateStorage", true)!;
 var privilegeType = assembly.GetType("Takao.Host.Native.AdministratorPrivilege", true)!;
 var sourceType = assembly.GetType("Takao.Host.Services.GitHubUpdateSource", true)!;
+if (args[0] == "metadata")
+{
+    // Explicit algorithm fixtures exercise release alias trust boundaries;
+    // they do not stand in for a live GitHub download or application update.
+    var selectedMethod = sourceType.GetMethod("InstallerAssets", BindingFlags.Static | BindingFlags.NonPublic)!;
+    var version = Activator.CreateInstance(selectedMethod.GetParameters()[1].ParameterType, 1, 1, 1)!;
+    var metadataChecks = new List<string>();
+    const string tag = "v1.1.1-build.0", currentName = "Takao-v1.1.1-win-x64-setup.exe", legacyName = "BlueDomainTaskManager-v1.1.1-win-x64-setup.exe";
+    var hash = new string('a', 64);
+    JObject Asset(string name, long id) => new() { ["id"] = id, ["name"] = name, ["state"] = "uploaded", ["size"] = 120, ["digest"] = "sha256:" + hash, ["browser_download_url"] = "https://github.com/1340896123/blue-task-manager/releases/download/" + tag + "/" + name };
+    Array? Select(params JObject[] assets) => (Array?)Call(sourceType, null, "InstallerAssets", new JArray(assets).ToObject(selectedMethod.GetParameters()[0].ParameterType), version, tag);
+    void Verify(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); metadataChecks.Add(message); }
+    string? FirstName(Array assets) => (string?)assets.GetValue(0)!.GetType().GetProperty("Name")!.GetValue(assets.GetValue(0));
+    void RejectChecksum(string text, Array assets, string message)
+    {
+        try { Call(sourceType, null, "ValidateInstallerChecksums", text, assets); }
+        catch (Exception error) when (error.GetType().Name == "ApiException") { metadataChecks.Add(message); return; }
+        throw new InvalidOperationException(message);
+    }
+    var current = Asset(currentName, 1); var legacy = Asset(legacyName, 2);
+    Verify(FirstName(Select(current)!) == currentName, "one canonical installer remains supported");
+    Verify(FirstName(Select(legacy)!) == legacyName, "one already-published legacy installer remains supported");
+    var aliases = Select(legacy, current)!;
+    Verify(aliases.Length == 2 && FirstName(aliases) == currentName && FirstName(Select(current, legacy)!) == currentName, "identical exact aliases select Takao independently of asset order");
+    var changed = (JObject)legacy.DeepClone(); changed["digest"] = "sha256:" + new string('b', 64);
+    Verify(Select(current, changed) is null, "aliases with different hashes are rejected");
+    changed = (JObject)legacy.DeepClone(); changed["size"] = 121;
+    Verify(Select(current, changed) is null, "aliases with different lengths are rejected");
+    Verify(Select(current, Asset(currentName, 3)) is null, "duplicate canonical filenames are rejected");
+    Verify(Select(current, Asset(legacyName, 1)) is null, "one asset identity cannot masquerade as two filenames");
+    Verify(Select(current, legacy, Asset(currentName, 3)) is null, "more than the two exact aliases is rejected");
+    changed = (JObject)legacy.DeepClone(); changed["browser_download_url"] = "https://example.invalid/" + legacyName;
+    Verify(Select(current, changed) is null, "an alias from a foreign URL is rejected");
+    changed = (JObject)legacy.DeepClone(); changed["browser_download_url"] += "?download=1";
+    Verify(Select(current, changed) is null, "an alias URL with untrusted query data is rejected");
+    changed = (JObject)legacy.DeepClone(); changed["digest"] = "sha256:bad";
+    Verify(Select(current, changed) is null, "a malformed alias digest is rejected");
+    changed = (JObject)legacy.DeepClone(); changed["size"] = 1024L * 1024 * 1024 + 1;
+    Verify(Select(current, changed) is null, "alias bounds are enforced before download");
+    var canonicalLine = hash + "  " + currentName + "\n"; var legacyLine = hash + "  " + legacyName + "\n";
+    Call(sourceType, null, "ValidateInstallerChecksums", canonicalLine + legacyLine, aliases);
+    Verify(true, "both exact filename checksum rows match the same trusted digest");
+    Call(sourceType, null, "ValidateInstallerChecksums", canonicalLine, Select(current));
+    Verify(true, "a historical single-installer checksum file remains supported");
+    RejectChecksum(canonicalLine, aliases, "a missing legacy alias checksum is rejected");
+    RejectChecksum(canonicalLine + legacyLine.Replace(hash, new string('b', 64)), aliases, "a conflicting alias checksum is rejected");
+    RejectChecksum(canonicalLine + legacyLine + legacyLine, aliases, "duplicate alias checksum rows are rejected");
+    File.WriteAllText(resultFile, JsonConvert.SerializeObject(new { result = "PASS", algorithmFixturesOnly = true, assertions = metadataChecks.Count, checks = metadataChecks }, Formatting.Indented));
+    Console.WriteLine("PASS release alias metadata: " + metadataChecks.Count + " assertions"); return;
+}
 var storage = Activator.CreateInstance(storageType, true)!;
 var directory = (string)storageType.GetProperty("DirectoryPath", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(storage)!;
 var expectedDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BlueDomainTaskManager", "Updates");
