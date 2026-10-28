@@ -1,5 +1,7 @@
 # 蓝域任务管理器
 
+本轮预览构建补齐磁盘型号、HDD/SSD 与总线类型，磁盘性能聚焦读取/写入吞吐，全部性能图表统一为白底简约配色；见[本轮发布说明](docs/RELEASE-V1.1.1-DISK-CHARTS.md)。
+
 全部八页现采用 Windows 11 标准任务管理器布局：左侧导航、单一命令栏、性能资源磁贴与纵向设置。筛选、进程树、显示列、CSV 等扩展操作统一放在“更多”；见[布局规格](docs/WINDOWS-LAYOUT.md)与[本轮真实验收](docs/WINDOWS-LAYOUT-RESULTS.md)。
 
 接管原“任务管理器”的740提升错误已补充修复链路：系统入口先启动普通权限Launcher，再由Windows请求管理员授权启动Host。旧接管在设置显示“旧接管需要修复”，可确认“修复接管”或取消；安装升级保留现状，不自动迁移。完整说明与本轮真实验收要求见[IFEO提升修复](docs/IFEO-ELEVATION-FIX.md)，旧验收结果不能代替本轮成功链证据。
@@ -12,7 +14,7 @@
 
 1.1.1 已强制管理员运行，并提供内置 .NET/ASP.NET 与 Electron 的 NSIS 安装包。实际安装生命周期22项、便携与安装后管理员桌面各9项通过；原有19套检查18套通过，系统入口可见性保留部分结果。本机Host整机CPU约0.32%，采样p95约78ms。签名、管理员服务成功链与全局接管等边界见[1.1.1实际验收](docs/evidence/admin-installer-results.md)；原480项为[1.1.0历史基线](docs/ACCEPTANCE-RESULTS.md)。
 
-[下载 Windows x64 预览版](https://github.com/1340896123/blue-task-manager/releases/tag/v1.1.0-preview.1) · [公开源码](https://github.com/1340896123/blue-task-manager) · [发布说明](docs/RELEASE-V1.1.0-PREVIEW.md)
+[下载 Windows x64 预览安装包](https://github.com/1340896123/blue-task-manager/releases) · [公开源码](https://github.com/1340896123/blue-task-manager) · [本轮发布说明](docs/RELEASE-V1.1.1-DISK-CHARTS.md) · [1.1.0 历史发布说明](docs/RELEASE-V1.1.0-PREVIEW.md)
 
 - [当前1.1产品需求](docs/PRODUCT-V1.1.md)
 - [原始PRD与1.0历史基线](docs/PRD.md)
