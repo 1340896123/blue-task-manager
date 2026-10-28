@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 启动应用启用状态（2026-10-28）
+
+根因是 Run/RunOnce/Startup 后端均固定 `enabled:null`，前端整列也固定“无法确定”。本轮只读接入 Windows Shell StartupApproved，保留未知格式/权限/RunOnce口径与官方设置入口，不实现状态写入。曾尝试读取 TaskExplorer / Bulk Crap Uninstaller 与微软文档，GitHub/Microsoft 网络均 TLS失败或超时，未能核验固定源码，不将链接列为已读取证据。本机实际只读看到12字节状态1/2/3，1不能猜测。来源映射、32/64去重、二进制边界、缺失语义、证据限制与S系列见 [STARTUP-STATUS.md](STARTUP-STATUS.md)；其他枚举/优先级需要追加成熟来源或实机对照后才能扩展。
+
 ## 物理磁盘型号与类型（2026-10-26）
 
 实际通过GitHub API核验System Informer固定提交 `d40e6e0441103828287b1b60807259040e541b5f` 的 HardwareDevices/storage.c、disk.c：公开StorageDeviceProperty描述符两段有界读取、ProductIdOffset、IOCTL_STORAGE_GET_DEVICE_NUMBER与原生磁盘索引；借鉴真实编号/部分成功/实际返回长度验证，不复制源码或驱动。微软seek-penalty口径、复合/虚拟设备边界及UI/UX Pro Max适用建议见 [DISK-IDENTITY.md](DISK-IDENTITY.md)。

@@ -1,5 +1,7 @@
 # 架构与数据合同
 
+> 启动应用状态增量见 [STARTUP-STATUS.md](STARTUP-STATUS.md)：既有慢速后台读取通过CsWin32关联Run/Run32/StartupFolder的真实StartupApproved记录，保留逐行原因、未知格式与RunOnce边界；不新增写入或协议，JSON.NET合同保持。HKCU共享视图去重与HKLM32/64独立身份分别处理，不能按名称命令合并不同状态来源。
+
 > 图表配色调整（2026-10-27）见 [CHART-PALETTE.md](CHART-PALETTE.md)：全部主图、逐CPU图与磁贴小曲线共享白色图面和集中颜色Token；蓝色主线/深灰次虚线及图例一致。实现限定在现有视图和CSS，沿用原始快照、采样时间、历史、API及原生边界。
 
 > 磁盘身份增量见 [DISK-IDENTITY.md](DISK-IDENTITY.md)：CsWin32 CreateFile/DeviceIoControl、IOCTL_STORAGE_GET_DEVICE_NUMBER 读回验证PDH实例编号，StorageDeviceProperty 型号/总线和seek-penalty介质口径；元数据有界后台缓存、逐字段失败及真实时间独立于PDH动态指标，不向性能历史复制。

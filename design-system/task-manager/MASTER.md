@@ -1,5 +1,9 @@
 # Task Manager — Windows Blue Design System
 
+## 2026-10-28 启动应用状态
+
+启动页状态列及详情复用现有body/caption/text-secondary、MissingValue、表格选中/焦点Token，显示实际“已启用”“已禁用”或“无法确定”并可读来源原因；不新增颜色/徽标或视觉Token，不只用颜色区分。保留单一命令栏、官方启动设置、全部列排序和Windows标准表格布局。来源及S系列见 [STARTUP-STATUS.md](../../docs/STARTUP-STATUS.md)。
+
 ## 2026-10-27 白色简约图表（当前图表配色优先）
 
 全部性能主图、逐逻辑处理器图及资源磁贴小曲线采用纯白图面（surface）、中性浅灰网格（chart-grid `#ECEFF2`）与边界（border），主序列为Windows蓝色实线（chart-line `#0067C0`），次序列为深灰虚线（chart-secondary `#58636F`）。大小曲线、数据点和图例同步读取序列Token；小曲线使用中性边界。轴、单位、图例文字和等待说明沿用text-secondary。保持既有线宽、布局、单位和真实时间缺口，磁盘继续仅显示读取/写入；表格热度和外壳Token仍按各自语义使用。曲线对白底对比≥3:1、标签≥4.5:1；主/次线实测5.674/6.124:1，标签6.385:1。完整角色、状态与C系列验收见 [CHART-PALETTE.md](../../docs/CHART-PALETTE.md)。

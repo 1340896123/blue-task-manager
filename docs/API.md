@@ -134,7 +134,7 @@ GET不用写令牌。所有POST带 `X-TaskManager-Token`，令牌通过GET boots
 ### services[] / startupItems[] / users[]
 
 - 服务：`{name,displayName,state,pid}`；state为CsWin32真实枚举名称，如`SERVICE_RUNNING/SERVICE_STOPPED/SERVICE_PAUSED/…`。停止服务PID0为真实SCM值。
-- 启动：`{id,name,command,source,enabled:null,enabledReason}`；真实Run/RunOnce注册表值或Startup文件路径。只读，不猜测StartupApproved/策略最终启用状态。
+- 启动：`{id,name,command,source,enabled:boolean|null,enabledReason}`；真实Run/RunOnce注册表值或Startup文件路径。当前只读状态合同见 [STARTUP-STATUS.md](STARTUP-STATUS.md)：已识别的Windows启用/禁用记录分别为true/false；未知格式、一次性来源或读取失败保留null和原因，缺失默认值须明确口径。读取StartupApproved不等于保证最终执行，不提供写入接口。
 - 用户：`{sessionId,userName,stationName,state,processCount,cpuPercent,workingSetBytes,unreadableProcessCount,unavailable}`。state为WTS枚举名，如`WTSActive/WTSDisconnected`。只按匹配用户SID解析名称与会话的进程聚合；任何已归属进程对应指标不可读时聚合指标为null/partial，不把不明归属进程算给当前用户。
 
 ### history[] / performanceHistory[]
