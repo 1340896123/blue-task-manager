@@ -1,5 +1,7 @@
 # 已启用免提示：前置与冲突回归验收
 
+> 历史验收记录：本文保留当时的产品名、路径与构建结果。自 2026-10-28 起产品统一命名为 Takao；当前命令与目录以 [README](../README.md) 为准，历史记录不作为本次重命名的验收证据。
+
 日期：2026-10-26。规格为 [FIRST-LAUNCH-INTEGRATION.md 的 F09](FIRST-LAUNCH-INTEGRATION.md)。本轮真实桌面套件 **40 项通过**；验证了初次读取期间不创建提示，以及其他目录冲突仍正常提示。**真实当前目录已启用的 F09 成功分支未执行**，不能把冲突场景的通过当作该分支通过。
 
 生产提交为 `85be85a`、`8872757`，测试 checkout 为 `8872757e11aa84cc0a8f27de84c402b7afac0c41`。独立便携目录 `E:\taskManager\output\takeover\TaskManager-win-x64` 的生产 `wwwroot` 已更新，JS 为 `index-AknTUE7K.js`。本轮未改后端；复用先前自包含 Host（ProductVersion `1.1.1+a635d5bc6b44ba60759243c2bce3aebd00ae3026`）。实际产物 SHA256 见 [机器结果](evidence/first-launch-silent/results.json)。未升级 Program Files 安装。

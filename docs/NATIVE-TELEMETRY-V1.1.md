@@ -27,9 +27,9 @@ capability `processGpu,gpuAdapters,diskActivity,networkAdapters`的available表�
 ## 可复现检查
 
 ```powershell
-dotnet build src/TaskManager.Host -c Release -p:ElectronSkipExecCommands=true --no-restore
-dotnet build tests/TaskManager.WindowProbe -c Release --no-restore
-dotnet build tests/TaskManager.TestWorkload -c Release --no-restore
+dotnet build src/Takao.Host -c Release -p:ElectronSkipExecCommands=true --no-restore
+dotnet build tests/Takao.WindowProbe -c Release --no-restore
+dotnet build tests/Takao.TestWorkload -c Release --no-restore
 $env:TASKMANAGER_TELEMETRY_REPORT='docs/evidence/performance-v11-telemetry.json'
 node tests/native-telemetry-v11.mjs
 node tests/native-api.mjs

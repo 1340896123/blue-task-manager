@@ -1,5 +1,7 @@
 # 1.1.0 Preview 1
 
+> 历史验收记录：本文保留当时的产品名、路径与构建结果。自 2026-10-28 起产品统一命名为 Takao；当前命令与目录以 [README](../README.md) 为准，历史记录不作为本次重命名的验收证据。
+
 [公开仓库](https://github.com/1340896123/blue-task-manager) · [下载与校验附件](https://github.com/1340896123/blue-task-manager/releases/tag/v1.1.0-preview.1)
 
 React、Tailwind CSS、Electron.NET和CsWin32真实Windows链路，应用C# JSON统一JSON.NET。业务基线`251897e`；发布标签记录最终文档、观测器及打包工具提交。

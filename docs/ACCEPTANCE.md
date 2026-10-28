@@ -1,4 +1,8 @@
-# 真实链路验收矩阵
+# Takao 真实链路验收矩阵
+
+## Takao 命名统一验收
+
+验证当前 solution/project/程序集与命名空间、前端包与标题、Electron 原生窗口、安装显示名/快捷方式、Takao 安装器/ZIP 及构建/发布脚本引用一致；运行 Web 类型/生产构建、C# Release、真实 API 与浏览器/桌面启动关闭回归。既有安装身份、偏好、系统入口和 GitHub 更新来源须继续兼容，旧版附件与历史证据保留原名。记录实际命令、结果、当前截图与未执行范围；不将历史通过结果算作本次验收。
 
 ## 启动应用启用状态（S系列）
 
@@ -59,7 +63,7 @@
 
 ## Windows 11 全页标准布局增量（L系列）
 
-当前规格见 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md) 和 [MASTER](../design-system/task-manager/MASTER.md)。覆盖全部八页，使用生产真实Windows采集，不mock业务数据。以下覆盖旧A05的常驻状态栏要求；异常/暂停/冻结/最后时刻的可发现性仍必须验证。
+当前规格见 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md) 和 [MASTER](../design-system/takao/MASTER.md)。覆盖全部八页，使用生产真实Windows采集，不mock业务数据。以下覆盖旧A05的常驻状态栏要求；异常/暂停/冻结/最后时刻的可发现性仍必须验证。
 
 | ID | 真实场景 | 通过条件 |
 |---|---|---|

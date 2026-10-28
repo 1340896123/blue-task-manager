@@ -1,5 +1,7 @@
 # 全页网格验收结果
 
+> 历史验收记录：本文保留当时的产品名、路径与构建结果。自 2026-10-28 起产品统一命名为 Takao；当前命令与目录以 [README](../README.md) 为准，历史记录不作为本次重命名的验收证据。
+
 日期：2026-10-23（Asia/Shanghai）。环境：Windows 11 企业版 x64 10.0.26200；Node 24.16.0；.NET SDK 10.0.401。生产实现基线为 `5d03351`，表头可读性修复为 `3ec7dc7`；规格为 `a808317`。其他并行任务的搜索更新独立提交，不属于本网格修改。
 
 真实浏览器专项 **1189 项通过**，正式 Release Electron.NET 专项 **1190 项通过**。两者均覆盖 7 个网格、63 个可显示列；没有 mock API、替换采集器或虚构业务行。结果文件分别为 `output/playwright/grid-browser-results.json`、`output/playwright/grid-desktop-results.json`。JSON 仅保存检查名称、聚合行数、截图路径及清理结果，不保存令牌或全机器进程列表。

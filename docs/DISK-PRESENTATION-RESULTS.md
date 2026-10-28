@@ -1,5 +1,7 @@
 # 磁盘读写展示验收结果
 
+> 历史验收记录：本文保留当时的产品名、路径与构建结果。自 2026-10-28 起产品统一命名为 Takao；当前命令与目录以 [README](../README.md) 为准，历史记录不作为本次重命名的验收证据。
+
 2026-10-27（Asia/Shanghai），Windows x64，业务代码 `81dc0f4`，当前规格提交 `8b4c262`、`9c2c553`。用户明确保留读取/写入曲线，本次 D08 移除磁盘活动时间的数值、大小曲线、百分比、图例和说明文案，磁盘主图只保留读取/写入吞吐。
 
 Web 生产构建（含 TypeScript）、当前 Host Release、`git diff --check` 通过；静态检查3项、真实浏览器100项、正式 Electron110项、受影响页面回归49项通过，共262项。两个专项 worker 均独立确认 `elevated:true`，专项报告均为 `PASS`、`cleanup:true`。前端构建与 Release `wwwroot/index.html` 的 SHA256 一致，专项报告保存了实际执行文件及JS/CSS散列。

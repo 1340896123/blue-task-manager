@@ -33,9 +33,9 @@
 ## 可复现阶段检查
 
 ```powershell
-npm --prefix src/TaskManager.Web run typecheck
-npm --prefix src/TaskManager.Web run build
-dotnet build src/TaskManager.Host -c Release -p:ElectronSkipExecCommands=true --no-restore
+npm --prefix src/Takao.Web run typecheck
+npm --prefix src/Takao.Web run build
+dotnet build src/Takao.Host -c Release -p:ElectronSkipExecCommands=true --no-restore
 node tests/process-ui-v11.mjs
 ```
 

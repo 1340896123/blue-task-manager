@@ -4,8 +4,8 @@
 
 ## 已确认问题与证据边界
 
-- `src/TaskManager.Web/src/App.tsx` 的 `windowAction('close')` 先等待偏好保存，再经 `POST /api/window/close` 关闭。`api.ts` 默认请求超时为9秒；服务不可达时，此请求只能报错，无法关闭窗口。
-- `src/TaskManager.Host/Services/DesktopWindowService.cs` 设置 `Frame = false`，标题栏按钮因此是主要可见关闭入口。关闭依赖采集主机 HTTP 的设计形成确定缺陷；窗口操作不能依赖采集服务健康状态。
+- `src/Takao.Web/src/App.tsx` 的 `windowAction('close')` 先等待偏好保存，再经 `POST /api/window/close` 关闭。`api.ts` 默认请求超时为9秒；服务不可达时，此请求只能报错，无法关闭窗口。
+- `src/Takao.Host/Services/DesktopWindowService.cs` 设置 `Frame = false`，标题栏按钮因此是主要可见关闭入口。关闭依赖采集主机 HTTP 的设计形成确定缺陷；窗口操作不能依赖采集服务健康状态。
 - `api.ts` 的 `errorMessage` 把所有 JavaScript `TypeError` 都转换为本机断连提示，可能掩盖客户端程序错误。应只在实际 `fetch` 传输失败的边界分类网络故障。
 - 当前截图不能证明服务退出、启动失败或拒绝请求的具体原因。排查时未发现运行中的本应用主机/Electron，不能据此反推截图时的现场原因。
 - 通知已有本地关闭按钮和9秒自动清除，普通状态无需请求服务。原生模态框打开时框外控件不可操作，但截图未显示完整窗口，尚不能将此分支认定为本次原因。

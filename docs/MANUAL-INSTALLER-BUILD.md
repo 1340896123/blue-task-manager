@@ -12,7 +12,7 @@
 
 `release_tag`留空时，默认生成`v<Host版本>-build.<运行序号>`，例如`v1.1.1-build.5`，并标为预览版。需要正式版时填写`v1.1.1`；也可填写`v1.1.1-preview.1`发布预览版。输入必须是合法的`v`前缀SemVer，基础版本须与Host项目一致，不能仅改变安装包标签。已有tag或Release会直接拒绝，不覆盖。含预发布标识的tag标为prerelease；正式版本标为稳定版。
 
-运行成功后，从运行摘要的Release链接或[Releases页面](https://github.com/1340896123/blue-task-manager/releases)长期下载Setup.exe、SHA256SUMS、acceptance.json和acceptance.md。同时可从该次运行的 **Artifacts** 下载`BlueDomainTaskManager-v<版本>-win-x64-<运行序号>-<重试序号>`，应用截图单独提供；Artifacts保留14天。安装包包含运行时，安装后的应用按当前管理员权限合同运行。
+运行成功后，从运行摘要的Release链接或[Releases页面](https://github.com/1340896123/blue-task-manager/releases)长期下载Setup.exe、SHA256SUMS、acceptance.json和acceptance.md。同时可从该次运行的 **Artifacts** 下载`Takao-v<版本>-win-x64-<运行序号>-<重试序号>`，应用截图单独提供；Artifacts保留14天。安装包包含运行时，安装后的应用按当前管理员权限合同运行。
 
 ## 本轮交付合同
 
@@ -49,8 +49,8 @@ GitHub Actions仅由`workflow_dispatch`手动触发Windows x64 Release安装包�
 
 ```powershell
 ./scripts/test-installer-ci.ps1 `
-  -InstallerPath output/releases/BlueDomainTaskManager-v1.1.1-win-x64-setup.exe `
-  -PayloadDirectory output/TaskManager-win-x64
+  -InstallerPath output/releases/Takao-v1.1.1-win-x64-setup.exe `
+  -PayloadDirectory output/Takao-win-x64
 ```
 
 此入口只允许在一次性GitHub-hosted Windows runner且真实提升的64位PowerShell中执行；不要在开发机伪造CI环境。它创建RUNNER_TEMP内独立且带空格的测试目录，依次验证静默安装、完整payload哈希和快捷方式/卸载记录、无全局.NET目录的真实Host/API/coreclr、现有42项Electron桌面验收、同路径重装后真实启动和卸载。测试自建note必须在卸载后保持原哈希，以证明没有通配删除用户文件。全程独立读取HKLM64 IFEO全键和子键，原始临时导出取哈希后立即删除，报告不保存注册表值、写令牌或全机快照。

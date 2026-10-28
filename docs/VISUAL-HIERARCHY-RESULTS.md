@@ -1,5 +1,7 @@
 # 视觉层级验收结果
 
+> 历史验收记录：本文保留当时的产品名、路径与构建结果。自 2026-10-28 起产品统一命名为 Takao；当前命令与目录以 [README](../README.md) 为准，历史记录不作为本次重命名的验收证据。
+
 2026-10-24（Asia/Shanghai）。规格提交 `39f8b7c`，受测界面提交 `48b8909`，对应 [视觉层级规范](VISUAL-HIERARCHY.md)。本轮使用生产 UI → 同源 HTTP → JSON.NET → CsWin32 → 真实 Windows 数据；无业务 mock。提升 worker 的实际令牌均为 `elevated: true`。
 
 ## 结果

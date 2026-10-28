@@ -35,6 +35,6 @@ C#准确字段、null与单位以`Models/Contracts.cs`及`Models/Preferences.cs`
 
 ## 已运行验证与留待最终验收
 
-`dotnet restore src/TaskManager.Host --locked-mode -p:ElectronSkipExecCommands=true`；Host、TestWorkload、WindowProbe Release均0警告/0错误。旧`node tests/native-api.mjs`最近回归通过77断言（健康就绪等待次数计入旧脚本断言，先前为78）；`node tests/native-core-v11.mjs`通过25断言：ETag/重启偏好/坏文件/limited内存/系统提交真链路；`node tests/native-management-v11.mjs`通过64断言：真实父/两子/console hosts、零误杀集合冲突、退出确认、四协议族端口、PNG、五优先级、独立CsWin32功耗掩码+优先级读回与恢复、headless选择器拒绝、路径/URI白名单、SCM详情/真实403与无状态变化。测试创建的PID+FILETIME/临时目录独立，清理仅针对这些身份，不保存token或全机清单。
+`dotnet restore src/Takao.Host --locked-mode -p:ElectronSkipExecCommands=true`；Host、TestWorkload、WindowProbe Release均0警告/0错误。旧`node tests/native-api.mjs`最近回归通过77断言（健康就绪等待次数计入旧脚本断言，先前为78）；`node tests/native-core-v11.mjs`通过25断言：ETag/重启偏好/坏文件/limited内存/系统提交真链路；`node tests/native-management-v11.mjs`通过64断言：真实父/两子/console hosts、零误杀集合冲突、退出确认、四协议族端口、PNG、五优先级、独立CsWin32功耗掩码+优先级读回与恢复、headless选择器拒绝、路径/URI白名单、SCM详情/真实403与无状态变化。测试创建的PID+FILETIME/临时目录独立，清理仅针对这些身份，不保存token或全机清单。
 
 当前标准用户SC_MANAGER_CREATE_SERVICE权限探针实际返回5。未创建或操作用户服务；服务成功start/stop/restart/timeout/部分成功链路未执行，必须在最终结果保留权限限制，不能声称全面通过。真实Shell属性/定位窗口、Electron原生选择器/取消、窗口置顶/尺寸恢复、所有UI交互与最终30秒性能由后续UI/E2E阶段验收。

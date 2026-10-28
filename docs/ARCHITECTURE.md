@@ -1,4 +1,6 @@
-# 架构与数据合同
+# Takao 架构与数据合同
+
+2026-10-28 命名统一：solution、项目目录、程序集与命名空间采用 Takao；稳定安装/偏好/API 身份兼容旧版本，详见 [CONVENTIONS.md](CONVENTIONS.md)。
 
 > 启动应用状态增量见 [STARTUP-STATUS.md](STARTUP-STATUS.md)：既有慢速后台读取通过CsWin32关联Run/Run32/StartupFolder的真实StartupApproved记录，保留逐行原因、未知格式与RunOnce边界；不新增写入或协议，JSON.NET合同保持。HKCU共享视图去重与HKLM32/64独立身份分别处理，不能按名称命令合并不同状态来源。
 
@@ -52,7 +54,7 @@ Win32Collector / StartupReader / SessionReader / ServiceReader
 CsWin32生成绑定 ── Windows内核、PSAPI、Toolhelp、SCM、WTS、IP Helper、Registry
 ```
 
-推荐目录：`src/TaskManager.Host` 放 C# 主机/采集/控制器；`src/TaskManager.Web` 放 React；`tests` 放真实集成和 E2E；`scripts` 放开发、构建与验收入口。实现阶段可微调目录，但必须更新对应文档与命令。
+推荐目录：`src/Takao.Host` 放 C# 主机/采集/控制器；`src/Takao.Web` 放 React；`tests` 放真实集成和 E2E；`scripts` 放开发、构建与验收入口。实现阶段可微调目录，但必须更新对应文档与命令。
 
 采样器作为单例后台服务串行执行；用单调时钟计算间隔，用 UTC 时间给快照标记；启动静态信息缓存按进程身份索引，进程退出后及时释放句柄。前端只读完整快照，不能拼接属于不同采样时刻的系统总量。慢速项（服务、启动项、用户名称/发行者）可以使用独立缓存与采集时间。
 

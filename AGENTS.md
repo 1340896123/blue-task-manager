@@ -35,6 +35,6 @@ If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is 
 ## 可用工具
 
 - IDA Professional 9.3：`C:\Program Files\IDA Professional 9.3\ida.exe`。
-- 实现前阅读 docs/PRD.md、docs/ARCHITECTURE.md、docs/CONVENTIONS.md 和 design-system/task-manager/MASTER.md。
+- 实现前阅读 docs/PRD.md、docs/ARCHITECTURE.md、docs/CONVENTIONS.md 和 design-system/takao/MASTER.md。
 - 遇到权限不足、采样预热、进程退出、平台能力缺失时返回明确状态；不得把未知值转换成 0。
 - 交付前运行 docs/ACCEPTANCE.md 中的必验项目，保存可重现命令、结果与截图路径。

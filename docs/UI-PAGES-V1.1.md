@@ -29,7 +29,7 @@
 
 ```powershell
 npm run build
-dotnet build src/TaskManager.Host -c Release -p:ElectronSkipExecCommands=true --no-restore
+dotnet build src/Takao.Host -c Release -p:ElectronSkipExecCommands=true --no-restore
 node tests/process-ui-v11.mjs
 node tests/pages-ui-v11.mjs
 ```

@@ -1,6 +1,6 @@
 # 标题与数据视觉层级审查
 
-日期：2026-10-24。用户反馈“设计太单一，没有突出标题等元素”。本增量针对现有八页的排版、强调和表面区分；延续 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md) 的 Windows 11 任务管理器结构，Token 以 [MASTER.md](../design-system/task-manager/MASTER.md) 顶部增量为准。
+日期：2026-10-24。用户反馈“设计太单一，没有突出标题等元素”。本增量针对现有八页的排版、强调和表面区分；延续 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md) 的 Windows 11 任务管理器结构，Token 以 [MASTER.md](../design-system/takao/MASTER.md) 顶部增量为准。
 
 ## 1. 审查结论
 
@@ -15,7 +15,7 @@
 | 导航与资源选择 | 已有选中底色、竖条、图标蓝色，导航文字保持正文色 | 所处页面或设备的文字提示偏弱 | 选中文字蓝色/600，同时保留底色、竖条、`aria-current`/`aria-pressed` |
 | 应用标识和计数 | Windows 布局覆盖使应用名为 13px/400；页计数有边框与底色 | 应用识别较轻，非操作计数容易像按钮 | 应用名 14px/600；已有计数保留真实文本，去按钮式边框/底色，不新增装饰徽标 |
 
-源码位置：`src/TaskManager.Web/src/styles.css`、`components.tsx`、`pages/Settings.tsx`、`pages/TaskManagerIntegration.tsx`、`Performance.tsx`。性能设备名称、表头汇总与列表行仍只使用已有真实数据。
+源码位置：`src/Takao.Web/src/styles.css`、`components.tsx`、`pages/Settings.tsx`、`pages/TaskManagerIntegration.tsx`、`Performance.tsx`。性能设备名称、表头汇总与列表行仍只使用已有真实数据。
 
 ## 2. 成熟来源与技能核验
 

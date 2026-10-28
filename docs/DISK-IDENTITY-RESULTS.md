@@ -1,5 +1,7 @@
 # 磁盘型号与类型验收结果
 
+> 历史验收记录：本文保留当时的产品名、路径与构建结果。自 2026-10-28 起产品统一命名为 Takao；当前命令与目录以 [README](../README.md) 为准，历史记录不作为本次重命名的验收证据。
+
 2026-10-26，Windows x64，业务代码 `3ee3ce4`（原生阶段 `8f2cec5`、规格阶段 `79de8bd`）。本轮使用当前 Release Host、生产 React 构建和官方 Electron.NET runtime，全部业务数据来自本机 Windows；未修改管理员校验或 `global.json`。本轮不包含安装、升级或用户当前安装目录替换。
 
 Web 生产构建（含 TypeScript）、Host Release 构建和 `git diff --check` 通过。静态规范检查 3 项、生产原生 probe 56 项、真实浏览器 70 项、正式 Electron 75 项通过，共 204 项。浏览器与桌面两份专项报告均为 `PASS`、`cleanup:true`，两个标准 RunAs worker 均独立核实真实提升令牌。

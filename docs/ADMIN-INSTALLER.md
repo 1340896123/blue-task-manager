@@ -11,26 +11,26 @@
 ## 1. 交付与启动合同
 
 - Windows 10/11 x64；沿用 React/Tailwind/Electron.NET、JSON.NET、CsWin32 与同源 HTTP，不增加服务、驱动、提权代理或私有协议。
-- `TaskManager.Host.exe` 是业务主机入口，嵌入 `requestedExecutionLevel level="requireAdministrator" uiAccess="false"`。直接双击、开始菜单、桌面快捷方式和便携 `start.cmd` 直接启动Host；IFEO经同目录 `TaskManager.Launcher.exe`（asInvoker）使用标准runas启动同一个管理员Host。Windows 的 UAC 同意/凭据由系统处理，取消后不启动应用、不循环重试。
-- 在任务栏 entry 解析/窗口复用、偏好读写、Kestrel 与 Electron 初始化之前，使用 CsWin32 `OpenProcessToken` / `GetTokenInformation(TokenElevation)` 验证实际进程令牌。不是提升令牌或查询失败即明确拒绝、返回非零；管理员组 deny-only 不能当作已提升。`dotnet TaskManager.Host.dll`、`dotnet run`、`--headless`、安装器维护参数均不能绕过检查。
+- `Takao.Host.exe` 是业务主机入口，嵌入 `requestedExecutionLevel level="requireAdministrator" uiAccess="false"`。直接双击、开始菜单、桌面快捷方式和便携 `start.cmd` 直接启动Host；IFEO经同目录 `Takao.Launcher.exe`（asInvoker）使用标准runas启动同一个管理员Host。Windows 的 UAC 同意/凭据由系统处理，取消后不启动应用、不循环重试。
+- 在任务栏 entry 解析/窗口复用、偏好读写、Kestrel 与 Electron 初始化之前，使用 CsWin32 `OpenProcessToken` / `GetTokenInformation(TokenElevation)` 验证实际进程令牌。不是提升令牌或查询失败即明确拒绝、返回非零；管理员组 deny-only 不能当作已提升。`dotnet Takao.Host.dll`、`dotnet run`、`--headless`、安装器维护参数均不能绕过检查。
 - 保留 Host-first 模式：管理员 Host 启动官方 Electron.NET Electron browser 主进程，子进程继承相应安全上下文。Chromium renderer 的 sandbox 限制继续有效，不能为提权关闭 sandbox、contextIsolation 或打开 nodeIntegration；不能把“每个 renderer 都是高完整性”作为验收要求。
 - 管理员权限不等于 SYSTEM/PPL/内核权限，不自动启用 SeDebugPrivilege；关键进程保护、PID+创建时间核验、最小句柄权限、Origin/写令牌检查全部保留。新任务由管理员 Host 的标准 CreateProcess 创建，默认继承提升权限，运行对话框说明同步反映真实行为。
 - 设置及 README 明确“需要管理员权限”。用户用另一管理员账户提供凭据时，进程/配置归属于该凭据账户；偏好继续位于该账户 LocalAppData，不写入 Program Files，不迁移其他账户数据。
 
 ## 2. 发布与安装合同
 
-使用系统已有标准 NSIS/MUI2 编译器打包完整 Host-first 目录，版本提升为 `1.1.1`，安装包名 `BlueDomainTaskManager-v1.1.1-win-x64-setup.exe`。研究借鉴 electron-builder 的每机安装、运行中保护、卸载与保留用户数据模式，不复制其整套脚本或假定只改 `win.target=nsis` 就能正确启动 Host。
+使用系统已有标准 NSIS/MUI2 编译器打包完整 Host-first 目录，版本提升为 `1.1.1`，安装包名 `Takao-v1.1.1-win-x64-setup.exe`。研究借鉴 electron-builder 的每机安装、运行中保护、卸载与保留用户数据模式，不复制其整套脚本或假定只改 `win.target=nsis` 就能正确启动 Host。
 
 - 生产发布使用 `dotnet publish -c Release -r win-x64 --self-contained true`，显式保持 apphost、不裁剪、不启用单文件/AOT。带齐 ASP.NET Core/.NET runtime、生产 wwwroot、隐藏 `.electron` 及 Electron 45.0.0、bridge、图标与许可；运行无需预装 .NET/Node/npm 或联网。锁定 RID runtime 包，不能只复制旧 `dotnet build` 输出冒充自包含。
 - 同一已验证完整目录生成便携 ZIP 与 NSIS 安装器；便携运行也要求管理员。安装包为本地完整安装包，不是 nsis-web 下载器。构建不执行 Podman/WSL 恢复流程。
-- NSIS Unicode + MUI2，安装器/卸载器 `RequestExecutionLevel admin`，Windows x64/最低版本检查，`SetRegView 64`；默认每机安装至专用 `$PROGRAMFILES64\BlueDomainTaskManager`。稳定产品标识、安装目录与 HKLM 卸载记录；显示产品名、版本、图标、发布者/项目地址和正确引用的卸载命令，支持 Windows“已安装的应用”卸载。
-- 开始菜单/桌面快捷方式直接指向可信 `$INSTDIR\TaskManager.Host.exe`，不经任意 shell 命令或改兼容性注册表。安装完成启动为用户可选；静默安装不自动打开应用，也不自动启用任务栏接管。
+- NSIS Unicode + MUI2，安装器/卸载器 `RequestExecutionLevel admin`，Windows x64/最低版本检查，`SetRegView 64`；新安装默认每机安装至专用 `$PROGRAMFILES64\Takao`，已有安装沿用注册记录中的原目录。保留旧版本稳定产品标识与 HKLM 卸载记录以支持升级；显示产品名、版本、图标、发布者/项目地址和正确引用的卸载命令，支持 Windows“已安装的应用”卸载。
+- 开始菜单/桌面快捷方式直接指向可信 `$INSTDIR\Takao.Host.exe`，不经任意 shell 命令或改兼容性注册表。安装完成启动为用户可选；静默安装不自动打开应用，也不自动启用任务栏接管。
 - 重复安装/升级复用原专用目录，异路径安装要求先卸载旧版；运行中本应用阻止覆盖并提示关闭，不按 electron/dotnet/node 名称批量结束。生成精确文件清单用于安装与删除，核验专用安装路径与自有标识，不对用户可选目录执行递归删除。升级保留账户偏好；卸载默认保留 LocalAppData，不扫描删除其他账户数据。
 - 安装清单排除仓库、测试负载、用户偏好、令牌、环境文件与链接；保留必要 Electron/.NET 许可。构建输出安装 EXE 与 ZIP 的大小/SHA256，交付前核验实际 EXE manifest 和包内容。没有签名凭据时如实标注未签名，不虚构可信发布者，不发布凭据。
 
 ## 3. IFEO 升级与卸载
 
-任务栏接管默认关闭；本轮不把“安装”视为启用全机接管的请求。固定 HKLM64 `Image File Execution Options\taskmgr.exe` 的所有权为 **REG_SZ 类型且完整值精确等于** `"<当前安装目录>\TaskManager.Launcher.exe" --task-manager-entry` 或旧 `"<当前安装目录>\TaskManager.Host.exe" --task-manager-entry`。新注册使用Launcher；旧值明确修复才迁移。其他工具、其他目录、类型或参数差异均不拥有；不删除整键。
+任务栏接管默认关闭；本轮不把“安装”视为启用全机接管的请求。固定 HKLM64 `Image File Execution Options\taskmgr.exe` 的所有权为 **REG_SZ 类型且完整值精确等于** `"<当前安装目录>\Takao.Launcher.exe" --task-manager-entry` 或旧 `"<当前安装目录>\Takao.Host.exe" --task-manager-entry`。新注册使用Launcher；旧值明确修复才迁移。其他工具、其他目录、类型或参数差异均不拥有；不删除整键。
 
 同路径升级保留原自有 Debugger，因为入口路径不变；拒绝运行中覆盖。若升级涉及删除原目录或换路径，必须先在原目录通过生产 CsWin32 所有权逻辑取消精确自有值，读回确认后才删除文件，不自动转移/启用新路径。其他便携目录的接管不属于安装器，保持原样并说明。
 
@@ -54,8 +54,8 @@ R 系列完整矩阵见 [ACCEPTANCE.md](ACCEPTANCE.md)。验收首先运行构�
 ```powershell
 npm run build:desktop
 # 使用实际安装的 Windows SDK mt.exe，替换路径中的SDK版本：
-& 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\mt.exe' '-inputresource:output\TaskManager-win-x64\TaskManager.Host.exe;#1' '-out:output\host.manifest.xml'
-dotnet output\TaskManager-win-x64\TaskManager.Host.dll --headless --port=5211
+& 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\mt.exe' '-inputresource:output\Takao-win-x64\Takao.Host.exe;#1' '-out:output\host.manifest.xml'
+dotnet output\Takao-win-x64\Takao.Host.dll --headless --port=5211
 # 本命令在非提升会话应返回非零，5211不监听、无Electron/偏好文件副作用。
 ```
 

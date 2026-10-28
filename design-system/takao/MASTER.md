@@ -1,4 +1,6 @@
-# Task Manager — Windows Blue Design System
+# Takao — Windows Blue Design System
+
+产品标题统一为 **Takao**，标题区与原生窗口、安装显示名一致；不另加中文译名或版本徽标。命名及稳定兼容身份见 [CONVENTIONS.md](../../docs/CONVENTIONS.md)。
 
 ## 2026-10-28 启动应用状态
 
@@ -306,4 +308,4 @@
 - 正常Tab顺序符合视觉顺序；sticky区域使用scroll-padding保证焦点可见；对话框关后归还焦点。
 - 桌面紧凑表格允许32px行；主要导航44px。鼠标密集表格不照搬手机48px单元，但所有操作保留键盘等效路径。
 - 前端完成后按pro-rules中的适用桌面项复核，移动端safe-area/手机375px不作为本Windows桌面产品硬性指标。
-- 产品标识独立使用原创 `assets/branding/task-manager.svg`：透明外缘、accent 蓝色圆角块和 on-accent 白色显示器/资源柱；标题区尺寸复用 `--space-7`。导航/操作图标继续使用既有 Lucide。SVG/PNG/ICO、favicon 与原生窗口共用母版，生成和验收见 `docs/PRODUCT-ICON.md`。
+- 产品标识独立使用原创 `assets/branding/takao.svg`：透明外缘、accent 蓝色圆角块和 on-accent 白色显示器/资源柱；标题区尺寸复用 `--space-7`。导航/操作图标继续使用既有 Lucide。SVG/PNG/ICO、favicon 与原生窗口共用母版，生成和验收见 `docs/PRODUCT-ICON.md`。

@@ -1,5 +1,7 @@
 # Windows 11 全页标准布局：真实验收结果
 
+> 历史验收记录：本文保留当时的产品名、路径与构建结果。自 2026-10-28 起产品统一命名为 Takao；当前命令与目录以 [README](../README.md) 为准，历史记录不作为本次重命名的验收证据。
+
 日期：2026-10-24，Asia/Shanghai。以 [WINDOWS-LAYOUT.md](WINDOWS-LAYOUT.md) 和 [L01–L10](ACCEPTANCE.md) 为合同；在本机真实 Windows、生产 CsWin32 采集器和正式 Release Electron.NET 中执行，没有业务 mock 或截图假数据。
 
 实现基准为 `92098f7`；验收确认的小修分别提交为 `750a999`（summary 键盘与小曲线 DOM）、`1e73d76`（CPU/内存重复图表标签）、`80ba660`（GPU 精确身份 tooltip/可访问名称）、`6cef09f`（断连/过期的可见状态）。最终 UI 构建对应 `6cef09f`；测试与证据在本报告所在提交。未新增 npm/.NET 依赖或协议，没有容器操作、权限校验绕过或生产采集器替换。

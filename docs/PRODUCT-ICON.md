@@ -1,14 +1,14 @@
-# 产品图标
+# Takao 产品图标
 
-2026-10-23：按用户要求统一蓝域任务管理器的产品标识。单一手工矢量母版为 `assets/branding/task-manager.svg`：透明外缘、Windows 蓝色圆角底板、白色显示器与三条资源柱。颜色直接对应 MASTER 的 `--color-accent`（#0067C0）与 `--color-on-accent`（#FFFFFF）；标题栏继续使用既有 `--space-7` 尺寸。导航/操作图标仍使用原有 Lucide，业务采集与进程操作不变。
+2026-10-23：按用户要求统一Takao的产品标识。单一手工矢量母版为 `assets/branding/takao.svg`：透明外缘、Windows 蓝色圆角底板、白色显示器与三条资源柱。颜色直接对应 MASTER 的 `--color-accent`（#0067C0）与 `--color-on-accent`（#FFFFFF）；标题栏继续使用既有 `--space-7` 尺寸。导航/操作图标仍使用原有 Lucide，业务采集与进程操作不变。
 
 ## 资产与覆盖
 
 | 位置 | 实际使用 |
 |---|---|
-| 母版 | `assets/branding/task-manager.svg` |
-| PNG | `assets/branding/task-manager-256.png`、`task-manager-512.png`，RGBA 透明 |
-| Windows ICO | `assets/branding/task-manager.ico`，含 16/24/32/48/64/128/256 像素七帧 |
+| 母版 | `assets/branding/takao.svg` |
+| PNG | `assets/branding/takao-256.png`、`takao-512.png`，RGBA 透明 |
+| Windows ICO | `assets/branding/takao.ico`，含 16/24/32/48/64/128/256 像素七帧 |
 | React 品牌 | 标题区 `img.brand-mark` 读取 `/icon.svg`；相邻已有产品文字，装饰图片使用空 alt |
 | 浏览器标签 | SVG favicon + 标准 `/favicon.ico` 回退；另提供 256/512 PNG |
 | .NET EXE | 标准 MSBuild `ApplicationIcon` 嵌入 Host apphost 的 PE 图标资源 |
@@ -37,7 +37,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1 -SkipResto
 npm run test:icon
 ```
 
-产物：`output/TaskManager-win-x64/start.cmd`。图标只通过标准资源与官方 API 接入，运行前提沿用 README。
+产物：`output/Takao-win-x64/start.cmd`。图标只通过标准资源与官方 API 接入，运行前提沿用 README。
 
 ## 真实验收
 

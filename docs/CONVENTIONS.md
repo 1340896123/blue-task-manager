@@ -1,5 +1,15 @@
 # 工程规范
 
+## 产品命名（2026-10-28）
+
+- 产品唯一名称为 **Takao**，不另设中文译名；窗口、页面标题、安装器、快捷方式、文件元数据、发布标题和当前文档使用同一名称。
+- 解决方案为 `Takao.sln`；源项目使用 `src/Takao.Host`、`src/Takao.Web`、`src/Takao.Launcher`，测试项目使用 `tests/Takao.*`。C# 项目、程序集与命名空间同步使用 `Takao.*`；npm 包使用小写 `takao` 前缀。
+- 便携目录为 `output/Takao-win-x64`；安装包为 `Takao-v<版本>-win-x64-setup.exe`，ZIP 使用同一前缀。设计规范位于 `design-system/takao/MASTER.md`，品牌母版和派生资产使用 `assets/branding/takao.*` / `takao-<尺寸>.png`。
+- 新安装默认使用 `Program Files\Takao`；已有安装仍从注册记录沿用原目录，保留 `BlueDomainTaskManager` 安装注册键、安装标记、偏好目录和受保护更新暂存等兼容身份。升级不得仅因改名重置偏好、丢失卸载所有权或静默改写已有系统入口。
+- `TASKMANAGER_*` 环境变量、`X-TaskManager-Token`、`--task-manager-entry`、现有 HTTP 路由和 `taskManager*` 偏好字段属于稳定技术合同，继续兼容。Windows 应用身份 `taskmanager-host` 保持稳定，避免破坏已有任务栏/快捷方式身份。
+- GitHub 仓库仍为 `1340896123/blue-task-manager`，源码与更新地址保持真实。新发布附件使用 Takao 名称；更新读取同时兼容已发布的 `BlueDomainTaskManager-v<版本>-win-x64-setup.exe`，不能把同一 Release 的多个候选包静默择一。
+- “Windows 任务管理器”、`taskmgr.exe` 和 TaskExplorer 等系统/第三方名称保留本义。历史验收、截图、JSON 和已发布附件名保留现场原貌；历史结果页标注旧命名，当前构建命令以 README 为准。
+
 启动应用状态遵循 [STARTUP-STATUS.md](STARTUP-STATUS.md)：通过CsWin32只读解释真实Windows状态记录，2/3与默认缺失、未知/损坏、权限失败、RunOnce明确区分；HKLM不同视图不可误合并。当前不新增写入，仅用专用GUID来源测试并精确清理。前端复用现有状态/说明Token，所有启用/禁用状态都有文字，不按奇偶或存在性伪造最终执行状态。
 
 图表配色遵循 [CHART-PALETTE.md](CHART-PALETTE.md) 和MASTER当前增量：主图/逐CPU/小曲线统一白底、中性网格与边界，蓝实线/深灰虚线同步覆盖曲线、点和图例。组件只引用语义Token，保留数值/单位/线型、未知状态和真实时间缺口；交付保存C系列对比度及正式桌面截图。
@@ -24,7 +34,7 @@ GitHub更新遵循 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：固定来源/附件�
 
 1. 先读 PRD、架构和设计 MASTER；发现实现约束时同步文档，不悄悄改产品语义。
 2. 顺序阶段由不同子代理承担；上一阶段验收并 Git 提交后交接。主代理负责跨阶段最终验收与修复。
-3. 提交使用可读前缀，例如 `docs: define product and native architecture`、`feat: implement real Win32 telemetry`、`feat: build Windows blue task manager UI`、`test: validate Electron desktop end to end`。一阶段可以有必要修复提交。
+3. 提交使用可读前缀，例如 `docs: define product and native architecture`、`feat: implement real Win32 telemetry`、`feat: build Takao desktop UI`、`test: validate Electron desktop end to end`。一阶段可以有必要修复提交。
 4. 不提交依赖目录、构建缓存、API令牌、用户配置、完整机器进程转储。截图/验收证据应裁切到应用，避免采集无关桌面信息。
 5. 包版本固定并提交 lockfile；不使用浮动latest。先验证当前环境和官方成熟实现，再采用依赖。
 
@@ -43,7 +53,7 @@ GitHub更新遵循 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：固定来源/附件�
 
 - TypeScript strict；DTO由集中类型文件维护；数据访问集中到client模块；组件不写散落fetch重试循环。
 - 所有业务数据来自HTTP真链路；不提供DEMO模式、fallbackProcesses、随机图表、硬编码CPU/内存数值。开发空态与骨架只能表达“尚未读取”，不能伪装监控内容。
-- 样式颜色/尺寸/动效以 `design-system/task-manager/MASTER.md` 的语义Token为源，映射Tailwind，不在页面任意增加Hex色值。系统蓝色不是每个面都铺饱和蓝色。
+- 样式颜色/尺寸/动效以 `design-system/takao/MASTER.md` 的语义Token为源，映射Tailwind，不在页面任意增加Hex色值。系统蓝色不是每个面都铺饱和蓝色。
 - 交互优先原生button/input/select/table/dialog语义。图标按钮有中文可访问名称；装饰SVG aria-hidden；输入有可见或sr-only label。
 - 数值显示 `font-variant-numeric: tabular-nums`；未知用“—”并有原因，不对null用`|| 0`、`?? 0`填充。
 - 轮询取消旧请求/卸载请求；串行或锁定进行中的请求，前台断线保留最后快照并标过期。排序只影响视图，不更改原始采样。

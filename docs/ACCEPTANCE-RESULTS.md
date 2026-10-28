@@ -1,5 +1,7 @@
 # 1.1 真实链路验收记录
 
+> 历史验收记录：本文保留当时的产品名、路径与构建结果。自 2026-10-28 起产品统一命名为 Takao；当前命令与目录以 [README](../README.md) 为准，历史记录不作为本次重命名的验收证据。
+
 2026-10-25 已将标题与数据视觉层级更新到本机安装版，并重新打开正常窗口。完整安装包/安装目录3,242文件核验及22项真实Electron检查通过，偏好与入口配置保留；见 [本机更新记录](VISUAL-HIERARCHY-RESULTS.md#2026-10-25-本机更新)。
 
 2026-10-24 标题与数据视觉层级增量见 [专项验收](VISUAL-HIERARCHY-RESULTS.md)：八页标题/设置分组、汇总与排序强调已在真实Electron验证；现有布局、网格、共享搜索及专用进程动作套件通过，24个实际样式样本最小文字对比4.858:1；安装生命周期未重跑。
@@ -18,7 +20,7 @@
 
 设置提供接管卡片、标准HKLM64 IFEO保护写入和原生命令entry复用。全局配置保持未接管；当前账户注册实际返回Windows5/HTTP403，默认值、其他值及子键前后不变，成功注册/取消链路未执行。entry以本产品专用实例+真实系统路径+/7验证，同HWND最小化恢复且foreground=true，无重复Host/HTTP/CDP。命令、证据和限制见[TASKBAR-INTEGRATION.md](TASKBAR-INTEGRATION.md)。
 
-环境：Windows 11 企业版 x64，10.0.26200 / build 26200；.NET SDK 10.0.401；Node 24.16.0；Electron 45.0.0；ElectronNET.Core / Core.AspNet 0.6.0；Playwright 1.64.1。界面版本 1.1.0；需求与视觉依据为 [PRODUCT-V1.1](PRODUCT-V1.1.md)、[验收矩阵](ACCEPTANCE.md) 和 [MASTER Token](../design-system/task-manager/MASTER.md)。
+环境：Windows 11 企业版 x64，10.0.26200 / build 26200；.NET SDK 10.0.401；Node 24.16.0；Electron 45.0.0；ElectronNET.Core / Core.AspNet 0.6.0；Playwright 1.64.1。界面版本 1.1.0；需求与视觉依据为 [PRODUCT-V1.1](PRODUCT-V1.1.md)、[验收矩阵](ACCEPTANCE.md) 和 [MASTER Token](../design-system/takao/MASTER.md)。
 
 ## 命令与实际结果
 

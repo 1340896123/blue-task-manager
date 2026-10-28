@@ -13,7 +13,7 @@
 ## 写入与恢复边界
 
 - 固定目标为 `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe` 的64位视图；仅操作 `Debugger` 值。
-- 命令来自当前可信 `TaskManager.Host.exe` 的完整路径与自有 `--task-manager-entry` 标记，正确加引号，不接收 renderer 路径/命令。
+- 命令来自当前可信 `Takao.Host.exe` 的完整路径与自有 `--task-manager-entry` 标记，正确加引号，不接收 renderer 路径/命令。
 - 读状态与真实写权限分别查询。其他工具的 Debugger、非零/异常 UseFilter、过滤子键或其他特殊IFEO配置明确冲突，不覆盖。
 - 启用仅允许缺失/空 Debugger；取消只删除精确等于本程序命令的 Debugger，不删除整个键，不改变其他值或过滤配置。读前状态版本、写前重读、写后读回，错误保留真实 Windows 原因。
 - 移动或删除程序目录前，须先在原目录运行本程序并取消接管，否则 Windows 入口可能指向失效路径。没有写权限时可查看状态与影响说明，不能假装注册成功。
@@ -31,7 +31,7 @@
 
 ## 实际验证（2026-10-23）
 
-完整`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1 -SkipRestore`通过；TypeScript/Web/Host与测试探针Release均0警告/0错误。成品为`output/TaskManager-win-x64/start.cmd`。
+完整`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1 -SkipRestore`通过；TypeScript/Web/Host与测试探针Release均0警告/0错误。成品为`output/Takao-win-x64/start.cmd`。
 
 `npm run test:taskbar-integration`在01:14:57 UTC完成23项：独立HKLM64 Debugger/UseFilter对照、固定引号命令、token/Origin与预期版本拒绝、真实Windows5/HTTP403、全键默认值/其他值/子键前后不变、设置/确认取消/刷新、960×640及125%、entry真实系统路径+/7首次启动、最小化后复用同HWND并实际foreground=true、旧PID/端口保留、转发进程退出且无额外HTTP/CDP、精确关闭清理。未写IFEO，因此没有声称真实任务栏点击或Ctrl+Shift+Esc已重定向；直接运行本产品注册命令形态验证了entry链路，完整系统接管成功链受权限限制未执行。
 

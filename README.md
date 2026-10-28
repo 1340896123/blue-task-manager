@@ -1,4 +1,6 @@
-# 蓝域任务管理器
+# Takao
+
+面向 Windows 的真实系统任务管理器。产品、项目与新发布产物统一使用 **Takao**；当前命名与兼容约定见[工程规范](docs/CONVENTIONS.md)。历史验收保留当时的名称与路径。
 
 本轮预览构建补齐磁盘型号、HDD/SSD 与总线类型，磁盘性能聚焦读取/写入吞吐，全部性能图表统一为白底简约配色；见[本轮发布说明](docs/RELEASE-V1.1.1-DISK-CHARTS.md)。
 
@@ -20,7 +22,7 @@
 - [原始PRD与1.0历史基线](docs/PRD.md)
 - [架构与数据合同](docs/ARCHITECTURE.md)
 - [工程规范](docs/CONVENTIONS.md)
-- [设计系统与 Token](design-system/task-manager/MASTER.md)
+- [设计系统与 Token](design-system/takao/MASTER.md)
 - [真实链路验收矩阵](docs/ACCEPTANCE.md)
 - [开源研究与决策](docs/RESEARCH.md)
 - [实际后端 API](docs/API.md)
@@ -31,15 +33,15 @@
 
 ## 运行成品
 
-下载ZIP后完整解压，双击`TaskManager-win-x64/start.cmd`，或直接运行同目录的`TaskManager.Host.exe`；源码构建对应`output/TaskManager-win-x64`。目录包含生产UI、Electron45.0.0和Electron.NET桥接依赖，可以移动整个目录运行；不要只复制exe。启用了任务栏接管时，移动前须先在原目录取消。
+下载ZIP后完整解压，双击`Takao-win-x64/start.cmd`，或直接运行同目录的`Takao.Host.exe`；源码构建对应`output/Takao-win-x64`。目录包含生产UI、Electron45.0.0和Electron.NET桥接依赖，可以移动整个目录运行；不要只复制exe。启用了任务栏接管时，移动前须先在原目录取消。
 
 目标为 Windows 10（19041）/11 x64。1.1.1 安装包和配套 ZIP 已内置 **Microsoft.NETCore.App / Microsoft.AspNetCore.App 10.0.12** 与 Electron 45.0.0，运行无需预装 .NET、Node/npm 或联网。首次源码构建需要下载 NuGet/npm/Electron 依赖。
 
-运行 `BlueDomainTaskManager-v1.1.1-win-x64-setup.exe`，由 Windows UAC 请求管理员权限，默认每机安装到 `Program Files\BlueDomainTaskManager`，创建直接启动管理员 Host 的开始菜单和可选桌面快捷方式。安装完成不自动启动，也不启用任务栏入口接管。运行中的本安装应用会阻止覆盖；重装/升级使用原目录，更换目录须先卸载。通过 Windows“已安装的应用”卸载；卸载先验证维护文件并由生产 CsWin32 链路清理本目录精确自有任务栏接管，不能确认成功即中止。额外文件及各账户 LocalAppData 偏好保留。安装器尚未数字签名。
+运行 `Takao-v1.1.1-win-x64-setup.exe`，由 Windows UAC 请求管理员权限，新安装默认每机安装到 `Program Files\Takao`，已有安装沿用注册记录中的原目录，创建直接启动管理员 Host 的开始菜单和可选桌面快捷方式。安装完成不自动启动，也不启用任务栏入口接管。运行中的本安装应用会阻止覆盖；重装/升级使用原目录，更换目录须先卸载。通过 Windows“已安装的应用”卸载；卸载先验证维护文件并由生产 CsWin32 链路清理本目录精确自有任务栏接管，不能确认成功即中止。额外文件及各账户 LocalAppData 偏好保留。安装器尚未数字签名。
 
 要恢复 Windows 标准任务管理器，可双击安装目录或便携目录中的 `restore-windows-task-manager.cmd`，同意管理员授权后查看结果并按任意键关闭。脚本通过现有原生维护入口撤销本目录的接管，再只读核验 64 位 IFEO 的 `Debugger` 与 `UseFilter`；其他工具的接管仍存在、授权取消或维护失败时会明确报错，不显示恢复成功。请保留同目录完整程序文件；命令行可加 `--no-pause` 取消结束等待。
 
-默认端口 `127.0.0.1:5188`；如被其他实例占用，可执行 `TaskManager.Host.exe --port=5189`。关闭窗口会退出本实例的主机、采集器、Electron 子进程与监听端口。本程序必须以管理员权限运行：EXE通过Windows UAC请求提升，启动时还会验证实际提升令牌；直接运行DLL、无窗口模式和卸载维护入口也不能绕过检查。管理员仍可能无法访问SYSTEM/PPL等受保护数据，界面保留实际原因。新任务默认继承管理员权限。以其他管理员账户提供凭据时，偏好保存在该账户的LocalAppData，不迁移其他账户配置。
+默认端口 `127.0.0.1:5188`；如被其他实例占用，可执行 `Takao.Host.exe --port=5189`。关闭窗口会退出本实例的主机、采集器、Electron 子进程与监听端口。本程序必须以管理员权限运行：EXE通过Windows UAC请求提升，启动时还会验证实际提升令牌；直接运行DLL、无窗口模式和卸载维护入口也不能绕过检查。管理员仍可能无法访问SYSTEM/PPL等受保护数据，界面保留实际原因。新任务默认继承管理员权限。以其他管理员账户提供凭据时，偏好保存在该账户的LocalAppData，不迁移其他账户配置。
 
 设置中的“任务管理器入口”可接管Windows原任务管理器入口，同时影响Ctrl+Shift+Esc等方式，**不是新增任意任务栏菜单项**。此项默认关闭，修改范围为当前计算机，程序启动已要求管理员权限，入口修改无需再次请求UAC。已有其他工具、目录或过滤配置时，可明确确认“接管现有入口”；取消接管只恢复 Windows 标准任务管理器，不恢复此前工具。启用前请把完整目录放在固定、且其他需要使用的账户可读取的位置；移动/删除前先在原目录取消。取消只清理精确自有Debugger并关闭入口过滤，保留无关诊断配置。已有同目录本产品真实窗口时，系统入口会复用并恢复该窗口。当前合同见[已有入口接管说明](docs/TASK-MANAGER-TAKEOVER.md)，`node tests/task-manager-takeover.mjs`验证真实只读状态、确认交互与保护请求，测试不会开启全局接管。
 
@@ -51,7 +53,7 @@
 npm run build:desktop
 ```
 
-脚本锁定恢复 npm/NuGet 依赖，检查 TypeScript、构建 React/Tailwind 与 Release 主机、下载 Electron，最后重新生成 `output/TaskManager-win-x64`。仅在依赖已恢复时可使用 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1 -SkipRestore`。
+脚本锁定恢复 npm/NuGet 依赖，检查 TypeScript、构建 React/Tailwind 与 Release 主机、下载 Electron，最后重新生成 `output/Takao-win-x64`。仅在依赖已恢复时可使用 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1 -SkipRestore`。
 
 应用自有 HTTP JSON 使用 JSON.NET；Electron.NET 内部 Socket.IO 是官方框架实现。框架默认 Electron 版本已明确升级到 45.0.0；构建脚本通过标准 npm 依赖清单把未使用的 splash 图像解析库升级到已修复的 image-size 2.0.4，依赖树有单独锁文件，不修改框架源码。
 
@@ -92,4 +94,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer.ps1 
 npm run verify:installer
 ```
 
-公共入口先执行 `publish-desktop.ps1`，真实 `dotnet publish -r win-x64 --self-contained true` 后按 Host-first 方式组装，再从同一完整目录生成 `output/releases/BlueDomainTaskManager-v1.1.1-win-x64-setup.exe`、同版本 ZIP 和 `SHA256SUMS`。版本必须与 csproj、实际 Host 和 Electron 桥接一致；`-Version` 不能只修改文件标签。重复打包仅替换同版本文件，保留其他版本 ZIP。安装/删除清单和逐文件 SHA256 位于 `output/nsis/`；脚本包含隐藏 `.electron` 与许可，拒绝链接/本地偏好/环境文件，ZIP 逐文件校验。`npm run build:desktop` 继续生成依赖 .NET 10 的开发/测试目录；`npm run publish:desktop` 生成最终自包含目录。
+公共入口先执行 `publish-desktop.ps1`，真实 `dotnet publish -r win-x64 --self-contained true` 后按 Host-first 方式组装，再从同一完整目录生成 `output/releases/Takao-v1.1.1-win-x64-setup.exe`、同版本 ZIP 和 `SHA256SUMS`。版本必须与 csproj、实际 Host 和 Electron 桥接一致；`-Version` 不能只修改文件标签。重复打包仅替换同版本文件，保留其他版本 ZIP。安装/删除清单和逐文件 SHA256 位于 `output/nsis/`；脚本包含隐藏 `.electron` 与许可，拒绝链接/本地偏好/环境文件，ZIP 逐文件校验。`npm run build:desktop` 继续生成依赖 .NET 10 的开发/测试目录；`npm run publish:desktop` 生成最终自包含目录。

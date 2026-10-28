@@ -16,7 +16,7 @@ HWiNFO / CPU增量以 [HWINFO-CPU-GRAPHS.md](HWINFO-CPU-GRAPHS.md) 的HTTP与DTO
 
 详见[IFEO提升修复](IFEO-ELEVATION-FIX.md)。GET `desktop/task-manager-integration`实时查询HKLM64 IFEO，返回`{status:disabled|enabled|migrationRequired|conflict|unavailable,enabled:boolean|null,ownsDebugger,migrationRequired,canRepair,canRead,canWrite:boolean|null,canEnable,canDisable,executableAvailable,scope:machine,executablePath,registrationCommand,currentDebugger:string|null,useFilter:uint|null,revision,checkedAtUtc,conflictReason,readError,writeError}`。无读取权限/未知不当作未接管；实际SET_VALUE或父键CREATE_SUB_KEY权限独立探测，GET不写注册表。executablePath为同目录Launcher；Host的原生窗口复用验证仍使用Host路径。executableAvailable同时要求Launcher与Host存在。
 
-POST同路径输入仅`{enabled:boolean,expectedRevision:string,repair?:boolean}`，沿用token/Origin校验。revision为JSON.NET输入的SHA256不透明版本，覆盖本目录固定命令、配置及实际写权限；不接受renderer命令、路径、注册表位置或菜单文字。返回`{state:上述实际状态,changed:boolean,message}`；400缺版本/非法修复组合，403实际权限拒绝含Windows码5，409预期变化/其他工具/特殊配置冲突，503读取或写后核验不可用。读前/同写句柄写前均重验，写后读回；新注册写入`"<同目录>\TaskManager.Launcher.exe" --task-manager-entry`。精确REG_SZ旧Host命令以migrationRequired呈现（enabled为null），ownsDebugger与canDisable仍正确；只有用户确认且`enabled:true,repair:true`才迁移，特殊配置不迁移。取消/正式卸载可删除同目录精确新旧自有命令，不删键或其他配置。配置操作不另行UAC；系统启动经asInvoker Launcher的Shell runas请求管理员Host。注册表无通用CAS，因此不声称跨其他工具的原子事务；检测到的变化拒绝，写后异常提示可能生效并要求刷新。
+POST同路径输入仅`{enabled:boolean,expectedRevision:string,repair?:boolean}`，沿用token/Origin校验。revision为JSON.NET输入的SHA256不透明版本，覆盖本目录固定命令、配置及实际写权限；不接受renderer命令、路径、注册表位置或菜单文字。返回`{state:上述实际状态,changed:boolean,message}`；400缺版本/非法修复组合，403实际权限拒绝含Windows码5，409预期变化/其他工具/特殊配置冲突，503读取或写后核验不可用。读前/同写句柄写前均重验，写后读回；新注册写入`"<同目录>\Takao.Launcher.exe" --task-manager-entry`。精确REG_SZ旧Host命令以migrationRequired呈现（enabled为null），ownsDebugger与canDisable仍正确；只有用户确认且`enabled:true,repair:true`才迁移，特殊配置不迁移。取消/正式卸载可删除同目录精确新旧自有命令，不删键或其他配置。配置操作不另行UAC；系统启动经asInvoker Launcher的Shell runas请求管理员Host。注册表无通用CAS，因此不声称跨其他工具的原子事务；检测到的变化拒绝，写后异常提示可能生效并要求刷新。
 
 ## 1.1实施增量
 
@@ -86,7 +86,7 @@ DXGI描述同样在上述后台worker中惰性枚举，最多256项，成功缓�
 
 ## 1.0已验收基线
 
-C#源合同是 `src/TaskManager.Host/Models/Contracts.cs`。字段camelCase，JSON由MVC + JSON.NET输出。URL同源根 `/api`，默认 `http://127.0.0.1:5188`。可用 `--port=5191` 或环境变量 `TASKMANAGER_PORT` 指定端口。正常启动由Electron.NET创建桌面；仅显式 `--headless` 为无窗口测试主机。`bootstrap.desktop` 反映当前真实窗口是否存在。
+C#源合同是 `src/Takao.Host/Models/Contracts.cs`。字段camelCase，JSON由MVC + JSON.NET输出。URL同源根 `/api`，默认 `http://127.0.0.1:5188`。可用 `--port=5191` 或环境变量 `TASKMANAGER_PORT` 指定端口。正常启动由Electron.NET创建桌面；仅显式 `--headless` 为无窗口测试主机。`bootstrap.desktop` 反映当前真实窗口是否存在。
 
 ## 请求与错误
 
@@ -147,10 +147,10 @@ GET不用写令牌。所有POST带 `X-TaskManager-Token`，令牌通过GET boots
 ## 可复现后端检查
 
 ```powershell
-dotnet restore src/TaskManager.Host --locked-mode
-dotnet build src/TaskManager.Host -c Release --no-restore
-dotnet build tests/TaskManager.TestWorkload -c Release
+dotnet restore src/Takao.Host --locked-mode
+dotnet build src/Takao.Host -c Release --no-restore
+dotnet build tests/Takao.TestWorkload -c Release
 node tests/native-api.mjs
 ```
 
-测试脚本自行创建与关闭独立端口5191的真实主机、专用负载和临时目录；仅结束自己创建并保存身份的目标，不使用mock，不保存令牌。可通过`TASKMANAGER_TEST_PORT`换端口。API开发启动：`dotnet run --project src/TaskManager.Host -c Release -- --headless --port=5188`。生产UI资源随Release输出复制；完整成品用`scripts/build.ps1`生成并从`output/TaskManager-win-x64/start.cmd`启动。UI/桌面完整验收见docs/ACCEPTANCE-RESULTS.md。
+测试脚本自行创建与关闭独立端口5191的真实主机、专用负载和临时目录；仅结束自己创建并保存身份的目标，不使用mock，不保存令牌。可通过`TASKMANAGER_TEST_PORT`换端口。API开发启动：`dotnet run --project src/Takao.Host -c Release -- --headless --port=5188`。生产UI资源随Release输出复制；完整成品用`scripts/build.ps1`生成并从`output/Takao-win-x64/start.cmd`启动。UI/桌面完整验收见docs/ACCEPTANCE-RESULTS.md。

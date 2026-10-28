@@ -11,9 +11,9 @@ UI复用MASTER现有body/caption/subtitle、text-secondary与资源列表尺寸T
 复现顺序：
 
 ```powershell
-npm --prefix src/TaskManager.Web run build
-dotnet build src/TaskManager.Host -c Release -p:ElectronSkipExecCommands=true --no-restore
-dotnet build tests/TaskManager.WindowProbe -c Release --no-restore
+npm --prefix src/Takao.Web run build
+dotnet build src/Takao.Host -c Release -p:ElectronSkipExecCommands=true --no-restore
+dotnet build tests/Takao.WindowProbe -c Release --no-restore
 node tests/gpu-identity-v11.mjs
 node tests/process-ui-v11.mjs
 node tests/pages-ui-v11.mjs

@@ -1,5 +1,7 @@
 # 白色简约图表验收结果
 
+> 历史验收记录：本文保留当时的产品名、路径与构建结果。自 2026-10-28 起产品统一命名为 Takao；当前命令与目录以 [README](../README.md) 为准，历史记录不作为本次重命名的验收证据。
+
 2026-10-27（Asia/Shanghai），Windows x64。业务样式提交 `5bddec0`，配色规范提交 `65178cc`。当前生产 React、Release Host 与官方 Electron.NET runtime 已通过真实 Windows 采样链验证。
 
 Web生产构建（含TypeScript）、Host Release和差异检查通过。静态检查3项、真实浏览器120项、正式Electron141项通过，共264项；两个专项报告均为 `PASS`、`cleanup:true`，固定RunAs worker独立确认 `elevated:true`。Release的 `wwwroot/index.html` SHA256与本次前端构建相同，实际Host/JS/CSS散列保存在结果JSON。
