@@ -1,0 +1,72 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-10-28T07:50:10.989Z",
+  "suites": [
+    {
+      "suite": "static-v11",
+      "result": "PASS",
+      "assertions": 3,
+      "durationMs": 89.64920000000001
+    },
+    {
+      "suite": "native-api",
+      "result": "PASS",
+      "assertions": 80,
+      "durationMs": 10635.1149
+    },
+    {
+      "suite": "native-metadata-v11",
+      "result": "PASS",
+      "assertions": 5,
+      "durationMs": 6250.4906999999985
+    },
+    {
+      "suite": "native-core-v11",
+      "result": "PASS",
+      "assertions": 25,
+      "durationMs": 9328.482499999998
+    },
+    {
+      "suite": "native-management-v11",
+      "result": "PASS",
+      "assertions": 85,
+      "durationMs": 4732.908299999999
+    },
+    {
+      "suite": "native-telemetry-v11",
+      "result": "PASS",
+      "assertions": 24,
+      "durationMs": 49595.81420000001
+    },
+    {
+      "suite": "gpu-identity-v11",
+      "result": "PASS",
+      "assertions": 12,
+      "durationMs": 11182.48490000001
+    },
+    {
+      "suite": "process-ui-v11",
+      "result": "PASS",
+      "assertions": 34,
+      "durationMs": 19036.939599999998
+    },
+    {
+      "suite": "pages-ui-v11",
+      "result": "PASS",
+      "assertions": 49,
+      "durationMs": 14003.699200000003
+    },
+    {
+      "suite": "ui-smoke",
+      "result": "PASS",
+      "assertions": 36,
+      "durationMs": 9344.74040000001
+    },
+    {
+      "suite": "recovery-e2e",
+      "result": "PASS",
+      "assertions": 4,
+      "durationMs": 11209.164000000019
+    }
+  ]
+}

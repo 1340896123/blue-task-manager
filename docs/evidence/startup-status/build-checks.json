@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-28",
+  "productionCommit": "d7935d223020f9f6d19f01cd2853f8baef427761",
+  "verifiedBy": "phase 2 implementation and primary agent dependency recheck",
+  "checks": [
+    {"command": "npm ci --prefer-offline --no-audit --no-fund", "exitCode": 0, "packagesAdded": 2},
+    {"command": "npm --prefix src/TaskManager.Web ci --prefer-offline --no-audit --no-fund", "exitCode": 0, "packagesAdded": 43},
+    {"command": "output/tools/network-sdk-10.0.401/dotnet.exe restore TaskManager.sln --locked-mode", "exitCode": 0, "warnings": {"code": "NU1900", "count": 5, "reason": "NuGet vulnerability data endpoint was unreachable"}},
+    {"command": "git diff --exit-code -- npm and NuGet lockfiles", "exitCode": 0, "changedLockfiles": 0},
+    {"command": "npm run typecheck", "exitCode": 0},
+    {"command": "npm run build", "exitCode": 0, "repeatedAfterDependencyRestore": true, "unchangedJsCss": true},
+    {"command": "output/tools/network-sdk-10.0.401/dotnet.exe build TaskManager.sln -c Release --no-restore -p:ElectronSkipExecCommands=true", "exitCode": 0, "compilationWarnings": 0, "compilationErrors": 0}
+  ],
+  "webIndexSha256": "df4fedce8bb8f18f130960b739f1c9bbfaedfa8ff5923ef0bdeb6fdba8e127fe",
+  "vulnerabilityAudit": "Not passed or claimed; npm ci used --no-audit and NuGet vulnerability retrieval was unavailable"
+}

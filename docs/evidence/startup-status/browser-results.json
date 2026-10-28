@@ -1,0 +1,133 @@
+{
+  "result": "PASS",
+  "mode": "browser",
+  "checkedAtUtc": "2026-10-28T07:46:00.780Z",
+  "revision": "d7935d223020f9f6d19f01cd2853f8baef427761",
+  "testedProductionCommit": "d7935d2",
+  "releaseDirectory": "E:\\taskManager\\output\\startup-status-release-d7935d2",
+  "executable": "TaskManager.Host.exe",
+  "platform": "win32",
+  "node": "v24.16.0",
+  "assertions": 56,
+  "checks": [
+    "controller uses a real elevated Windows token",
+    "dedicated acceptance ports are initially free",
+    "real isolated Run/RunOnce/Run32 and user/common Startup files were created",
+    "production elevated Host uses CsWin32 and JSON.NET",
+    "existing user startup rows include real enabled and disabled records independently verified without modifying them",
+    "all 39 real source rows match independent managed Registry reads",
+    "enabled: expected nullable state and real reason",
+    "disabled: expected nullable state and real reason",
+    "unknown1: expected nullable state and real reason",
+    "unknown6: expected nullable state and real reason",
+    "unknown7: expected nullable state and real reason",
+    "badtype: expected nullable state and real reason",
+    "short: expected nullable state and real reason",
+    "long: expected nullable state and real reason",
+    "missing: expected nullable state and real reason",
+    "once: expected nullable state and real reason",
+    "conflict: expected nullable state and real reason",
+    "default-conflict: expected nullable state and real reason",
+    "folder-enabled: expected nullable state and real reason",
+    "folder-disabled: expected nullable state and real reason",
+    "common-disabled: expected nullable state and real reason",
+    "HKLM32 and HKLM64 equal-name/equal-command sources retain separate identities",
+    "native Shell Run and Run32 records map to their exact HKLM registry views",
+    "shared HKCU Run views appear only once",
+    "RunOnce and missing approval have distinct explanations",
+    "StartupFolder matches the file extension and ignores the opposite suffixless record",
+    "browser: actual bootstrap matches the runtime",
+    "badtype : UI state and reason match the real snapshot",
+    "common-disabled : UI state and reason match the real snapshot",
+    "conflict : UI state and reason match the real snapshot",
+    "default-conflict : UI state and reason match the real snapshot",
+    "disabled : UI state and reason match the real snapshot",
+    "enabled : UI state and reason match the real snapshot",
+    "folder-disabled : UI state and reason match the real snapshot",
+    "folder-enabled : UI state and reason match the real snapshot",
+    "long : UI state and reason match the real snapshot",
+    "missing : UI state and reason match the real snapshot",
+    "once : UI state and reason match the real snapshot",
+    "short : UI state and reason match the real snapshot",
+    "unknown1 : UI state and reason match the real snapshot",
+    "unknown6 : UI state and reason match the real snapshot",
+    "unknown7 : UI state and reason match the real snapshot",
+    "views 32: UI state and reason match the real snapshot",
+    "views : UI state and reason match the real snapshot",
+    "official Windows startup management entry remains available",
+    "1380x860: no document overflow and reduced motion remains active",
+    "ascending: known states sort in order and unknown values stay last",
+    "descending: known states sort in order and unknown values stay last",
+    "Ctrl+F focuses the shared startup search",
+    "keyboard row activation opens real state and source detail",
+    "existing open detail updates after an external registry change and refresh",
+    "refreshed row also shows the real disabled state",
+    "visible refresh command re-reads real Windows startup state",
+    "960x640: no document overflow and reduced motion remains active",
+    "no renderer errors, startup writes, integration changes or service controls",
+    "all exact test-created startup values/files are cleaned without changing user items"
+  ],
+  "comparisons": {
+    "total": 39,
+    "fixtures": 17,
+    "existing": 22,
+    "existingEnabled": 9,
+    "existingDisabled": 13,
+    "existingUnknown": 0,
+    "ownStates": {
+      "1": 1,
+      "2": 13,
+      "3": 17,
+      "6": 1,
+      "7": 1,
+      "null": 6
+    }
+  },
+  "artifacts": [
+    {
+      "file": "TaskManager.Host.exe",
+      "sha256": "965f4b48881e5471d4718fef5fea3b26bc9cfa23034feeefbf717dd862068f34",
+      "bytes": 184832
+    },
+    {
+      "file": "TaskManager.Host.dll",
+      "sha256": "21dbc78cd26f90311c29f80a971979790b9acf8d9fc497980148e6c1a7857850",
+      "bytes": 934400
+    },
+    {
+      "file": "wwwroot/index.html",
+      "sha256": "df4fedce8bb8f18f130960b739f1c9bbfaedfa8ff5923ef0bdeb6fdba8e127fe",
+      "bytes": 649
+    },
+    {
+      "file": "wwwroot/assets/index-C5jaTmM-.js",
+      "sha256": "905311e84a54b57d6b1a8b0ad5000dc33c3e22289ba4b64be92d565e7ea4fbb0",
+      "bytes": 421025
+    },
+    {
+      "file": "wwwroot/assets/index-oa6ckQmH.css",
+      "sha256": "0ae86cdbe9b54a585c8eddf80a9fda465de3a50696305ad63fdd507db0d9e9ef",
+      "bytes": 57149
+    }
+  ],
+  "screenshots": [
+    "browser-1380-states.png",
+    "browser-detail-disabled.png",
+    "browser-960-states.png"
+  ],
+  "errors": [],
+  "forbiddenWrites": [],
+  "cleanup": true,
+  "cleanupFacts": {
+    "cleanup": true,
+    "files": 3,
+    "registryValues": 32,
+    "deleted": 35
+  },
+  "cleanupErrors": [],
+  "notExecuted": [
+    "Actual user startup policy permissions failures were not forced; existing user policies were preserved.",
+    "States 6/7 are tested as unknown format values; their Windows Shell enabled/disabled semantics are not claimed.",
+    "No user startup command was executed and no startup-writing product endpoint was added."
+  ]
+}

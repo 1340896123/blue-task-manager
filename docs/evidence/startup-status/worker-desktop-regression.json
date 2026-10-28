@@ -1,0 +1,8 @@
+{
+    "complete":  true,
+    "exitCode":  0,
+    "elevated":  true,
+    "script":  "desktop-e2e.mjs",
+    "releaseDirectory":  "E:\\taskManager\\output\\startup-status-release-d7935d2",
+    "pid":  54680
+}
