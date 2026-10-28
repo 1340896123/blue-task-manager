@@ -43,6 +43,8 @@ GitHub Actions仅由`workflow_dispatch`手动触发Windows x64 Release安装包�
 
 发布job独立核对原始四文件delivery中Setup的SHA256、单条SHA256SUMS、验收PASS、源提交SHA、安装器名称/版本/哈希及至少42项桌面断言。随后在新的发布暂存目录增加字节相同的旧文件名别名，生成双文件名同散列校验清单，原始delivery保持四文件。发布前再次检查目标不存在，再通过标准Git refs API原子创建固定SHA的新tag；冲突即失败。随后创建draft、上传并确认五个附件完整，两个安装器的size/digest和各自官方URL与已验文件一致，再次确认tag指向后公开Release。构建/安装验收失败不创建tag或Release；发布上传失败时保留本次tag和未公开draft供排查，重试须使用新的tag，不会将不完整draft公开。
 
+草稿阶段的 GitHub `html_url` 和资产下载地址可能使用官方 `untagged-<hex>` 临时引用，即使 `tag_name` 已是正式标签。校验始终固定release ID、标签、源码和预发布状态，并将五个唯一、已上传资产的大小/散列绑定本次本地发布暂存；草稿资产必须使用同仓库、同 `html_url` 引用的官方 HTTPS 下载路径。公开后再次核验同一身份与全部资产，页面和下载路径必须改为正式标签。`tests/release-upload-validation.ps1` 从工作流提取实际函数，以真实草稿/公开API字段及错误host、仓库、引用、文件名、大小和散列等负例回归；不发布或修改任何Release。
+
 ## CI验收入口与下载内容
 
 工作流直接调用`./scripts/build-installer.ps1 -MakeNsisPath <固定NSIS路径>`。安装验收入口为：

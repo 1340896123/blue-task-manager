@@ -1,0 +1,92 @@
+{
+  "provenance": "Selected fields from actual GitHub API responses captured on 2026-10-28. Draft build.13 was retained after a URL-timing validation failure; published build.12 is an earlier real release. No API credentials or business telemetry.",
+  "draft": {
+    "sourceApi": "https://api.github.com/repos/1340896123/blue-task-manager/releases/426417557",
+    "release": {
+      "id": 426417557,
+      "tag_name": "v1.1.1-build.13",
+      "target_commitish": "22af7cb72e2bebe5584a2c19ce97d4d2d77944cb",
+      "draft": true,
+      "prerelease": true,
+      "html_url": "https://github.com/1340896123/blue-task-manager/releases/tag/untagged-1212ae520a9db1e1484b",
+      "assets": [
+        {
+          "name": "acceptance.json",
+          "size": 10707,
+          "digest": "sha256:3f225e1438735899f82a7ac9b1f5ebeda01ee7b998c78e2df338d86468f64ee2",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/1340896123/blue-task-manager/releases/download/untagged-1212ae520a9db1e1484b/acceptance.json"
+        },
+        {
+          "name": "acceptance.md",
+          "size": 4919,
+          "digest": "sha256:84438707287f9fd89110bfaf47727174e87d4da1ac04d8b85abb4e1adffe4515",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/1340896123/blue-task-manager/releases/download/untagged-1212ae520a9db1e1484b/acceptance.md"
+        },
+        {
+          "name": "BlueDomainTaskManager-v1.1.1-win-x64-setup.exe",
+          "size": 171919060,
+          "digest": "sha256:2790fa39fa1ef84e286944766b04faf404530fc10fd5fdb36811c6f6c0e73656",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/1340896123/blue-task-manager/releases/download/untagged-1212ae520a9db1e1484b/BlueDomainTaskManager-v1.1.1-win-x64-setup.exe"
+        },
+        {
+          "name": "SHA256SUMS",
+          "size": 212,
+          "digest": "sha256:a8d0b3b0659db51a72736e0f094c80f66552ac6a9e50a4a8e52cf8e0cad326af",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/1340896123/blue-task-manager/releases/download/untagged-1212ae520a9db1e1484b/SHA256SUMS"
+        },
+        {
+          "name": "Takao-v1.1.1-win-x64-setup.exe",
+          "size": 171919060,
+          "digest": "sha256:2790fa39fa1ef84e286944766b04faf404530fc10fd5fdb36811c6f6c0e73656",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/1340896123/blue-task-manager/releases/download/untagged-1212ae520a9db1e1484b/Takao-v1.1.1-win-x64-setup.exe"
+        }
+      ]
+    }
+  },
+  "published": {
+    "sourceApi": "https://api.github.com/repos/1340896123/blue-task-manager/releases/426208239",
+    "release": {
+      "id": 426208239,
+      "tag_name": "v1.1.1-build.12",
+      "target_commitish": "273885025618f5e20019988df894efe8996c326c",
+      "draft": false,
+      "prerelease": true,
+      "html_url": "https://github.com/1340896123/blue-task-manager/releases/tag/v1.1.1-build.12",
+      "assets": [
+        {
+          "name": "acceptance.json",
+          "size": 10995,
+          "digest": "sha256:ddc98155b302e545f4ccb10e6517dcdec0f403b7738752c021e30376609278b4",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/1340896123/blue-task-manager/releases/download/v1.1.1-build.12/acceptance.json"
+        },
+        {
+          "name": "acceptance.md",
+          "size": 4967,
+          "digest": "sha256:2b50e17f85750f6568f1f5c6b27634dfab3cc3f40040eeed45dd36fe355a0678",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/1340896123/blue-task-manager/releases/download/v1.1.1-build.12/acceptance.md"
+        },
+        {
+          "name": "BlueDomainTaskManager-v1.1.1-win-x64-setup.exe",
+          "size": 171215451,
+          "digest": "sha256:910c10436b02b34ef0f7fef6877d81d1a79b598b00a611589f1d672fb563c8ac",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/1340896123/blue-task-manager/releases/download/v1.1.1-build.12/BlueDomainTaskManager-v1.1.1-win-x64-setup.exe"
+        },
+        {
+          "name": "SHA256SUMS",
+          "size": 113,
+          "digest": "sha256:1800992ab4e61dd8881a0fdaeb0153961d874ad812c8dd5cbdb18437f5425a53",
+          "state": "uploaded",
+          "browser_download_url": "https://github.com/1340896123/blue-task-manager/releases/download/v1.1.1-build.12/SHA256SUMS"
+        }
+      ]
+    }
+  }
+}

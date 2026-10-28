@@ -124,6 +124,9 @@ jobs:
           Write-Host "NSIS $compilerVersion"
           "TASKMANAGER_NSIS_COMPILER=$compiler" >> $env:GITHUB_ENV
 
+      - name: Validate draft and published release metadata rules
+        run: ./tests/release-upload-validation.ps1
+
       - name: Build the locked self-contained installer
         run: ./scripts/build-installer.ps1 -MakeNsisPath $env:TASKMANAGER_NSIS_COMPILER -ReleaseTag $env:TASKMANAGER_RELEASE_TAG -SourceCommit $env:TASKMANAGER_SOURCE_COMMIT
 
@@ -316,19 +319,37 @@ jobs:
           $releaseApi = "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/releases/$releaseId"
           $draft = Invoke-RestMethod -Uri $releaseApi -Headers $headers -TimeoutSec 30
           $expectedAssets = @($installerName, $legacyInstallerName, 'SHA256SUMS', 'acceptance.json', 'acceptance.md')
-          if ($draft.id -ne $releaseId -or $draft.tag_name -cne $tag -or $draft.target_commitish -cne $env:SOURCE_SHA -or -not $draft.draft -or $draft.assets.Count -ne $expectedAssets.Count) { throw 'The fixed draft does not match this commit and the complete expected delivery.' }
-          foreach ($asset in $draft.assets) {
-            if ($expectedAssets -cnotcontains $asset.name -or $asset.size -le 0 -or $asset.state -cne 'uploaded' -or @($draft.assets | Where-Object name -CEQ $asset.name).Count -ne 1) { throw 'Unexpected, duplicate, incomplete or empty uploaded release asset.' }
+          $expectedAssetMetadata = @{}
+          foreach ($name in $expectedAssets) {
+            $path = Join-Path $publication $name
+            $expectedAssetMetadata[$name] = @{ size = (Get-Item -LiteralPath $path).Length; digest = 'sha256:' + (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() }
           }
-          foreach ($name in @($installerName, $legacyInstallerName)) {
-            $asset = @($draft.assets | Where-Object name -CEQ $name)[0]
-            $expectedUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/releases/download/$tag/$name"
-            if ($asset.size -ne $installerBytes -or $asset.digest -cne "sha256:$env:VERIFIED_INSTALLER_SHA256" -or [Uri]::UnescapeDataString($asset.browser_download_url) -cne $expectedUrl) { throw 'The uploaded aliases differ from the accepted installer or official release URL.' }
+          function Assert-UploadedRelease([object]$Release, [bool]$DraftExpected) {
+            if ($Release.id -ne $releaseId -or $Release.tag_name -cne $tag -or $Release.target_commitish -cne $env:SOURCE_SHA -or $Release.draft -ne $DraftExpected -or $Release.prerelease.ToString().ToLowerInvariant() -cne $isPrerelease -or $Release.assets.Count -ne $expectedAssets.Count) { throw 'The fixed release does not match this source, state and complete delivery.' }
+            [Uri]$serverUri = $null
+            [Uri]$htmlUri = $null
+            if (-not [Uri]::TryCreate($env:GITHUB_SERVER_URL, [UriKind]::Absolute, [ref]$serverUri) -or $serverUri.Scheme -cne 'https' -or -not [Uri]::TryCreate([string]$Release.html_url, [UriKind]::Absolute, [ref]$htmlUri) -or $htmlUri.Scheme -cne 'https' -or $htmlUri.Authority -cne $serverUri.Authority -or $htmlUri.UserInfo -or $htmlUri.Query -or $htmlUri.Fragment) { throw 'The release page is not an official HTTPS URL.' }
+            $pagePrefix = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/releases/tag/"
+            $pageUrl = [Uri]::UnescapeDataString([string]$Release.html_url)
+            if (-not $pageUrl.StartsWith($pagePrefix, [StringComparison]::Ordinal)) { throw 'The release page belongs to a different repository.' }
+            $downloadRef = $pageUrl.Substring($pagePrefix.Length)
+            # GitHub drafts may use an untagged URL even after tag_name is set.
+            # Bind uploads to this fixed draft's page; published URLs must use tag.
+            if (($DraftExpected -and $downloadRef -cne $tag -and $downloadRef -cnotmatch '\Auntagged-[0-9a-f]+\z') -or (-not $DraftExpected -and $downloadRef -cne $tag)) { throw 'The release page does not use the expected draft or published reference.' }
+            foreach ($asset in $Release.assets) {
+              if ($expectedAssets -cnotcontains $asset.name -or $asset.size -le 0 -or $asset.state -cne 'uploaded' -or @($Release.assets | Where-Object name -CEQ $asset.name).Count -ne 1) { throw 'Unexpected, duplicate, incomplete or empty uploaded release asset.' }
+              [Uri]$assetUri = $null
+              if (-not [Uri]::TryCreate([string]$asset.browser_download_url, [UriKind]::Absolute, [ref]$assetUri) -or $assetUri.Scheme -cne 'https' -or $assetUri.Authority -cne $serverUri.Authority -or $assetUri.UserInfo -or $assetUri.Query -or $assetUri.Fragment) { throw 'The uploaded asset is not an official HTTPS URL.' }
+              $expectedUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/releases/download/$downloadRef/$($asset.name)"
+              $expected = $expectedAssetMetadata[$asset.name]
+              if ($asset.size -ne $expected.size -or $asset.digest -cne $expected.digest -or [Uri]::UnescapeDataString([string]$asset.browser_download_url) -cne $expectedUrl) { throw 'The uploaded asset differs from the verified file or fixed release URL.' }
+            }
           }
+          Assert-UploadedRelease $draft $true
           $reference = Invoke-RestMethod -Uri "$env:GITHUB_API_URL/repos/$env:GITHUB_REPOSITORY/git/ref/tags/$encodedTag" -Headers $headers -TimeoutSec 30
           if ($reference.object.type -cne 'commit' -or $reference.object.sha -cne $env:SOURCE_SHA) { throw 'The tag changed before publication; the draft remains unpublished.' }
           $publishBody = @{ draft = $false; prerelease = ($isPrerelease -ceq 'true'); make_latest = $(if ($isPrerelease -ceq 'true') { 'false' } else { 'true' }) } | ConvertTo-Json
           [void](Invoke-RestMethod -Uri $releaseApi -Method Patch -Headers $headers -ContentType 'application/json' -Body $publishBody -TimeoutSec 30)
           $published = Invoke-RestMethod -Uri $releaseApi -Headers $headers -TimeoutSec 30
-          if ($published.id -ne $releaseId -or $published.tag_name -cne $tag -or $published.draft -or $published.prerelease.ToString().ToLowerInvariant() -cne $isPrerelease) { throw 'The fixed release publication status could not be confirmed.' }
+          Assert-UploadedRelease $published $false
           "Published [$tag]($($published.html_url)) from source commit $env:SOURCE_SHA with the verified installer and acceptance evidence." >> $env:GITHUB_STEP_SUMMARY
