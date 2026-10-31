@@ -1,5 +1,13 @@
 # 启动应用真实启用状态（2026-10-28）
 
+## 2026-10-31 状态样式增量
+
+列表状态列和启动项详情共用同一徽标组件，显式区分 true、false 和 null。已启用为浅绿底深绿字配 CircleCheck，已禁用为浅灰底深灰字配 CircleMinus，无法确定为琥珀底警告文字配 CircleHelp；始终显示中文文字，图标 aria-hidden，保留 enabledReason 的 tooltip 以及详情的“状态说明”。复用 MASTER 既有颜色、尺寸和 status-badge 样式，徽标不超过原32/40px行高，不降低禁用行透明度，不变更原始采集、排序、菜单或启停能力。
+
+这是纯前端样式调整，继续遵从用户仅 C# 测试、不打开 UI 的要求；只运行 `npm run build`（含 TypeScript 编译）和 `git diff --check`，不新增或重复无关业务测试，不运行 JavaScript/UI 测试，不将编译记为视觉运行时验收。
+
+本样式阶段基线为 `61401e2`，实际 `npm run build` 和 `git diff --check` 均 exit 0。Vite 8.3.5 编译1967模块，生成 `index-CDshO4ow.js`（423.90 kB）和 `index-CwaLydxz.css`（57.40 kB）至 Host/wwwroot；有插件耗时提示，无构建错误。未执行 UI/视觉运行时验收，截图无；后续独立审查及 C# Host 编译另行记录。
+
 ## 2026-10-31 来源隔离修复与本轮验证范围
 
 当前纯 C# 生产读取未复现截图的全列未知：初次读取21项，8项启用、13项禁用，无未知和来源警告；截图可能来自旧构建，不能把此推测作为已证实根因。另已确证现实现会将另一 hive 的同名禁用/异常记录错误施加到原始来源，造成不必要的“无法确定”。本轮按原始 hive + Run/Run32/StartupFolder + 原始值名独立读取，取消跨 hive 比较。后文原“同名状态冲突即未知”的合同由本节覆盖。

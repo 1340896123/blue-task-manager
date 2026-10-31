@@ -1,5 +1,9 @@
 # Takao — Windows Blue Design System
 
+## 2026-10-31 启动应用状态徽标
+
+启动页状态列与详情共用紧凑的图标加文字徽标：已启用使用 success/success-bg 和 CircleCheck；已禁用使用 text-secondary/surface-subtle 和 CircleMinus；无法确定使用 warning/warning-bg 和 CircleHelp。所有状态保留中文文字及真实 enabledReason，图标 aria-hidden，不增加 aria-live。复用 status-badge 的 space-half/space-1/space-2、radius-small，并以 body/line-height-body 和 icon-sm 显示，徽标小于既有32/40px行高；业务“已禁用”不使用控件 disabled 或整行透明度。沿用现有颜色且文字对比目标≥4.5:1，不增加设计 Token；本节覆盖2026-10-28“不新增徽标”的旧限制。范围与只编译、不打开 UI 的验证边界见 [STARTUP-STATUS.md](../../docs/STARTUP-STATUS.md)。
+
 ## 2026-10-31 启动应用右键菜单
 
 启动项行菜单复用既有 ContextMenu 的 surface、control-border、shadow-popover、radius-control、width-context-menu、height-menu-item、body、hover、disabled 和可见 focus Token，不新增色值或几何量。鼠标右键与 Shift+F10/ContextMenu 等效，菜单固定目标；方向键、Home/End、Enter/Escape、外部关闭和有条件的触发行焦点恢复保持。离线、忙态及无法可靠定位有禁用原因。规格及本轮仅 C# 测试、前端编译检查的边界见 [STARTUP-CONTEXT-MENU.md](../../docs/STARTUP-CONTEXT-MENU.md)，不以源码审查替代 UI 运行时证据。

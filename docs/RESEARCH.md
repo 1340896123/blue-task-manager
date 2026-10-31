@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 启动状态徽标（2026-10-31）
+
+实际读取 [Microsoft Fluent UI 固定提交 d2375b2452d9b8882ed63d4f4e91d8f537379e27 的 Badge 样式](https://github.com/microsoft/fluentui/blob/d2375b2452d9b8882ed63d4f4e91d8f537379e27/packages/react-components/react-badge/library/src/components/Badge/useBadgeStyles.styles.ts)：`tint-informative` 组合中性底与中性前景，`tint-success` 组合浅绿底与绿色前景，`tint-warning` 使用黄色底与警告前景，并独立布局图标。采用其语义配色与图标文字并存思路，映射到项目已有 status-badge、success、warning 和中性 Token；不复制源码、不引入依赖。ui-ux-pro-max 的对比度及非唯颜色建议用于确保中文文字始终可见、装饰图标 aria-hidden；不把业务禁用状态画成不可操作控件。
+
 ## 启动应用右键菜单（2026-10-31）
 
 实际读取 [Microsoft Fluent UI 固定提交 d2375b2452d9b8882ed63d4f4e91d8f537379e27 的 useMenu.tsx](https://github.com/microsoft/fluentui/blob/d2375b2452d9b8882ed63d4f4e91d8f537379e27/packages/react-components/react-menu/library/src/components/Menu/useMenu.tsx)。参考 openOnContext 的坐标定位、329行附近的外部点击关闭、341行附近的上下文菜单外部滚动关闭、376行附近的首可用项焦点，以及384/397行附近仅在焦点仍位于菜单或 body 时归还发起控件。接入项目现有 ContextMenu 和 DataTable，固定启动项来源及命令，复用标准 HTTP/JSON.NET 后端操作；不引入新菜单依赖、不复制源码、不设计协议。范围和本轮不打开 UI 的验证限制见 [STARTUP-CONTEXT-MENU.md](STARTUP-CONTEXT-MENU.md)。

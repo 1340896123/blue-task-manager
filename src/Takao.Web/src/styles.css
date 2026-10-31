@@ -144,6 +144,8 @@ h1, h2, h3, p { margin: 0; }
 .status-badge { display: inline-flex; align-items: center; gap: var(--space-1); border-radius: var(--radius-small); padding: var(--space-half) var(--space-2); font-size: var(--font-size-caption); line-height: var(--space-4); background: var(--color-surface-subtle); color: var(--color-text-secondary); }
 .status-badge.warning { color: var(--color-warning); background: var(--color-warning-bg); }
 .status-badge.success { color: var(--color-success); background: var(--color-success-bg); }
+.startup-status { font-size: var(--font-size-body); line-height: var(--line-height-body); white-space: nowrap; vertical-align: middle; }
+.startup-status svg { width: var(--icon-sm); height: var(--icon-sm); flex-shrink: 0; stroke-width: var(--stroke-icon); }
 .running-state { color: var(--color-text-secondary); }
 .missing-value { color: var(--color-text-secondary); border-radius: var(--radius-small); cursor: help; }
 .missing-value:focus { outline: var(--focus-width) solid var(--color-focus); outline-offset: var(--focus-offset); }

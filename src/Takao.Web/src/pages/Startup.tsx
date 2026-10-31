@@ -1,4 +1,5 @@
 import { useEffect, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { CircleCheck, CircleHelp, CircleMinus } from 'lucide-react';
 import { api, errorMessage } from '../api';
 import ApplicationIcon from '../ApplicationIcon';
 import { CommandMenu, DataTable, Modal, PageHeader, type Column } from '../components';
@@ -68,11 +69,15 @@ export default function Startup({ data, liveData, pref, patch, rowHeight, connec
   };
   const columns: Column<StartupItem>[] = [
     { key: 'name', label: '名称', width: col('name', 272), render: row => nameCell(row.name, { kind: 'startup', id: row.id, revision: row.command }) },
-    { key: 'enabled', label: '启用状态', width: col('text'), render: row => <span title={row.enabledReason} className="running-state">{startupState(row.enabled)}</span> },
+    { key: 'enabled', label: '启用状态', width: col('text'), render: row => <StartupStatus item={row}/> },
     { key: 'source', label: '来源', width: col('name', 272), render: row => <span title={row.source}>{row.source}</span> },
     { key: 'command', label: '启动命令 / 路径', width: col('path', 420), render: row => <span title={row.command}>{row.command}</span> },
     { key: 'location', label: '可定位来源', width: col('path', 420), render: row => <span title={row.locationPath ?? row.locationReason ?? '来源不可定位'}>{row.locationPath ?? row.locationReason ?? '不可定位'}</span> },
   ];
+  const detailFields: [string, ReactNode][] = detail ? [
+    ['名称', detail.name], ['启用状态', <StartupStatus item={detail}/>], ['状态说明', detail.enabledReason],
+    ['来源', detail.source], ['启动命令', detail.command], ['来源位置', detail.locationPath ?? detail.locationReason ?? '不可定位'],
+  ] : [];
 
   return <>
     <PageHeader title="启动应用">
@@ -94,9 +99,16 @@ export default function Startup({ data, liveData, pref, patch, rowHeight, connec
     {menu && <ContextMenu key={menu.target.id} x={menu.x} y={menu.y} items={actions(menu.target)} label={`${menu.target.name} 启动项操作`} onClose={() => setMenu(null)}/>}
     {detail && <Modal title="启动项详情" wide onClose={() => setDetailId(null)}>
       <div className="detail-identity"><ApplicationIcon kind="startup" id={detail.id} revision={detail.command}/><strong>{detail.name}</strong></div>
-      <dl className="process-details">{[['名称', detail.name], ['启用状态', startupState(detail.enabled)], ['状态说明', detail.enabledReason], ['来源', detail.source], ['启动命令', detail.command], ['来源位置', detail.locationPath ?? detail.locationReason ?? '不可定位']].map(([label, value]) => <div key={label}><dt>{label}</dt><dd className="selectable">{value}</dd></div>)}</dl>
+      <dl className="process-details">{detailFields.map(([label, value]) => <div key={label}><dt>{label}</dt><dd className="selectable">{value}</dd></div>)}</dl>
     </Modal>}
   </>;
 }
 
-function startupState(enabled: StartupItem['enabled']) { return enabled === true ? '已启用' : enabled === false ? '已禁用' : '无法确定'; }
+function StartupStatus({ item }: { item: Pick<StartupItem, 'enabled' | 'enabledReason'> }) {
+  const state = item.enabled === true
+    ? { label: '已启用', className: 'success', Icon: CircleCheck }
+    : item.enabled === false
+      ? { label: '已禁用', className: '', Icon: CircleMinus }
+      : { label: '无法确定', className: 'warning', Icon: CircleHelp };
+  return <span className={`status-badge startup-status ${state.className}`} title={item.enabledReason}><state.Icon aria-hidden="true"/>{state.label}</span>;
+}
