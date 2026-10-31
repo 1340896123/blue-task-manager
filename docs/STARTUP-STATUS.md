@@ -8,6 +8,8 @@
 
 本样式阶段基线为 `61401e2`，实际 `npm run build` 和 `git diff --check` 均 exit 0。Vite 8.3.5 编译1967模块，生成 `index-CDshO4ow.js`（423.90 kB）和 `index-CwaLydxz.css`（57.40 kB）至 Host/wwwroot；有插件耗时提示，无构建错误。未执行 UI/视觉运行时验收，截图无；后续独立审查及 C# Host 编译另行记录。
 
+独立审查 `a77a8c7`：未发现需修复的问题。true/false/null 分支分别保留中文文字、装饰图标及真实原因，列表和详情使用同一 `StartupStatus`；仅增加 `.startup-status` 及其 SVG 两条限定样式，沿用既有 Token。徽标的13px正文×1.45行高+上下4px内边距约22.85px，未修改32/40px虚拟行高或表格布局；本轮 diff 无后端、API、排序和右键动作变化。执行 `& 'E:\taskManager\output\tools\network-sdk-10.0.401\dotnet.exe' build src/Takao.Host -c Release --no-restore -p:ElectronSkipExecCommands=true`，exit 0、0警告、0错误；`git diff 61401e2..HEAD --check` exit 0。以 PowerShell `Get-FileHash -Algorithm SHA256` 核对 `index.html`、`assets/index-CDshO4ow.js`、`assets/index-CwaLydxz.css`，Host/wwwroot 与 `bin/Release/net10.0-windows10.0.19041.0/wwwroot` 对应文件散列全部一致，新资源已复制到 Release 输出。只做源码审查和 C# 编译，未打开 UI、未运行 JavaScript/UI/新增或重复业务测试，未部署安装或修改用户设置；此结果不代表视觉运行时验收。
+
 ## 2026-10-31 来源隔离修复与本轮验证范围
 
 当前纯 C# 生产读取未复现截图的全列未知：初次读取21项，8项启用、13项禁用，无未知和来源警告；截图可能来自旧构建，不能把此推测作为已证实根因。另已确证现实现会将另一 hive 的同名禁用/异常记录错误施加到原始来源，造成不必要的“无法确定”。本轮按原始 hive + Run/Run32/StartupFolder + 原始值名独立读取，取消跨 hive 比较。后文原“同名状态冲突即未知”的合同由本节覆盖。
