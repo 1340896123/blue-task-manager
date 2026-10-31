@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 启动应用右键菜单（2026-10-31）
+
+实际读取 [Microsoft Fluent UI 固定提交 d2375b2452d9b8882ed63d4f4e91d8f537379e27 的 useMenu.tsx](https://github.com/microsoft/fluentui/blob/d2375b2452d9b8882ed63d4f4e91d8f537379e27/packages/react-components/react-menu/library/src/components/Menu/useMenu.tsx)。参考 openOnContext 的坐标定位、329行附近的外部点击关闭、341行附近的上下文菜单外部滚动关闭、376行附近的首可用项焦点，以及384/397行附近仅在焦点仍位于菜单或 body 时归还发起控件。接入项目现有 ContextMenu 和 DataTable，固定启动项来源及命令，复用标准 HTTP/JSON.NET 后端操作；不引入新菜单依赖、不复制源码、不设计协议。范围和本轮不打开 UI 的验证限制见 [STARTUP-CONTEXT-MENU.md](STARTUP-CONTEXT-MENU.md)。
+
 ## 启动批准记录来源隔离（2026-10-31）
 
 本轮网络恢复，已实际读取 BCUninstaller 固定提交 [30da609384c98ba6e35c6530129541ea4ff3970a 的 NewStartupDisable.cs](https://github.com/BCUninstaller/Bulk-Crap-Uninstaller/blob/30da609384c98ba6e35c6530129541ea4ff3970a/source/UninstallTools/Startup/Normal/NewStartupDisable.cs)（`GetStartupApprovedKey`）及同目录 `StartupEntryFactory.cs`。成熟实现按原条目所在用户/本机范围、Run/Run32/StartupFolder和原始值名匹配批准记录，不把另一范围同名项当作冲突。本项目独立修正此来源匹配，仍保留未知状态与错误；不采用参考实现的读取创建键、非02一律禁用和状态写入。真实只读跨 hive 探针在旧代码失败、修复后通过；生产读取和GUID专用真实注册值/文件的纯C#验收见 [STARTUP-STATUS-CSHARP-RESULTS.md](STARTUP-STATUS-CSHARP-RESULTS.md)。下节网络失败为2026-10-28历史现场。

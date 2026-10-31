@@ -1,5 +1,9 @@
 # Takao 真实链路验收矩阵
 
+## 本轮启动状态与右键菜单（2026-10-31）
+
+用户明确要求只在 C# 进行测试、不打开 UI 测试，因此本轮不执行下文 S06/S07、A 系列和常规流程中的浏览器、Electron、截图验收，也不运行 JavaScript 测试。状态修复运行真实 C# 专项；前端仅类型/生产编译及源码审查，不宣称菜单运行时通过。规格见 [STARTUP-CONTEXT-MENU.md](STARTUP-CONTEXT-MENU.md)，实际结果见 [C#状态记录](STARTUP-STATUS-CSHARP-RESULTS.md) 和 [菜单交付记录](STARTUP-CONTEXT-MENU-RESULTS.md)。
+
 ## Takao 命名统一验收
 
 验证当前 solution/project/程序集与命名空间、前端包与标题、Electron 原生窗口、安装显示名/快捷方式、Takao 安装器/ZIP 及构建/发布脚本引用一致；运行 Web 类型/生产构建、C# Release、真实 API 与浏览器/桌面启动关闭回归。既有安装身份、偏好、系统入口和 GitHub 更新来源须继续兼容，旧版附件与历史证据保留原名。记录实际命令、结果、当前截图与未执行范围；不将历史通过结果算作本次验收。

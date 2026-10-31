@@ -1,5 +1,7 @@
 # 产品需求：Takao
 
+启动应用右键菜单（2026-10-31）：行右键和键盘菜单提供详情、打开来源位置、复制启动命令及官方 Windows 启动设置，固定目标并保留真实状态。规格与本轮仅 C# 测试的边界见 [STARTUP-CONTEXT-MENU.md](STARTUP-CONTEXT-MENU.md)；不执行 UI/桌面测试。
+
 2026-10-28 命名统一：产品唯一名称为 Takao；应用标题、安装显示名、项目和发布产物同步。当前命名及历史配置/更新兼容约定见 [CONVENTIONS.md](CONVENTIONS.md)。
 
 启动应用状态修复（2026-10-28）：真实读取既有Run/Startup的Windows启用记录，修复“全部无法确定”，保留未知/失败/RunOnce边界；只读、不改用户启动配置，状态更改沿用官方Windows设置。当前规格与S系列验收见 [STARTUP-STATUS.md](STARTUP-STATUS.md)，覆盖下文启动状态一律未知的历史范围。
