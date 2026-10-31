@@ -14,17 +14,10 @@ internal sealed class StartupApprovalReader : IDisposable
 
     internal ApprovalState Read(bool machine, string group, string valueName)
     {
+        // Approval records belong to the same hive as the Run value/startup folder.
+        // An unrelated item with the same name in another hive must not affect this
+        // item's state. See BCUninstaller NewStartupDisable.GetStartupApprovedKey.
         var own = ReadValue(machine, group, valueName);
-        if (own.Enabled is null) return new(null, own.Reason);
-
-        // Windows versions/tools can leave records in both user and machine scopes.
-        // Until their precedence is verified, do not report enabled over a conflicting
-        // user disable record (including when the primary record is absent).
-        var other = ReadValue(!machine, group, valueName);
-        if (other.Enabled is null)
-            return new(null, $"同名启动项的另一范围状态无法确定，不能核验是否冲突。{own.Reason} {other.Reason}");
-        if (other.Present && other.Enabled != own.Enabled)
-            return new(null, $"当前用户与计算机范围的同名启动批准状态冲突，未核验其优先级。{own.Reason} {other.Reason}");
         return new(own.Enabled, own.Reason);
     }
 
@@ -43,18 +36,18 @@ internal sealed class StartupApprovalReader : IDisposable
         if (status is WIN32_ERROR.ERROR_FILE_NOT_FOUND or WIN32_ERROR.ERROR_PATH_NOT_FOUND)
             return Missing(source);
         if (status == WIN32_ERROR.ERROR_MORE_DATA)
-            return new(true, null, $"启动批准记录超出已识别的12字节格式（Windows返回{length}字节）；未扩大缓冲或推断状态。来源：{source}。");
+            return new(null, $"启动批准记录超出已识别的12字节格式（Windows返回{length}字节）；未扩大缓冲或推断状态。来源：{source}。");
         if (status != WIN32_ERROR.ERROR_SUCCESS)
             return Failure(source, status, "读取启动批准状态失败");
         if (type != REG_VALUE_TYPE.REG_BINARY || length != 12)
-            return new(true, null, $"启动批准记录类型或长度无法识别（类型{(uint)type}，{length}字节，预期REG_BINARY/12字节）。来源：{source}。");
+            return new(null, $"启动批准记录类型或长度无法识别（类型{(uint)type}，{length}字节，预期REG_BINARY/12字节）。来源：{source}。");
 
         var state = BinaryPrimitives.ReadUInt32LittleEndian(data);
         return state switch
         {
-            2 => new(true, true, $"Windows启动批准记录为已启用（状态2）；不代表程序执行成功。来源：{source}。"),
-            3 => new(true, false, $"Windows启动批准记录为已禁用（状态3）。来源：{source}。"),
-            _ => new(true, null, $"无法识别的Windows启动批准状态{state}；未按奇偶推断。来源：{source}。")
+            2 => new(true, $"Windows启动批准记录为已启用（状态2）；不代表程序执行成功。来源：{source}。"),
+            3 => new(false, $"Windows启动批准记录为已禁用（状态3）。来源：{source}。"),
+            _ => new(null, $"无法识别的Windows启动批准状态{state}；未按奇偶推断。来源：{source}。")
         };
     }
 
@@ -71,10 +64,10 @@ internal sealed class StartupApprovalReader : IDisposable
         return key;
     }
 
-    private static ApprovalValue Missing(string source) => new(false, true,
+    private static ApprovalValue Missing(string source) => new(true,
         $"未设置Windows禁用记录，按默认启用；不代表程序执行成功。来源：{source}（键或值不存在）。");
 
-    private static ApprovalValue Failure(string source, WIN32_ERROR status, string action) => new(true, null,
+    private static ApprovalValue Failure(string source, WIN32_ERROR status, string action) => new(null,
         $"{NativeSupport.Error((int)status, action).Message}（Windows错误{(uint)status}）。来源：{source}。");
 
     public void Dispose()
@@ -84,6 +77,6 @@ internal sealed class StartupApprovalReader : IDisposable
     }
 
     internal sealed record ApprovalState(bool? Enabled, string Reason);
-    private sealed record ApprovalValue(bool Present, bool? Enabled, string Reason);
+    private sealed record ApprovalValue(bool? Enabled, string Reason);
     private sealed record ApprovalKey(SafeRegistryHandle Handle, WIN32_ERROR Status, string Source);
 }

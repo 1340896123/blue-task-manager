@@ -1,5 +1,13 @@
 # 启动应用真实启用状态（2026-10-28）
 
+## 2026-10-31 来源隔离修复与本轮验证范围
+
+当前纯 C# 生产读取未复现截图的全列未知：初次读取21项，8项启用、13项禁用，无未知和来源警告；截图可能来自旧构建，不能把此推测作为已证实根因。另已确证现实现会将另一 hive 的同名禁用/异常记录错误施加到原始来源，造成不必要的“无法确定”。本轮按原始 hive + Run/Run32/StartupFolder + 原始值名独立读取，取消跨 hive 比较。后文原“同名状态冲突即未知”的合同由本节覆盖。
+
+已实际在线读取 BCUninstaller 固定提交 [30da609384c98ba6e35c6530129541ea4ff3970a 的 NewStartupDisable.cs](https://github.com/BCUninstaller/Bulk-Crap-Uninstaller/blob/30da609384c98ba6e35c6530129541ea4ff3970a/source/UninstallTools/Startup/Normal/NewStartupDisable.cs) 和同目录 StartupEntryFactory.cs，核验其按来源匹配 hive/Run32/StartupFolder 的方式。其“非02都禁用”的宽泛解析、读取时创建键和状态写入均未采用；本项目继续最小只读权限，未知状态1/6/7和损坏记录保留 null。本轮没有取得可扩展这些状态语义的足够证据。
+
+用户明确要求本轮只在 C# 测试、不打开 UI：S06 和 S07 的浏览器/Electron/截图部分不执行，不能引用历史截图冒充本轮验证。新增 `tests/Takao.StartupTests`，实际读取生产 CsWin32 采集链；只读的真实跨 hive 场景在旧代码上失败、修复后通过；GUID 专用 Run/RunOnce/Startup 文件及批准值在 finally 中校验身份后精确清理。具体命令、结果与未执行边界见 [C#验收记录](STARTUP-STATUS-CSHARP-RESULTS.md)。
+
 ## 问题与范围
 
 截图中整列“无法确定”的直接原因是两个后端来源均固定返回 `enabled:null`，前端状态单元格也固定写“无法确定”；已有接口与真实 Windows 状态未接通。此次仅接入既有 Run / RunOnce / Startup 文件夹条目的**只读状态**，不新增启动项写入、执行命令、驱动或私有协议。更改启动状态继续打开现有官方 `ms-settings:startupapps`。
@@ -36,7 +44,7 @@ HKCU Run 的共享视图可去重；HKLM32/64 是独立来源，即使名称和�
 | REG_BINARY、恰12字节、首DWORD为3 | false / 已禁用 | 指出 Windows 实际禁用记录；不能因 Run 值仍存在而显示启用 |
 | 其他DWORD（含本机1）、类型或长度异常 | null / 无法确定 | 指出未知状态/格式，保留原生错误或状态码；不按奇偶猜测 |
 | Run/Startup的Approval键或值不存在 | true / 已启用 | reason明确“未设置Windows禁用记录，按默认启用，不代表执行成功”；不能称为显式批准；RunOnce不得套此逻辑 |
-| HKCU/HKLM同名状态冲突且优先级未实证 | null / 无法确定 | 明确当前用户/全机记录冲突，不无依据覆盖；优先级后续需源码或实际Windows设置读写对照证实 |
+| HKCU/HKLM存在同名项 | 按原始来源独立判断 | hive属于条目身份，另一范围同名记录不参与该项状态判断；Run32/StartupFolder同样按来源隔离 |
 | 访问拒绝、读取异常、超限 | null / 无法确定 | 区分权限、来源失败、容量，不伪装为缺失或已启用；不使其他条目失败 |
 
 若实施前获得了6/7或同名优先级的成熟源码与真实 Windows 核验，可补充此表及研究链接；没有证据则保留未知。最多读取固定小缓冲（已知记录12字节），异常更大值明确格式/容量问题；处理读取期间大小变化，释放注册表句柄。

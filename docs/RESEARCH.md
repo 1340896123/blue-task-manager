@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 启动批准记录来源隔离（2026-10-31）
+
+本轮网络恢复，已实际读取 BCUninstaller 固定提交 [30da609384c98ba6e35c6530129541ea4ff3970a 的 NewStartupDisable.cs](https://github.com/BCUninstaller/Bulk-Crap-Uninstaller/blob/30da609384c98ba6e35c6530129541ea4ff3970a/source/UninstallTools/Startup/Normal/NewStartupDisable.cs)（`GetStartupApprovedKey`）及同目录 `StartupEntryFactory.cs`。成熟实现按原条目所在用户/本机范围、Run/Run32/StartupFolder和原始值名匹配批准记录，不把另一范围同名项当作冲突。本项目独立修正此来源匹配，仍保留未知状态与错误；不采用参考实现的读取创建键、非02一律禁用和状态写入。真实只读跨 hive 探针在旧代码失败、修复后通过；生产读取和GUID专用真实注册值/文件的纯C#验收见 [STARTUP-STATUS-CSHARP-RESULTS.md](STARTUP-STATUS-CSHARP-RESULTS.md)。下节网络失败为2026-10-28历史现场。
+
 ## 启动应用启用状态（2026-10-28）
 
 根因是 Run/RunOnce/Startup 后端均固定 `enabled:null`，前端整列也固定“无法确定”。本轮只读接入 Windows Shell StartupApproved，保留未知格式/权限/RunOnce口径与官方设置入口，不实现状态写入。曾尝试读取 TaskExplorer / Bulk Crap Uninstaller 与微软文档，GitHub/Microsoft 网络均 TLS失败或超时，未能核验固定源码，不将链接列为已读取证据。本机实际只读看到12字节状态1/2/3，1不能猜测。来源映射、32/64去重、二进制边界、缺失语义、证据限制与S系列见 [STARTUP-STATUS.md](STARTUP-STATUS.md)；其他枚举/优先级需要追加成熟来源或实机对照后才能扩展。
