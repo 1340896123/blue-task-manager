@@ -1,0 +1,12 @@
+{
+    "complete":  true,
+    "elevated":  true,
+    "pid":  58740,
+    "results":  [
+                    {
+                        "suite":  "process-desktop-v11",
+                        "durationSeconds":  20.673078399999998,
+                        "exitCode":  0
+                    }
+                ]
+}

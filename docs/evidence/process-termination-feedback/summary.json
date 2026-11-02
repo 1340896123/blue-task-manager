@@ -1,0 +1,54 @@
+{
+  "result": "PASS",
+  "checkedAtUtc": "2026-11-02T08:41:28.20197Z",
+  "sourceCommit": "635f72e04743e0af6b4828cef52b16593df68d45",
+  "implementationCommit": "899bf68",
+  "nodeVersion": "v24.16.0",
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "rendererSha256": "C1C70409BFB214C2684916F787797E8A8DEF3608A97B176C739ECF35258AB5C9",
+  "totalAssertions": 242.0,
+  "suites": [
+    {
+      "file": "native-api.json",
+      "assertions": 79,
+      "runtime": null,
+      "result": "PASS"
+    },
+    {
+      "file": "ui-smoke.json",
+      "assertions": 37,
+      "runtime": null,
+      "result": "PASS"
+    },
+    {
+      "file": "browser-results.json",
+      "assertions": 40,
+      "runtime": "real Chromium",
+      "result": "PASS"
+    },
+    {
+      "file": "desktop-main-results.json",
+      "assertions": 45,
+      "runtime": null,
+      "result": "PASS"
+    },
+    {
+      "file": "desktop-results.json",
+      "assertions": 41,
+      "runtime": "Release Electron.NET",
+      "result": "PASS"
+    }
+  ],
+  "dedicatedPortsReleased": true,
+  "ports": [
+    5191,
+    5192,
+    5193,
+    9224,
+    9227
+  ],
+  "knownLimitations": [
+    "completed=false/null is source-reviewed; no genuine Windows exit timeout induced",
+    "success focus destination has no dedicated assertion; modal Escape focus regression passed"
+  ]
+}
