@@ -109,8 +109,36 @@ try {
   await clickCommand(page, '平铺'); await page.setViewportSize({ width: 960, height: 640 });
   check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), '960px desktop has no document overflow');
   await page.screenshot({ path: path.join(output, 'v11-process-960.png') });
-  await page.locator(`tr[data-row-key="${created.identity}"]`).click(); await page.getByRole('button', { name: '结束任务', exact: true }).click(); await dialog.getByRole('button', { name: '结束进程', exact: true }).click();
-  await until(async () => (await dialog.innerText()).includes('已确认退出'), 'single termination confirmed by actual Windows readback'); check(true, 'single terminate UI displays actual completed result'); await dialog.getByRole('button', { name: '关闭', exact: true }).click();
+  await page.locator(`tr[data-row-key="${created.identity}"]`).click();
+  if (await page.getByRole('button', { name: '关闭通知', exact: true }).count()) await page.getByRole('button', { name: '关闭通知', exact: true }).click();
+  await page.getByRole('button', { name: '结束任务', exact: true }).click();
+  const terminateUrl = `${origin}/api/processes/${created.pid}/terminate`;
+  // Send an invalid identity to the production backend; its real 409 verifies
+  // the failure UI without replacing any response or Windows process data.
+  const staleIdentity = route => route.continue({ postData: JSON.stringify({ ...route.request().postDataJSON(), creationTimeFileTime: (BigInt(created.creationTimeFileTime) + 1n).toString() }) });
+  await page.route(terminateUrl, staleIdentity);
+  try {
+    const rejectedResponse = page.waitForResponse(r => r.url() === terminateUrl && r.request().method() === 'POST');
+    await dialog.getByRole('button', { name: '结束进程', exact: true }).click();
+    const rejected = await rejectedResponse;
+    check(rejected.status() === 409 && (await rejected.json()).error.code === 'identityChanged', 'production backend rejects stale process identity with real 409');
+    await dialog.getByRole('alert').waitFor();
+    check(await dialog.isVisible() && (await dialog.innerText()).includes(`PID ${created.pid}`), 'failed termination retains target and error in the open dialog');
+    check(process.kill(created.pid, 0), 'failed identity validation leaves the dedicated Windows process alive');
+    check(await page.locator('.toast:not(.error)').count() === 0, 'failed termination does not show a success notification');
+    await page.screenshot({ path: path.join(output, `v11-process-terminate-${desktopMode ? 'desktop' : 'browser'}-failure.png`) });
+  } finally { await page.unroute(terminateUrl, staleIdentity); }
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  check(process.kill(created.pid, 0), 'cancelling the retained failure dialog leaves the target alive');
+  await page.getByRole('button', { name: '结束任务', exact: true }).click();
+  const terminatedResponse = page.waitForResponse(r => r.url() === terminateUrl && r.request().method() === 'POST');
+  await dialog.getByRole('button', { name: '结束进程', exact: true }).click();
+  check((await (await terminatedResponse).json()).completed === true, 'single termination confirmed by actual Windows readback');
+  await until(async () => await dialog.count() === 0, 'successful termination automatically closes confirmation dialog');
+  check((await page.locator('.toast:not(.error)[role="status"]').innerText()).includes(`PID ${created.pid}）已成功结束`), 'single terminate UI shows exact target in success notification');
+  await until(() => { try { process.kill(created.pid, 0); return false; } catch { return true; } }, 'successful termination independently exits the dedicated Windows process');
+  await until(async () => await page.locator(`tr[data-row-key="${created.identity}"]`).count() === 0, 'successful termination removes the exact identity from the live table');
+  await page.screenshot({ path: path.join(output, `v11-process-terminate-${desktopMode ? 'desktop' : 'browser'}-success.png`) });
   await search.fill(children[1][0]); await page.locator(`tr[data-row-key="${children[1].join(':')}"]`).dblclick(); await page.getByRole('tab', { name: '概览', exact: true }).click(); await until(async () => (await dialog.innerText()).includes('原生字段：'), 'exit fixture detail read');
   await post(`processes/${children[1][0]}/terminate`, { creationTimeFileTime: children[1][1] }); await until(async () => (await dialog.innerText()).includes('已保留最后成功信息'), 'exited detail retains data');
   check(await dialog.getByRole('button', { name: '设置优先级', exact: true }).isDisabled(), 'exited detail disables native writes while retaining last information'); await page.keyboard.press('Escape');
@@ -120,7 +148,7 @@ try {
   check(snapshotResponses.includes(304), 'conditional snapshot reads receive successful empty 304');
   await page.getByRole('button', { name: '标准', exact: true }).click(); await delay(800); await page.reload(); await until(async () => (await page.locator('.app-shell').getAttribute('data-density')) === 'standard', 'JSON.NET preferences restore density after reload');
   check(true, 'persisted UI preference restored'); check(errors.length === 0, 'no browser runtime exceptions'); check(cspErrors.length === 0, 'no content security policy violations including native icon blobs');
-  await writeFile(path.join(output, desktopMode ? 'process-desktop-v11-results.json' : 'process-ui-v11-results.json'), JSON.stringify({ runtime: desktopMode ? 'Release Electron.NET' : 'real Chromium', assertions, checks, errors, cspErrors, screenshotPaths: ['v11-process-tree.png', 'v11-process-960.png'] }, null, 2));
+  await writeFile(path.join(output, desktopMode ? 'process-desktop-v11-results.json' : 'process-ui-v11-results.json'), JSON.stringify({ runtime: desktopMode ? 'Release Electron.NET' : 'real Chromium', assertions, checks, errors, cspErrors, screenshotPaths: ['v11-process-tree.png', 'v11-process-960.png', `v11-process-terminate-${desktopMode ? 'desktop' : 'browser'}-failure.png`, `v11-process-terminate-${desktopMode ? 'desktop' : 'browser'}-success.png`] }, null, 2));
   console.log(JSON.stringify({ passed: true, assertions, checks }, null, 2));
 } catch (error) { if (browser) await browser.contexts()[0]?.pages()[0]?.screenshot({ path: path.join(output, 'process-ui-v11-failure.png') }).catch(() => {}); throw error; }
 finally {

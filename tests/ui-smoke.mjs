@@ -106,7 +106,8 @@ try {
   await until(async () => { try { process.kill(launchedTarget.pid, 0); return false; } catch { return true; } }, 'confirmed UI termination exits real process');
   check(process.kill(workload.pid, 0), 'termination only affects selected UI-created process');
   check(true, 'UI to HTTP to CsWin32 to Windows termination verified');
-  await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click();
+  await until(async () => await page.getByRole('dialog').count() === 0, 'successful termination automatically closes confirmation dialog');
+  check((await page.locator('.toast:not(.error)[role="status"]').innerText()).includes(`PID ${launchedTarget.pid}）已成功结束`), 'successful termination shows actual target in success notification');
   launchedTarget = undefined;
   await page.getByRole('button', { name: '清空搜索', exact: true }).click();
   await page.getByRole('button', { name: '运行新任务', exact: true }).click();

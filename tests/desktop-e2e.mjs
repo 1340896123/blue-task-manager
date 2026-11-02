@@ -223,7 +223,9 @@ try {
   await until(() => !alive(target.pid), 'desktop confirmed termination exits exact target');
   await until(async () => await page.locator('tbody tr[data-row-key]').count() === 0, 'terminated identity removed from real UI');
   check(!alive(target.pid) && alive(independent.pid), 'A10/A18 only selected UI-created target exits, independent workload survives');
-  await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click();
+  await until(async () => await page.getByRole('dialog').count() === 0, 'A10 successful termination automatically closes confirmation dialog');
+  check((await page.locator('.toast:not(.error)[role="status"]').innerText()).includes(`PID ${target.pid}）已成功结束`), 'A10/A18 successful termination shows exact target in success notification');
+  await capture('final-desktop-terminate-success.png');
   target = undefined;
   await search.fill('');
     await page.evaluate(() => { const a = document.createElement('a'); a.href = 'https://example.com/'; a.textContent = 'test external navigation'; a.id = 'e2e-external'; Object.assign(a.style, {position: 'fixed', top:'100px',left:'300px',zIndex:'99999'}); document.body.append(a); });

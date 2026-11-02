@@ -131,7 +131,7 @@ export default function ProcessWorkspace({ page, snapshot, liveSnapshot, bootstr
     }} initialScrollTop={pref.scrollTop} onScrollTop={top => preferences.updatePage(page, { scrollTop: top }, false)} revealKey={reveal}/>
     {menu && <ContextMenu x={menu.x} y={menu.y} items={actionsFor(menu.target)} label={`${menu.target.name} PID ${menu.target.pid} 操作`} onClose={() => setMenu(null)}/>}
     {detailTarget && <ProcessDetail target={detailTarget} alive={alive(detailTarget)} connected={connected} onClose={() => setDetailTarget(null)} onAction={(command, target) => void runAction(command, target)} onLocateParent={locateParent} onService={name => { setDetailTarget(null); onService(name); }}/ >}
-    {action && <ProcessActionDialog key={`${action.target.identity}|${action.action}`} action={action.action} target={action.target} alive={alive(action.target)} connected={connected} onClose={() => setAction(null)} onChanged={refresh}/>}
+    {action && <ProcessActionDialog key={`${action.target.identity}|${action.action}`} action={action.action} target={action.target} alive={alive(action.target)} connected={connected} onClose={() => setAction(null)} onChanged={refresh} onSuccess={message => { setAction(null); notify(message); }}/>}
     {frozen && <span className="sr-only">显示冻结于 {dateTime(snapshot.capturedAtUtc)}</span>}
   </>;
 }

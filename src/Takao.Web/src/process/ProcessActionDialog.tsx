@@ -5,7 +5,7 @@ import { dateTime } from '../format';
 import ApplicationIcon from '../ApplicationIcon';
 import type { EfficiencyState, Priority, PriorityResult, Process, ProcessResult, TreePreview, TreeResult } from '../types';
 export const priorityLabels: Record<Priority, string> = { idle: '空闲', belowNormal: '低于正常', normal: '正常', aboveNormal: '高于正常', high: '高' };
-export default function ProcessActionDialog({ action, target, alive, connected, onClose, onChanged }: { action: string; target: Process; alive: boolean; connected: boolean; onClose: () => void; onChanged: () => void }) {
+export default function ProcessActionDialog({ action, target, alive, connected, onClose, onChanged, onSuccess }: { action: string; target: Process; alive: boolean; connected: boolean; onClose: () => void; onChanged: () => void; onSuccess: (message: string) => void }) {
   const [busy, setBusy] = useState(false); const [reading, setReading] = useState(action === 'tree' || action === 'efficiency');
   const [error, setError] = useState<string | null>(null); const [result, setResult] = useState<string | null>(null);
   const [priority, setPriority] = useState<Priority>((Object.keys(priorityLabels) as Priority[]).find(key => priorityLabels[key] === target.priority) ?? 'normal');
@@ -25,7 +25,8 @@ export default function ProcessActionDialog({ action, target, alive, connected, 
       const body = { creationTimeFileTime: target.creationTimeFileTime };
       if (action === 'terminate') {
         const response = await api.post<ProcessResult>(`processes/${target.pid}/terminate`, body);
-        setResult(`${response.completed ? '已确认退出' : '尚未确认退出'}：${response.message}`);
+        if (response.completed === true) onSuccess(`${target.name}（PID ${target.pid}）已成功结束。${response.message}`);
+        else setResult(`尚未确认退出：${response.message}`);
       } else if (action === 'priority') {
         const response = await api.post<PriorityResult>(`processes/${target.pid}/priority`, { ...body, priority });
         setResult(`Windows 实际读回优先级：${priorityLabels[response.priority]}。${response.message}`);
