@@ -62,7 +62,7 @@ git diff f9b3133..899bf68 --check
 
 浏览器 worker [结果](evidence/process-termination-feedback/browser-worker.json) 与专项桌面 worker [结果](evidence/process-termination-feedback/desktop-worker.json) 均确认 `elevated:true`、`complete:true`，对应套件 exitCode 0；主桌面在[首次桌面 worker 记录](evidence/process-termination-feedback/desktop-initial-worker.json)中已通过。独立只读子代理复核浏览器报告、请求代码及截图，确认没有 mock 或虚假通过。
 
-开始时两套 UI 测试因缺少根目录 Playwright 包未能启动；按现有锁文件执行 `npm ci --prefer-offline --no-audit --no-fund` 后恢复。桌面进程专项首次被“替换标准任务管理器？”提示阻挡（[原始失败日志](evidence/process-termination-feedback/desktop-initial-first-launch.log)）；测试前置修复只改测试，在真实初次读取完成后点击“暂不替换”，确认弹窗移除及隔离偏好保存，再进行进程操作。此后专项重跑 41 项通过，未改产品行为、写 IFEO 或伪造偏好响应。
+开始时两套 UI 测试因缺少根目录 Playwright 包未能启动；按现有锁文件执行 `npm ci --prefer-offline --no-audit --no-fund` 后恢复。桌面进程专项首次被“替换标准任务管理器？”提示阻挡，等待测试目标行时触发 `locator.waitFor: Timeout 30000ms exceeded`，定位于 `tests/process-ui-v11.mjs:52`；原始调试日志仅保留在忽略的 `output/playwright/windows-layout`，初次失败结果仍归档在上述 worker JSON。测试前置修复只改测试，在真实初次读取完成后点击“暂不替换”，确认弹窗移除及隔离偏好保存，再进行进程操作。此后专项重跑 41 项通过，未改产品行为、写 IFEO 或伪造偏好响应。
 
 复现命令（每条 worker 完成后再执行下一条；结果以 JSON 中 exitCode 为准）：
 
