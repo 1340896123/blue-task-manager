@@ -46,6 +46,16 @@ try {
   page.on('console', message => { if (/content.security.policy|violates.*directive|refused to load.*blob:/i.test(message.text())) cspErrors.push(message.text()); });
   const snapshotResponses = []; page.on('response', response => { if (response.url() === `${origin}/api/snapshot`) snapshotResponses.push(response.status()); });
   await page.goto(origin); await page.getByRole('table', { name: '进程列表', exact: true }).waitFor();
+  if (desktopMode) {
+    const firstLaunch = page.getByRole('dialog', { name: '替换标准任务管理器？', exact: true });
+    // The initial system-entry read finishes after the table can render. Wait
+    // for its actual dialog or the saved completion of the enabled-entry path.
+    await until(async () => await firstLaunch.isVisible() || (await get('preferences')).preferences.taskManagerPromptDismissed === true, 'desktop first-launch entry read settles before process interactions');
+    if (await firstLaunch.isVisible()) await firstLaunch.getByRole('button', { name: '暂不替换', exact: true }).click();
+    await firstLaunch.waitFor({ state: 'detached' });
+    await until(async () => (await get('preferences')).preferences.taskManagerPromptDismissed === true, 'desktop first-launch choice saved in isolated preferences');
+    check(true, 'desktop first-launch prompt completed without replacing the system entry');
+  }
   check(await page.locator('tbody tr[data-row-key]').count() < (await get('snapshot')).processes.length, 'real table remains virtualized');
   check(await page.locator('.data-table thead').evaluate(element => Math.abs(element.getBoundingClientRect().height - Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--height-table-header'))) < 1), 'actual table header matches virtualizer master token');
   const search = page.getByRole('searchbox'); await search.fill(String(workload.pid));
