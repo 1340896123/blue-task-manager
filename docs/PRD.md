@@ -1,5 +1,7 @@
 # 产品需求：Takao
 
+单进程结束反馈（2026-11-02）：后端确认退出后自动关闭弹窗并显示成功通知；失败或尚未确认退出则保留当前页面。规格及本轮验收见 [PROCESS-TERMINATION-FEEDBACK.md](PROCESS-TERMINATION-FEEDBACK.md)。
+
 启动状态样式（2026-10-31）：启用、禁用、无法确定分别以绿、灰、琥珀的图标文字徽标展示，列表和详情一致，保留原始状态与原因；规格见 [STARTUP-STATUS.md](STARTUP-STATUS.md)。仅前端编译检查，不打开 UI 或新增业务测试。
 
 启动应用右键菜单（2026-10-31）：行右键和键盘菜单提供详情、打开来源位置、复制启动命令及官方 Windows 启动设置，固定目标并保留真实状态。规格与本轮仅 C# 测试的边界见 [STARTUP-CONTEXT-MENU.md](STARTUP-CONTEXT-MENU.md)；不执行 UI/桌面测试。
