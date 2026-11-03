@@ -29,6 +29,14 @@ Windows 11 Fluent / WinUI 视觉规范见 [Fluent 桌面设计规范](docs/FLUEN
 
 ## 验证
 
+快速切换并截图全部八页（不依赖鼠标、键盘、OCR或输入设备）：
+
+```powershell
+./scripts/capture-qt-pages.ps1
+```
+
+默认使用1100×720客户区、100%缩放，保留实际窗口外框尺寸；`-SkipBuild`复用已编译的专用驱动。每页在原生标题、选中导航和布局就绪后通过WGC截图，保存成功才继续下一页，不再为每页固定等待4.2秒。`output/qt-page-capture/results.json`和`captures.json`记录本轮结果、八张PNG路径及实际时耗，每次运行使用独立目录，旧截图不会被误认为本轮完成。测试使用临时偏好和精确自有Host/Qt进程，不更改用户配置。驱动复用生产UI与真实后端，按[Qt 6.8.3公开click()实现](https://github.com/qt/qtbase/blob/c07c2d5a527a644d36e7853d55132ae38921682f/src/widgets/widgets/qabstractbutton.cpp)调用导航控件，属于组件驱动截图，不能代替物理输入E2E。
+
 ```powershell
 dotnet build Takao.sln -c Release
 node tests/native-api.mjs
@@ -39,7 +47,7 @@ dotnet run --project tests/Takao.DiskTests -c Release
 ./scripts/test-qt-components.ps1
 ```
 
-本轮显示测试仅 **1920×1080 窗口画面物理像素、100%测试缩放**。`test-qt-components.ps1` 以与生产 EXE 相同的 Qt UI 静态库驱动原生组件，接入真实后端并用 WGC 截图；它不发送 Windows 输入，不代表真实键鼠验收。`test-qt-desktop.ps1` 是独立的 WGC/FYLHelper 硬件输入 E2E。本机硬件输入受鼠标坐标不匹配阻塞，实际范围见 [本轮记录](docs/QT-MIGRATION-RESULTS.md)。仅结束测试专门创建的进程；不为覆盖测试更改用户启动项、服务或系统入口。验收采用用户指定 ui-ux-pro-max 的桌面适用标准，参见 [验收矩阵](docs/ACCEPTANCE.md) 和 [设计规范](design-system/takao/MASTER.md)。
+完整组件/生命周期专项保留 **1920×1080 窗口画面物理像素、100%测试缩放**；快速页面截图采用当前正常1100×720客户区。`test-qt-components.ps1` 以与生产 EXE 相同的 Qt UI 静态库驱动原生组件，接入真实后端并用 WGC 截图；它不发送 Windows 输入，不代表真实键鼠验收。`test-qt-desktop.ps1` 是独立的 WGC/FYLHelper 硬件输入 E2E。本机硬件输入受鼠标坐标不匹配阻塞，实际范围见 [本轮记录](docs/QT-MIGRATION-RESULTS.md)。仅结束测试专门创建的进程；不为覆盖测试更改用户启动项、服务或系统入口。验收采用用户指定 ui-ux-pro-max 的桌面适用标准，参见 [验收矩阵](docs/ACCEPTANCE.md) 和 [设计规范](design-system/takao/MASTER.md)。
 
 后端独立调试：`Takao.Host.exe --headless --port=5191`；仅监听 `127.0.0.1`。未知/无权限/预热保留明确状态；曲线只绘制真实采样，进程 I/O、磁盘与网络保持各自口径。
 
