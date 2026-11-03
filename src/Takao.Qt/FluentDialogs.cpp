@@ -43,6 +43,7 @@ bool confirm(QWidget* parent, const QString& title, const QString& message,
     buttons->addStretch();
     auto cancel = actionButton(QStringLiteral("取消"), dialog, false);
     auto accept = actionButton(action, dialog, true);
+    accept->setAutoDefault(true);
     accept->setProperty("danger", destructive);
     cancel->setDefault(true);
     buttons->addWidget(cancel);

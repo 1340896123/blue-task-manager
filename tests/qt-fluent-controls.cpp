@@ -8,6 +8,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QKeyEvent>
 #include <QScrollBar>
 #include <QSpinBox>
 #include <QStyleOptionHeader>
@@ -257,7 +258,13 @@ int main(int argc, char** argv) {
                                   action->minimumHeight() >= Theme::commandHeight,
                               phase + ": explicit Chinese action, 44px command and safe default focus");
                         observe(phase);
-                        if (accept) action->click(); else dialog->reject();
+                        QKeyEvent enter(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+                        if (accept) {
+                            action->setFocus(Qt::TabFocusReason);
+                            QApplication::sendEvent(action, &enter);
+                        } else {
+                            QApplication::sendEvent(cancel, &enter);
+                        }
                     } catch (const std::exception& error) {
                         report["dialogError"] = error.what();
                         if (dialog) dialog->reject();
@@ -266,13 +273,13 @@ int main(int argc, char** argv) {
             };
             inspectDialog("清除统计", "02-confirm-cancel", false);
             check(!Theme::confirm(&window, "清除统计", "取消应保留当前统计。", "清除统计", true),
-                  "Rejecting a shared confirmation returns false");
+                  "Enter on the initial Cancel focus returns false");
             if (report.contains("dialogError"))
                 throw std::runtime_error(report.value("dialogError").toString().toStdString());
             check(window.focusWidget() == trigger, "Closing a confirmation restores its initiating focus");
             inspectDialog("继续", "03-confirm-accept", true);
             check(Theme::confirm(&window, "组件确认检查", "此处仅验证组件接受结果，不执行业务操作。", "继续"),
-                  "Explicit confirmation returns true");
+                  "Enter on the explicitly focused confirmation returns true");
             if (report.contains("dialogError"))
                 throw std::runtime_error(report.value("dialogError").toString().toStdString());
             QTimer::singleShot(150, &window, [&] {
