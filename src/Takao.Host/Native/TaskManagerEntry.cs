@@ -21,27 +21,30 @@ internal static class TaskManagerEntry
             return new(args, false, null, true);
         }
         var index = Array.IndexOf(args, TaskManagerIntegrationService.EntryFlag);
-        if (index < 0) return new(args, false, null);
-        if (Array.LastIndexOf(args, TaskManagerIntegrationService.EntryFlag) != index) throw new ArgumentException("任务管理器入口标记不能重复。");
-        if (index + 1 < args.Length && !IsSystemTaskManager(args[index + 1])) throw new ArgumentException("入口标记后只接受Windows taskmgr.exe的系统路径及其追加参数。");
+        if (index >= 0 && Array.LastIndexOf(args, TaskManagerIntegrationService.EntryFlag) != index) throw new ArgumentException("任务管理器入口标记不能重复。");
+        if (index >= 0 && index + 1 < args.Length && !IsSystemTaskManager(args[index + 1])) throw new ArgumentException("入口标记后只接受Windows taskmgr.exe的系统路径及其追加参数。");
         // IFEO appends the original target and its arguments after the fixed debugger command.
         // Keep normal host options before our flag; never feed taskmgr options to ASP.NET config.
-        var cleaned = args[..index];
+        var cleaned = index < 0 ? args : args[..index];
+        // Explicit API/test instances retain their independent loopback ports.
+        if (cleaned.Contains("--headless", StringComparer.OrdinalIgnoreCase) || cleaned.Any(argument => argument.StartsWith("--port", StringComparison.OrdinalIgnoreCase)) ||
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TASKMANAGER_PORT")) || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TASKMANAGER_DATA_DIR")))
+            return new(cleaned, false, null);
         var currentSession = PInvoke.ProcessIdToSessionId((uint)Environment.ProcessId, out var session) ? session : (uint?)null;
         using var current = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, (uint)Environment.ProcessId);
         var owner = current.IsInvalid ? null : ReadSid(current);
         if (currentSession is null || owner is null) return new(cleaned, false, null);
-        var expectedElectron = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".electron", "node_modules", "electron", "dist", "electron.exe"));
+        var expectedQt = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Takao.Qt.exe"));
         var processes = Win32Collector.EnumerateBaseProcesses().ToDictionary(p => p.Pid);
         HWND existing = default; var foreground = false;
         PInvoke.EnumWindows((window, unused) =>
         {
-            if (!PInvoke.IsWindowVisible(window) || ClassName(window) != "Chrome_WidgetWin_1" || Title(window) != "Takao") return true;
+            if (!PInvoke.IsWindowVisible(window) || !ClassName(window).StartsWith("Qt", StringComparison.Ordinal) || Title(window) != "Takao") return true;
             PInvoke.GetWindowThreadProcessId(window, out var pid);
             if (!PInvoke.ProcessIdToSessionId(pid, out var candidateSession) || candidateSession != currentSession) return true;
             using var process = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
             if (process.IsInvalid || !PInvoke.GetProcessTimes(process, out var created, out var exited, out _, out _) || NativeSupport.FileTime(exited) != 0) return true;
-            if (!string.Equals(ReadPath(process), expectedElectron, StringComparison.OrdinalIgnoreCase) || ReadSid(process) != owner) return true;
+            if (!string.Equals(ReadPath(process), expectedQt, StringComparison.OrdinalIgnoreCase) || ReadSid(process) != owner) return true;
             var childTime = NativeSupport.FileTime(created); var childPid = pid; var seen = new HashSet<uint>(); var verifiedHost = false;
             for (var depth = 0; depth < 16 && processes.TryGetValue(childPid, out var child) && seen.Add(childPid); depth++)
             {

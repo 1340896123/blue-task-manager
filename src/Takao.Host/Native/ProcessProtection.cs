@@ -10,12 +10,22 @@ internal static class ProcessProtection
     // Only identities explicitly created by the Run task action are excluded from the host's child family.
     private static readonly ConcurrentDictionary<uint, string> Launched = new();
     internal static void Register(uint pid, string creationTime) => Launched[pid] = creationTime;
+    private static readonly ConcurrentDictionary<uint, string> Owned = new();
+    internal static void RegisterOwned(uint pid, string creationTime) => Owned[pid] = creationTime;
     private static readonly HashSet<string> ProtectedNames = new(StringComparer.OrdinalIgnoreCase)
     { "System", "Registry", "smss.exe", "csrss.exe", "wininit.exe", "winlogon.exe", "lsass.exe", "services.exe", "secure system", "memory compression" };
 
     internal static HashSet<uint> Family(IReadOnlyList<ProcessDto> processes)
     {
         var protectedIds = new HashSet<uint> { 0, 4, (uint)Environment.ProcessId };
+        foreach (var pair in Owned)
+        {
+            using var owned = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, pair.Key);
+            if (!owned.IsInvalid && PInvoke.GetProcessTimes(owned, out var created, out var exited, out _, out _) &&
+                NativeSupport.FileTime(created).ToString(System.Globalization.CultureInfo.InvariantCulture) == pair.Value && NativeSupport.FileTime(exited) == 0)
+                protectedIds.Add(pair.Key);
+            else ((ICollection<KeyValuePair<uint, string>>)Owned).Remove(pair);
+        }
         var byPid = processes.ToDictionary(p => p.Pid);
         var next = (uint)Environment.ProcessId;
         while (byPid.TryGetValue(next, out var parent) && parent.ParentPid != next && protectedIds.Add(parent.ParentPid)) next = parent.ParentPid;

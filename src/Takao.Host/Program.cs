@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Newtonsoft.Json.Serialization;
 using Takao.Host.Api;
 using Takao.Host.Services;
-using ElectronNET.API;
 using Takao.Host.Native;
 
 try
@@ -24,7 +23,7 @@ var desktopMode = !args.Contains("--headless", StringComparer.OrdinalIgnoreCase)
 var updates = new ApplicationUpdateService(desktopMode);
 var normalDesktopStartup = desktopMode && !args.Any(argument => argument.StartsWith("--port", StringComparison.OrdinalIgnoreCase))
     && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TASKMANAGER_PORT")) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TASKMANAGER_DATA_DIR"))
-    && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TASKMANAGER_CDP_PORT"));
+    && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TASKMANAGER_QT_TEST_1080P"));
 if (normalDesktopStartup && await updates.TryApplyScheduledAtStartupAsync()) { updates.Dispose(); return; }
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 var portArgument = args.FirstOrDefault(argument => argument.StartsWith("--port=", StringComparison.OrdinalIgnoreCase))?[7..];
@@ -32,11 +31,6 @@ var port = int.TryParse(portArgument ?? Environment.GetEnvironmentVariable("TASK
 if (port is < 1024 or > 65535) throw new InvalidOperationException("TASKMANAGER_PORT must be between 1024 and 65535.");
 var preferences = new PreferencesService();
 var desktop = new DesktopWindowService(preferences);
-if (desktopMode)
-{
-    Environment.SetEnvironmentVariable("TASKMANAGER_ORIGIN", $"http://127.0.0.1:{port}");
-    builder.UseElectron(args, async (IServiceProvider services) => await desktop.OpenAsync($"http://127.0.0.1:{port}", services.GetRequiredService<IHostApplicationLifetime>()));
-}
 builder.Services.AddSingleton(desktop);
 builder.Services.AddSingleton(updates);
 builder.Services.AddHostedService(provider => provider.GetRequiredService<ApplicationUpdateService>());
@@ -71,10 +65,33 @@ var app = builder.Build();
 updates.ConfigureDesktopShutdown(async () => { await desktop.ExecuteAsync("close"); app.Lifetime.StopApplication(); });
 app.UseMiddleware<LocalAccessMiddleware>();
 app.UseResponseCompression();
-app.UseDefaultFiles();
-app.UseStaticFiles();
 app.MapControllers();
-app.MapFallbackToFile("index.html");
-app.Run();
+try
+{
+    // Start listening before Qt requests /api/bootstrap. Headless callers use
+    // the same real services and middleware without a rendering fallback.
+    await app.StartAsync();
+    if (desktopMode) await desktop.OpenAsync($"http://127.0.0.1:{port}", app.Lifetime);
+    await app.WaitForShutdownAsync();
+}
+catch (Exception error)
+{
+    Environment.ExitCode = 1;
+    var code = error is ApiException api ? api.Code : "desktopStartupFailed";
+    app.Logger.LogError(error, "{Code}: Qt/.NET desktop startup failed", code);
+    try
+    {
+        var directory = Environment.GetEnvironmentVariable("TASKMANAGER_DATA_DIR") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlueDomainTaskManager");
+        Directory.CreateDirectory(directory);
+        await File.WriteAllTextAsync(Path.Combine(directory, "startup-error.log"), $"{DateTime.UtcNow:O} {code}: {error.Message}");
+    }
+    catch (Exception writeError) when (writeError is IOException or UnauthorizedAccessException) { Console.Error.WriteLine($"{code}: {error.Message}"); }
+}
+finally
+{
+    await desktop.DisposeAsync();
+    await app.StopAsync();
+    await app.DisposeAsync();
+}
 
 public partial class Program;

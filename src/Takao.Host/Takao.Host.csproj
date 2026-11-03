@@ -2,12 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <ElectronVersion>45.0.0</ElectronVersion>
-    <ElectronSingleInstance>false</ElectronSingleInstance>
     <ApplicationIcon>../../assets/branding/takao.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ElectronIcon>../../assets/branding/takao.ico</ElectronIcon>
-    <ElectronPackageId>taskmanager-host</ElectronPackageId>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -34,17 +30,14 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.10" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="NuGet.Versioning" Version="6.14.0" />
-    <PackageReference Include="ElectronNET.Core" Version="0.6.0" />
-    <PackageReference Include="ElectronNET.Core.AspNet" Version="0.6.0" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup>
     <AssemblyMetadata Include="ReleaseTag" Value="$(TASKMANAGER_RELEASE_TAG)" Condition="'$(TASKMANAGER_RELEASE_TAG)' != ''" />
     <AssemblyMetadata Include="SourceCommit" Value="$(TASKMANAGER_SOURCE_COMMIT)" Condition="'$(TASKMANAGER_SOURCE_COMMIT)' != ''" />
     <ProjectReference Include="../Takao.Launcher/Takao.Launcher.csproj" ReferenceOutputAssembly="false" />
-    <Content Update="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="Electron\custom_main.js" CopyToOutputDirectory="PreserveNewest" TargetPath=".electron\custom_main.js" />
-    <None Update="Electron\window-preload.js" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath=".electron\window-preload.js" />
+    <!-- Qt is deployed by the native build; never serve a stale web renderer. -->
+    <Content Remove="wwwroot\**\*" />
   </ItemGroup>
   <Target Name="CopyTakaoLauncher" AfterTargets="Build">
     <ItemGroup>

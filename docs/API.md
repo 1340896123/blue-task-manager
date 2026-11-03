@@ -1,5 +1,15 @@
 # 后端 API 合同
 
+## 2026-11-04 Qt 原生桌面增量
+
+现行界面为Qt 6 Widgets，全部数据/动作仍经下文HTTP/JSON.NET合同。`GET bootstrap`增加 `desktopFramework:"Qt 6 Widgets"` 与 `desktopProcessId:number|null`；`desktop` 表示本次Qt子进程存活，headless为false。Qt使用原有bootstrap令牌与精确Origin，不接受外部重定向、不传递命令行令牌。
+
+`GET desktop/window-state`返回 `available`（已发现本实例可见主窗）、`framework`、`processId`、`alwaysOnTop:boolean|null`、`zoomFactor:null`、`zoomSupported:false`。窗口尚未创建/已退出时，未知置顶为null。`POST window/minimize|maximize|close|always-on-top`操作后端验证的本次Qt窗口；`zoom-in|zoom-out|zoom-reset`返回501 `qtLocalDisplaySetting`，由Qt显示设置本地实现，不返回模拟网页缩放。`POST desktop/browse-executable`返回501 `qtLocalFileDialog`，Qt运行对话框使用原生QFileDialog，再调用原有processes/start。
+
+Host在Kestrel就绪后仅启动同目录 `Takao.Qt.exe --origin=http://127.0.0.1:<port> --host-pid=<pid>`；20秒内必须创建可见标题为Takao的主窗。窗口偏好通过 `GET preferences` 的 `preferences.window`读取，Qt修改正常窗口尺寸/显示设置时用原有 `POST preferences`保存完整白名单偏好；不恢复网页渲染。Qt启动缺失/早退/超时返回可诊断日志 `%LOCALAPPDATA%/BlueDomainTaskManager/startup-error.log`（测试数据目录存在时写该目录），主机退出码1。Qt退出停止Host，Host正常或异常退出由本次Windows Job Object释放精确Qt子进程。
+
+下文Electron缩放/浏览合同为历史记录，本节覆盖其当前实现；采样、进程/服务身份保护、系统接管、更新与未知值语义保持。
+
 GitHub更新增量见 [GITHUB-UPDATES.md](GITHUB-UPDATES.md)：`GET /api/updates`读缓存版本/检查/下载/ready/scheduled/错误状态；`POST /api/updates/check|download|cancel|install`沿用Origin/写令牌。download/install仅接受expectedRevision及install的mode=now|nextStart，固定仓库/URL/安装路径由后端决定；陈旧409、后台启动202，JSON.NET/null与真实原因保持。便携明确不支持自动安装，具体DTO/交接以专项为准。
 
 已有入口接管增量（2026-10-26）：GET `desktop/task-manager-integration` 增加 `canTakeOver:boolean`；POST 增加 `takeOver?:boolean=false`，仅与 `enabled:true,repair:false` 合法。显式接管可替换其他工具/目录、类型异常及特殊配置；关闭现有非零/异常 UseFilter，固定写本目录 Launcher。取消/卸载恢复 Windows 标准入口，不恢复旧工具。最新读回/错误/界面合同见 [TASK-MANAGER-TAKEOVER.md](TASK-MANAGER-TAKEOVER.md)，覆盖历史“一律拒绝其他工具/特殊配置”条款。
