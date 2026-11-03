@@ -66,6 +66,7 @@ updates.ConfigureDesktopShutdown(async () => { await desktop.ExecuteAsync("close
 app.UseMiddleware<LocalAccessMiddleware>();
 app.UseResponseCompression();
 app.MapControllers();
+var shutdownCompleted = false;
 try
 {
     // Start listening before Qt requests /api/bootstrap. Headless callers use
@@ -73,6 +74,9 @@ try
     await app.StartAsync();
     if (desktopMode) await desktop.OpenAsync($"http://127.0.0.1:{port}", app.Lifetime);
     await app.WaitForShutdownAsync();
+    // WaitForShutdownAsync already stops hosted services. Native collectors
+    // release their cancellation sources during that stop.
+    shutdownCompleted = true;
 }
 catch (Exception error)
 {
@@ -90,7 +94,7 @@ catch (Exception error)
 finally
 {
     await desktop.DisposeAsync();
-    await app.StopAsync();
+    if (!shutdownCompleted) await app.StopAsync();
     await app.DisposeAsync();
 }
 
