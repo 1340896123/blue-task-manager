@@ -394,8 +394,11 @@ void MainWindow::buildUi() {
     connect(table_, &QTreeView::expanded, this, [this](const QModelIndex& index) {
         if (!updatingModel_)
             collapsed_.remove(index.data(DataModel::IdentityRole).toString());
+        QTimer::singleShot(0, this, &MainWindow::loadVisibleIcons);
     });
     connect(table_->verticalScrollBar(), &QScrollBar::valueChanged, this, [this] { loadVisibleIcons(); });
+    connect(&iconTimer_, &QTimer::timeout, this, &MainWindow::loadVisibleIcons);
+    iconTimer_.start(1000);
     connect(table_, &QTreeView::customContextMenuRequested, this, &MainWindow::contextMenu);
     connect(table_, &QTreeView::doubleClicked, this, [this] { details(); });
     table_->header()->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -403,6 +406,7 @@ void MainWindow::buildUi() {
     connect(table_->header(), &QHeaderView::sortIndicatorChanged, this, [this] {
         capturePagePreference();
         saveSoon();
+        QTimer::singleShot(0, this, &MainWindow::loadVisibleIcons);
     });
     connect(table_->header(), &QHeaderView::sectionResized, this, [this] {
         capturePagePreference();
@@ -727,6 +731,8 @@ void MainWindow::updateTable() {
         }
     }
     updatingModel_ = true;
+    model_->iconKind = processPage() ? "process" : page_ == 2 ? "history" : page_ == 3 ? "startup"
+                                                 : page_ == 6 ? "service" : QString{};
     model_->setRows(rows, page_ == 0 && preferences_["processView"].toString() == "tree");
     if (table_->rootIsDecorated()) {
         table_->expandAll();
@@ -752,7 +758,6 @@ void MainWindow::updateTable() {
                     : page_ == 6 ? QString("%1 项服务 · Windows 服务控制管理器").arg(rows.size())
                     : page_ == 5 ? QString("%1 个进程 · 完整详细信息").arg(rows.size())
                                  : QString("%1 个进程").arg(rows.size()));
-    loadVisibleIcons();
     applySearch(search_->text());
     if (rows.isEmpty()) {
         const auto slow = shown_["slowDataCapturedAtUtc"];
@@ -926,6 +931,7 @@ void MainWindow::savePreferences() {
 }
 void MainWindow::resizeEvent(QResizeEvent* event) {
     QMainWindow::resizeEvent(event);
+    QTimer::singleShot(0, this, &MainWindow::loadVisibleIcons);
     if (!isMaximized() && !isMinimized() && !loadingPreferences_) {
         auto window = preferences_["window"].toObject();
         window["width"] = std::clamp(width(), 960, 3840);
@@ -1406,12 +1412,9 @@ void MainWindow::readSensors() {
     });
 }
 void MainWindow::loadVisibleIcons() {
-    if (!connected_ || updatingModel_ || page_ == 1 || page_ == 4 || page_ == 7 || iconsRunning_ >= 2)
+    if (!connected_ || closing_ || updatingModel_ || page_ == 1 || page_ == 4 || page_ == 7 ||
+        !table_->isVisible() || model_->icons.inFlight() >= IconCache::concurrency)
         return;
-    if (iconsRequested_.size() > 512) {
-        iconsRequested_.clear();
-        model_->icons.clear();
-    }
     auto index = table_->indexAt(QPoint(12, 6));
     if (!index.isValid())
         index = proxy_->index(0, 0);
@@ -1419,28 +1422,23 @@ void MainWindow::loadVisibleIcons() {
                          : page_ == 2  ? "history"
                          : page_ == 3  ? "startup"
                                        : "service";
-    for (int count = 0; index.isValid() && count < 80 && iconsRunning_ < 2;
+    for (int count = 0; index.isValid() && count < 80 && model_->icons.inFlight() < IconCache::concurrency;
          ++count, index = table_->indexBelow(index)) {
         if (table_->visualRect(index).top() > table_->viewport()->height() + 32)
             break;
         const auto id = index.data(DataModel::IdentityRole).toString();
-        const auto key = kind + ":" + id;
-        if (id.isEmpty() || iconsRequested_.contains(key))
+        const auto key = index.data(DataModel::IconKeyRole).toString();
+        if (id.isEmpty() || !model_->icons.beginRequest(key))
             continue;
-        iconsRequested_.insert(key);
-        ++iconsRunning_;
         const auto query =
             "application-icon?kind=" + kind + "&id=" + QString::fromUtf8(QUrl::toPercentEncoding(id));
         api_.image(query, this, [this, id, key](const QByteArray& bytes) {
-            --iconsRunning_;
-            QPixmap image;
-            if (!bytes.isEmpty() && image.loadFromData(bytes, "PNG")) {
-                model_->icons.insert(id, QIcon(image));
+            if (model_->icons.complete(key, bytes)) {
                 const auto source = model_->find(id);
-                if (source.isValid())
+                if (source.isValid() && source.data(DataModel::IconKeyRole).toString() == key)
                     emit model_->dataChanged(source, source, {Qt::DecorationRole});
-            } else
-                QTimer::singleShot(15000, this, [this, key] { iconsRequested_.remove(key); });
+            }
+            QTimer::singleShot(0, this, &MainWindow::loadVisibleIcons);
         });
     }
 }
@@ -1476,4 +1474,5 @@ void MainWindow::applySearch(const QString& query) {
         else if (!frozen_ && !latest_["paused"].toBool() && connected_)
             setBanner({});
     }
+    loadVisibleIcons();
 }

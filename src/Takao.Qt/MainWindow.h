@@ -39,11 +39,10 @@ class MainWindow final : public QMainWindow {
     bool updatingModel_ = false, saving_ = false, savePending_ = false;
     bool switchingPage_ = false, pendingPageRestore_ = false, applyingTopmost_ = false;
     std::optional<bool> actualTopmost_;
-    QSet<QString> collapsed_, pendingActions_, iconsRequested_;
-    int iconsRunning_ = 0;
+    QSet<QString> collapsed_, pendingActions_;
     int page_ = 0, intervalMs_ = 1000;
     double zoom_ = 1;
-    QTimer pollTimer_, saveTimer_, toastTimer_, slowTimer_;
+    QTimer pollTimer_, saveTimer_, toastTimer_, slowTimer_, iconTimer_;
     QLineEdit* search_{};
     QLabel *pageTitle_{}, *count_{}, *banner_{}, *toast_{}, *summary_{};
     QWidget* sidebar_{};

@@ -105,6 +105,11 @@ inline QIcon icon(int index) {
         "<circle cx='12' cy='12' r='3'/><path d='m9 3-1 3-3 1-2 4 2 2v4l4 2 3-1 3 1 4-2v-4l2-2-2-4-3-1-1-3Z'/>",
         "<circle cx='10.5' cy='10.5' r='6.5'/><path d='m16 16 5 5'/>",
         "<path d='M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4'/>"};
+    static QList<QIcon> cached(paths.size());
+    if (index < 0 || index >= paths.size())
+        return {};
+    if (!cached[index].isNull())
+        return cached[index];
     const auto svg = QStringLiteral(
         "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' "
         "stroke='%1' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'>%2</svg>")
@@ -114,7 +119,8 @@ inline QIcon icon(int index) {
     QPainter painter(&image);
     QSvgRenderer renderer(svg.toUtf8());
     renderer.render(&painter);
-    return QIcon(image);
+    cached[index] = QIcon(image);
+    return cached[index];
 }
 class ComboBox final : public QComboBox {
   public:

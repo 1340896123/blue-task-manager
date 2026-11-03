@@ -1,4 +1,5 @@
 #pragma once
+#include "IconCache.h"
 #include <QAbstractItemModel>
 #include <QIcon>
 #include <QJsonArray>
@@ -18,7 +19,7 @@ QString rowIdentity(const QJsonObject&);
 class DataModel final : public QAbstractItemModel {
     Q_OBJECT
   public:
-    enum { RawRole = Qt::UserRole + 1, ObjectRole, IdentityRole, StatusRole };
+    enum { RawRole = Qt::UserRole + 1, ObjectRole, IdentityRole, StatusRole, IconKeyRole };
     explicit DataModel(QObject* parent = nullptr);
     QModelIndex index(int, int, const QModelIndex& = {}) const override;
     QModelIndex parent(const QModelIndex&) const override;
@@ -30,11 +31,13 @@ class DataModel final : public QAbstractItemModel {
     void setRows(const QJsonArray& rows, bool tree = false);
     QModelIndex find(const QString& identity) const;
     QList<Column> columns;
-    QHash<QString, QIcon> icons;
+    QString iconKind;
+    IconCache icons;
 
   private:
     struct Node {
         QJsonObject row;
+        QString iconKey;
         Node* parent = nullptr;
         std::vector<std::unique_ptr<Node>> children;
         int position = 0;

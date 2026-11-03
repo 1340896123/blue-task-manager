@@ -153,6 +153,8 @@ QVariant DataModel::data(const QModelIndex& index, int role) const {
         return node->row.toVariantMap();
     if (role == IdentityRole)
         return rowIdentity(node->row);
+    if (role == IconKeyRole)
+        return node->iconKey;
     if (role == StatusRole) {
         if (col.format == "startup")
             return value.isNull() || value.isUndefined() ? "warning" : value.toBool() ? "success" : "neutral";
@@ -169,8 +171,10 @@ QVariant DataModel::data(const QModelIndex& index, int role) const {
         (col.format == "percent" || col.format == "bytes" || col.format == "rate" ||
          col.format == "number" || col.format == "cpuTime" || col.format == "duration"))
         return Theme::numericFont();
-    if (role == Qt::DecorationRole && index.column() == 0)
-        return icons.value(rowIdentity(node->row), Theme::icon(0));
+    if (role == Qt::DecorationRole && index.column() == 0) {
+        const auto image = icons.icon(node->iconKey);
+        return image.isNull() ? Theme::icon(0) : image;
+    }
     if (role == Qt::DisplayRole || role == Qt::AccessibleTextRole) {
         if (col.format == "startup" && value.isNull())
             return QStringLiteral("无法确定");
@@ -249,6 +253,7 @@ void DataModel::setRows(const QJsonArray& rows, bool tree) {
         }
         auto node = std::make_unique<Node>();
         node->row = row;
+        node->iconKey = IconCache::key(iconKind, id, row);
         node->parent = parent;
         node->position = static_cast<int>(parent->children.size());
         const auto ptr = node.get();
