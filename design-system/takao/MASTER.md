@@ -1,5 +1,9 @@
 # Takao — Windows Blue Design System
 
+## 2026-11-04 紧凑默认窗口
+
+正常启动尺寸Token为 `defaultWindowWidth=1100`、`defaultWindowHeight=720`（逻辑像素），最小960×640，保留用户缩放/最大化。旧默认1600×950、1380×860及旧测试残留1920×1080迁移为新默认，其余自选尺寸保持。1080P为显示测试环境要求，不要求默认窗口全屏；本节覆盖下方旧窗口画面尺寸条款。保持既有字阶、导航/命令命中尺寸和真实业务内容，数据区按需内部滚动。
+
 ## 2026-11-04 当前 Fluent / WinUI 视觉映射
 
 本节与 [FLUENT-DESIGN.md](../../docs/FLUENT-DESIGN.md) 为本轮全部八页的现行视觉规范，优先于下方同日早先Qt映射与历史排版数值。Qt 6.8.3 Widgets/C++17只映射Windows 11 Fluent习惯，不迁移WinUI、不承诺Mica/Acrylic；.NET10/CsWin32/JSON.NET、真实回环HTTP、已有页面/动作/身份保护保持。官方固定源码、技能不匹配后的桌面fallback、逐页调整及FUI01～FUI18验收均见该文档。

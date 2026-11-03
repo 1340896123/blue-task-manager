@@ -157,8 +157,8 @@ QString textOrUnknown(const QJsonValue& value) {
 MainWindow::MainWindow(QUrl origin, qint64 hostPid) : api_(std::move(origin), this), expectedHost_(hostPid) {
     setWindowTitle("Takao");
     setMinimumSize(960, 640);
-    resize(qEnvironmentVariableIsSet("TASKMANAGER_QT_1080P") ? 1920 : 1600,
-           qEnvironmentVariableIsSet("TASKMANAGER_QT_1080P") ? 1080 : 950);
+    resize(qEnvironmentVariableIsSet("TASKMANAGER_QT_1080P") ? 1920 : Theme::defaultWindowWidth,
+           qEnvironmentVariableIsSet("TASKMANAGER_QT_1080P") ? 1080 : Theme::defaultWindowHeight);
     preferences_ = {{"version", 1},
                     {"density", "compact"},
                     {"sidebarCollapsed", false},
@@ -485,10 +485,22 @@ void MainWindow::bootstrap() {
                 if (e.isEmpty()) {
                     preferences_ = result["preferences"].toObject();
                     loadingPreferences_ = false;
-                    const auto w = preferences_["window"].toObject();
+                    auto w = preferences_["window"].toObject();
                     zoom_ = w["zoomFactor"].toDouble(1);
-                    if (!qEnvironmentVariableIsSet("TASKMANAGER_QT_1080P") && !w.isEmpty())
-                        resize(w["width"].toInt(1600), w["height"].toInt(950));
+                    if (!qEnvironmentVariableIsSet("TASKMANAGER_QT_1080P") && !w.isEmpty()) {
+                        auto size = QSize(w["width"].toInt(Theme::defaultWindowWidth),
+                                          w["height"].toInt(Theme::defaultWindowHeight));
+                        // Migrate former defaults and the old acceptance-window size;
+                        // retain other sizes explicitly chosen by the user.
+                        if (size == QSize(1600, 950) || size == QSize(1380, 860) || size == QSize(1920, 1080)) {
+                            size = QSize(Theme::defaultWindowWidth, Theme::defaultWindowHeight);
+                            w["width"] = size.width();
+                            w["height"] = size.height();
+                            preferences_["window"] = w;
+                            saveSoon();
+                        }
+                        resize(size);
+                    }
                     sidebar_->setFixedWidth(preferences_["sidebarCollapsed"].toBool() ? Theme::sidebarCompact : Theme::sidebarWidth);
                     for (int i = 0; i < nav_.size(); ++i)
                         nav_[i]->setText(preferences_["sidebarCollapsed"].toBool() ? QString() : titles_[i]);

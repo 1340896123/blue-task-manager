@@ -26,6 +26,7 @@ inline const QColor border("#8A8A8A"), strokeSubtle("#E5E5E5"), strokeControl("#
     dangerSurface("#FDECEE"), warningSurface("#FFF4CE"), successSurface("#DFF6DD"), infoSurface("#E8EEF5");
 inline const QColor dangerHover = danger.darker(110), dangerPressed = danger.darker(120);
 inline constexpr int space1 = 4, space2 = 8, space3 = 12, space4 = 16, space6 = 24, space8 = 32;
+inline constexpr int defaultWindowWidth = 1100, defaultWindowHeight = 720;
 inline constexpr int sidebarWidth = 204, sidebarCompact = 56, navigationHeight = 44,
     commandHeight = 44, secondaryCommandHeight = 32, controlHeight = 32, searchHeight = 36,
     topHeight = 56, commandBarHeight = 56, headerHeight = 40, compactRow = 32, standardRow = 40,
