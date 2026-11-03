@@ -1,5 +1,13 @@
 # Takao 真实链路验收矩阵
 
+## 2026-11-04 当前必验：Qt + .NET，1080P
+
+本轮以 [QT-MIGRATION.md 的Q01～Q10](QT-MIGRATION.md) 为唯一当前桌面迁移矩阵：Qt/.NET Release、真实HTTP/JSON.NET/CsWin32、八页原生Qt界面、键盘焦点/标签/对比度、专用进程创建与结束、刷新/暂停/偏好、生命周期和Qt发布依赖。显示测试/截图 **仅1920×1080物理像素，100%测试缩放**，不执行下文旧分辨率、125%或手机矩阵。无窗口的构建/API检查继续执行。
+
+验收使用用户指定 `C:\Users\jieok\.skills-manager\skills\ui-ux-pro-max\SKILL.md` 的桌面适用标准。技能没有Qt专用栈，使用已核验UX条目与通用优先级，不伪称栈匹配；正文/说明≥4.5:1，承载信息的图标/焦点/曲线≥3:1，状态不只用颜色，键盘可达并有可见焦点，忙态/失败/恢复明确。手机safe-area和未提供的暗色主题不在本次范围。
+
+本轮允许并要求真实Qt UI验收，覆盖2026-10-31专项仅C#不打开UI的旧任务边界。旧Electron/CDP/浏览器专项不作为Qt通过证据；下面各历史结果保留，不挪用成功数量。报告须列真实通过、失败与未执行，保存可复现命令/Git SHA/1080P截图路径；结束操作仅针对本次测试专用身份。
+
 ## 本轮启动状态与右键菜单（2026-10-31）
 
 用户明确要求只在 C# 进行测试、不打开 UI 测试，因此本轮不执行下文 S06/S07、A 系列和常规流程中的浏览器、Electron、截图验收，也不运行 JavaScript 测试。状态修复运行真实 C# 专项；前端仅类型/生产编译及源码审查，不宣称菜单运行时通过。规格见 [STARTUP-CONTEXT-MENU.md](STARTUP-CONTEXT-MENU.md)，实际结果见 [C#状态记录](STARTUP-STATUS-CSHARP-RESULTS.md) 和 [菜单交付记录](STARTUP-CONTEXT-MENU-RESULTS.md)。

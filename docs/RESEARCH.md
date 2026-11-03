@@ -1,5 +1,11 @@
 # 开源实现研究与技术决策
 
+## Qt + .NET 原生桌面迁移（2026-11-04）
+
+本轮实际通过GitHub API核验 TaskExplorer `master` 为 `9f3f95d22f07f759dd1e0114417529ba51decb01`，读取其 [ProcessModel.cpp](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/TaskExplorer/GUI/Models/ProcessModel.cpp) 与 [ProcessView.cpp](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/TaskExplorer/GUI/TaskInfo/ProcessView.cpp)：采用Qt model/view、排序代理、按身份同步和列状态保存/恢复的思路，不复制GPL业务代码、不接入驱动/专有协议。Qt `v6.8.3` 的annotated tag解析到 `c07c2d5a527a644d36e7853d55132ae38921682f`；实际读取其 [HTTP示例](https://github.com/qt/qtbase/blob/c07c2d5a527a644d36e7853d55132ae38921682f/examples/network/http/httpwindow.cpp)，采用QNetworkAccessManager异步请求、finished/abort/错误处理。GUI通过现有回环HTTP/JSON连接.NET/CsWin32/JSON.NET，不另造协议或Windows采集层。
+
+用户指定ui-ux-pro-max技能实际查询`keyboard focus modal`与`dragging movements`命中可见焦点/焦点不遮挡/拖动替代规则；Qt无专用stack，不借用WPF等结果。列表虚拟化两次查询未命中，采用quick-reference通用性能建议与Qt model/view参考并明确该限制。当前完整技术、设计、保留功能及仅1080P的Q系列验收见 [QT-MIGRATION.md](QT-MIGRATION.md)；历史Electron设计和验收保留原貌。
+
 ## 启动状态徽标（2026-10-31）
 
 实际读取 [Microsoft Fluent UI 固定提交 d2375b2452d9b8882ed63d4f4e91d8f537379e27 的 Badge 样式](https://github.com/microsoft/fluentui/blob/d2375b2452d9b8882ed63d4f4e91d8f537379e27/packages/react-components/react-badge/library/src/components/Badge/useBadgeStyles.styles.ts)：`tint-informative` 组合中性底与中性前景，`tint-success` 组合浅绿底与绿色前景，`tint-warning` 使用黄色底与警告前景，并独立布局图标。采用其语义配色与图标文字并存思路，映射到项目已有 status-badge、success、warning 和中性 Token；不复制源码、不引入依赖。ui-ux-pro-max 的对比度及非唯颜色建议用于确保中文文字始终可见、装饰图标 aria-hidden；不把业务禁用状态画成不可操作控件。

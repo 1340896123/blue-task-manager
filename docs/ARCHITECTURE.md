@@ -1,5 +1,11 @@
 # Takao 架构与数据合同
 
+## 2026-11-04 当前架构：Qt 6 Widgets + .NET
+
+现行桌面为 `Takao.Host.exe`（.NET 10，管理员入口、Kestrel/JSON.NET、既有采集/操作服务）启动同目录 `Takao.Qt.exe`（Qt 6 Widgets 原生 model/view 界面）。Qt 的 QNetworkAccessManager 异步访问既有明确回环 `/api`，保留 Origin/写令牌/ETag/身份合同；Windows采集与系统更改由CsWin32后端负责。Host/Qt退出互相收敛，只清理本实例，`--headless`仍供真实API检查。
+
+移除 Electron.NET/BrowserWindow/预加载桥/CDP 与 React/Tailwind 活动渲染和发布依赖；下面有关这些技术的章节是历史架构。Qt窗口与模型交互、程序集兼容、许可证及发布职责见 [QT-MIGRATION.md](QT-MIGRATION.md)。本轮显示验收只有1920×1080，并按ui-ux-pro-max桌面适用标准记录；不能用浏览器或历史Electron截图替代Qt运行证据。
+
 2026-10-28 命名统一：solution、项目目录、程序集与命名空间采用 Takao；稳定安装/偏好/API 身份兼容旧版本，详见 [CONVENTIONS.md](CONVENTIONS.md)。
 
 > 启动应用状态增量见 [STARTUP-STATUS.md](STARTUP-STATUS.md)：既有慢速后台读取通过CsWin32关联Run/Run32/StartupFolder的真实StartupApproved记录，保留逐行原因、未知格式与RunOnce边界；不新增写入或协议，JSON.NET合同保持。HKCU共享视图去重与HKLM32/64独立身份分别处理，不能按名称命令合并不同状态来源。

@@ -1,5 +1,17 @@
 # Takao — Windows Blue Design System
 
+## 2026-11-04 Qt 6 Widgets 当前映射与1080P验收
+
+桌面改为Qt 6 Widgets + .NET；已有Windows中性浅色、蓝色强调、八页侧栏、单一页头/命令栏、性能资源双栏方向保持。原CSS/Tailwind Token是历史表达，当前在Qt集中主题（QPalette/QSS/绘图常量）映射相同语义，禁止页面散落颜色/字号；不会通过Qt WebEngine复用网页。后续旧Electron/React/DOM条款只保留设计意图，具体实现合同见 [QT-MIGRATION.md](../../docs/QT-MIGRATION.md)。
+
+Qt当前使用以下角色：surface白色，app/sidebar `#F3F3F3`，text `#1A1A1A`，text-secondary `#5F5F5F`，accent/chart-line `#0067C0`，focus `#005FB8`，control-border `#8A8A8A`，selection `#E8EEF5`，chart-grid `#ECEFF2`，chart-secondary `#58636F`（虚线）；success/warning/danger沿用下方语义色。正文、说明、表格文本均≥12px，桌面正文13～14px、命令14px、页标题24px/600、资源数值32px，系统Segoe UI/Microsoft YaHei UI本地字体；标题层级和控件密度在八页一致。
+
+间距按4/8px节奏；侧栏204px，主操作/导航命中高度44px；高密度数据行32/40px保留Qt model/view有界绘制，不能把手机触控44pt规则机械放大数据表。数字右对齐、等宽数字，未知“—”附可读原因；图例/数值/状态文字不得仅依赖颜色。图表白底、蓝实线/深灰虚线，实际时间缺口不补点；无需装饰性位移动画。
+
+使用原生可访问输入/按钮/菜单/对话框，图标控制提供中文accessibleName，装饰图标不重复命名，焦点2px清晰可见；Tab顺序与视觉顺序一致，模态关闭回到发起控件，Shift+F10/菜单键与右键等效，列宽拖动有菜单/键盘替代。单页标题与表格不得随刷新抖动、丢失搜索焦点或选中身份。
+
+本轮按用户指定ui-ux-pro-max验收：正文与说明≥4.5:1，有意义图标/焦点/曲线≥3:1，动作有忙态/真实结果、不可用原因与恢复入口；仅测试1920×1080物理像素/100%测试缩放，覆盖下方旧960/1380/125%要求。沿用浅色产品范围，不增设暗色或移动端验收；保留历史记录，不用历史截图宣称Qt通过。
+
 ## 2026-10-31 启动应用状态徽标
 
 启动页状态列与详情共用紧凑的图标加文字徽标：已启用使用 success/success-bg 和 CircleCheck；已禁用使用 text-secondary/surface-subtle 和 CircleMinus；无法确定使用 warning/warning-bg 和 CircleHelp。所有状态保留中文文字及真实 enabledReason，图标 aria-hidden，不增加 aria-live。复用 status-badge 的 space-half/space-1/space-2、radius-small，并以 body/line-height-body 和 icon-sm 显示，徽标小于既有32/40px行高；业务“已禁用”不使用控件 disabled 或整行透明度。沿用现有颜色且文字对比目标≥4.5:1，不增加设计 Token；本节覆盖2026-10-28“不新增徽标”的旧限制。范围与只编译、不打开 UI 的验证边界见 [STARTUP-STATUS.md](../../docs/STARTUP-STATUS.md)。

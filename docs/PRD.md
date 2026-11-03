@@ -1,5 +1,11 @@
 # 产品需求：Takao
 
+## 2026-11-04 当前 Qt + .NET 迁移
+
+桌面技术改为 **Qt 6 Widgets 原生界面 + .NET 10/CsWin32/JSON.NET 后端**，删除 Electron/Electron.NET 和 React/Tailwind 活动渲染入口；保留八页、真实Windows数据与现有操作身份保护。通过既有回环 HTTP/JSON API 连接，不使用 Qt WebEngine 包装网页，不新增私有协议。当前页面合同、生命周期、成熟源码研究与Q01～Q10验收以 [QT-MIGRATION.md](QT-MIGRATION.md) 为准。
+
+用户本轮明确要求显示测试 **仅1920×1080（1080P）**，使用指定 ui-ux-pro-max 桌面适用标准验收。覆盖下文所有旧分辨率、125%和Electron验收要求，也覆盖2026-10-31专项“不打开UI”的旧任务边界；历史结果不作为Qt通过证据。既有数据正确性、JSON.NET、CsWin32、安全操作与明确未知状态要求继续适用。
+
 单进程结束反馈（2026-11-02）：后端确认退出后自动关闭弹窗并显示成功通知；失败或尚未确认退出则保留当前页面。规格及本轮验收见 [PROCESS-TERMINATION-FEEDBACK.md](PROCESS-TERMINATION-FEEDBACK.md)。
 
 启动状态样式（2026-10-31）：启用、禁用、无法确定分别以绿、灰、琥珀的图标文字徽标展示，列表和详情一致，保留原始状态与原因；规格见 [STARTUP-STATUS.md](STARTUP-STATUS.md)。仅前端编译检查，不打开 UI 或新增业务测试。

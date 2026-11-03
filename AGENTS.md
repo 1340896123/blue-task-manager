@@ -2,7 +2,8 @@
 
 ## 用户约束（优先于下面的实现建议）
 
-- React + Tailwind CSS + Electron.NET；本机 Windows 为目标平台，按用户参考图布局，采用 Windows 蓝色视觉风格。
+- 当前技术栈为 Qt 6 Widgets + .NET 10；删除 Electron/Electron.NET 桌面方式与 React/Tailwind 渲染入口。本机 Windows 为目标平台，按用户参考图布局，采用 Windows 蓝色视觉风格。现行迁移规格见 docs/QT-MIGRATION.md。
+- 本轮显示测试只执行 1920×1080（1080P），按用户指定的 `C:\Users\jieok\.skills-manager\skills\ui-ux-pro-max\SKILL.md` 桌面适用规则验收；旧文档的其他分辨率/Electron测试矩阵仅为历史记录。
 - 禁止模拟业务数据；必须接入真实 Windows 采集与操作链路。Windows 原生接口通过 Microsoft.Windows.CsWin32 生成绑定调用。
 - C# 的 JSON 序列化、反序列化统一使用 JSON.NET（Newtonsoft.Json），禁止 System.Text.Json。npm/TypeScript 等工具链要求的 JSON 清单仍遵循其标准格式；JavaScript 的原生 JSON 处理只用于标准 HTTP 数据交换及本地偏好，不替代后端 JSON.NET。
 - 新增功能先研究优秀开源实现，优先采用标准协议。底层设计参考 [TaskExplorer](https://github.com/DavidXanatos/TaskExplorer)，研究记录见 docs/RESEARCH.md；不移植其专有远程协议或内核驱动。
