@@ -1,0 +1,839 @@
+#include "MainWindow.h"
+#include <QApplication>
+#include <QClipboard>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFileDialog>
+#include <QFormLayout>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QInputDialog>
+#include <QMenu>
+#include <QMessageBox>
+#include <QPlainTextEdit>
+#include <QPointer>
+#include <QSaveFile>
+#include <QScrollArea>
+#include <QScrollBar>
+#include <QSignalBlocker>
+#include <QTabWidget>
+#include <QTextStream>
+#include <QUrlQuery>
+#include <QVBoxLayout>
+
+namespace {
+class ActionDialog final : public QDialog {
+  public:
+    using QDialog::QDialog;
+    void reject() override {
+        if (!property("busy").toBool())
+            QDialog::reject();
+    }
+};
+QLabel* errorLabel(QWidget* parent) {
+    auto label = new QLabel(parent);
+    label->setWordWrap(true);
+    label->setStyleSheet("color:#A4262C;");
+    label->setAccessibleName("操作错误");
+    return label;
+}
+QString objectText(const QJsonObject& object) {
+    QStringList text;
+    for (auto it = object.begin(); it != object.end(); ++it) {
+        if (it.key() == "unavailable")
+            continue;
+        if (it.value().isObject() || it.value().isArray())
+            continue;
+        text << it.key() + "  " + formatValue(it.value(), {});
+    }
+    const auto reason = reasonText(object);
+    if (!reason.isEmpty())
+        text << "\n不可用原因\n" + reason;
+    return text.join("\n");
+}
+QString identityText(const QJsonObject& target) {
+    return target["name"].toString() + QString("  (PID %1)").arg(target["pid"].toInteger());
+}
+} // namespace
+QString MainWindow::processRoute(const QJsonObject& target, const QString& action, bool query) const {
+    QString route = QString("processes/%1/%2").arg(target["pid"].toInteger()).arg(action);
+    if (query) {
+        QUrlQuery q;
+        q.addQueryItem("creationTimeFileTime", target["creationTimeFileTime"].toString());
+        route += "?" + q.toString(QUrl::FullyEncoded);
+    }
+    return route;
+}
+void MainWindow::runTask() {
+    if (!connected_) {
+        notify("本机服务尚未连接，请等待或重试。", true);
+        return;
+    }
+    auto d = new ActionDialog(this);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->setWindowTitle("运行新任务");
+    d->setModal(true);
+    d->resize(640, 300);
+    auto layout = new QVBoxLayout(d);
+    layout->setSpacing(16);
+    auto intro = new QLabel("输入要运行的程序完整路径和可选参数。程序将使用当前管理员权限启动。", d);
+    intro->setWordWrap(true);
+    layout->addWidget(intro);
+    auto form = new QFormLayout();
+    auto path = new QLineEdit(d);
+    path->setAccessibleName("程序路径");
+    path->setObjectName("executablePath");
+    auto arguments = new QLineEdit(d);
+    arguments->setAccessibleName("参数");
+    arguments->setObjectName("executableArguments");
+    auto row = new QHBoxLayout();
+    row->addWidget(path, 1);
+    auto browse = button("浏览…", d);
+    row->addWidget(browse);
+    form->addRow("程序路径(&P)", row);
+    form->addRow("参数(&A)", arguments);
+    layout->addLayout(form);
+    auto error = errorLabel(d);
+    layout->addWidget(error);
+    auto buttons = new QHBoxLayout();
+    buttons->addStretch();
+    auto cancel = button("取消", d);
+    auto run = button("运行(&R)", d, true);
+    run->setDefault(true);
+    buttons->addWidget(cancel);
+    buttons->addWidget(run);
+    layout->addLayout(buttons);
+    QWidget::setTabOrder(path, arguments);
+    QWidget::setTabOrder(arguments, browse);
+    QWidget::setTabOrder(browse, cancel);
+    QWidget::setTabOrder(cancel, run);
+    connect(cancel, &QPushButton::clicked, d, &QDialog::reject);
+    connect(browse, &QPushButton::clicked, d, [d, path] {
+        const auto file =
+            QFileDialog::getOpenFileName(d, "选择要运行的程序", path->text(), "Windows 可执行程序 (*.exe)");
+        if (!file.isEmpty())
+            path->setText(file);
+    });
+    connect(run, &QPushButton::clicked, d, [this, d, path, arguments, error, run, cancel, browse] {
+        if (path->text().trimmed().isEmpty()) {
+            error->setText("请先输入现存程序的完整路径。");
+            path->setFocus();
+            return;
+        }
+        d->setProperty("busy", true);
+        run->setText("正在启动…");
+        for (auto b : {run, cancel, browse})
+            b->setEnabled(false);
+        path->setEnabled(false);
+        arguments->setEnabled(false);
+        api_.post("processes/start",
+                  {{"executable", path->text().trimmed()}, {"arguments", arguments->text()}}, d,
+                  [this, d, path, arguments, error, run, cancel, browse](const QJsonObject& result,
+                                                                         const QString& failure, int) {
+                      d->setProperty("busy", false);
+                      for (auto b : {run, cancel, browse})
+                          b->setEnabled(true);
+                      path->setEnabled(true);
+                      arguments->setEnabled(true);
+                      run->setText("运行(&R)");
+                      if (!failure.isEmpty()) {
+                          error->setText(failure);
+                          path->setFocus();
+                          return;
+                      }
+                      d->accept();
+                      notify(QString("已运行新任务 · PID %1。%2")
+                                 .arg(result["pid"].toInteger())
+                                 .arg(result["message"].toString()));
+                      api_.snapshotEtag.clear();
+                      poll();
+                  });
+    });
+    d->open();
+    path->setFocus();
+}
+void MainWindow::terminateProcess(QJsonObject target) {
+    if (target.isEmpty())
+        target = selected();
+    if (!processPage() || target.isEmpty())
+        return;
+    if (!connected_ || !target["canTerminate"].toBool() || !target["creationTimeFileTime"].isString()) {
+        notify("该进程受保护或无法确认创建身份，不能结束。", true);
+        return;
+    }
+    auto d = new ActionDialog(this);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->setModal(true);
+    d->setWindowTitle("结束任务");
+    d->resize(560, 240);
+    auto layout = new QVBoxLayout(d);
+    auto label = new QLabel(
+        "确定结束 " + identityText(target) + "？\n未保存的数据可能丢失。仅结束已核验的这个进程身份。", d);
+    label->setWordWrap(true);
+    layout->addWidget(label);
+    auto error = errorLabel(d);
+    layout->addWidget(error);
+    auto buttons = new QHBoxLayout();
+    buttons->addStretch();
+    auto cancel = button("取消", d);
+    auto confirm = button("结束任务(&E)", d, true);
+    confirm->setAccessibleName("确认结束任务");
+    buttons->addWidget(cancel);
+    buttons->addWidget(confirm);
+    layout->addLayout(buttons);
+    connect(cancel, &QPushButton::clicked, d, &QDialog::reject);
+    connect(confirm, &QPushButton::clicked, d, [this, d, target, error, cancel, confirm] {
+        d->setProperty("busy", true);
+        cancel->setEnabled(false);
+        confirm->setEnabled(false);
+        confirm->setText("正在结束并确认…");
+        api_.post(processRoute(target, "terminate"),
+                  {{"creationTimeFileTime", target["creationTimeFileTime"]}}, d,
+                  [this, d, error, cancel, confirm](const QJsonObject& result, const QString& failure, int) {
+                      d->setProperty("busy", false);
+                      cancel->setEnabled(true);
+                      confirm->setEnabled(true);
+                      confirm->setText("结束任务(&E)");
+                      if (!failure.isEmpty()) {
+                          error->setText(failure);
+                          return;
+                      }
+                      if (!result["completed"].toBool()) {
+                          error->setText(
+                              result["message"].toString("已发出请求，尚未确认进程退出。请刷新列表核验。"));
+                          return;
+                      }
+                      d->accept();
+                      notify(result["message"].toString("任务已结束，已确认真实进程退出。"));
+                      api_.snapshotEtag.clear();
+                      poll();
+                  });
+    });
+    d->open();
+    cancel->setFocus();
+}
+void MainWindow::terminateTree(const QJsonObject& target) {
+    api_.post(
+        processRoute(target, "tree-preview"), {{"creationTimeFileTime", target["creationTimeFileTime"]}},
+        this, [this, target](const QJsonObject& preview, const QString& error, int) {
+            if (!error.isEmpty()) {
+                notify(error, true);
+                return;
+            }
+            if (!preview["canTerminate"].toBool()) {
+                presentText("不能结束进程树", preview["message"].toString());
+                return;
+            }
+            auto d = new ActionDialog(this);
+            d->setAttribute(Qt::WA_DeleteOnClose);
+            d->setWindowTitle("结束进程树");
+            d->setModal(true);
+            d->resize(700, 440);
+            auto layout = new QVBoxLayout(d);
+            auto description = new QLabel(
+                "请核对以下真实进程身份。结束后未保存的数据可能丢失；变化的成员将由后端重新拒绝。", d);
+            description->setWordWrap(true);
+            layout->addWidget(description);
+            auto list = new QPlainTextEdit(d);
+            list->setReadOnly(true);
+            QStringList membersText;
+            QJsonArray members;
+            for (const auto& item : preview["members"].toArray()) {
+                const auto member = item.toObject();
+                membersText << identityText(member) + " · " + member["identity"].toString();
+                members.append(QJsonObject{{"pid", member["pid"]},
+                                           {"creationTimeFileTime", member["creationTimeFileTime"]}});
+            }
+            list->setPlainText(membersText.join("\n"));
+            layout->addWidget(list);
+            auto resultLabel = errorLabel(d);
+            layout->addWidget(resultLabel);
+            auto buttons = new QHBoxLayout();
+            buttons->addStretch();
+            auto cancel = button("取消", d);
+            auto confirm = button("确认结束进程树(&E)", d, true);
+            buttons->addWidget(cancel);
+            buttons->addWidget(confirm);
+            layout->addLayout(buttons);
+            connect(cancel, &QPushButton::clicked, d, &QDialog::reject);
+            connect(
+                confirm, &QPushButton::clicked, d, [this, d, target, members, resultLabel, cancel, confirm] {
+                    d->setProperty("busy", true);
+                    cancel->setEnabled(false);
+                    confirm->setEnabled(false);
+                    api_.post(
+                        processRoute(target, "terminate-tree"),
+                        {{"creationTimeFileTime", target["creationTimeFileTime"]}, {"members", members}}, d,
+                        [this, d, resultLabel, cancel, confirm](const QJsonObject& result,
+                                                                const QString& failure, int) {
+                            d->setProperty("busy", false);
+                            cancel->setEnabled(true);
+                            confirm->setEnabled(true);
+                            if (!failure.isEmpty()) {
+                                resultLabel->setText(failure);
+                                return;
+                            }
+                            if (result["completed"].toBool()) {
+                                d->accept();
+                                notify(result["message"].toString());
+                            } else {
+                                QStringList messages;
+                                for (const auto& item : result["results"].toArray()) {
+                                    const auto row = item.toObject();
+                                    messages << QString("PID %1 · %2 · %3")
+                                                    .arg(row["pid"].toInteger())
+                                                    .arg(row["status"].toString(), row["message"].toString());
+                                }
+                                resultLabel->setText(result["message"].toString() + "\n" +
+                                                     messages.join("\n"));
+                                confirm->setEnabled(false);
+                            }
+                            api_.snapshotEtag.clear();
+                            poll();
+                        });
+                });
+            d->open();
+            cancel->setFocus();
+        });
+}
+void MainWindow::presentText(const QString& title, const QString& text) {
+    auto d = new QDialog(this);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->setWindowTitle(title);
+    d->resize(760, 520);
+    auto layout = new QVBoxLayout(d);
+    auto output = new QPlainTextEdit(d);
+    output->setReadOnly(true);
+    output->setAccessibleName(title);
+    output->setPlainText(text);
+    layout->addWidget(output);
+    auto close = button("关闭", d);
+    layout->addWidget(close, 0, Qt::AlignRight);
+    connect(close, &QPushButton::clicked, d, &QDialog::accept);
+    d->open();
+}
+void MainWindow::details(QJsonObject target) {
+    if (target.isEmpty())
+        target = selected();
+    if (target.isEmpty())
+        return;
+    if (page_ == 3) {
+        startupDetails(target);
+        return;
+    }
+    if (page_ == 6) {
+        serviceDetails(target);
+        return;
+    }
+    if (page_ == 4) {
+        switchPage(0);
+        proxy_->session = target["sessionId"].toInt();
+        proxy_->refreshFilter();
+        notify("已定位到所选 Windows 会话的进程。");
+        return;
+    }
+    if (page_ == 2) {
+        locateProcess(target["pid"].toInteger());
+        return;
+    }
+    if (!target["creationTimeFileTime"].isString()) {
+        presentText("进程详情", identityText(target) + "\n" + reasonText(target));
+        return;
+    }
+    auto d = new QDialog(this);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->setWindowTitle("进程详情 · " + identityText(target));
+    d->resize(1020, 680);
+    auto layout = new QVBoxLayout(d);
+    auto tabs = new QTabWidget(d);
+    auto info = new QPlainTextEdit(d);
+    info->setReadOnly(true);
+    info->setAccessibleName("实时进程详情与不可用原因");
+    tabs->addTab(info, "进程");
+    auto connPage = new QWidget(tabs);
+    auto connLayout = new QVBoxLayout(connPage);
+    auto status = new QLabel(connPage);
+    status->setWordWrap(true);
+    connLayout->addWidget(status);
+    auto m = new DataModel(d);
+    auto p = new DataProxy(d);
+    auto view = createTable(m, p, connPage);
+    view->setAccessibleName("真实 TCP UDP 端点");
+    m->setColumns({{"protocol", "协议", "", 90},
+                   {"addressFamily", "地址族", "", 100},
+                   {"localAddress", "本地地址", "", 230},
+                   {"localPort", "本地端口", "number", 100},
+                   {"remoteAddress", "远端地址", "", 230},
+                   {"remotePort", "远端端口", "number", 100},
+                   {"state", "状态", "state", 150}});
+    for (int i = 0; i < m->columns.size(); ++i)
+        view->setColumnWidth(i, m->columns[i].width);
+    connLayout->addWidget(view);
+    tabs->addTab(connPage, "TCP / UDP 端点");
+    layout->addWidget(tabs);
+    auto close = button("关闭", d);
+    layout->addWidget(close, 0, Qt::AlignRight);
+    connect(close, &QPushButton::clicked, d, &QDialog::accept);
+    auto refresh = [this, d, target, info, m, status] {
+        if (d->property("reading").toBool())
+            return;
+        d->setProperty("reading", true);
+        api_.get(processRoute(target, "details", true), d,
+                 [d, info](const QJsonObject& result, const QString& error, int) {
+                     d->setProperty("reading", false);
+                     if (!error.isEmpty()) {
+                         info->setPlainText("读取失败：" + error +
+                                            "\n保留此窗口，可关闭后重新选择真实进程。");
+                         return;
+                     }
+                     auto process = result["process"].toObject();
+                     QStringList output{
+                         identityText(process),
+                         "创建身份  " + process["creationTimeFileTime"].toString(),
+                         "采集时间  " + formatValue(result["capturedAtUtc"], "date"),
+                         "路径  " + formatValue(process["path"], {}),
+                         "发布者（版本元数据）  " + formatValue(process["publisher"], {}),
+                         "用户  " + formatValue(process["userName"], {}),
+                         "CPU  " + formatValue(process["cpuPercent"], "percent"),
+                         "工作集  " + formatValue(process["workingSetBytes"], "bytes"),
+                         "专用内存  " + formatValue(process["privateBytes"], "bytes"),
+                         "句柄  " + formatValue(process["handleCount"], "number"),
+                         "线程  " + formatValue(process["threadCount"], "number"),
+                         "网络接收  " + formatValue(process["networkReceiveBytesPerSecond"], "rate"),
+                         "网络发送  " + formatValue(process["networkSendBytesPerSecond"], "rate"),
+                         "GPU  " + formatValue(process["gpuPercent"], "percent"),
+                         "运行时间  " + formatValue(result["uptimeSeconds"], "duration"),
+                         reasonText(process)};
+                     for (const auto& service : result["relatedServices"].toArray())
+                         output << "关联服务  " + service.toObject()["name"].toString();
+                     const auto scroll = info->verticalScrollBar()->value();
+                     info->setPlainText(output.join("\n"));
+                     info->verticalScrollBar()->setValue(scroll);
+                 });
+        api_.get(processRoute(target, "connections", true), d,
+                 [m, status](const QJsonObject& result, const QString& error, int) {
+                     if (!error.isEmpty()) {
+                         status->setText(error);
+                         return;
+                     }
+                     m->setRows(result["connections"].toArray());
+                     status->setText(
+                         QString("%1 个真实端点 · %2\n%3")
+                             .arg(result["connections"].toArray().size())
+                             .arg(formatValue(result["capturedAtUtc"], "date"), reasonText(result)));
+                 });
+    };
+    auto timer = new QTimer(d);
+    timer->setInterval(2000);
+    connect(timer, &QTimer::timeout, d, refresh);
+    timer->start();
+    d->open();
+    refresh();
+}
+void MainWindow::startupDetails(const QJsonObject& target) {
+    presentText(
+        "启动应用 · " + target["name"].toString(),
+        "名称  " + target["name"].toString() + "\n状态  " +
+            (target["enabled"].isNull() ? QString("无法确定") : formatValue(target["enabled"], "startup")) +
+            "\n原因  " + target["enabledReason"].toString() + "\n来源  " + target["source"].toString() +
+            "\n启动命令  " + target["command"].toString() + "\n来源位置  " +
+            target["locationPath"].toString() + "\n" + target["locationReason"].toString());
+}
+void MainWindow::serviceDetails(const QJsonObject& target) {
+    api_.get("services/" + QString::fromUtf8(QUrl::toPercentEncoding(target["name"].toString())) + "/details",
+             this, [this](const QJsonObject& result, const QString& error, int) {
+                 if (!error.isEmpty()) {
+                     notify(error, true);
+                     return;
+                 }
+                 presentText("服务详情 · " + result["name"].toString(),
+                             "名称  " + result["name"].toString() + "\n显示名称  " +
+                                 result["displayName"].toString() + "\n状态  " +
+                                 formatValue(result["state"], "state") + "\nPID  " +
+                                 formatValue(result["pid"], "number") + "\n路径  " +
+                                 formatValue(result["binaryPath"], {}) + "\n启动类型  " +
+                                 formatValue(result["startType"], {}) + "\n账户  " +
+                                 formatValue(result["account"], {}) + "\n依赖  " +
+                                 result["dependencies"].toVariant().toStringList().join(", ") + "\n" +
+                                 reasonText(result));
+             });
+}
+void MainWindow::setPriority(const QJsonObject& target, const QString& priority) {
+    if (QMessageBox::question(
+            this, "更改优先级", "更改 " + identityText(target) + " 的优先级可能影响系统响应。确定继续？",
+            QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes)
+        return;
+    post(processRoute(target, "priority"),
+         {{"creationTimeFileTime", target["creationTimeFileTime"]}, {"priority", priority}});
+}
+void MainWindow::efficiency(const QJsonObject& target) {
+    api_.get(processRoute(target, "efficiency", true), this,
+             [this, target](const QJsonObject& result, const QString& error, int) {
+                 if (!error.isEmpty()) {
+                     notify(error, true);
+                     return;
+                 }
+                 if (!result["available"].toBool()) {
+                     presentText("效率模式不可用", result["reason"].toString());
+                     return;
+                 }
+                 const bool next = !result["enabled"].toBool();
+                 if (!next && !result["canRestore"].toBool()) {
+                     presentText("效率模式", result["reason"].toString("当前状态无法由本程序恢复。"));
+                     return;
+                 }
+                 if (QMessageBox::question(
+                         this, "效率模式",
+                         (next ? "启用" : "关闭") + QString(" %1 的效率模式？").arg(identityText(target)),
+                         QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) == QMessageBox::Yes)
+                     post(processRoute(target, "efficiency"),
+                          {{"creationTimeFileTime", target["creationTimeFileTime"]}, {"enabled", next}});
+             });
+}
+void MainWindow::controlService(const QJsonObject& target, const QString& command) {
+    const auto name = target["name"].toString();
+    const auto route = "services/" + QString::fromUtf8(QUrl::toPercentEncoding(name));
+    api_.get(
+        route + "/details", this,
+        [this, route, command](const QJsonObject& current, const QString& error, int) {
+            if (!error.isEmpty()) {
+                notify(error, true);
+                return;
+            }
+            const bool allowed = current[command == "start"  ? "canStart"
+                                         : command == "stop" ? "canStop"
+                                                             : "canRestart"]
+                                     .toBool();
+            if (!allowed) {
+                presentText("服务操作不可用", reasonText(current) + "\n请核对当前状态和服务实际控制权限。");
+                return;
+            }
+            const auto verb = command == "start" ? "启动" : command == "stop" ? "停止" : "重启";
+            if (QMessageBox::question(
+                    this, "服务控制",
+                    QString("确定%1服务 %2？可能影响正在使用它的应用；不会自动控制依赖服务。")
+                        .arg(verb, current["displayName"].toString()),
+                    QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes)
+                return;
+            notify("正在等待 Windows 服务实际状态…");
+            post(
+                route + "/control",
+                {{"command", command}, {"expectedState", current["state"]}, {"expectedPid", current["pid"]}},
+                [this](const QJsonObject& result) {
+                    notify(result["message"].toString(), !result["completed"].toBool());
+                    post("refresh", {});
+                },
+                35000);
+        });
+}
+void MainWindow::locateProcess(qint64 pid) {
+    QJsonObject row;
+    for (const auto& value : latest_["processes"].toArray())
+        if (value.toObject()["pid"].toInteger() == pid) {
+            row = value.toObject();
+            break;
+        }
+    if (row.isEmpty()) {
+        notify("关联进程已退出或当前快照尚未读取，未定位到其它身份。", true);
+        return;
+    }
+    switchPage(5);
+    search_->clear();
+    proxy_->session = -1;
+    proxy_->onlyCurrentUser = false;
+    proxy_->state = "all";
+    proxy_->refreshFilter();
+    const auto idx = proxy_->mapFromSource(model_->find(rowIdentity(row)));
+    if (idx.isValid()) {
+        table_->setCurrentIndex(idx);
+        table_->scrollTo(idx);
+        table_->setFocus();
+    }
+}
+void MainWindow::contextMenu(const QPoint& point) {
+    if (!point.isNull()) {
+        const auto index = table_->indexAt(point);
+        if (index.isValid())
+            table_->setCurrentIndex(index);
+    }
+    const auto target = selected();
+    if (target.isEmpty())
+        return;
+    QMenu menu(this);
+    menu.setAccessibleName("所选项目操作");
+    auto add = [&](const QString& title, auto callback, bool enabled = true) {
+        auto action = menu.addAction(title);
+        action->setEnabled(enabled && connected_);
+        connect(action, &QAction::triggered, this, callback);
+    };
+    add("查看详情", [this, target] { details(target); });
+    if (processPage()) {
+        const bool identity = target["creationTimeFileTime"].isString();
+        const bool can = target["canTerminate"].toBool();
+        add("结束任务…", [this, target] { terminateProcess(target); }, can);
+        add("结束进程树…", [this, target] { terminateTree(target); }, can);
+        auto priority = menu.addMenu("设置优先级");
+        for (const auto& pair : QList<QPair<QString, QString>>{{"空闲", "idle"},
+                                                               {"低于正常", "belowNormal"},
+                                                               {"正常", "normal"},
+                                                               {"高于正常", "aboveNormal"},
+                                                               {"高", "high"}}) {
+            auto a = priority->addAction(pair.first);
+            a->setEnabled(identity && connected_);
+            connect(a, &QAction::triggered, this, [this, target, pair] { setPriority(target, pair.second); });
+        }
+        add("效率模式…", [this, target] { efficiency(target); }, identity);
+        menu.addSeparator();
+        add(
+            "打开文件位置",
+            [this, target] {
+                post(processRoute(target, "file-action"),
+                     {{"creationTimeFileTime", target["creationTimeFileTime"]}, {"action", "openLocation"}});
+            },
+            identity && target["path"].isString());
+        add(
+            "文件属性",
+            [this, target] {
+                post(processRoute(target, "file-action"),
+                     {{"creationTimeFileTime", target["creationTimeFileTime"]}, {"action", "properties"}});
+            },
+            identity && target["path"].isString());
+        add(
+            "复制路径", [target] { QApplication::clipboard()->setText(target["path"].toString()); },
+            target["path"].isString());
+        add("转到详细信息", [this, target] { locateProcess(target["pid"].toInteger()); });
+    } else if (page_ == 3) {
+        add(
+            "打开来源位置", [this, target] { post("startup/open-location", {{"id", target["id"]}}); },
+            target["canOpenLocation"].toBool());
+        add("复制启动命令", [this, target] {
+            QApplication::clipboard()->setText(target["command"].toString());
+            notify("已复制启动命令。");
+        });
+        add("Windows 启动设置",
+            [this] { post("desktop/open-system-location", {{"location", "startupSettings"}}); });
+    } else if (page_ == 6) {
+        menu.addSeparator();
+        add("启动服务…", [this, target] { controlService(target, "start"); });
+        add("停止服务…", [this, target] { controlService(target, "stop"); });
+        add("重启服务…", [this, target] { controlService(target, "restart"); });
+        add(
+            "转到进程", [this, target] { locateProcess(target["pid"].toInteger()); },
+            target["pid"].toInteger() > 0);
+    } else if (page_ == 4)
+        add("查看该会话的进程", [this, target] {
+            switchPage(0);
+            proxy_->session = target["sessionId"].toInt();
+            proxy_->refreshFilter();
+        });
+    menu.addSeparator();
+    add("复制名称", [target] { QApplication::clipboard()->setText(target["name"].toString()); });
+    menu.exec(point.isNull()
+                  ? table_->viewport()->mapToGlobal(table_->visualRect(table_->currentIndex()).bottomLeft())
+                  : table_->viewport()->mapToGlobal(point));
+    table_->setFocus();
+}
+void MainWindow::moreMenu() {
+    QMenu menu(this);
+    auto add = [&](const QString& text, auto callback) {
+        connect(menu.addAction(text), &QAction::triggered, this, callback);
+    };
+    if (page_ != 1 && page_ != 7) {
+        add("导出当前筛选 CSV…", [this] { exportCsv(); });
+        add("显示列 / 设置列宽…", [this] { columnMenu(); });
+    }
+    if (processPage()) {
+        auto tree = menu.addAction("进程树视图");
+        tree->setCheckable(true);
+        tree->setChecked(preferences_["processView"].toString() == "tree");
+        connect(tree, &QAction::triggered, this, [this](bool value) {
+            preferences_["processView"] = value ? "tree" : "flat";
+            table_->setRootIsDecorated(page_ == 0 && value);
+            table_->setItemsExpandable(table_->rootIsDecorated());
+            updateTable();
+            saveSoon();
+        });
+        add("筛选进程…", [this] { filters(); });
+    }
+    if (page_ == 2)
+        add("清除本次会话统计…", [this] {
+            if (QMessageBox::question(
+                    this, "清除统计", "仅清除本程序本次采集会话的历史，不修改 Windows 应用使用历史。",
+                    QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) == QMessageBox::Yes)
+                post("history/reset", {});
+        });
+    if (page_ == 3)
+        add("Windows 启动设置",
+            [this] { post("desktop/open-system-location", {{"location", "startupSettings"}}); });
+    if (page_ == 6)
+        add("Windows 服务管理器",
+            [this] { post("desktop/open-system-location", {{"location", "services"}}); });
+    menu.addSeparator();
+    auto freeze = menu.addAction("冻结显示（后台继续采集）");
+    freeze->setCheckable(true);
+    freeze->setChecked(frozen_);
+    connect(freeze, &QAction::triggered, this, [this](bool checked) {
+        frozen_ = checked;
+        if (!checked)
+            shown_ = latest_;
+        applySnapshot();
+    });
+    auto collapsed = menu.addAction("折叠侧栏");
+    collapsed->setCheckable(true);
+    collapsed->setChecked(preferences_["sidebarCollapsed"].toBool());
+    connect(collapsed, &QAction::triggered, this, [this](bool value) {
+        preferences_["sidebarCollapsed"] = value;
+        sidebar_->setFixedWidth(value ? 56 : 204);
+        for (int i = 0; i < nav_.size(); ++i)
+            nav_[i]->setText(value ? QString() : titles_[i]);
+        saveSoon();
+    });
+    add("来源与采样状态", [this] {
+        QStringList out{"采集时间  " + formatValue(latest_["capturedAtUtc"], "date"),
+                        "本次会话开始  " + formatValue(latest_["sessionStartedAtUtc"], "date"),
+                        "后台来源时间  " + formatValue(latest_["slowDataCapturedAtUtc"], "date"),
+                        "真实采样耗时  " + formatValue(latest_["samplingDurationMs"], "number") + " ms",
+                        reasonText(latest_["processNetwork"].toObject())};
+        for (const auto& w : latest_["warnings"].toArray())
+            out << w.toObject()["message"].toString();
+        presentText("数据来源与状态", out.join("\n"));
+    });
+    menu.exec(more_->mapToGlobal(QPoint(0, more_->height())));
+}
+void MainWindow::columnMenu() {
+    if (page_ == 1 || page_ == 7)
+        return;
+    auto d = new QDialog(this);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->setWindowTitle("显示列与列宽");
+    d->resize(560, 650);
+    auto layout = new QVBoxLayout(d);
+    auto scroll = new QScrollArea(d);
+    scroll->setWidgetResizable(true);
+    auto content = new QWidget(scroll);
+    auto form = new QFormLayout(content);
+    QVector<QCheckBox*> checks;
+    QVector<QSpinBox*> widths;
+    for (int i = 0; i < model_->columns.size(); ++i) {
+        const auto& col = model_->columns[i];
+        auto row = new QWidget(content);
+        auto line = new QHBoxLayout(row);
+        line->setContentsMargins(0, 0, 0, 0);
+        auto check = new QCheckBox(col.title, row);
+        check->setChecked(!table_->isColumnHidden(i));
+        if (col.key == "name" || (processPage() && col.key == "pid"))
+            check->setEnabled(false);
+        auto width = new QSpinBox(row);
+        width->setAccessibleName(col.title + "列宽");
+        width->setRange(64, 1600);
+        width->setSuffix(" px");
+        width->setValue(table_->columnWidth(i));
+        line->addWidget(check, 1);
+        line->addWidget(width);
+        form->addRow(row);
+        checks << check;
+        widths << width;
+    }
+    scroll->setWidget(content);
+    layout->addWidget(new QLabel("列头可拖动调宽；也可在此通过键盘设置数值。名称和 PID 为必要列。", d));
+    layout->addWidget(scroll);
+    auto apply = button("应用", d, true);
+    layout->addWidget(apply, 0, Qt::AlignRight);
+    const int page = page_;
+    connect(apply, &QPushButton::clicked, d, [this, d, checks, widths, page] {
+        if (page != page_) {
+            d->reject();
+            return;
+        }
+        for (int i = 0; i < checks.size(); ++i) {
+            table_->setColumnHidden(i, !checks[i]->isChecked());
+            table_->setColumnWidth(i, widths[i]->value());
+        }
+        capturePagePreference();
+        saveSoon();
+        d->accept();
+    });
+    d->open();
+}
+void MainWindow::filters() {
+    auto d = new QDialog(this);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->setWindowTitle("筛选进程");
+    auto form = new QFormLayout(d);
+    auto user = new QCheckBox("仅当前账户", d);
+    user->setChecked(proxy_->onlyCurrentUser);
+    user->setEnabled(!bootstrap_["currentUserName"].toString().isEmpty());
+    form->addRow(user);
+    auto session = new QSpinBox(d);
+    session->setRange(-1, 65535);
+    session->setSpecialValueText("全部会话");
+    session->setValue(proxy_->session);
+    form->addRow("会话 ID", session);
+    auto state = new QComboBox(d);
+    state->addItem("全部状态", "all");
+    state->addItem("运行中", "running");
+    state->addItem("受限", "restricted");
+    state->setCurrentIndex(state->findData(proxy_->state));
+    form->addRow("状态", state);
+    auto apply = button("应用筛选", d, true);
+    form->addRow(apply);
+    connect(apply, &QPushButton::clicked, d, [this, d, user, session, state] {
+        proxy_->onlyCurrentUser = user->isChecked();
+        proxy_->session = session->value();
+        proxy_->state = state->currentData().toString();
+        proxy_->refreshFilter();
+        auto pages = preferences_["pages"].toObject();
+        auto p = pages[keys_[page_]].toObject();
+        p["filters"] =
+            QJsonObject{{"currentUser", proxy_->onlyCurrentUser},
+                        {"sessionId", proxy_->session < 0 ? QJsonValue() : QJsonValue(proxy_->session)},
+                        {"state", proxy_->state}};
+        pages[keys_[page_]] = p;
+        preferences_["pages"] = pages;
+        saveSoon();
+        d->accept();
+    });
+    d->open();
+}
+void MainWindow::exportCsv() {
+    const auto file =
+        QFileDialog::getSaveFileName(this, "导出当前筛选", titles_[page_] + ".csv", "CSV (*.csv)");
+    if (file.isEmpty())
+        return;
+    QSaveFile out(file);
+    if (!out.open(QIODevice::WriteOnly)) {
+        notify("无法写入所选位置，请检查权限。", true);
+        return;
+    }
+    QTextStream stream(&out);
+    stream.setEncoding(QStringConverter::Utf8);
+    stream.setGenerateByteOrderMark(true);
+    auto quote = [](QString value) {
+        value.replace('"', "\"\"");
+        return '"' + value + '"';
+    };
+    QStringList header;
+    QList<int> cols;
+    for (int col = 0; col < model_->columns.size(); ++col)
+        if (!table_->isColumnHidden(col)) {
+            cols << col;
+            header << quote(model_->columns[col].title);
+        }
+    stream << header.join(',') << "\r\n";
+    std::function<void(const QModelIndex&)> rows = [&](const QModelIndex& parent) {
+        for (int row = 0; row < proxy_->rowCount(parent); ++row) {
+            QStringList values;
+            for (const auto col : cols)
+                values << quote(proxy_->index(row, col, parent).data().toString());
+            stream << values.join(',') << "\r\n";
+            rows(proxy_->index(row, 0, parent));
+        }
+    };
+    rows({});
+    stream.flush();
+    if (!out.commit()) {
+        notify("导出保存失败，原文件未替换。", true);
+        return;
+    }
+    notify("已导出当前全部筛选结果及可见列。数值来自当前真实展示快照。");
+}

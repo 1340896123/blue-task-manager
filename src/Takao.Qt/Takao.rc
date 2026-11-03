@@ -1,0 +1,19 @@
+IDI_ICON1 ICON "../../assets/branding/takao.ico"
+1 VERSIONINFO
+FILEVERSION 1,1,1,0
+PRODUCTVERSION 1,1,1,0
+BEGIN
+ BLOCK "StringFileInfo"
+ BEGIN
+  BLOCK "040904B0"
+  BEGIN
+   VALUE "FileDescription", "Takao Qt desktop\0"
+   VALUE "ProductName", "Takao\0"
+   VALUE "FileVersion", "1.1.1.0\0"
+  END
+ END
+ BLOCK "VarFileInfo"
+ BEGIN
+  VALUE "Translation", 0x409, 1200
+ END
+END
