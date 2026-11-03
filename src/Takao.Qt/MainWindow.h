@@ -48,7 +48,8 @@ class MainWindow final : public QMainWindow {
     QLabel *pageTitle_{}, *count_{}, *banner_{}, *toast_{}, *summary_{};
     QWidget* sidebar_{};
     QVector<QPushButton*> nav_;
-    QPushButton *pause_{}, *run_{}, *terminate_{}, *more_{}, *refresh_{}, *detail_{};
+    QPushButton *pause_{}, *run_{}, *terminate_{}, *more_{}, *refresh_{}, *detail_{}, *pageAction_{}, *navUpdate_{};
+    QWidget* toastArea_{};
     QStackedWidget* stack_{};
     QWidget* gridPage_{};
     QTreeView* table_{};
@@ -66,6 +67,9 @@ class MainWindow final : public QMainWindow {
     DataModel* sensorModel_{};
     DataProxy* sensorProxy_{};
     QLabel* facts_{};
+    QGridLayout* factsLayout_{};
+    QVector<QLabel*> factLabels_, factValues_;
+    QLabel* sensorEmpty_{};
     QString selectedResource_ = QStringLiteral("cpu:"), chartLayoutKey_;
     QJsonObject sensorsData_;
     QWidget* settingsPage_{};
@@ -84,6 +88,7 @@ class MainWindow final : public QMainWindow {
     void updateTable();
     void updateSelectionActions();
     void updatePerformance();
+    void setFacts(const QList<QPair<QString, QString>>&);
     void rebuildResources();
     void readSensors();
     void updateSettings();

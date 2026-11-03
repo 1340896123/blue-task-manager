@@ -5,7 +5,7 @@
 #include <cmath>
 
 Chart::Chart(QWidget* parent) : QWidget(parent) {
-    setMinimumHeight(190);
+    setMinimumHeight(Theme::chartMinHeight);
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
@@ -34,9 +34,17 @@ void Chart::paintEvent(QPaintEvent*) {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     p.fillRect(rect(), Theme::surface);
-    p.setPen(Theme::secondary);
-    p.drawText(QRect(14, 6, width() - 28, 24), Qt::AlignLeft | Qt::AlignVCenter, title_);
-    const QRectF plot(14, 42, std::max(10, width() - 30), std::max(10, height() - 88));
+    p.setFont(Theme::font(Theme::Type::Body, true));
+    const auto titleHeight = p.fontMetrics().height();
+    p.setPen(Theme::text);
+    p.drawText(QRect(Theme::space4, Theme::space2, width() - Theme::space8, titleHeight),
+                Qt::AlignLeft | Qt::AlignVCenter, title_);
+    p.setFont(Theme::font(Theme::Type::Caption));
+    const auto captionHeight = p.fontMetrics().height();
+    const auto legendTop = Theme::space2 + titleHeight + Theme::space2;
+    const auto plotTop = legendTop + captionHeight + Theme::space3;
+    const QRectF plot(Theme::space4, plotTop, std::max(10, width() - Theme::space8),
+                       std::max(10, height() - plotTop - captionHeight - Theme::space3));
     p.setPen(QPen(Theme::grid, 1));
     for (int i = 0; i <= 4; ++i) {
         const auto y = plot.top() + plot.height() * i / 4;
@@ -68,7 +76,16 @@ void Chart::paintEvent(QPaintEvent*) {
     const auto span = std::max(interval_, last - first);
     p.setPen(Theme::secondary);
     const auto maxLabel = percent_ ? QStringLiteral("100 %") : QString::number(maximum, 'g', 3) + " " + unit_;
-    p.drawText(QRectF(plot.left(), plot.top() - 22, plot.width(), 20), Qt::AlignRight, maxLabel);
+    p.drawText(QRectF(plot.left(), legendTop, plot.width(), captionHeight), Qt::AlignRight, maxLabel);
+    int legendX = Theme::space4;
+    for (const auto& s : series_) {
+        p.setPen(QPen(s.color, Theme::chartLineWidth, s.style));
+        p.drawLine(legendX, legendTop + captionHeight / 2, legendX + Theme::space6, legendTop + captionHeight / 2);
+        p.setPen(Theme::secondary);
+        p.drawText(QRect(legendX + Theme::space8, legendTop,
+                          p.fontMetrics().horizontalAdvance(s.label), captionHeight), Qt::AlignVCenter, s.label);
+        legendX += Theme::space8 + p.fontMetrics().horizontalAdvance(s.label) + Theme::space4;
+    }
     p.save();
     p.setClipRect(plot.adjusted(-1, -1, 1, 1));
     for (const auto& s : series_) {
@@ -91,7 +108,7 @@ void Chart::paintEvent(QPaintEvent*) {
             previous = point.x();
             finalPoint = screen;
         }
-        p.setPen(QPen(s.color, 1.8, s.style));
+        p.setPen(QPen(s.color, Theme::chartLineWidth, s.style));
         p.drawPath(path);
         if (!moving) {
             p.setBrush(s.color);
@@ -101,22 +118,14 @@ void Chart::paintEvent(QPaintEvent*) {
     }
     p.restore();
     p.setPen(Theme::secondary);
-    p.drawText(QRectF(plot.left(), plot.bottom() + 3, plot.width(), 20), Qt::AlignLeft,
+    p.drawText(QRectF(plot.left(), plot.bottom() + Theme::space1, plot.width(), captionHeight), Qt::AlignLeft,
                QString("最近 %1 秒 · 实际采样").arg(int(std::max(0., last - first))));
-    int x = 14;
-    for (const auto& s : series_) {
-        p.setPen(QPen(s.color, 2, s.style));
-        p.drawLine(x, height() - 12, x + 20, height() - 12);
-        p.setPen(Theme::secondary);
-        p.drawText(x + 26, height() - 7, s.label);
-        x += 36 + fontMetrics().horizontalAdvance(s.label);
-    }
     if (!any) {
         p.setPen(Theme::secondary);
         p.drawText(plot, Qt::AlignCenter, QStringLiteral("等待有效采样 · 未知值不会转换为 0"));
     }
     if (hasFocus()) {
-        p.setPen(QPen(Theme::focus, 2));
-        p.drawRect(rect().adjusted(1, 1, -2, -2));
+        p.setPen(QPen(Theme::focus, Theme::focusWidth));
+        p.drawRoundedRect(rect().adjusted(1, 1, -2, -2), Theme::controlRadius, Theme::controlRadius);
     }
 }

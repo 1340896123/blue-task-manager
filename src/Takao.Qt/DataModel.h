@@ -18,7 +18,7 @@ QString rowIdentity(const QJsonObject&);
 class DataModel final : public QAbstractItemModel {
     Q_OBJECT
   public:
-    enum { RawRole = Qt::UserRole + 1, ObjectRole, IdentityRole };
+    enum { RawRole = Qt::UserRole + 1, ObjectRole, IdentityRole, StatusRole };
     explicit DataModel(QObject* parent = nullptr);
     QModelIndex index(int, int, const QModelIndex& = {}) const override;
     QModelIndex parent(const QModelIndex&) const override;

@@ -4,7 +4,7 @@
 #include <QClipboard>
 #include <QCloseEvent>
 #include <QDateTime>
-#include <QGroupBox>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QJsonDocument>
@@ -13,6 +13,7 @@
 #include <QPainterPath>
 #include <QPointer>
 #include <QResizeEvent>
+#include <QRegularExpression>
 #include <QScopedValueRollback>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -26,9 +27,43 @@ namespace {
 class RowDelegate final : public QStyledItemDelegate {
   public:
     using QStyledItemDelegate::QStyledItemDelegate;
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+        QStyleOptionViewItem item(option);
+        initStyleOption(&item, index);
+        const auto label = item.text;
+        const auto icon = item.icon;
+        item.text.clear();
+        item.icon = {};
+        item.state &= ~QStyle::State_HasFocus;
+        const auto style = item.widget ? item.widget->style() : QApplication::style();
+        style->drawControl(QStyle::CE_ItemViewItem, &item, painter, item.widget);
+        auto textRect = option.rect.adjusted(Theme::space3, 0, -Theme::space3, 0);
+        const auto status = index.data(DataModel::StatusRole).toString();
+        if (!status.isEmpty()) {
+            Theme::paintStatus(*painter, QRectF(textRect.left(), textRect.center().y() - Theme::statusIconSize / 2.,
+                                               Theme::statusIconSize, Theme::statusIconSize), status);
+            textRect.setLeft(textRect.left() + Theme::statusIconSize + Theme::space2);
+        } else if (!icon.isNull()) {
+            icon.paint(painter, QRect(textRect.left(), textRect.center().y() - Theme::iconSize / 2,
+                                      Theme::iconSize, Theme::iconSize));
+            textRect.setLeft(textRect.left() + Theme::iconSize + Theme::space2);
+        }
+        painter->save();
+        painter->setFont(item.font);
+        painter->setPen(option.state & QStyle::State_Selected ? Theme::text
+                            : !status.isEmpty() ? Theme::stateColor(status) : item.palette.color(QPalette::Text));
+        painter->drawText(textRect, item.displayAlignment | Qt::AlignVCenter,
+                          QFontMetrics(item.font).elidedText(label, Qt::ElideRight, textRect.width()));
+        if (option.state & QStyle::State_HasFocus) {
+            painter->setPen(QPen(Theme::focus, Theme::focusWidth));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawRoundedRect(option.rect.adjusted(1, 1, -1, -1), Theme::controlRadius, Theme::controlRadius);
+        }
+        painter->restore();
+    }
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         auto size = QStyledItemDelegate::sizeHint(option, index);
-        size.setHeight(option.widget ? option.widget->property("rowHeight").toInt() : 32);
+        size.setHeight(option.widget ? option.widget->property("rowHeight").toInt() : Theme::compactRow);
         return size;
     }
 };
@@ -40,24 +75,30 @@ class ResourceDelegate final : public QStyledItemDelegate {
         p->setRenderHint(QPainter::Antialiasing);
         const auto bounds = option.rect.adjusted(1, 1, -1, -1);
         const bool selected = option.state & QStyle::State_Selected;
-        p->fillRect(bounds, selected ? Theme::selection : Theme::surface);
-        p->setPen(QPen(selected ? Theme::accent : Theme::grid, selected ? 2 : 1));
-        p->drawRoundedRect(bounds, 4, 4);
+        p->setPen(Qt::NoPen);
+        p->setBrush(selected ? Theme::selection : option.state & QStyle::State_MouseOver ? Theme::hover : Theme::content);
+        p->drawRoundedRect(bounds, Theme::controlRadius, Theme::controlRadius);
+        if (selected) {
+            p->setBrush(Theme::accent);
+            p->drawRoundedRect(QRectF(bounds.left(), bounds.center().y() - Theme::indicatorHeight / 2.,
+                                      Theme::indicatorWidth, Theme::indicatorHeight), 1.5, 1.5);
+        }
         const auto lines = index.data().toString().split('\n');
-        auto font = option.font;
-        font.setPixelSize(14);
-        font.setWeight(QFont::DemiBold);
+        auto font = Theme::font(Theme::Type::Body, true);
         p->setFont(font);
-        p->setPen(selected ? Theme::accent : Theme::text);
-        p->drawText(QRect(bounds.left() + 10, bounds.top() + 8, 138, 22), Qt::AlignLeft | Qt::AlignVCenter,
-                    QFontMetrics(font).elidedText(lines.value(0), Qt::ElideRight, 138));
-        font.setWeight(QFont::Normal);
-        font.setPixelSize(12);
+        p->setPen(Theme::text);
+        const auto lineHeight = QFontMetrics(font).height();
+        const auto textWidth = bounds.width() - Theme::space6;
+        p->drawText(QRect(bounds.left() + Theme::space3, bounds.top() + Theme::space2, textWidth, lineHeight),
+                    Qt::AlignLeft | Qt::AlignVCenter,
+                    QFontMetrics(font).elidedText(lines.value(0), Qt::ElideRight, textWidth));
+        font = Theme::font(Theme::Type::Caption);
         p->setFont(font);
         p->setPen(Theme::secondary);
-        p->drawText(QRect(bounds.left() + 10, bounds.top() + 34, 145, 52), Qt::AlignLeft | Qt::AlignTop,
+        p->drawText(QRect(bounds.left() + Theme::space3, bounds.top() + Theme::space2 + lineHeight + Theme::space1,
+                          bounds.width() - 92, bounds.height() - lineHeight - Theme::space4), Qt::AlignLeft | Qt::AlignTop,
                     lines.mid(1).join("\n"));
-        const QRectF plot(bounds.right() - 70, bounds.top() + 35, 60, 36);
+        const QRectF plot(bounds.right() - 76, bounds.top() + lineHeight + Theme::space3, 64, 36);
         const auto primary = index.data(Qt::UserRole + 1).toList(),
                    secondary = index.data(Qt::UserRole + 2).toList();
         if (!primary.isEmpty()) {
@@ -93,14 +134,15 @@ class ResourceDelegate final : public QStyledItemDelegate {
                     move = false;
                     previous = point.x();
                 }
-                p->setPen(QPen(series == 0 ? Theme::accent : Theme::secondLine, 1.3,
+                p->setPen(QPen(series == 0 ? Theme::accent : Theme::secondLine, Theme::sparkLineWidth,
                                series == 0 ? Qt::SolidLine : Qt::DashLine));
                 p->drawPath(path);
             }
         }
         if (option.state & QStyle::State_HasFocus) {
-            p->setPen(QPen(Theme::focus, 2));
-            p->drawRect(bounds.adjusted(2, 2, -2, -2));
+            p->setPen(QPen(Theme::focus, Theme::focusWidth));
+            p->setBrush(Qt::NoBrush);
+            p->drawRoundedRect(bounds.adjusted(2, 2, -2, -2), Theme::controlRadius, Theme::controlRadius);
         }
         p->restore();
     }
@@ -128,7 +170,7 @@ MainWindow::MainWindow(QUrl origin, qint64 hostPid) : api_(std::move(origin), th
     saveTimer_.setInterval(700);
     connect(&saveTimer_, &QTimer::timeout, this, &MainWindow::savePreferences);
     toastTimer_.setSingleShot(true);
-    connect(&toastTimer_, &QTimer::timeout, toast_, &QWidget::hide);
+    connect(&toastTimer_, &QTimer::timeout, toastArea_, &QWidget::hide);
     pollTimer_.setInterval(500);
     connect(&pollTimer_, &QTimer::timeout, this, &MainWindow::poll);
     slowTimer_.setInterval(3000);
@@ -143,7 +185,7 @@ MainWindow::MainWindow(QUrl origin, qint64 hostPid) : api_(std::move(origin), th
 }
 QPushButton* MainWindow::button(const QString& text, QWidget* parent, bool primary) {
     auto b = new QPushButton(text, parent);
-    b->setMinimumHeight(44);
+    b->setFixedHeight(std::max(Theme::commandHeight, b->fontMetrics().height() + Theme::space3));
     b->setAccessibleName(text);
     if (primary)
         b->setProperty("primary", true);
@@ -162,7 +204,9 @@ QTreeView* MainWindow::createTable(DataModel* model, DataProxy* proxy, QWidget* 
     view->setRootIsDecorated(false);
     view->setItemsExpandable(false);
     view->setAllColumnsShowFocus(true);
-    view->setProperty("rowHeight", 32);
+    view->setProperty("rowHeight", Theme::compactRow);
+    view->setMouseTracking(true);
+    view->setIconSize(QSize(Theme::iconSize, Theme::iconSize));
     view->setItemDelegate(new RowDelegate(view));
     view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
     view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
@@ -172,6 +216,8 @@ QTreeView* MainWindow::createTable(DataModel* model, DataProxy* proxy, QWidget* 
     // remains interactive so all widths can still be changed by the user.
     view->header()->setStretchLastSection(false);
     view->header()->setMinimumSectionSize(64);
+    view->header()->setFixedHeight(Theme::headerHeight);
+    view->header()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     view->setContextMenuPolicy(Qt::CustomContextMenu);
     return view;
 }
@@ -182,16 +228,14 @@ void MainWindow::buildUi() {
     root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
     auto top = new QWidget(central);
-    top->setFixedHeight(56);
+    top->setObjectName("appTopArea");
+    top->setFixedHeight(Theme::topHeight);
     auto topLayout = new QHBoxLayout(top);
-    topLayout->setContentsMargins(20, 4, 20, 4);
-    topLayout->setSpacing(12);
+    topLayout->setContentsMargins(Theme::space6, Theme::space1, Theme::space6, Theme::space1);
+    topLayout->setSpacing(Theme::space3);
     auto brand = new QLabel("Takao", top);
-    QFont brandFont = brand->font();
-    brandFont.setPixelSize(18);
-    brandFont.setWeight(QFont::DemiBold);
-    brand->setFont(brandFont);
-    brand->setFixedWidth(170);
+    Theme::type(brand, Theme::Type::BodyLarge, true);
+    brand->setFixedWidth(Theme::sidebarWidth - Theme::space6 - Theme::space3);
     topLayout->addWidget(brand);
     auto searchLabel = new QLabel("搜索", top);
     search_ = new QLineEdit(top);
@@ -201,6 +245,8 @@ void MainWindow::buildUi() {
     search_->setMaxLength(256);
     search_->setClearButtonEnabled(true);
     search_->setFixedWidth(480);
+    search_->setFixedHeight(Theme::searchHeight);
+    search_->addAction(Theme::icon(8), QLineEdit::LeadingPosition);
     searchLabel->setBuddy(search_);
     topLayout->addWidget(searchLabel);
     topLayout->addWidget(search_);
@@ -212,20 +258,42 @@ void MainWindow::buildUi() {
     auto body = new QHBoxLayout();
     body->setSpacing(0);
     sidebar_ = new QWidget(central);
-    sidebar_->setFixedWidth(204);
+    sidebar_->setObjectName("sidebarPane");
+    sidebar_->setFixedWidth(Theme::sidebarWidth);
     auto sidebarLayout = new QVBoxLayout(sidebar_);
-    sidebarLayout->setContentsMargins(8, 16, 8, 12);
-    sidebarLayout->setSpacing(8);
+    sidebarLayout->setContentsMargins(Theme::space2, Theme::space2, Theme::space2, Theme::space2);
+    sidebarLayout->setSpacing(Theme::space1);
     for (int i = 0; i < keys_.size(); ++i) {
-        auto b = button(titles_[i], sidebar_);
+        auto b = new Theme::NavigationButton(titles_[i], sidebar_);
+        b->setFixedHeight(Theme::navigationHeight);
+        b->setMinimumWidth(0);
+        b->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+        b->setAccessibleName(titles_[i]);
         b->setCheckable(true);
         b->setProperty("nav", true);
         b->setIcon(Theme::icon(i));
-        b->setIconSize(QSize(20, 20));
+        b->setIconSize(QSize(Theme::iconSize, Theme::iconSize));
         b->setToolTip(titles_[i] + QString(" (Alt+%1)").arg(i + 1));
         if (i == 7)
             sidebarLayout->addStretch();
         sidebarLayout->addWidget(b);
+        if (i == 7) {
+            navUpdate_ = button("", sidebar_);
+            navUpdate_->setProperty("command", true);
+            navUpdate_->setProperty("iconCommand", true);
+            navUpdate_->setMinimumWidth(0);
+            navUpdate_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+            navUpdate_->setIcon(Theme::icon(9));
+            navUpdate_->setAccessibleName("下载可用更新");
+            navUpdate_->hide();
+            sidebarLayout->addWidget(navUpdate_);
+            connect(navUpdate_, &QPushButton::clicked, this, [this] {
+                if (updates_["canDownload"].toBool())
+                    updateCommand("download");
+                else
+                    switchPage(7);
+            });
+        }
         nav_ << b;
         connect(b, &QPushButton::clicked, this, [this, i] { switchPage(i); });
         auto shortcut = new QShortcut(QKeySequence(QString("Alt+%1").arg(i + 1)), this);
@@ -233,21 +301,28 @@ void MainWindow::buildUi() {
     }
     body->addWidget(sidebar_);
     auto content = new QWidget(central);
-    content->setAutoFillBackground(true);
-    auto palette = content->palette();
-    palette.setColor(QPalette::Window, Theme::surface);
-    content->setPalette(palette);
+    content->setObjectName("contentSurface");
+    content->setAttribute(Qt::WA_StyledBackground);
     auto contentLayout = new QVBoxLayout(content);
-    contentLayout->setContentsMargins(24, 8, 24, 16);
-    contentLayout->setSpacing(12);
-    auto commands = new QHBoxLayout();
-    commands->setSpacing(8);
+    contentLayout->setContentsMargins(Theme::space6, Theme::space4, Theme::space6, Theme::space6);
+    contentLayout->setSpacing(Theme::space4);
+    auto commandBar = new QWidget(content);
+    commandBar->setObjectName("pageCommandBar");
+    commandBar->setMinimumHeight(Theme::commandBarHeight);
+    auto commands = new QHBoxLayout(commandBar);
+    commands->setContentsMargins(0, 0, 0, 0);
+    commands->setSpacing(Theme::space2);
+    auto heading = new QVBoxLayout();
+    heading->setSpacing(0);
     pageTitle_ = new QLabel(content);
     pageTitle_->setProperty("title", true);
-    commands->addWidget(pageTitle_);
+    Theme::type(pageTitle_, Theme::Type::PageTitle, true);
+    heading->addWidget(pageTitle_);
     count_ = new QLabel(content);
     count_->setProperty("secondary", true);
-    commands->addWidget(count_);
+    Theme::type(count_, Theme::Type::Caption);
+    heading->addWidget(count_);
+    commands->addLayout(heading);
     commands->addStretch();
     run_ = button("运行新任务", content, true);
     run_->setToolTip("运行新任务 (Ctrl+N)");
@@ -257,20 +332,35 @@ void MainWindow::buildUi() {
     pause_ = button("暂停采集", content);
     refresh_ = button("刷新", content);
     more_ = button("更多", content);
-    for (auto b : {run_, terminate_, detail_, pause_, refresh_, more_})
+    pageAction_ = button("", content);
+    for (auto b : {terminate_, detail_, pause_, refresh_, more_, pageAction_}) {
+        b->setProperty("command", true);
+        b->setFixedHeight(Theme::secondaryCommandHeight);
+    }
+    for (auto b : {pageAction_, run_, terminate_, detail_, pause_, refresh_, more_})
         commands->addWidget(b);
-    contentLayout->addLayout(commands);
+    contentLayout->addWidget(commandBar);
     banner_ = new QLabel(content);
     banner_->setProperty("notice", true);
     banner_->setWordWrap(true);
     banner_->hide();
     contentLayout->addWidget(banner_);
-    toast_ = new QLabel(content);
+    toastArea_ = new QWidget(content);
+    auto feedbackLayout = new QHBoxLayout(toastArea_);
+    feedbackLayout->setContentsMargins(0, 0, 0, 0);
+    feedbackLayout->setSpacing(Theme::space2);
+    toast_ = new QLabel(toastArea_);
     toast_->setProperty("notice", true);
     toast_->setWordWrap(true);
     toast_->setAccessibleName("操作结果");
-    toast_->hide();
-    contentLayout->addWidget(toast_);
+    feedbackLayout->addWidget(toast_, 1);
+    auto dismiss = button("关闭提示", toastArea_);
+    dismiss->setProperty("command", true);
+    dismiss->setFixedHeight(Theme::secondaryCommandHeight);
+    connect(dismiss, &QPushButton::clicked, toastArea_, &QWidget::hide);
+    feedbackLayout->addWidget(dismiss);
+    toastArea_->hide();
+    contentLayout->addWidget(toastArea_);
     stack_ = new QStackedWidget(content);
     gridPage_ = new QWidget(stack_);
     auto gridLayout = new QVBoxLayout(gridPage_);
@@ -288,6 +378,7 @@ void MainWindow::buildUi() {
     stack_->addWidget(settingsPage_);
     contentLayout->addWidget(stack_, 1);
     body->addWidget(content, 1);
+    body->setContentsMargins(0, 0, Theme::space2, Theme::space2);
     root->addLayout(body, 1);
     connect(search_, &QLineEdit::textChanged, this, [this](const QString& text) {
         applySearch(text);
@@ -321,6 +412,14 @@ void MainWindow::buildUi() {
     connect(terminate_, &QPushButton::clicked, this, [this] { terminateProcess(); });
     connect(detail_, &QPushButton::clicked, this, [this] { details(); });
     connect(more_, &QPushButton::clicked, this, &MainWindow::moreMenu);
+    connect(pageAction_, &QPushButton::clicked, this, [this] {
+        if (page_ == 2) {
+            if (QMessageBox::question(this, "清除统计", "仅清除本程序本次采集会话的历史，不修改 Windows 应用使用历史。",
+                                     QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) == QMessageBox::Yes)
+                post("history/reset", {});
+        } else if (page_ == 3 || page_ == 6)
+            post("desktop/open-system-location", {{"location", page_ == 3 ? "startupSettings" : "services"}});
+    });
     connect(pause_, &QPushButton::clicked, this,
             [this] { applySampling(intervalMs_, !latest_["paused"].toBool()); });
     connect(refresh_, &QPushButton::clicked, this, [this] {
@@ -390,7 +489,7 @@ void MainWindow::bootstrap() {
                     zoom_ = w["zoomFactor"].toDouble(1);
                     if (!qEnvironmentVariableIsSet("TASKMANAGER_QT_1080P") && !w.isEmpty())
                         resize(w["width"].toInt(1600), w["height"].toInt(950));
-                    sidebar_->setFixedWidth(preferences_["sidebarCollapsed"].toBool() ? 56 : 204);
+                    sidebar_->setFixedWidth(preferences_["sidebarCollapsed"].toBool() ? Theme::sidebarCompact : Theme::sidebarWidth);
                     for (int i = 0; i < nav_.size(); ++i)
                         nav_[i]->setText(preferences_["sidebarCollapsed"].toBool() ? QString() : titles_[i]);
                     restorePagePreference();
@@ -471,7 +570,7 @@ void MainWindow::switchPage(int index) {
     switchingPage_ = true;
     pendingPageRestore_ = false;
     page_ = index;
-    pageTitle_->setText(index == 2 ? titles_[index] + " · 本次会话" : titles_[index]);
+    pageTitle_->setText(titles_[index]);
     for (int i = 0; i < nav_.size(); ++i)
         nav_[i]->setChecked(i == index);
     table_->setRootIsDecorated(index == 0 && preferences_["processView"].toString() == "tree");
@@ -482,6 +581,18 @@ void MainWindow::switchPage(int index) {
     pause_->setVisible(index == 0 || index == 1 || index == 5 || index == 7);
     run_->setVisible(index != 7);
     count_->clear();
+    if (index == 1)
+        count_->setText("实时资源 · Windows 实际采样");
+    else if (index == 7)
+        count_->setText("采样、外观与系统入口");
+    pageAction_->setVisible(index == 2 || index == 3 || index == 6);
+    pageAction_->setText(index == 2 ? "清除本次会话统计…" : index == 3 ? "Windows 启动设置" : "Windows 服务管理器");
+    pageAction_->setAccessibleName(pageAction_->text());
+    search_->setPlaceholderText(index == 7 ? "搜索设置  (Ctrl+F)"
+                                : index == 1 ? "搜索设备或传感器  (Ctrl+F)"
+                                : index == 3 ? "搜索名称、来源或启动命令  (Ctrl+F)"
+                                : index == 6 ? "搜索服务名称或状态  (Ctrl+F)"
+                                             : "搜索名称、PID 或发布者  (Ctrl+F)");
     if (index != 1 && index != 7) {
         QList<Column> c;
         if (processPage())
@@ -623,7 +734,12 @@ void MainWindow::updateTable() {
     if (!rows.isEmpty() || processPage() || !shown_["slowDataCapturedAtUtc"].isNull())
         pendingPageRestore_ = false;
     updatingModel_ = false;
-    count_->setText(page_ == 2 ? QString("%1 项 · 会话开始 %2").arg(rows.size()).arg(formatValue(shown_["sessionStartedAtUtc"], "date")) : QString("%1 项").arg(rows.size()));
+    count_->setText(page_ == 2 ? QString("本次会话 · %1 项 · 会话开始 %2").arg(rows.size()).arg(formatValue(shown_["sessionStartedAtUtc"], "date"))
+                    : page_ == 3 ? QString("%1 个启动项 · Windows 实际来源").arg(rows.size())
+                    : page_ == 4 ? QString("%1 个 Windows 登录会话").arg(rows.size())
+                    : page_ == 6 ? QString("%1 项服务 · Windows 服务控制管理器").arg(rows.size())
+                    : page_ == 5 ? QString("%1 个进程 · 完整详细信息").arg(rows.size())
+                                 : QString("%1 个进程").arg(rows.size()));
     loadVisibleIcons();
     applySearch(search_->text());
     if (rows.isEmpty()) {
@@ -649,21 +765,23 @@ void MainWindow::updateSelectionActions() {
     run_->setEnabled(connected_);
     pause_->setEnabled(connected_);
     refresh_->setEnabled(connected_);
+    pageAction_->setEnabled(connected_);
 }
 void MainWindow::notify(const QString& message, bool error) {
     if (message.isEmpty())
         return;
-    toast_->setText(message);
+    toast_->setText((error ? QStringLiteral("×  ") : QStringLiteral("✓  ")) + message);
     toast_->setAccessibleDescription(error ? "操作失败" : "操作完成");
-    toast_->setStyleSheet(
-        error ? QStringLiteral("QLabel { border-left:3px solid %1; background:%2; padding:10px; color:%1; }")
-                    .arg(Theme::danger.name(), Theme::dangerSurface.name())
-              : QString());
+    Theme::state(toast_, error ? "danger" : "success");
     toast_->show();
-    toastTimer_.start(error ? 10000 : 5000);
+    toastArea_->show();
+    toastTimer_.stop();
+    if (!error)
+        toastTimer_.start(4000);
 }
 void MainWindow::setBanner(const QString& message, bool error) {
-    banner_->setText(message);
+    banner_->setText(message.isEmpty() ? QString() : (error ? QStringLiteral("×  ") : QStringLiteral("i  ")) + message);
+    Theme::state(banner_, error ? "danger" : "info");
     banner_->setAccessibleName(error ? "连接或来源错误" : "数据状态");
     banner_->setVisible(!message.isEmpty());
 }
@@ -830,32 +948,40 @@ void MainWindow::buildPerformance() {
     performance_ = new QWidget();
     auto layout = new QHBoxLayout(performance_);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(24);
+    layout->setSpacing(Theme::space4);
     resources_ = new QListWidget(performance_);
     resources_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     resources_->setAccessibleName("性能资源");
-    resources_->setFixedWidth(240);
-    resources_->setSpacing(4);
+    resources_->setFixedWidth(Theme::resourceWidth);
+    resources_->setSpacing(Theme::space1);
+    resources_->setMouseTracking(true);
     resources_->setItemDelegate(new ResourceDelegate(resources_));
     layout->addWidget(resources_);
     auto right = new QVBoxLayout();
-    right->setSpacing(12);
+    right->setSpacing(Theme::space3);
     auto titleLine = new QHBoxLayout();
     resourceTitle_ = new QLabel("CPU");
     resourceTitle_->setProperty("metric", true);
+    Theme::type(resourceTitle_, Theme::Type::Metric, true);
     resourceInfo_ = new QLabel();
     resourceInfo_->setProperty("secondary", true);
     resourceInfo_->setWordWrap(true);
+    resourceInfo_->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
     titleLine->addWidget(resourceTitle_);
-    titleLine->addWidget(resourceInfo_, 1);
+    titleLine->addStretch();
     resourceValue_ = new QLabel();
     resourceValue_->setProperty("metric", true);
+    resourceValue_->setProperty("numericType", true);
+    Theme::type(resourceValue_, Theme::Type::Metric, true);
+    resourceValue_->setFont(Theme::numericFont(Theme::Type::Metric, true));
     titleLine->addWidget(resourceValue_);
     right->addLayout(titleLine);
+    right->addWidget(resourceInfo_);
     cpuMode_ = new QComboBox();
     cpuMode_->setAccessibleName("CPU 图表模式");
     cpuMode_->addItems({"总体使用率", "逻辑处理器"});
-    cpuMode_->setMaximumWidth(230);
+    cpuMode_->setFixedWidth(Theme::settingControlWidth);
+    cpuMode_->setFixedHeight(Theme::controlHeight);
     right->addWidget(cpuMode_);
     perfStatus_ = new QLabel();
     perfStatus_->setProperty("secondary", true);
@@ -867,12 +993,21 @@ void MainWindow::buildPerformance() {
     chartsPage_ = new QWidget();
     chartsLayout_ = new QGridLayout(chartsPage_);
     chartsLayout_->setContentsMargins(0, 0, 0, 0);
-    chartsLayout_->setSpacing(12);
+    chartsLayout_->setSpacing(Theme::space3);
     chartScroll->setWidget(chartsPage_);
     perfStack_->addWidget(chartScroll);
     sensorModel_ = new DataModel(this);
     sensorProxy_ = new DataProxy(this);
-    sensors_ = createTable(sensorModel_, sensorProxy_, perfStack_);
+    auto sensorPage = new QWidget(perfStack_);
+    auto sensorLayout = new QVBoxLayout(sensorPage);
+    sensorLayout->setContentsMargins(0, 0, 0, 0);
+    sensorEmpty_ = new QLabel("正在读取 HWiNFO 传感器…", sensorPage);
+    sensorEmpty_->setAccessibleName("HWiNFO 可用性状态");
+    sensorEmpty_->setAlignment(Qt::AlignCenter);
+    sensorEmpty_->setWordWrap(true);
+    sensorEmpty_->setProperty("secondary", true);
+    sensorLayout->addWidget(sensorEmpty_, 1);
+    sensors_ = createTable(sensorModel_, sensorProxy_, sensorPage);
     sensors_->setAccessibleName("HWiNFO 真实传感器");
     sensorModel_->setColumns({{"sensor", "传感器", "", 220},
                               {"name", "项目", "", 220},
@@ -884,12 +1019,23 @@ void MainWindow::buildPerformance() {
                               {"originalName", "原名", "", 220}});
     for (int i = 0; i < sensorModel_->columns.size(); ++i)
         sensors_->setColumnWidth(i, sensorModel_->columns[i].width);
-    perfStack_->addWidget(sensors_);
+    sensorLayout->addWidget(sensors_, 1);
+    sensors_->hide();
+    perfStack_->addWidget(sensorPage);
     right->addWidget(perfStack_, 1);
     facts_ = new QLabel();
+    facts_->setProperty("secondary", true);
     facts_->setWordWrap(true);
     facts_->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
-    facts_->setMinimumHeight(90);
+    auto factsPanel = new QWidget(performance_);
+    factsPanel->setObjectName("performanceFacts");
+    factsLayout_ = new QGridLayout(factsPanel);
+    factsLayout_->setContentsMargins(0, Theme::space2, 0, 0);
+    factsLayout_->setHorizontalSpacing(Theme::space6);
+    factsLayout_->setVerticalSpacing(Theme::space1);
+    for (int i = 0; i < 4; ++i)
+        factsLayout_->setColumnStretch(i, 1);
+    right->addWidget(factsPanel);
     right->addWidget(facts_);
     layout->addLayout(right, 1);
     connect(resources_, &QListWidget::currentItemChanged, this, [this](QListWidgetItem* item) {
@@ -919,6 +1065,36 @@ void MainWindow::buildPerformance() {
         updatePerformance();
         saveSoon();
     });
+}
+void MainWindow::setFacts(const QList<QPair<QString, QString>>& items) {
+    while (factLabels_.size() < items.size()) {
+        const auto i = factLabels_.size();
+        auto label = new QLabel(performance_);
+        label->setProperty("secondary", true);
+        Theme::type(label, Theme::Type::Caption);
+        auto value = new QLabel(performance_);
+        value->setWordWrap(true);
+        value->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+        factsLayout_->addWidget(label, (i / 4) * 2, i % 4, Qt::AlignTop);
+        factsLayout_->addWidget(value, (i / 4) * 2 + 1, i % 4, Qt::AlignTop);
+        factLabels_ << label;
+        factValues_ << value;
+    }
+    for (int i = 0; i < factLabels_.size(); ++i) {
+        const auto visible = i < items.size();
+        factLabels_[i]->setVisible(visible);
+        factValues_[i]->setVisible(visible);
+        if (visible) {
+            factLabels_[i]->setText(items[i].first);
+            factValues_[i]->setText(items[i].second);
+            const bool numeric = !items[i].second.contains(QRegularExpression("[\\x{4e00}-\\x{9fff}]"));
+            factValues_[i]->setProperty("numericType", numeric);
+            Theme::type(factValues_[i], Theme::Type::BodyLarge);
+            if (numeric)
+                factValues_[i]->setFont(Theme::numericFont(Theme::Type::BodyLarge));
+            factValues_[i]->setAccessibleName(items[i].first + " " + items[i].second);
+        }
+    }
 }
 void MainWindow::rebuildResources() {
     QStringList ids{"cpu:", "memory:"};
@@ -961,7 +1137,8 @@ void MainWindow::rebuildResources() {
         for (int i = 0; i < ids.size(); ++i) {
             auto item = new QListWidgetItem(resources_);
             item->setData(Qt::UserRole, ids[i]);
-            item->setSizeHint(QSize(220, 84));
+            item->setSizeHint(QSize(Theme::resourceWidth - Theme::space2,
+                ids[i].startsWith("disk:") || ids[i].startsWith("network:") ? Theme::resourceDiskHeight : Theme::resourceTileHeight));
         }
     }
     for (int i = 0; i < ids.size(); ++i) {
@@ -1037,6 +1214,7 @@ void MainWindow::updatePerformance() {
                            : type == "network" ? device["description"].toString()
                            : type == "gpu"     ? device["description"].toString()
                                                : QString());
+    resourceInfo_->setVisible(!resourceInfo_->text().isEmpty());
     resourceValue_->setText(type == "cpu"      ? formatValue(sys["cpuPercent"], "percent")
                             : type == "memory" ? formatValue(sys["usedPhysicalBytes"], "bytes")
                             : type == "gpu"    ? formatValue(device["utilizationPercent"], "percent")
@@ -1046,6 +1224,9 @@ void MainWindow::updatePerformance() {
         perfStatus_->setText(reasonText(state));
         facts_->setText("可选只读 SM2 来源 · 保留 HWiNFO "
                         "原始分组、单位及会话最小/最大/平均值。未安装或未启用共享内存时显示实际原因。");
+        perfStatus_->setVisible(!perfStatus_->text().isEmpty());
+        setFacts({});
+        facts_->show();
         return;
     }
     const bool logical = type == "cpu" && cpuMode_->currentIndex() == 1;
@@ -1061,7 +1242,7 @@ void MainWindow::updatePerformance() {
         const int cols = logical ? std::max(1, std::min(4, chartsPage_->width() / 230)) : 1;
         for (int i = 0; i < n; ++i) {
             auto chart = new Chart(chartsPage_);
-            chart->setMinimumHeight(logical ? 180 : 330);
+            chart->setMinimumHeight(logical ? Theme::logicalChartHeight : Theme::mainChartHeight);
             chartsLayout_->addWidget(chart, i / cols, i % cols);
             connect(chart, &Chart::activated, this, [this] {
                 if (selectedResource_ == "cpu:")
@@ -1131,47 +1312,47 @@ void MainWindow::updatePerformance() {
         reasons << reasonText(device);
     reasons.removeAll({});
     perfStatus_->setText(reasons.join("\n"));
+    perfStatus_->setVisible(!perfStatus_->text().isEmpty());
+    facts_->clear();
+    facts_->hide();
     if (type == "cpu")
-        facts_->setText(QString("利用率  %1       逻辑处理器  %2       进程  %3       线程  %4       句柄  "
-                                "%5\n运行时间  %6       最近采样  %7")
-                            .arg(formatValue(sys["cpuPercent"], "percent"))
-                            .arg(sys["logicalProcessorCount"].toInt())
-                            .arg(sys["processCount"].toInt())
-                            .arg(formatValue(sys["threadCount"], "number"),
-                                 formatValue(sys["handleCount"], "number"),
-                                 formatValue(sys["uptimeSeconds"], "duration"),
-                                 formatValue(shown_["capturedAtUtc"], "date")));
+        setFacts({{"利用率", formatValue(sys["cpuPercent"], "percent")},
+                  {"逻辑处理器", formatValue(sys["logicalProcessorCount"], "number")},
+                  {"进程", formatValue(sys["processCount"], "number")},
+                  {"线程", formatValue(sys["threadCount"], "number")},
+                  {"句柄", formatValue(sys["handleCount"], "number")},
+                  {"运行时间", formatValue(sys["uptimeSeconds"], "duration")},
+                  {"最近采样", formatValue(shown_["capturedAtUtc"], "date")}});
     else if (type == "memory")
-        facts_->setText(
-            QString("使用中  %1       可用  %2       总物理内存  %3\n已提交  %4 / %5       已缓存  %6")
-                .arg(formatValue(sys["usedPhysicalBytes"], "bytes"),
-                     formatValue(sys["availablePhysicalBytes"], "bytes"),
-                     formatValue(sys["totalPhysicalBytes"], "bytes"),
-                     formatValue(sys["commitBytes"], "bytes"), formatValue(sys["commitLimitBytes"], "bytes"),
-                     formatValue(sys["cacheBytes"], "bytes")));
+        setFacts({{"使用中", formatValue(sys["usedPhysicalBytes"], "bytes")},
+                  {"可用", formatValue(sys["availablePhysicalBytes"], "bytes")},
+                  {"总物理内存", formatValue(sys["totalPhysicalBytes"], "bytes")},
+                  {"已提交", formatValue(sys["commitBytes"], "bytes") + " / " + formatValue(sys["commitLimitBytes"], "bytes")},
+                  {"已缓存", formatValue(sys["cacheBytes"], "bytes")},
+                  {"最近采样", formatValue(shown_["capturedAtUtc"], "date")}});
     else if (type == "disk")
-        facts_->setText(
-            QString(
-                "读取速度  %1       写入速度  %2\n型号  %3       介质  %4       总线  %5       设备编号  %6")
-                .arg(formatValue(device["readBytesPerSecond"], "rate"),
-                     formatValue(device["writeBytesPerSecond"], "rate"), textOrUnknown(device["model"]),
-                     textOrUnknown(device["mediaType"]), textOrUnknown(device["busType"]),
-                     formatValue(device["deviceNumber"], "number")));
+        setFacts({{"读取速度", formatValue(device["readBytesPerSecond"], "rate")},
+                  {"写入速度", formatValue(device["writeBytesPerSecond"], "rate")},
+                  {"介质", textOrUnknown(device["mediaType"])},
+                  {"总线", textOrUnknown(device["busType"])},
+                  {"型号", textOrUnknown(device["model"])},
+                  {"设备编号", formatValue(device["deviceNumber"], "number")},
+                  {"最近采样", formatValue(shown_["capturedAtUtc"], "date")}});
     else if (type == "network")
-        facts_->setText(QString("接收  %1       发送  %2\n接口  %3       状态  %4       接收链路  %5 bit/s   "
-                                "    发送链路  %6 bit/s")
-                            .arg(formatValue(device["receiveBytesPerSecond"], "rate"),
-                                 formatValue(device["sendBytesPerSecond"], "rate"),
-                                 device["alias"].toString(), device["status"].toString(),
-                                 textOrUnknown(device["receiveLinkSpeedBitsPerSecond"]),
-                                 textOrUnknown(device["transmitLinkSpeedBitsPerSecond"])));
+        setFacts({{"接收", formatValue(device["receiveBytesPerSecond"], "rate")},
+                  {"发送", formatValue(device["sendBytesPerSecond"], "rate")},
+                  {"接口", textOrUnknown(device["alias"])},
+                  {"状态", textOrUnknown(device["status"])},
+                  {"接收链路", formatValue(device["receiveLinkSpeedBitsPerSecond"], "number") + " bit/s"},
+                  {"发送链路", formatValue(device["transmitLinkSpeedBitsPerSecond"], "number") + " bit/s"},
+                  {"最近采样", formatValue(shown_["capturedAtUtc"], "date")}});
     else
-        facts_->setText(
-            QString("利用率  %1       最忙引擎  %2       引擎数  %3\n设备  %4       Adapter LUID  %5")
-                .arg(formatValue(device["utilizationPercent"], "percent"),
-                     textOrUnknown(device["busiestEngine"]))
-                .arg(device["engineCount"].toInt())
-                .arg(textOrUnknown(device["description"]), device["adapterLuid"].toString()));
+        setFacts({{"利用率", formatValue(device["utilizationPercent"], "percent")},
+                  {"最忙引擎", textOrUnknown(device["busiestEngine"])},
+                  {"引擎数", formatValue(device["engineCount"], "number")},
+                  {"设备", textOrUnknown(device["description"])},
+                  {"Adapter LUID", textOrUnknown(device["adapterLuid"])},
+                  {"最近采样", formatValue(shown_["capturedAtUtc"], "date")}});
 }
 void MainWindow::readSensors() {
     if (!connected_ || selectedResource_ != "hwinfo:")
@@ -1179,6 +1360,10 @@ void MainWindow::readSensors() {
     api_.get("hwinfo/sensors", this, [this](const QJsonObject& source, const QString& error, int) {
         if (!error.isEmpty()) {
             perfStatus_->setText(error);
+            perfStatus_->show();
+            sensorEmpty_->setText("无法读取 HWiNFO 传感器\n" + error);
+            sensorEmpty_->show();
+            sensors_->hide();
             return;
         }
         sensorsData_ = source;
@@ -1196,6 +1381,10 @@ void MainWindow::readSensors() {
         }
         sensorModel_->setRows(rows);
         perfStatus_->setText(reasonText(source));
+        perfStatus_->setVisible(!perfStatus_->text().isEmpty());
+        sensors_->setVisible(!rows.isEmpty());
+        sensorEmpty_->setVisible(rows.isEmpty());
+        sensorEmpty_->setText("当前没有可显示的 HWiNFO 传感器\n" + reasonText(source));
     });
 }
 void MainWindow::loadVisibleIcons() {
@@ -1244,8 +1433,10 @@ void MainWindow::applySearch(const QString& query) {
     sensorProxy_->refreshFilter();
     if (page_ == 7) {
         int visible = 0;
-        for (auto group : settingsPage_->findChildren<QGroupBox*>()) {
-            QString text = group->title();
+        for (auto group : settingsPage_->findChildren<QWidget*>()) {
+            if (!group->property("settingsGroup").toBool())
+                continue;
+            QString text = group->property("groupTitle").toString();
             for (auto label : group->findChildren<QLabel*>())
                 text += " " + label->text();
             for (auto b : group->findChildren<QAbstractButton*>())

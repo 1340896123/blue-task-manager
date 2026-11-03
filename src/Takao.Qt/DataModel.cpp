@@ -153,6 +153,22 @@ QVariant DataModel::data(const QModelIndex& index, int role) const {
         return node->row.toVariantMap();
     if (role == IdentityRole)
         return rowIdentity(node->row);
+    if (role == StatusRole) {
+        if (col.format == "startup")
+            return value.isNull() || value.isUndefined() ? "warning" : value.toBool() ? "success" : "neutral";
+        if (col.format == "state") {
+            const auto state = value.toString();
+            if (state == "running" || state == "active" || state == "SERVICE_RUNNING" || state == "WTSActive")
+                return "success";
+            if (state == "restricted" || state.contains("PENDING") || state.endsWith("Pending"))
+                return "warning";
+            return value.isNull() || value.isUndefined() ? "warning" : "neutral";
+        }
+    }
+    if (role == Qt::FontRole &&
+        (col.format == "percent" || col.format == "bytes" || col.format == "rate" ||
+         col.format == "number" || col.format == "cpuTime" || col.format == "duration"))
+        return Theme::numericFont();
     if (role == Qt::DecorationRole && index.column() == 0)
         return icons.value(rowIdentity(node->row), Theme::icon(0));
     if (role == Qt::DisplayRole || role == Qt::AccessibleTextRole) {
@@ -177,7 +193,7 @@ QVariant DataModel::data(const QModelIndex& index, int role) const {
         return value.toBool() ? Theme::success : Theme::secondary;
     if (role == Qt::BackgroundRole && col.format == "percent" && value.isDouble()) {
         auto c = Theme::accent;
-        c.setAlphaF(std::clamp(value.toDouble() / 100 * .22, 0., .22));
+        c.setAlphaF(std::clamp(value.toDouble() / 100 * Theme::maximumHeat, 0., Theme::maximumHeat));
         return c;
     }
     return {};
@@ -185,6 +201,12 @@ QVariant DataModel::data(const QModelIndex& index, int role) const {
 QVariant DataModel::headerData(int section, Qt::Orientation orientation, int role) const {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole && section >= 0 && section < columns.size())
         return columns[section].title;
+    if (orientation == Qt::Horizontal && role == Qt::TextAlignmentRole && section >= 0 && section < columns.size()) {
+        const auto& format = columns[section].format;
+        return int((format == "percent" || format == "bytes" || format == "rate" || format == "number" ||
+                    format == "cpuTime" || format == "duration")
+                       ? Qt::AlignRight | Qt::AlignVCenter : Qt::AlignLeft | Qt::AlignVCenter);
+    }
     return {};
 }
 void DataModel::setColumns(QList<Column> value) {

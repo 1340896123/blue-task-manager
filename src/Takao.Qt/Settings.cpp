@@ -1,9 +1,10 @@
 #include "MainWindow.h"
+#include "Theme.h"
 #include <QApplication>
 #include <QDesktopServices>
 #include <QDialog>
 #include <QFormLayout>
-#include <QGroupBox>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QScrollArea>
@@ -37,109 +38,157 @@ QString integrationLabel(const QJsonObject& state) {
 } // namespace
 void MainWindow::buildSettings() {
     settingsPage_ = new QWidget();
+    settingsPage_->setObjectName("settingsPage");
     auto outer = new QVBoxLayout(settingsPage_);
     outer->setContentsMargins(0, 0, 0, 0);
     auto scroll = new QScrollArea(settingsPage_);
+    scroll->setObjectName("settingsScroll");
     scroll->setWidgetResizable(true);
+    scroll->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     auto content = new QWidget(scroll);
+    content->setObjectName("settingsContent");
+    content->setMaximumWidth(Theme::settingsWidth);
     auto layout = new QVBoxLayout(content);
-    layout->setContentsMargins(0, 0, 16, 16);
-    layout->setSpacing(20);
-    auto sampling = new QGroupBox("采样与显示", content);
-    auto sampleForm = new QFormLayout(sampling);
-    sampleForm->setContentsMargins(20, 24, 20, 16);
-    sampleForm->setSpacing(12);
-    interval_ = new QComboBox(sampling);
+    layout->setContentsMargins(0, 0, 0, Theme::space4);
+    layout->setSpacing(Theme::space6);
+    auto group = [&](const QString& title) {
+        auto section = new QWidget(content);
+        section->setProperty("settingsGroup", true);
+        section->setProperty("groupTitle", title);
+        auto sectionLayout = new QVBoxLayout(section);
+        sectionLayout->setContentsMargins(0, 0, 0, 0);
+        sectionLayout->setSpacing(Theme::space1);
+        auto heading = new QLabel(title, section);
+        Theme::type(heading, Theme::Type::Section, true);
+        sectionLayout->addWidget(heading);
+        sectionLayout->addSpacing(Theme::space2);
+        layout->addWidget(section);
+        return section;
+    };
+    auto card = [&](QWidget* section, const QString& title, const QString& note, QWidget* control, int glyph) {
+        auto frame = new QFrame(section);
+        frame->setProperty("settingsCard", true);
+        frame->setMinimumHeight(Theme::settingMinHeight);
+        auto row = new QHBoxLayout(frame);
+        row->setContentsMargins(Theme::space4, Theme::space4, Theme::space4, Theme::space4);
+        row->setSpacing(Theme::space6);
+        auto icon = new QLabel(frame);
+        icon->setPixmap(Theme::icon(glyph).pixmap(Theme::iconSize, Theme::iconSize));
+        icon->setFixedSize(Theme::iconSize, Theme::iconSize);
+        row->addWidget(icon, 0, Qt::AlignVCenter);
+        auto copy = new QVBoxLayout();
+        copy->setSpacing(Theme::space1);
+        auto name = new QLabel(title, frame);
+        name->setWordWrap(true);
+        Theme::type(name, Theme::Type::Body, true);
+        copy->addWidget(name);
+        if (!note.isEmpty())
+            copy->addWidget(description(note, frame));
+        row->addLayout(copy, 1);
+        if (control) {
+            control->setParent(frame);
+            row->addWidget(control, 0, Qt::AlignVCenter);
+        }
+        qobject_cast<QVBoxLayout*>(section->layout())->addWidget(frame);
+        return frame;
+    };
+    auto choice = [](QComboBox* control) {
+        control->setFixedWidth(Theme::settingControlWidth);
+        control->setFixedHeight(Theme::controlHeight);
+    };
+    auto stateLabel = [&](const QString& text) {
+        auto label = description(text, content);
+        label->setFixedWidth(Theme::pathWidth);
+        label->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+        return label;
+    };
+    auto sampling = group("采样与显示");
+    interval_ = new QComboBox(content);
     interval_->addItem("每 1 秒", 1000);
     interval_->addItem("每 2 秒", 2000);
     interval_->addItem("每 5 秒", 5000);
     interval_->setAccessibleName("采样间隔");
-    sampleForm->addRow("更新间隔", interval_);
-    freezeBox_ = new QCheckBox("冻结当前显示，后台仍继续采集", sampling);
+    choice(interval_);
+    card(sampling, "更新间隔", "控制 Windows 资源和进程数据的采样频率。", interval_, 2);
+    freezeBox_ = new QCheckBox("冻结当前显示，后台仍继续采集", content);
     freezeBox_->setAccessibleName("冻结当前显示");
-    sampleForm->addRow(freezeBox_);
-    sampleForm->addRow(
-        description("暂停采集使用页头按钮；冻结仅保留展示快照。二者均不会制造缺失时间的采样。", sampling));
-    layout->addWidget(sampling);
-    auto appearance = new QGroupBox("外观与窗口", content);
-    auto appearanceForm = new QFormLayout(appearance);
-    appearanceForm->setContentsMargins(20, 24, 20, 16);
-    appearanceForm->setSpacing(12);
-    density_ = new QComboBox(appearance);
+    card(sampling, "冻结显示", "保留当前画面，后台继续采集。暂停采集请使用页头按钮。", freezeBox_, 1);
+    auto appearance = group("外观与窗口");
+    density_ = new QComboBox(content);
     density_->addItem("紧凑 · 32 px 数据行", "compact");
     density_->addItem("标准 · 40 px 数据行", "standard");
     density_->setAccessibleName("数据密度");
-    appearanceForm->addRow("列表密度", density_);
-    zoomBox_ = new QComboBox(appearance);
+    choice(density_);
+    card(appearance, "列表密度", "调整数据行间距，保留全部表格信息。", density_, 5);
+    zoomBox_ = new QComboBox(content);
     for (double factor : {.75, 1., 1.25, 1.5, 1.75, 2.})
         zoomBox_->addItem(QString::number(factor * 100, 'f', 0) + " %", factor);
     zoomBox_->setAccessibleName("文字大小");
-    appearanceForm->addRow("文字大小", zoomBox_);
-    topmost_ = new QCheckBox("使 Takao 始终置顶", appearance);
+    choice(zoomBox_);
+    card(appearance, "文字大小", "调整界面字体大小，偏好保存在当前账户中。", zoomBox_, 7);
+    topmost_ = new QCheckBox("使 Takao 始终置顶", content);
     topmost_->setAccessibleName("始终置顶");
-    appearanceForm->addRow(topmost_);
+    card(appearance, "始终置顶", "当前状态由 Windows 实际读回；尚未确认时保留未知状态。", topmost_, 0);
     preferenceStatus_ = description("界面偏好保存在当前 Windows 账户中。", appearance);
-    appearanceForm->addRow(preferenceStatus_);
-    layout->addWidget(appearance);
-    auto integration = new QGroupBox("任务管理器入口", content);
-    auto integrationLayout = new QVBoxLayout(integration);
-    integrationLayout->setContentsMargins(20, 24, 20, 16);
-    integrationLayout->setSpacing(12);
-    integrationStatus_ = new QLabel("正在读取真实入口…", integration);
-    integrationStatus_->setWordWrap(true);
-    integrationLayout->addWidget(integrationStatus_);
-    integrationLayout->addWidget(description("接管后，任务栏的“任务管理器”、Ctrl+Shift+Esc 等入口打开 "
-                                             "Takao，影响这台计算机的所有用户。启用需要明确确认；取消仅恢复 "
-                                             "Windows 标准任务管理器。移动或删除程序目录前，请先取消接管。",
-                                             integration));
-    auto integrationButtons = new QHBoxLayout();
-    auto read = button("刷新入口实际状态", integration);
-    integrationAction_ = button("启用接管…", integration);
-    disableIntegration_ = button("取消接管…", integration);
-    integrationButtons->addWidget(read);
-    integrationButtons->addWidget(integrationAction_);
-    integrationButtons->addWidget(disableIntegration_);
-    integrationButtons->addStretch();
-    integrationLayout->addLayout(integrationButtons);
-    layout->addWidget(integration);
-    auto updates = new QGroupBox("版本与更新", content);
-    auto updatesLayout = new QVBoxLayout(updates);
-    updatesLayout->setContentsMargins(20, 24, 20, 16);
-    updatesLayout->setSpacing(12);
-    updateStatus_ = new QLabel("正在读取当前版本…", updates);
-    updateStatus_->setWordWrap(true);
-    updatesLayout->addWidget(updateStatus_);
-    auto updateButtons = new QHBoxLayout();
-    checkUpdate_ = button("检查更新", updates);
-    downloadUpdate_ = button("下载更新", updates);
-    installNow_ = button("立即更新…", updates);
-    installNext_ = button("下次启动更新", updates);
-    cancelUpdate_ = button("取消下载", updates);
-    for (auto b : {checkUpdate_, downloadUpdate_, installNow_, installNext_, cancelUpdate_})
-        updateButtons->addWidget(b);
-    updateButtons->addStretch();
-    updatesLayout->addLayout(updateButtons);
-    updatesLayout->addWidget(description("更新从项目 GitHub Releases 获取，后端验证发布身份和 "
-                                         "SHA256。便携目录可检查及下载；自动安装以实际安装资格为准。",
-                                         updates));
-    layout->addWidget(updates);
-    auto sources = new QGroupBox("来源与能力", content);
-    auto sourceLayout = new QVBoxLayout(sources);
-    sourceLayout->setContentsMargins(20, 24, 20, 16);
-    sourceStatus_ = new QLabel("Windows → CsWin32 → .NET / JSON.NET → HTTP → Qt Widgets", sources);
-    sourceStatus_->setWordWrap(true);
-    sourceStatus_->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
-    sourceLayout->addWidget(sourceStatus_);
-    auto sourceButtons = new QHBoxLayout();
-    auto status = button("查看采样状态", sources);
-    auto startup = button("Windows 启动设置", sources);
-    auto service = button("Windows 服务管理器", sources);
-    auto reset = button("重置界面偏好…", sources);
-    for (auto b : {status, startup, service, reset})
-        sourceButtons->addWidget(b);
-    sourceButtons->addStretch();
-    sourceLayout->addLayout(sourceButtons);
-    layout->addWidget(sources);
+    Theme::type(preferenceStatus_, Theme::Type::Caption);
+    qobject_cast<QVBoxLayout*>(appearance->layout())->addWidget(preferenceStatus_);
+    auto integration = group("任务管理器入口");
+    integrationStatus_ = stateLabel("正在读取真实入口…");
+    integrationStatus_->setAccessibleName("任务管理器入口实际状态");
+    card(integration, "当前入口", "查看 Windows 任务管理器入口当前指向的位置。", integrationStatus_, 0);
+    auto integrationControls = new QWidget(content);
+    auto integrationButtons = new QGridLayout(integrationControls);
+    integrationButtons->setContentsMargins(0, 0, 0, 0);
+    integrationButtons->setSpacing(Theme::space2);
+    auto read = button("刷新入口实际状态", integrationControls);
+    integrationAction_ = button("启用接管…", integrationControls);
+    disableIntegration_ = button("取消接管…", integrationControls);
+    integrationButtons->addWidget(read, 0, 0, 1, 2);
+    integrationButtons->addWidget(integrationAction_, 1, 0);
+    integrationButtons->addWidget(disableIntegration_, 1, 1);
+    card(integration, "管理任务管理器入口",
+         "接管后，任务栏“任务管理器”、Ctrl+Shift+Esc 等入口将打开 Takao，影响所有用户。"
+         "启用前需确认；取消仅恢复 Windows 标准任务管理器。移动或删除程序目录前请先取消接管。",
+         integrationControls, 6);
+    auto updates = group("版本与更新");
+    updateStatus_ = stateLabel("正在读取当前版本…");
+    updateStatus_->setAccessibleName("版本与更新实际状态");
+    card(updates, "当前版本", "检查可用版本、下载进度与安装资格。", updateStatus_, 9);
+    auto updateControls = new QWidget(content);
+    auto updateButtons = new QGridLayout(updateControls);
+    updateButtons->setContentsMargins(0, 0, 0, 0);
+    updateButtons->setSpacing(Theme::space2);
+    checkUpdate_ = button("检查更新", updateControls);
+    downloadUpdate_ = button("下载更新", updateControls);
+    installNow_ = button("立即更新…", updateControls);
+    installNext_ = button("下次启动更新", updateControls);
+    cancelUpdate_ = button("取消下载", updateControls);
+    updateButtons->addWidget(checkUpdate_, 0, 0);
+    updateButtons->addWidget(downloadUpdate_, 0, 1);
+    updateButtons->addWidget(cancelUpdate_, 0, 2);
+    updateButtons->addWidget(installNow_, 1, 0);
+    updateButtons->addWidget(installNext_, 1, 1, 1, 2);
+    card(updates, "获取更新", "从项目 GitHub Releases 下载并校验。"
+         "便携目录可检查与下载；自动安装按实际安装资格提供。", updateControls, 9);
+    auto sources = group("来源与能力");
+    sourceStatus_ = stateLabel("正在等待 Windows 首次真实采样…");
+    sourceStatus_->setAccessibleName("Windows 数据采样状态");
+    card(sources, "Windows 实时数据", "显示本机资源、进程、启动项、登录会话与服务。"
+         "无法读取或尚未预热的指标保留具体原因。", sourceStatus_, 1);
+    auto sourceControls = new QWidget(content);
+    auto sourceButtons = new QGridLayout(sourceControls);
+    sourceButtons->setContentsMargins(0, 0, 0, 0);
+    sourceButtons->setSpacing(Theme::space2);
+    auto status = button("查看采样状态", sourceControls);
+    auto startup = button("Windows 启动设置", sourceControls);
+    auto service = button("Windows 服务管理器", sourceControls);
+    auto reset = button("重置界面偏好…", sourceControls);
+    sourceButtons->addWidget(status, 0, 0);
+    sourceButtons->addWidget(startup, 0, 1);
+    sourceButtons->addWidget(service, 1, 0);
+    sourceButtons->addWidget(reset, 1, 1);
+    card(sources, "系统工具与界面偏好", "查看详细来源、打开 Windows 官方管理工具，"
+         "或重置搜索、列宽与界面设置。", sourceControls, 7);
     layout->addStretch();
     scroll->setWidget(content);
     outer->addWidget(scroll);
@@ -234,9 +283,12 @@ void MainWindow::buildSettings() {
                         {"window", window},
                         {"pages", QJsonObject()}};
         applyAppearance();
-        sidebar_->setFixedWidth(204);
-        for (int i = 0; i < nav_.size(); ++i)
+        sidebar_->setFixedWidth(Theme::sidebarWidth);
+        for (int i = 0; i < nav_.size(); ++i) {
             nav_[i]->setText(titles_[i]);
+            nav_[i]->setProperty("collapsed", false);
+            Theme::repolish(nav_[i]);
+        }
         saveSoon();
         switchPage(page_);
         notify("界面偏好已重置，Windows 配置保持实际状态。");
@@ -258,28 +310,44 @@ void MainWindow::updateSettings() {
     interval_->setEnabled(connected_);
     topmost_->setEnabled(connected_ && actualTopmost_.has_value() && !applyingTopmost_);
     settingsSync_ = false;
-    sourceStatus_->setText(
-        QString(
-            "Qt %1 Widgets + .NET 10 · JSON.NET · CsWin32\n最近真实采样  %2\nWindows 原生数据：CPU / 内存 / "
-            "进程 / SCM / Startup / WTS / PDH / IP Helper / ETW；不可读或未预热字段保持未知及原因。")
-            .arg(qVersion(), formatValue(latest_["capturedAtUtc"], "date")));
+    sourceStatus_->setText(QString("最近真实采样  %1\n%2")
+        .arg(formatValue(latest_["capturedAtUtc"], "date"),
+             connected_ ? "已连接本机 Windows · 不可读指标保留未知及原因。" : "连接中断 · 保留最后成功采样。"));
 }
 void MainWindow::applyAppearance(bool restoreWindowState) {
     const auto window = preferences_["window"].toObject();
     zoom_ = std::clamp(window["zoomFactor"].toDouble(1), .75, 2.);
     auto font = qApp->font();
-    font.setPixelSize(qRound(14 * zoom_));
+    font.setPixelSize(qRound(static_cast<int>(Theme::Type::Body) * zoom_));
     qApp->setFont(font);
-    const auto rowHeight = qRound((preferences_["density"].toString() == "standard" ? 40 : 32) * zoom_);
+    Theme::refreshTypography();
+    // Larger text retains its existing preference behavior without clipping inputs.
+    for (auto control : findChildren<QWidget*>()) {
+        if (qobject_cast<QLineEdit*>(control) || qobject_cast<QComboBox*>(control) || qobject_cast<QSpinBox*>(control))
+            control->setFixedHeight(std::max(control == search_ ? Theme::searchHeight : Theme::controlHeight,
+                                             control->fontMetrics().height() + Theme::space3));
+        if (auto push = qobject_cast<QPushButton*>(control)) {
+            const auto standard = push->property("command").toBool() && !push->property("iconCommand").toBool()
+                                      ? Theme::secondaryCommandHeight : Theme::commandHeight;
+            push->setFixedHeight(std::max(standard, push->fontMetrics().height() + Theme::space3));
+        }
+    }
+    if (auto top = findChild<QWidget*>("appTopArea"))
+        top->setFixedHeight(std::max(Theme::topHeight, search_->height() + Theme::space2));
+    const auto rowHeight = qRound((preferences_["density"].toString() == "standard" ? Theme::standardRow : Theme::compactRow) * zoom_);
     for (auto view : {table_, sensors_}) {
         const auto scroll = view->verticalScrollBar()->value();
         view->setProperty("rowHeight", rowHeight);
         view->doItemsLayout();
         view->verticalScrollBar()->setValue(scroll);
     }
-    sidebar_->setFixedWidth(preferences_["sidebarCollapsed"].toBool() ? 56 : 204);
-    for (int i = 0; i < nav_.size(); ++i)
+    sidebar_->setFixedWidth(preferences_["sidebarCollapsed"].toBool() ? Theme::sidebarCompact : Theme::sidebarWidth);
+    for (int i = 0; i < nav_.size(); ++i) {
         nav_[i]->setText(preferences_["sidebarCollapsed"].toBool() ? QString() : titles_[i]);
+        nav_[i]->setProperty("collapsed", preferences_["sidebarCollapsed"].toBool());
+        Theme::repolish(nav_[i]);
+    }
+    navUpdate_->setText(preferences_["sidebarCollapsed"].toBool() ? QString() : "可用更新");
     updateSettings();
     if (restoreWindowState) {
         const auto desired = window["alwaysOnTop"];
@@ -341,6 +409,7 @@ void MainWindow::readIntegration(bool first) {
              [this, first](const QJsonObject& state, const QString& error, int) {
                  if (!error.isEmpty()) {
                      integrationStatus_->setText(error);
+                     Theme::state(integrationStatus_, "danger");
                      integrationAction_->setEnabled(false);
                      disableIntegration_->setEnabled(false);
                      if (first)
@@ -348,6 +417,8 @@ void MainWindow::readIntegration(bool first) {
                      return;
                  }
                  integration_ = state;
+                 Theme::state(integrationStatus_, state["status"].toString() == "enabled" ? "success"
+                     : state["status"].toString() == "disabled" ? "neutral" : "warning");
                  QStringList parts{integrationLabel(state), "入口  " + state["executablePath"].toString()};
                  if (!state["conflictReason"].isNull())
                      parts << state["conflictReason"].toString();
@@ -383,19 +454,22 @@ void MainWindow::promptFirstLaunch() {
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->setWindowTitle("替换标准任务管理器？");
     d->setModal(true);
-    d->resize(680, 360);
-    auto layout = new QVBoxLayout(d);
+    d->resize(Theme::detailDialogWidth, 420);
+    auto layout = Theme::dialogLayout(d);
     auto text = new QLabel("让任务栏“任务管理器”、Ctrl+Shift+Esc 等 Windows 入口打开 "
                            "Takao。\n\n影响此计算机所有用户，系统启动时仍请求管理员授权。可在设置取消并恢复 "
                            "Windows 标准任务管理器；移动目录前先取消接管。\n\n实际状态：" +
                                integrationLabel(integration_),
                            d);
     text->setWordWrap(true);
+    text->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
     layout->addWidget(text);
     auto buttons = new QHBoxLayout();
+    buttons->setSpacing(Theme::space2);
     buttons->addStretch();
     auto defer = button("暂不替换", d);
-    auto settings = button("前往设置管理", d, true);
+    auto settings = button("前往设置管理", d);
+    defer->setDefault(true);
     buttons->addWidget(defer);
     buttons->addWidget(settings);
     auto replace = button("替换标准任务管理器", d, true);
@@ -404,7 +478,7 @@ void MainWindow::promptFirstLaunch() {
     buttons->addWidget(replace);
     auto failure = new QLabel(d);
     failure->setWordWrap(true);
-    failure->setStyleSheet(QStringLiteral("color:%1;").arg(Theme::danger.name()));
+    failure->setProperty("fieldError", true);
     layout->addWidget(failure);
     layout->addLayout(buttons);
     connect(replace, &QPushButton::clicked, d, [this, d, defer, settings, replace, failure] {
@@ -464,8 +538,8 @@ void MainWindow::applyIntegration(QString action, bool first) {
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->setWindowTitle(enable ? "确认接管 Windows 任务管理器入口" : "取消入口接管");
     d->setModal(true);
-    d->resize(760, 380);
-    auto layout = new QVBoxLayout(d);
+    d->resize(Theme::detailDialogWidth, 440);
+    auto layout = Theme::dialogLayout(d);
     QString message = enable ? "系统任务管理器入口将启动本目录 Takao，影响全部账户。启动时 Windows "
                                "请求管理员授权。\n移动或删除目录前必须先取消接管。"
                              : "取消后恢复 Windows 标准任务管理器，不恢复此前其它工具。";
@@ -475,15 +549,18 @@ void MainWindow::applyIntegration(QString action, bool first) {
     message += "\n\n本目录入口：" + target["executablePath"].toString();
     auto label = new QLabel(message, d);
     label->setWordWrap(true);
+    label->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
     layout->addWidget(label);
     auto error = new QLabel(d);
     error->setWordWrap(true);
-    error->setStyleSheet(QStringLiteral("color:%1;").arg(Theme::danger.name()));
+    error->setProperty("fieldError", true);
     layout->addWidget(error);
     auto buttons = new QHBoxLayout();
+    buttons->setSpacing(Theme::space2);
     buttons->addStretch();
     auto cancel = button("暂不更改", d);
     auto confirm = button(enable ? "确认接管" : "确认取消接管", d, true);
+    cancel->setDefault(true);
     buttons->addWidget(cancel);
     buttons->addWidget(confirm);
     layout->addLayout(buttons);
@@ -536,9 +613,18 @@ void MainWindow::readUpdates() {
     api_.get("updates", this, [this](const QJsonObject& state, const QString& error, int) {
         if (!error.isEmpty()) {
             updateStatus_->setText(error);
+            Theme::state(updateStatus_, "danger");
             return;
         }
         updates_ = state;
+        Theme::state(updateStatus_, state["status"].toString() == "error" ? "danger"
+            : state["status"].toString() == "unavailable" ? "warning" : "neutral");
+        const bool available = state["canDownload"].toBool() || state["canInstall"].toBool() ||
+                               state["status"].toString() == "downloading";
+        navUpdate_->setVisible(available);
+        navUpdate_->setText(preferences_["sidebarCollapsed"].toBool() ? QString() : "可用更新");
+        navUpdate_->setToolTip(QString("%1 · %2").arg(state["candidateVersion"].toString(),
+                            state["status"].toString() == "downloading" ? "正在下载并校验" : "查看可用更新"));
         const QHash<QString, QString> labels{
             {"checking", "正在检查"},         {"upToDate", "当前已是最新版本"},
             {"available", "发现可用更新"},    {"downloading", "正在下载并校验"},

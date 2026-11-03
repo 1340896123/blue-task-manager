@@ -33,7 +33,7 @@ class ActionDialog final : public QDialog {
 QLabel* errorLabel(QWidget* parent) {
     auto label = new QLabel(parent);
     label->setWordWrap(true);
-    label->setStyleSheet(QStringLiteral("color:%1;").arg(Theme::danger.name()));
+    label->setProperty("fieldError", true);
     label->setAccessibleName("操作错误");
     return label;
 }
@@ -59,29 +59,38 @@ void MainWindow::runTask() {
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->setWindowTitle("运行新任务");
     d->setModal(true);
-    d->resize(640, 300);
-    auto layout = new QVBoxLayout(d);
-    layout->setSpacing(16);
+    d->resize(Theme::detailDialogWidth, 340);
+    auto layout = Theme::dialogLayout(d);
+    layout->setSpacing(Theme::space4);
     auto intro = new QLabel("输入要运行的程序完整路径和可选参数。程序将使用当前管理员权限启动。", d);
     intro->setWordWrap(true);
+    Theme::type(intro, Theme::Type::BodyLarge);
     layout->addWidget(intro);
     auto form = new QFormLayout();
+    form->setSpacing(Theme::space3);
     auto path = new QLineEdit(d);
     path->setAccessibleName("程序路径");
     path->setObjectName("executablePath");
     auto arguments = new QLineEdit(d);
     arguments->setAccessibleName("参数");
     arguments->setObjectName("executableArguments");
+    path->setFixedHeight(std::max(Theme::controlHeight, path->fontMetrics().height() + Theme::space3));
+    arguments->setFixedHeight(std::max(Theme::controlHeight, arguments->fontMetrics().height() + Theme::space3));
     auto row = new QHBoxLayout();
     row->addWidget(path, 1);
     auto browse = button("浏览…", d);
     row->addWidget(browse);
-    form->addRow("程序路径(&P)", row);
-    form->addRow("参数(&A)", arguments);
+    auto pathLabel = new QLabel("程序路径(&P)", d);
+    pathLabel->setBuddy(path);
+    form->addRow(pathLabel, row);
+    auto argumentLabel = new QLabel("参数(&A)", d);
+    argumentLabel->setBuddy(arguments);
+    form->addRow(argumentLabel, arguments);
     layout->addLayout(form);
     auto error = errorLabel(d);
     layout->addWidget(error);
     auto buttons = new QHBoxLayout();
+    buttons->setSpacing(Theme::space2);
     buttons->addStretch();
     auto cancel = button("取消", d);
     auto run = button("运行(&R)", d, true);
@@ -151,18 +160,22 @@ void MainWindow::terminateProcess(QJsonObject target) {
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->setModal(true);
     d->setWindowTitle("结束任务");
-    d->resize(560, 240);
-    auto layout = new QVBoxLayout(d);
+    d->resize(Theme::dialogWidth, 280);
+    auto layout = Theme::dialogLayout(d);
     auto label = new QLabel(
         "确定结束 " + identityText(target) + "？\n未保存的数据可能丢失。仅结束已核验的这个进程身份。", d);
     label->setWordWrap(true);
+    Theme::type(label, Theme::Type::BodyLarge);
     layout->addWidget(label);
     auto error = errorLabel(d);
     layout->addWidget(error);
     auto buttons = new QHBoxLayout();
+    buttons->setSpacing(Theme::space2);
     buttons->addStretch();
     auto cancel = button("取消", d);
     auto confirm = button("结束任务(&E)", d, true);
+    cancel->setDefault(true);
+    confirm->setProperty("danger", true);
     confirm->setAccessibleName("确认结束任务");
     buttons->addWidget(cancel);
     buttons->addWidget(confirm);
@@ -214,8 +227,8 @@ void MainWindow::terminateTree(const QJsonObject& target) {
             d->setAttribute(Qt::WA_DeleteOnClose);
             d->setWindowTitle("结束进程树");
             d->setModal(true);
-            d->resize(700, 440);
-            auto layout = new QVBoxLayout(d);
+            d->resize(Theme::detailDialogWidth, 500);
+            auto layout = Theme::dialogLayout(d);
             auto description = new QLabel(
                 "请核对以下真实进程身份。结束后未保存的数据可能丢失；变化的成员将由后端重新拒绝。", d);
             description->setWordWrap(true);
@@ -235,9 +248,12 @@ void MainWindow::terminateTree(const QJsonObject& target) {
             auto resultLabel = errorLabel(d);
             layout->addWidget(resultLabel);
             auto buttons = new QHBoxLayout();
+            buttons->setSpacing(Theme::space2);
             buttons->addStretch();
             auto cancel = button("取消", d);
             auto confirm = button("确认结束进程树(&E)", d, true);
+            cancel->setDefault(true);
+            confirm->setProperty("danger", true);
             buttons->addWidget(cancel);
             buttons->addWidget(confirm);
             layout->addLayout(buttons);
@@ -286,8 +302,8 @@ void MainWindow::presentText(const QString& title, const QString& text) {
     auto d = new QDialog(this);
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->setWindowTitle(title);
-    d->resize(760, 520);
-    auto layout = new QVBoxLayout(d);
+    d->resize(Theme::detailDialogWidth, 560);
+    auto layout = Theme::dialogLayout(d);
     auto output = new QPlainTextEdit(d);
     output->setReadOnly(true);
     output->setAccessibleName(title);
@@ -329,8 +345,8 @@ void MainWindow::details(QJsonObject target) {
     auto d = new QDialog(this);
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->setWindowTitle("进程详情 · " + identityText(target));
-    d->resize(1020, 680);
-    auto layout = new QVBoxLayout(d);
+    d->resize(1020, 720);
+    auto layout = Theme::dialogLayout(d);
     auto tabs = new QTabWidget(d);
     auto info = new QPlainTextEdit(d);
     info->setReadOnly(true);
@@ -340,6 +356,7 @@ void MainWindow::details(QJsonObject target) {
     auto connLayout = new QVBoxLayout(connPage);
     auto status = new QLabel(connPage);
     status->setWordWrap(true);
+    status->setProperty("secondary", true);
     connLayout->addWidget(status);
     auto m = new DataModel(d);
     auto p = new DataProxy(d);
@@ -646,9 +663,13 @@ void MainWindow::contextMenu(const QPoint& point) {
         return;
     QMenu menu(this);
     menu.setAccessibleName("所选项目操作");
+    menu.setToolTipsVisible(true);
     auto add = [&](const QString& title, auto callback, bool enabled = true) {
         auto action = menu.addAction(title);
         action->setEnabled(enabled && connected_);
+        if (!action->isEnabled())
+            action->setToolTip(connected_ ? "当前目标状态不允许此操作；操作前仍会核对 Windows 实际权限和状态。"
+                                         : "本机数据源尚未连接。");
         connect(action, &QAction::triggered, this, callback);
     };
     add("查看详情", [this, target] { details(target); });
@@ -700,9 +721,12 @@ void MainWindow::contextMenu(const QPoint& point) {
             [this] { post("desktop/open-system-location", {{"location", "startupSettings"}}); });
     } else if (page_ == 6) {
         menu.addSeparator();
-        add("启动服务…", [this, target] { controlService(target, "start"); });
-        add("停止服务…", [this, target] { controlService(target, "stop"); });
-        add("重启服务…", [this, target] { controlService(target, "restart"); });
+        const auto state = target["state"].toString();
+        const bool stopped = state == "SERVICE_STOPPED" || state == "stopped";
+        const bool active = state == "SERVICE_RUNNING" || state == "SERVICE_PAUSED" || state == "running" || state == "paused";
+        add("启动服务…", [this, target] { controlService(target, "start"); }, stopped);
+        add("停止服务…", [this, target] { controlService(target, "stop"); }, active);
+        add("重启服务…", [this, target] { controlService(target, "restart"); }, active);
         add(
             "转到当前关联进程", [this, target] { locateServiceProcess(target); },
             target["pid"].toInteger() > 0);
@@ -769,9 +793,13 @@ void MainWindow::moreMenu() {
     collapsed->setChecked(preferences_["sidebarCollapsed"].toBool());
     connect(collapsed, &QAction::triggered, this, [this](bool value) {
         preferences_["sidebarCollapsed"] = value;
-        sidebar_->setFixedWidth(value ? 56 : 204);
-        for (int i = 0; i < nav_.size(); ++i)
+        sidebar_->setFixedWidth(value ? Theme::sidebarCompact : Theme::sidebarWidth);
+        for (int i = 0; i < nav_.size(); ++i) {
             nav_[i]->setText(value ? QString() : titles_[i]);
+            nav_[i]->setProperty("collapsed", value);
+            Theme::repolish(nav_[i]);
+        }
+        navUpdate_->setText(value ? QString() : "可用更新");
         saveSoon();
     });
     add("来源与采样状态", [this] {
@@ -792,8 +820,8 @@ void MainWindow::columnMenu() {
     auto d = new QDialog(this);
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->setWindowTitle("显示列与列宽");
-    d->resize(560, 650);
-    auto layout = new QVBoxLayout(d);
+    d->resize(Theme::dialogWidth, 650);
+    auto layout = Theme::dialogLayout(d);
     auto scroll = new QScrollArea(d);
     scroll->setWidgetResizable(true);
     auto content = new QWidget(scroll);
@@ -845,7 +873,10 @@ void MainWindow::filters() {
     auto d = new QDialog(this);
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->setWindowTitle("筛选进程");
-    auto form = new QFormLayout(d);
+    auto layout = Theme::dialogLayout(d);
+    auto form = new QFormLayout();
+    form->setSpacing(Theme::space3);
+    layout->addLayout(form);
     auto user = new QCheckBox("仅当前账户", d);
     user->setChecked(proxy_->onlyCurrentUser);
     user->setEnabled(!bootstrap_["currentUserName"].toString().isEmpty());
@@ -862,7 +893,7 @@ void MainWindow::filters() {
     state->setCurrentIndex(state->findData(proxy_->state));
     form->addRow("状态", state);
     auto apply = button("应用筛选", d, true);
-    form->addRow(apply);
+    layout->addWidget(apply, 0, Qt::AlignRight);
     connect(apply, &QPushButton::clicked, d, [this, d, user, session, state] {
         proxy_->onlyCurrentUser = user->isChecked();
         proxy_->session = session->value();
