@@ -67,8 +67,10 @@ try {
     $snapshot = Read-Api 'snapshot'
     Check ($snapshot.sampleId -gt $previous) 'real sampling advances while Qt renders'
     $target = Write-Api 'processes/start' @{executable=$workload;arguments=('"' + (Join-Path $temporary 'workload') + '" 45')}
+    $workloadEvidence = @{pid=$target.pid; creationTimeFileTime=$target.creationTimeFileTime; completed=$false}
     Check ($target.pid -gt 0 -and $target.creationTimeFileTime) 'a dedicated real workload is created'
     $finished = Write-Api "processes/$($target.pid)/terminate" @{creationTimeFileTime=$target.creationTimeFileTime}
+    $workloadEvidence.completed = $finished.completed
     Check ($finished.completed -eq $true) 'termination is confirmed by the production identity-checked path'
     $target = $null
     # A fresh profile can expose the first-launch native modal. Close only that
@@ -110,7 +112,7 @@ try {
         if (@(Read-OwnedTraceSessions $prefix) -contains $session) { & logman.exe stop $session -ets | Out-Null }
     }
     Check (@(Read-OwnedTraceSessions $prefix).Count -eq 0) 'no exact test-owned ETW logger remains after the deliberate crash'
-    @{result='PASS';assertions=$checks.Count;checks=@($checks);display='1920x1080';scope='Production Qt lifecycle and real native API; WM_CLOSE is window management, not a physical input assertion'} | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $OutputDirectory 'results.json') -Encoding utf8
+    @{result='PASS';assertions=$checks.Count;checks=@($checks);ownedProcess=$workloadEvidence;display='1920x1080';scope='Production Qt lifecycle and real native API; WM_CLOSE is window management, not a physical input assertion'} | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $OutputDirectory 'results.json') -Encoding utf8
 } catch {
     @{result='FAIL';assertions=$checks.Count;checks=@($checks);error=$_.Exception.Message;stack=$_.ScriptStackTrace} | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $OutputDirectory 'results.json') -Encoding utf8
     throw

@@ -1,3 +1,5 @@
+> 当前Qt组件清单与Fluent修复实测见 [QT-COMPONENT-AUDIT-RESULTS.md](QT-COMPONENT-AUDIT-RESULTS.md)，包含下拉列表专项与完整物理键鼠未通过项。
+>
 > 本轮Qt迁移实际结果见 [QT-MIGRATION-RESULTS.md](QT-MIGRATION-RESULTS.md)：区分原生组件、正式生命周期、1080P图像与受阻的实际键鼠/ETW专项。
 
 # Takao 真实链路验收矩阵
