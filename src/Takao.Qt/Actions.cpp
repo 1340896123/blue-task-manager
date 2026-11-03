@@ -2,14 +2,11 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QDialog>
-#include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
-#include <QInputDialog>
 #include <QMenu>
-#include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPointer>
 #include <QSaveFile>
@@ -489,9 +486,9 @@ void MainWindow::serviceDetails(const QJsonObject& target) {
              });
 }
 void MainWindow::setPriority(const QJsonObject& target, const QString& priority) {
-    if (QMessageBox::question(
-            this, "更改优先级", "更改 " + identityText(target) + " 的优先级可能影响系统响应。确定继续？",
-            QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes)
+    if (!Theme::confirm(this, "更改优先级",
+                        "更改 " + identityText(target) + " 的优先级可能影响系统响应。确定继续？",
+                        "更改优先级"))
         return;
     post(processRoute(target, "priority"),
          {{"creationTimeFileTime", target["creationTimeFileTime"]}, {"priority", priority}});
@@ -512,10 +509,9 @@ void MainWindow::efficiency(const QJsonObject& target) {
                      presentText("效率模式", result["reason"].toString("当前状态无法由本程序恢复。"));
                      return;
                  }
-                 if (QMessageBox::question(
-                         this, "效率模式",
-                         (next ? "启用" : "关闭") + QString(" %1 的效率模式？").arg(identityText(target)),
-                         QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) == QMessageBox::Yes)
+                 if (Theme::confirm(this, "效率模式",
+                                    (next ? "启用" : "关闭") + QString(" %1 的效率模式？").arg(identityText(target)),
+                                    next ? "启用效率模式" : "关闭效率模式"))
                      post(processRoute(target, "efficiency"),
                           {{"creationTimeFileTime", target["creationTimeFileTime"]}, {"enabled", next}});
              });
@@ -539,11 +535,11 @@ void MainWindow::controlService(const QJsonObject& target, const QString& comman
                 return;
             }
             const auto verb = command == "start" ? "启动" : command == "stop" ? "停止" : "重启";
-            if (QMessageBox::question(
+            if (!Theme::confirm(
                     this, "服务控制",
                     QString("确定%1服务 %2？可能影响正在使用它的应用；不会自动控制依赖服务。")
                         .arg(verb, current["displayName"].toString()),
-                    QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes)
+                    QString(verb) + "服务", command != "start"))
                 return;
             notify("正在等待 Windows 服务实际状态…");
             post(
@@ -767,9 +763,9 @@ void MainWindow::moreMenu() {
     }
     if (page_ == 2)
         add("清除本次会话统计…", [this] {
-            if (QMessageBox::question(
-                    this, "清除统计", "仅清除本程序本次采集会话的历史，不修改 Windows 应用使用历史。",
-                    QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) == QMessageBox::Yes)
+            if (Theme::confirm(this, "清除统计",
+                               "仅清除本程序本次采集会话的历史，不修改 Windows 应用使用历史。",
+                               "清除统计", true))
                 post("history/reset", {});
         });
     if (page_ == 3)
@@ -837,7 +833,7 @@ void MainWindow::columnMenu() {
         check->setChecked(!table_->isColumnHidden(i));
         if (col.key == "name" || (processPage() && col.key == "pid"))
             check->setEnabled(false);
-        auto width = new QSpinBox(row);
+        auto width = new Theme::SpinBox(row);
         width->setAccessibleName(col.title + "列宽");
         width->setRange(64, 1600);
         width->setSuffix(" px");
@@ -881,7 +877,7 @@ void MainWindow::filters() {
     user->setChecked(proxy_->onlyCurrentUser);
     user->setEnabled(!bootstrap_["currentUserName"].toString().isEmpty());
     form->addRow(user);
-    auto session = new QSpinBox(d);
+    auto session = new Theme::SpinBox(d);
     session->setRange(-1, 65535);
     session->setSpecialValueText("全部会话");
     session->setValue(proxy_->session);

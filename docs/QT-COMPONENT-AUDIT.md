@@ -48,6 +48,7 @@
 | A03 / P1 | 七处静态 `QMessageBox::question`：MainWindow.cpp 418，Actions.cpp 492/515/542/770，Settings.cpp 243/267；仅靠 QSS 改背景/按钮 min-height，无法得到现有 Theme::dialogLayout 的 20px 标题、24px 内容间距、44px 命令与焦点恢复；全局没有加载 Qt 中文翻译，标准 Yes/Cancel 不能保证中文。涉及清除历史、优先级、效率模式、服务控制、更新、重置 | 统一接入 Fluent 确认构造器，使用明确中文动作+取消、现有标题/正文 Token、44px 动作、取消初始焦点、Esc 与关闭恢复发起焦点。请求/API/身份/busy 合同不变；不让纯外观修复自动执行更新、重置或服务操作 |
 | A04 / P2 | main.cpp 31 使用静态 `QMessageBox::critical`，启动错误又回到默认错误图标/按钮/布局 | 同一主题错误展示入口，中文关闭按钮、同一标题/间距；保持非法启动返回码 2 和本地启动引导 |
 | A05 / P2 | QMenu 的 checkable 项及 submenu 指示、QHeaderView 排序箭头、QTreeView 的展开分支没有主题覆盖；整体菜单/表格已主题化但局部还会回退 Fusion | 在集中 style 中统一箭头/check 原语，明确方向、选中/禁用颜色；保持菜单键盘/勾选与表格排序/展开语义。实际修复效果以组件截图和键鼠结果确认 |
+| A06 / P1（用户追加） | 下拉列表已有列表弹层，但缺少已提交选择的独立指示，展开/按下和禁用项状态不完整；闭合箭头与新统一箭头没有共用绘制 | 保留现有 Qt 下拉封装，增加已选项3×16px蓝色指示，移动高亮不改变已提交值；统一箭头、展开/按下/禁用反馈，预留文字空间。覆盖采样间隔、密度、文字大小、CPU模式、进程状态五处真实入口，以及普通/禁用/长列表组件展示 |
 
 判断边界：没有发现把整个界面重写为 WinUI、移除 Fusion 基础 style 或引入第三方 Qt 控件框架的必要。项目现有 Palette/QSS/model-view 架构可以覆盖这些遗漏，不新增业务/API/协议。面板的 1px 轻分隔不承担状态含义，不应为了 3:1 把所有轻描边加深成重灰框。
 
@@ -69,6 +70,7 @@
 | [WinUI CheckBox，b229fbd…](https://github.com/microsoft/microsoft-ui-xaml/blob/b229fbd15ceb090a2952985955805650e41390d8/controls/dev/CommonStyles/CheckBox_themeresources.xaml) | 41～44 未勾选边界分态；57～60 checked 使用 AccentFill 及 hover/pressed/disabled；69～76 勾选形状使用 TextOnAccentFill。采用语义与状态，不硬搬 XAML |
 | [WinUI ContentDialog，同一提交](https://github.com/microsoft/microsoft-ui-xaml/blob/b229fbd15ceb090a2952985955805650e41390d8/controls/dev/CommonStyles/ContentDialog_themeresources.xaml) | 16：按钮间隔8；18：padding24；66：OverlayCornerRadius。统一现有 Qt 对话框构造器，保留原生模态和取消路径 |
 | [WinUI NumberBox，同一提交](https://github.com/microsoft/microsoft-ui-xaml/blob/b229fbd15ceb090a2952985955805650e41390d8/controls/dev/NumberBox/NumberBox_themeresources.xaml) | 步进按钮独立中性表面/边界角色。参考按钮主题分离，不替换现有数值控制行为 |
+| [WinUI ComboBox，同一提交](https://github.com/microsoft/microsoft-ui-xaml/blob/b229fbd15ceb090a2952985955805650e41390d8/controls/dev/ComboBox/ComboBox_themeresources.xaml) | 228～232：列表选择/悬停/按下/禁用分态；243～244：控件hover/press；268～271：箭头secondary/disabled；657起Selected状态显示Pill，758～763模板将Pill与正文分离。采用实际已选值的独立蓝色指示，不把移动高亮当作提交 |
 | [PyQt-Fluent-Widgets CheckBox，3c8299ac…](https://github.com/zhiyiYo/PyQt-Fluent-Widgets/blob/3c8299acf530a066bf7deb04529e35ba0c88cb9e/qfluentwidgets/components/widgets/check_box.py) | `CheckBox(QCheckBox)` 保留原生类型语义并绘制圆角状态；本项目只借鉴原生语义与视觉分离，不增加 Python/PyQt 运行时 |
 | [同项目 SpinBox](https://github.com/zhiyiYo/PyQt-Fluent-Widgets/blob/3c8299acf530a066bf7deb04529e35ba0c88cb9e/qfluentwidgets/components/widgets/spin_box.py) | QSpinBox 保留编辑/数值控制，SpinButton 独立设置尺寸与主题；采用集中绘制与原生 hit area 的组织方式，不移植实现 |
 | [同项目 MessageBoxBase](https://github.com/zhiyiYo/PyQt-Fluent-Widgets/blob/3c8299acf530a066bf7deb04529e35ba0c88cb9e/qfluentwidgets/components/dialog_box/message_box_base.py) | 共用正文容器、24px 内容边距和 yes/cancel 动作；源码默认焦点为 yes，本项目危险动作按现有安全合同使用取消初始焦点。借鉴共用入口，产品按钮使用明确中文动作 |
@@ -82,6 +84,7 @@
 | 组件提取完整性 | 对照本表覆盖页面、菜单、列设置、筛选、业务确认、启动错误，不能只截图八个主页面 |
 | 复选框 | 同一组件场景验证 unchecked/checked/partial/disabled/hover/pressed；Space/Tab/禁用不操作；焦点可见且不改变几何 |
 | 数值框 | 列宽/会话数值实际可编辑，步进按钮鼠标与上下键可用，最小/最大处禁用状态清晰；不改变实际范围与单位 |
+| 下拉列表 | 普通/禁用/展开/长列表截图，选中指示与高亮分离，完整32px条目、至少控件等宽、单一纵向滚动、末项可达；五处业务选择器保留键盘与实际值 |
 | 菜单与表格 | 更多菜单的 checkable 项、优先级 submenu、排序箭头、树展开箭头同族；真实键盘/鼠标仍可操作 |
 | 共用确认 | 七处业务入口与错误入口均走主题；标题、正文、动作中文与层级一致；取消/Esc 不写、焦点恢复；危险操作确认逻辑不减弱 |
 | 样式回归 | 1920×1080 显示环境下八页与关键组件截图；正文≥4.5:1、焦点/信息图标/checked 形状≥3:1，记录实际背景与结果 |

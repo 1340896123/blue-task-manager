@@ -3,7 +3,6 @@
 #include <QCommandLineParser>
 #include <QDir>
 #include <QFile>
-#include <QMessageBox>
 
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
@@ -28,7 +27,7 @@ int main(int argc, char** argv) {
         origin.port() < 1024 || origin.port() > 65535 || !origin.userInfo().isEmpty() ||
         !origin.query().isEmpty() || !origin.fragment().isEmpty() ||
         (!origin.path().isEmpty() && origin.path() != "/") || !validPid || pid <= 0) {
-        QMessageBox::critical(nullptr, "Takao", "请从同目录的 Takao.Host.exe 启动完整的 Qt + .NET 程序。");
+        Theme::alert(nullptr, "Takao", "请从同目录的 Takao.Host.exe 启动完整的 Qt + .NET 程序。");
         return 2;
     }
     MainWindow window(origin, pid);

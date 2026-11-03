@@ -6,7 +6,6 @@
 #include <QFormLayout>
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QMessageBox>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QSignalBlocker>
@@ -241,9 +240,8 @@ void MainWindow::buildSettings() {
     connect(downloadUpdate_, &QPushButton::clicked, this, [this] { updateCommand("download"); });
     connect(cancelUpdate_, &QPushButton::clicked, this, [this] { updateCommand("cancel"); });
     connect(installNow_, &QPushButton::clicked, this, [this] {
-        if (QMessageBox::question(
-                this, "立即更新", "更新将关闭当前程序并运行已校验的安装器，完成后重新启动。",
-                QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) == QMessageBox::Yes)
+        if (Theme::confirm(this, "立即更新", "更新将关闭当前程序并运行已校验的安装器，完成后重新启动。",
+                           "立即更新"))
             updateCommand("install", "now");
     });
     connect(installNext_, &QPushButton::clicked, this, [this] { updateCommand("install", "nextStart"); });
@@ -265,9 +263,9 @@ void MainWindow::buildSettings() {
         presentText("来源与能力", lines.join("\n"));
     });
     connect(reset, &QPushButton::clicked, this, [this] {
-        if (QMessageBox::question(
-                this, "重置界面偏好", "重置搜索、列宽和界面设置；保留首次入口选择标记，不更改 Windows 配置。",
-                QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes)
+        if (!Theme::confirm(this, "重置界面偏好",
+                            "重置搜索、列宽和界面设置；保留首次入口选择标记，不更改 Windows 配置。",
+                            "重置偏好", true))
             return;
         const auto dismissed = preferences_["taskManagerPromptDismissed"];
         const auto normalSize = normalGeometry().size();

@@ -1,16 +1,22 @@
 #pragma once
+#include "FluentDialogs.h"
+#include "FluentStyle.h"
 #include <QApplication>
 #include <QComboBox>
 #include <QDialog>
 #include <QIcon>
 #include <QLabel>
+#include <QListView>
 #include <QPainter>
 #include <QPalette>
 #include <QPointer>
 #include <QPushButton>
 #include <QScreen>
+#include <QSpinBox>
 #include <QStyle>
 #include <QStyleOptionComboBox>
+#include <QStyleOptionSpinBox>
+#include <QStyledItemDelegate>
 #include <QSvgRenderer>
 #include <QVBoxLayout>
 #include <algorithm>
@@ -122,9 +128,55 @@ inline QIcon icon(int index) {
     cached[index] = QIcon(image);
     return cached[index];
 }
+class ComboItemDelegate final : public QStyledItemDelegate {
+    QPointer<QComboBox> combo_;
+  public:
+    ComboItemDelegate(QComboBox* combo, QObject* parent) : QStyledItemDelegate(parent), combo_(combo) {}
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+        QStyledItemDelegate::paint(painter, option, index);
+        // Hover and keyboard highlighting may move the view's current index
+        // before the combo commits a value. Mark the actual selected value.
+        if (!combo_ || index.parent() != combo_->rootModelIndex() ||
+            index.column() != combo_->modelColumn() || index.row() != combo_->currentIndex())
+            return;
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(combo_->isEnabled() && index.flags().testFlag(Qt::ItemIsEnabled) ? accent : disabledText);
+        const qreal height = std::min(indicatorHeight, std::max(0, option.rect.height() - 2 * space2));
+        const qreal x = option.direction == Qt::RightToLeft
+                            ? option.rect.right() - space1 - indicatorWidth
+                            : option.rect.left() + space1;
+        painter->drawRoundedRect(QRectF(x, option.rect.center().y() - height / 2., indicatorWidth, height),
+                                 indicatorWidth / 2., indicatorWidth / 2.);
+        painter->restore();
+    }
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+        auto size = QStyledItemDelegate::sizeHint(option, index);
+        size.setHeight(std::max(controlHeight, option.fontMetrics.height() + space3));
+        return size;
+    }
+};
 class ComboBox final : public QComboBox {
   public:
-    using QComboBox::QComboBox;
+    explicit ComboBox(QWidget* parent = nullptr) : QComboBox(parent) {
+        auto list = new QListView(this);
+        list->setObjectName("fluentComboList");
+        list->setUniformItemSizes(true);
+        list->setMouseTracking(true);
+        list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        list->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        setView(list);
+        setItemDelegate(new ComboItemDelegate(this, list));
+        setMaxVisibleItems(12);
+    }
+    void showPopup() override {
+        view()->setMinimumWidth(width());
+        // Keep Qt's native popup lifecycle and selection model. The list style
+        // hint below avoids QComboMenuDelegate and its menu scroller arrows.
+        view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint, true);
+        QComboBox::showPopup();
+    }
   protected:
     void paintEvent(QPaintEvent* event) override {
         QComboBox::paintEvent(event);
@@ -132,10 +184,33 @@ class ComboBox final : public QComboBox {
         initStyleOption(&option);
         const auto arrow = style()->subControlRect(QStyle::CC_ComboBox, &option, QStyle::SC_ComboBoxArrow, this);
         QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
-        painter.setPen(QPen(isEnabled() ? text : disabledText, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        const QPointF center = arrow.center();
-        painter.drawPolyline(QPolygonF{center + QPointF(-4, -2), center + QPointF(0, 2), center + QPointF(4, -2)});
+        paintChevron(&painter, arrow, isEnabled() ? secondary : disabledText, Qt::DownArrow);
+    }
+};
+class SpinBox : public QSpinBox {
+  public:
+    using QSpinBox::QSpinBox;
+  protected:
+    void paintEvent(QPaintEvent* event) override {
+        QSpinBox::paintEvent(event);
+        if (buttonSymbols() != QAbstractSpinBox::UpDownArrows)
+            return;
+        // QStyleSheetStyle paints drawable step-button rules itself and does
+        // not delegate their empty arrow rules to QProxyStyle. Overlay only
+        // the glyphs; native geometry, hit testing and value behavior remain.
+        QStyleOptionSpinBox option;
+        initStyleOption(&option);
+        QPainter painter(this);
+        const auto paint = [&](QStyle::SubControl control, QAbstractSpinBox::StepEnabledFlag step,
+                               Qt::ArrowType direction) {
+            if (!(option.subControls & control))
+                return;
+            const auto rect = style()->subControlRect(QStyle::CC_SpinBox, &option, control, this);
+            paintChevron(&painter, rect, isEnabled() && (option.stepEnabled & step) ? Theme::text : disabledText,
+                         direction);
+        };
+        paint(QStyle::SC_SpinBoxUp, QAbstractSpinBox::StepUpEnabled, Qt::UpArrow);
+        paint(QStyle::SC_SpinBoxDown, QAbstractSpinBox::StepDownEnabled, Qt::DownArrow);
     }
 };
 class NavigationButton final : public QPushButton {
@@ -173,7 +248,7 @@ inline QVBoxLayout* dialogLayout(QDialog* dialog) {
     return layout;
 }
 inline void apply(QApplication& application) {
-    application.setStyle(QStringLiteral("Fusion"));
+    application.setStyle(new FluentStyle());
     QPalette p;
     p.setColor(QPalette::Window, app);
     p.setColor(QPalette::WindowText, text);
@@ -225,12 +300,30 @@ inline void apply(QApplication& application) {
       QPushButton[nav="true"]:focus { border-color:@focus; padding:0 12px; }
       QPushButton[nav="true"][collapsed="true"] { padding:0; text-align:center; }
       QLineEdit,QComboBox,QSpinBox { background:@surface; border:1px solid @strokeControl; border-bottom-color:@border; border-radius:4px; padding:4px 8px; min-height:20px; selection-background-color:@accent; selection-color:@surface; }
+      QComboBox { combobox-popup:0; }
       QLineEdit:hover,QComboBox:hover,QSpinBox:hover { background:@content; }
+      QComboBox:on { background:@pressed; }
       QLineEdit:focus,QComboBox:focus,QSpinBox:focus { border:2px solid @focus; padding:3px 7px; }
       QLineEdit:disabled,QComboBox:disabled,QSpinBox:disabled { background:@surfaceSubtle; color:@disabledText; border-color:@strokeSubtle; }
       QComboBox::drop-down { border:0; width:24px; }
+      QComboBox::drop-down:pressed { background:@pressed; border-radius:4px; }
       QComboBox::down-arrow { image:none; }
-      QComboBox QAbstractItemView { border:1px solid @strokeControl; background:@surface; selection-background-color:@selection; selection-color:@text; }
+      QSpinBox { padding-right:34px; }
+      QSpinBox:focus { padding-right:33px; }
+      QSpinBox::up-button { subcontrol-origin:border; subcontrol-position:top right; width:28px; margin:2px 2px 0 0; border:0; border-radius:3px; background:transparent; }
+      QSpinBox::down-button { subcontrol-origin:border; subcontrol-position:bottom right; width:28px; margin:0 2px 2px 0; border:0; border-radius:3px; background:transparent; }
+      QSpinBox::up-button:hover,QSpinBox::down-button:hover { background:@hover; }
+      QSpinBox::up-button:pressed,QSpinBox::down-button:pressed { background:@pressed; }
+      QSpinBox::up-button:disabled,QSpinBox::down-button:disabled { background:@surfaceSubtle; }
+      QSpinBox::up-arrow,QSpinBox::down-arrow { image:none; }
+      QComboBox QAbstractItemView { border:1px solid @strokeControl; border-radius:8px; padding:4px; background:@surface; selection-background-color:@selection; selection-color:@text; outline:0; }
+      QComboBox QAbstractItemView::item { border:2px solid transparent; border-radius:4px; padding:0 12px; color:@text; }
+      QComboBox QAbstractItemView::item:hover { background:@hover; }
+      QComboBox QAbstractItemView::item:selected { background:@selection; color:@text; }
+      QComboBox QAbstractItemView::item:selected:hover { background:@selectionHover; }
+      QComboBox QAbstractItemView::item:pressed { background:@pressed; }
+      QComboBox QAbstractItemView::item:disabled { color:@disabledText; background:@surfaceSubtle; }
+      QComboBox QAbstractItemView::item:focus { border-color:@focus; }
       QTreeView { background:@surface; border:2px solid @surface; border-radius:8px; alternate-background-color:@surface; }
       QTreeView:focus { border-color:@focus; }
       QTreeView::item:selected { background:@selection; color:@text; } QTreeView::item:hover { background:@hover; }

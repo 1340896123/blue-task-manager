@@ -9,7 +9,6 @@
 #include <QHeaderView>
 #include <QJsonDocument>
 #include <QMenu>
-#include <QMessageBox>
 #include <QPainterPath>
 #include <QPointer>
 #include <QResizeEvent>
@@ -418,8 +417,8 @@ void MainWindow::buildUi() {
     connect(more_, &QPushButton::clicked, this, &MainWindow::moreMenu);
     connect(pageAction_, &QPushButton::clicked, this, [this] {
         if (page_ == 2) {
-            if (QMessageBox::question(this, "清除统计", "仅清除本程序本次采集会话的历史，不修改 Windows 应用使用历史。",
-                                     QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) == QMessageBox::Yes)
+            if (Theme::confirm(this, "清除统计", "仅清除本程序本次采集会话的历史，不修改 Windows 应用使用历史。",
+                               "清除统计", true))
                 post("history/reset", {});
         } else if (page_ == 3 || page_ == 6)
             post("desktop/open-system-location", {{"location", page_ == 3 ? "startupSettings" : "services"}});
