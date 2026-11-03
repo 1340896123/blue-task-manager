@@ -40,7 +40,7 @@ $env:PATH = 'E:\taskManager\output\Qt\bin;' + $env:PATH
 & 'C:\Users\jieok\.codex\skills\windows-computer-control\.venv\Scripts\python.exe' tests/qt-contrast.py --output output/icon-cache/contrast.json
 ```
 
-该物理输入脚本原有改动未纳入本任务提交。其 SHA256 为 `B83F90D99A5C9F243D492AAB48A6D8478453D40A5EECD53E587BBAA484E1725F`，启动脚本为 `42B5C569E1E8C80070F3D3C525F746D711689276520DAFF064BCFB2EA3D4C129`。验证后的可运行目录保存在 `output/icon-cache/tested-app`，其中 `Takao.Qt.exe` SHA256 为 `402996CE7ABF981CD112BBB5EF6CED252A97133411A5CC339EC3C3B88200EB82`。临时检出清理后，重新检出上述业务提交、应用探针补丁并运行命令可复核；证据与构建目录已保存在原工作区。
+该物理输入脚本原有改动未纳入本任务提交。其 SHA256 为 `B83F90D99A5C9F243D492AAB48A6D8478453D40A5EECD53E587BBAA484E1725F`，启动脚本为 `42B5C569E1E8C80070F3D3C525F746D711689276520DAFF064BCFB2EA3D4C129`。验证后的可运行目录保存在 `output/icon-cache/tested-app`，其中 `Takao.Qt.exe` SHA256 为 `402996CE7ABF981CD112BBB5EF6CED252A97133411A5CC339EC3C3B88200EB82`。验证检出保留：应用归档接口返回 `The task's primary checkout cannot be removed.`，未强制删除；最终代码、证据与构建目录均已保存到原工作区 `E:\taskManager`。另行检出上述业务提交、应用探针补丁并运行命令可复核。
 
 ## 范围与限制
 
