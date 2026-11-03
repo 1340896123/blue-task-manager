@@ -4,6 +4,8 @@ Windows 10/11 x64 任务管理器，使用 **Qt 6 Widgets + .NET 10**。Qt 原�
 
 八个页面包括进程、性能、应用历史记录、启动应用、用户、详细信息、服务和设置。保持 Windows 蓝色设计、进程身份保护、未知值及原因、管理员启动和原有系统入口兼容。当前规格见 [Qt 迁移说明](docs/QT-MIGRATION.md)，旧技术栈的文档与截图仅为历史记录。
 
+Windows 11 Fluent / WinUI 视觉规范见 [Fluent 桌面设计规范](docs/FLUENT-DESIGN.md) 和 [设计 Token](design-system/takao/MASTER.md)。八页已按该规范调整，采用 Qt Widgets 实现；当前截图、逐项验收及硬件输入边界见 [Fluent 验收记录](docs/FLUENT-DESIGN-RESULTS.md)。最新本地安装器/ZIP位于 `output/fluent-release-final`。
+
 ## 运行
 
 完整目录位于 `output/Takao-win-x64`。运行 `start.cmd` 或 `Takao.Host.exe`，同意 Windows UAC；Host 就绪后启动 `Takao.Qt.exe`，关闭窗口会停止本次后端及采样。不要单独复制 EXE，也不要直接启动 Qt 子程序。自包含发布无需预装 .NET、Qt、Node 或联网。

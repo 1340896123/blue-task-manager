@@ -13,12 +13,13 @@ import time
 parser = argparse.ArgumentParser()
 parser.add_argument('--release', required=True)
 parser.add_argument('--control-skill', required=True)
+parser.add_argument('--output')
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(args.control_skill) / 'scripts'))
 import computer_control as desktop
 
-output = root / 'output/qt-acceptance/components'
+output = Path(args.output).resolve() if args.output else root / 'output/qt-acceptance/components'
 output.mkdir(parents=True, exist_ok=True)
 result_path = output / 'native-results.json'
 if result_path.exists():

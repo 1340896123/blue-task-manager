@@ -7,10 +7,13 @@
 #include <QCommandLineParser>
 #include <QDialog>
 #include <QElapsedTimer>
+#include <QFontInfo>
 #include <QJsonDocument>
+#include <QHeaderView>
 #include <QPlainTextEdit>
 #include <QSaveFile>
 #include <QScrollBar>
+#include <QScrollArea>
 #include <QTabWidget>
 #include <QThread>
 #include <stdexcept>
@@ -97,17 +100,39 @@ int main(int argc,char** argv) {
             check(window.width()<=1920 && window.height()<=1080 && window.devicePixelRatioF()==1,"Content fits the 1080P window at 100%; WGC independently checks the full 1920x1080 frame");
             check(table->uniformRowHeights() && table->isSortingEnabled(),"Native model/view uses bounded row painting and sorting");
             check(search->focusPolicy()!=Qt::NoFocus && !search->accessibleName().isEmpty(),"Shared search has native keyboard focus and an accessible name");
+            check(qApp->font().pixelSize()==14,"Fluent desktop body typography uses the specified 14px system font");
+            report["font"] = QJsonObject{{"requested",qApp->font().families().join(", ")},{"resolved",QFontInfo(qApp->font()).family()},{"search",QFontInfo(search->font()).family()},{"table",QFontInfo(table->font()).family()},{"navigation",QFontInfo(button(&window,"进程")->font()).family()}};
             const QStringList pages{"进程","性能","应用历史记录","启动应用","用户","详细信息","服务","设置"};
             for(int i=0;i<pages.size();++i) {
                 auto nav=button(&window,pages[i]); check(nav->minimumHeight()>=44 && nav->focusPolicy()!=Qt::NoFocus,"Navigation target/focus: "+pages[i]);
-                nav->click(); hold(350);
-                bool heading=false; for(auto label:window.findChildren<QLabel*>()) if(label->property("title").toBool() && label->text().startsWith(pages[i]) && label->isVisible())heading=true;
-                check(heading && nav->isChecked(),"Native page and selected navigation: "+pages[i]);
+                nav->click();
+                auto pageReady=[&] {
+                    for(auto label:window.findChildren<QLabel*>())
+                        if(label->property("title").toBool() && label->text().startsWith(pages[i]) && label->isVisible() && nav->isChecked())return true;
+                    return false;
+                };
+                waitFor(pageReady,"Page navigation did not settle: "+pages[i]);
+                check(pageReady(),"Native page and selected navigation: "+pages[i]);
+                bool typography=false;
+                for(auto label:window.findChildren<QLabel*>())if(label->property("title").toBool() && label->isVisible())typography=label->font().pixelSize()==28 && label->font().weight()>=QFont::DemiBold;
+                check(typography && ((i==1 || i==7) || table->header()->height()==40),"Fluent page typography and table-header geometry: "+pages[i]);
                 if(i==2) verifyAliases(table,{{"cpu","observedCpuTime100ns"},{"last","lastObservedAtUtc"}},"History");
                 if(i==3) verifyAliases(table,{{"location","locationPath"}},"Startup");
                 if(i==4) verifyAliases(table,{{"name","userName"},{"session","sessionId"},{"station","stationName"},{"count","processCount"},{"cpu","cpuPercent"},{"memory","workingSetBytes"}},"Users");
                 if(i==6) verifyAliases(table,{{"display","displayName"}},"Services");
                 observe(QString("%1-page").arg(i+1,2,10,QLatin1Char('0')));
+                if(i==7) {
+                    auto settingsContent=window.findChild<QWidget*>("settingsContent");
+                    check(settingsContent && settingsContent->width()<=1080,"Fluent settings content is limited to 1080px");
+                    for(auto box:window.findChildren<QComboBox*>())
+                        if(box->accessibleName()=="采样间隔" || box->accessibleName()=="数据密度" || box->accessibleName()=="文字大小")
+                            check(box->width()<=240 && box->isVisible(),"Settings field keeps a readable control width: "+box->accessibleName()+QString(" (width=%1, visible=%2, hidden=%3, search=%4)").arg(box->width()).arg(box->isVisible()).arg(box->isHidden()).arg(search->text()));
+                    QScrollArea* settingsScroll=nullptr;
+                    for(auto area:window.findChildren<QScrollArea*>())if(area->isVisible() && settingsContent && area->isAncestorOf(settingsContent))settingsScroll=area;
+                    check(settingsScroll && settingsScroll->verticalScrollBar()->maximum()>0,"Settings groups remain reachable through the native scroll area");
+                    settingsScroll->verticalScrollBar()->setValue(settingsScroll->verticalScrollBar()->maximum());hold(300);observe("08-settings-lower");
+                    settingsScroll->verticalScrollBar()->setValue(0);
+                }
             }
             // Scroll restores after returning to a populated model.
             button(&window,"进程")->click(); hold(250);table->verticalScrollBar()->setValue(640);hold(100);
