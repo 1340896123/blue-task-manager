@@ -1137,11 +1137,17 @@ void MainWindow::rebuildResources() {
         for (int i = 0; i < ids.size(); ++i) {
             auto item = new QListWidgetItem(resources_);
             item->setData(Qt::UserRole, ids[i]);
-            item->setSizeHint(QSize(Theme::resourceWidth - Theme::space2,
-                ids[i].startsWith("disk:") || ids[i].startsWith("network:") ? Theme::resourceDiskHeight : Theme::resourceTileHeight));
         }
     }
     for (int i = 0; i < ids.size(); ++i) {
+        const auto lines = static_cast<int>(values[i].count('\n')) + 1;
+        const auto titleHeight = QFontMetrics(Theme::font(Theme::Type::Body, true)).height();
+        const auto textHeight = QFontMetrics(Theme::font(Theme::Type::Caption)).lineSpacing() * lines;
+        const auto minimum = ids[i].startsWith("disk:") || ids[i].startsWith("network:")
+                                 ? Theme::resourceDiskHeight : Theme::resourceTileHeight;
+        resources_->item(i)->setSizeHint(QSize(Theme::resourceWidth - Theme::space2,
+            std::max(minimum, Theme::space2 + titleHeight + Theme::space1 +
+                                  std::max(textHeight, 36) + Theme::space3)));
         resources_->item(i)->setText(names[i] + "\n" + values[i]);
         resources_->item(i)->setToolTip(names[i] + "\n" + values[i]);
         QVariantList firstSeries, secondSeries;

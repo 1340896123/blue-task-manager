@@ -321,6 +321,8 @@ void MainWindow::applyAppearance(bool restoreWindowState) {
     font.setPixelSize(qRound(static_cast<int>(Theme::Type::Body) * zoom_));
     qApp->setFont(font);
     Theme::refreshTypography();
+    if (!shown_.isEmpty())
+        rebuildResources();
     // Larger text retains its existing preference behavior without clipping inputs.
     for (auto control : findChildren<QWidget*>()) {
         if (qobject_cast<QLineEdit*>(control) || qobject_cast<QComboBox*>(control) || qobject_cast<QSpinBox*>(control))
