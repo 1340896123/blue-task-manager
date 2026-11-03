@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import socket
 import sys
 import tempfile
 import time
@@ -26,7 +27,10 @@ import computer_control as desktop
 root = Path(__file__).resolve().parents[1]
 output = Path(args.output).resolve()
 output.mkdir(parents=True, exist_ok=True)
-origin = 'http://127.0.0.1:5215'
+with socket.socket() as reservation:
+    reservation.bind(('127.0.0.1', 0))
+    port = reservation.getsockname()[1]
+origin = f'http://127.0.0.1:{port}'
 checks, screenshots = [], []
 report = {'result': 'RUNNING', 'display': '1920x1080 physical pixels',
           'capture': 'WGC', 'input': 'FYLHelper', 'checks': checks,
@@ -164,7 +168,7 @@ temporary = tempfile.TemporaryDirectory(prefix='Takao-Qt-UI-')
 try:
     env = dict(os.environ, TASKMANAGER_DATA_DIR=str(Path(temporary.name) / 'preferences'),
                QT_SCALE_FACTOR='1', QT_SCREEN_SCALE_FACTORS='1', TASKMANAGER_QT_1080P='1')
-    host = subprocess.Popen([str(Path(args.release) / 'Takao.Host.exe'), '--port=5215'],
+    host = subprocess.Popen([str(Path(args.release) / 'Takao.Host.exe'), f'--port={port}'],
         env=env, cwd=args.release, creationflags=subprocess.CREATE_NO_WINDOW,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     bootstrap = until(lambda: api('bootstrap') if host.poll() is None else None, 40)

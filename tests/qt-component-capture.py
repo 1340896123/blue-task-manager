@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -34,7 +35,10 @@ with tempfile.TemporaryDirectory(prefix='Takao-Qt-Components-') as temporary:
         TASKMANAGER_QT_TEST_DIRECTORY=str(Path(temporary) / 'owned-data'),
         QT_SCALE_FACTOR='1', QT_SCREEN_SCALE_FACTORS='1')
     try:
-        host = subprocess.Popen([str(fixture / 'Takao.Host.exe'), '--port=5218'],
+        with socket.socket() as reservation:
+            reservation.bind(('127.0.0.1', 0))
+            port = reservation.getsockname()[1]
+        host = subprocess.Popen([str(fixture / 'Takao.Host.exe'), f'--port={port}'],
             cwd=fixture, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW)
         deadline = time.monotonic()+240

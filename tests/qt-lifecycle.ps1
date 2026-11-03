@@ -6,9 +6,15 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $probe = Join-Path $root 'tests/Takao.WindowProbe/bin/Release/net10.0-windows10.0.19041.0/Takao.WindowProbe.exe'
 $workload = Join-Path $root 'tests/Takao.TestWorkload/bin/Release/net10.0-windows10.0.19041.0/Takao.TestWorkload.exe'
-$origin = 'http://127.0.0.1:5214'
+function New-TestPort {
+    $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback,0)
+    try { $listener.Start(); return $listener.LocalEndpoint.Port } finally { $listener.Stop() }
+}
+$port = New-TestPort
+$origin = "http://127.0.0.1:$port"
 $temporary = Join-Path ([IO.Path]::GetTempPath()) ('Takao-Qt-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $temporary,$OutputDirectory -Force | Out-Null
+foreach ($name in @('results.json','host-stderr.txt','startup-error.log')) { $previous = Join-Path $OutputDirectory $name; if (Test-Path -LiteralPath $previous) { Remove-Item -LiteralPath $previous -Force } }
 $checks = [Collections.Generic.List[string]]::new()
 $hostProcess = $null; $qtProcess = $null; $target = $null; $token = $null; $stderr = $null
 function Check([bool]$Condition, [string]$Message) { if (-not $Condition) { throw $Message }; $checks.Add($Message) }
@@ -25,7 +31,7 @@ function Read-OwnedTraceSessions([string]$Prefix) {
 try {
     $elevation = & $probe process-elevation $PID | ConvertFrom-Json
     Check $elevation.elevated 'actual test token is elevated'
-    $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $ReleaseDirectory 'Takao.Host.exe'), '--port=5214')
+    $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $ReleaseDirectory 'Takao.Host.exe'), "--port=$port")
     $start.UseShellExecute = $false; $start.CreateNoWindow = $true
     $start.RedirectStandardError = $true
     $start.EnvironmentVariables['TASKMANAGER_DATA_DIR'] = Join-Path $temporary 'preferences'
@@ -78,10 +84,11 @@ try {
     Check ($qtProcess.WaitForExit(5000)) 'Qt child exits without an orphan'
     Check ($hostProcess.ExitCode -eq 0) "the desktop lifecycle exits successfully (actual code $($hostProcess.ExitCode))"
     $client = [Net.Sockets.TcpClient]::new()
-    try { $client.Connect('127.0.0.1',5214); $listening = $true } catch { $listening = $false } finally { $client.Dispose() }
+    try { $client.Connect('127.0.0.1',$port); $listening = $true } catch { $listening = $false } finally { $client.Dispose() }
     Check (-not $listening) 'the Host releases its listening port'
     # Independently verify KILL_ON_JOB_CLOSE with another exact test instance.
     $hostProcess.Dispose(); $qtProcess.Dispose()
+    $port = New-TestPort; $origin = "http://127.0.0.1:$port"; $start.Arguments = "--port=$port"
     $start.EnvironmentVariables['TASKMANAGER_DATA_DIR'] = Join-Path $temporary 'crash-preferences'
     $hostProcess = [Diagnostics.Process]::Start($start)
     $stderr = $hostProcess.StandardError.ReadToEndAsync()
