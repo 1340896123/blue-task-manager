@@ -16,6 +16,7 @@
 #include <QStackedWidget>
 #include <QTimer>
 #include <QTreeView>
+#include <optional>
 
 class MainWindow final : public QMainWindow {
     Q_OBJECT
@@ -36,6 +37,8 @@ class MainWindow final : public QMainWindow {
     bool connected_ = false, polling_ = false, frozen_ = false, loadingPreferences_ = true,
          settingsSync_ = false, closing_ = false, firstPrompt_ = false;
     bool updatingModel_ = false, saving_ = false, savePending_ = false;
+    bool switchingPage_ = false, pendingPageRestore_ = false, applyingTopmost_ = false;
+    std::optional<bool> actualTopmost_;
     QSet<QString> collapsed_, pendingActions_, iconsRequested_;
     int iconsRunning_ = 0;
     int page_ = 0, intervalMs_ = 1000;
@@ -84,6 +87,8 @@ class MainWindow final : public QMainWindow {
     void rebuildResources();
     void readSensors();
     void updateSettings();
+    void applyAppearance(bool restoreWindowState = false);
+    void syncTopmost(std::optional<bool> desired = {}, bool persist = false);
     void readIntegration(bool first = false);
     void readUpdates();
     void applyIntegration(QString action, bool first = false);
@@ -113,7 +118,8 @@ class MainWindow final : public QMainWindow {
     void efficiency(const QJsonObject&);
     void startupDetails(const QJsonObject&);
     void controlService(const QJsonObject&, const QString&);
-    void locateProcess(qint64 pid);
+    bool locateProcess(qint64 pid, const QString& expectedIdentity);
+    void locateServiceProcess(const QJsonObject& service);
     void applySampling(int interval, bool paused);
     void updateCommand(const QString& command, const QString& mode = {});
     QTreeView* createTable(DataModel*, DataProxy*, QWidget* parent = nullptr);

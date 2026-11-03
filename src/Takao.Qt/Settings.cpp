@@ -7,6 +7,7 @@
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QSignalBlocker>
 #include <QVBoxLayout>
 
@@ -158,58 +159,26 @@ void MainWindow::buildSettings() {
         if (settingsSync_)
             return;
         preferences_["density"] = density_->currentData().toString();
-        const auto row = (density_->currentData().toString() == "standard" ? 40 : 32) * zoom_;
-        table_->setProperty("rowHeight", int(row));
-        sensors_->setProperty("rowHeight", int(row));
-        table_->doItemsLayout();
-        sensors_->doItemsLayout();
+        applyAppearance();
         saveSoon();
     });
     connect(zoomBox_, &QComboBox::currentIndexChanged, this, [this] {
         if (settingsSync_)
             return;
-        zoom_ = zoomBox_->currentData().toDouble();
-        auto font = qApp->font();
-        font.setPixelSize(qRound(14 * zoom_));
-        qApp->setFont(font);
-        const auto rowHeight = qRound((preferences_["density"].toString() == "standard" ? 40 : 32) * zoom_);
-        table_->setProperty("rowHeight", rowHeight);
-        sensors_->setProperty("rowHeight", rowHeight);
-        table_->doItemsLayout();
+        const auto desiredZoom = zoomBox_->currentData().toDouble();
         auto w = preferences_["window"].toObject();
         w["width"] = std::clamp(width(), 960, 3840);
         w["height"] = std::clamp(height(), 640, 2160);
-        w["zoomFactor"] = zoom_;
-        if (!w.contains("alwaysOnTop"))
-            w["alwaysOnTop"] = false;
+        w["zoomFactor"] = desiredZoom;
+        if (actualTopmost_)
+            w["alwaysOnTop"] = *actualTopmost_;
         preferences_["window"] = w;
+        applyAppearance();
         saveSoon();
     });
-    connect(topmost_, &QCheckBox::toggled, this, [this](bool) {
-        if (settingsSync_)
-            return;
-        topmost_->setEnabled(false);
-        api_.post("window/always-on-top", {}, this, [this](const QJsonObject&, const QString& error, int) {
-            if (!error.isEmpty())
-                notify(error, true);
-            api_.get("desktop/window-state", this,
-                     [this](const QJsonObject& state, const QString& failure, int) {
-                         settingsSync_ = true;
-                         if (failure.isEmpty() && state["alwaysOnTop"].isBool()) {
-                             topmost_->setChecked(state["alwaysOnTop"].toBool());
-                             auto window = preferences_["window"].toObject();
-                             window["width"] = std::clamp(width(), 960, 3840);
-                             window["height"] = std::clamp(height(), 640, 2160);
-                             window["zoomFactor"] = zoom_;
-                             window["alwaysOnTop"] = state["alwaysOnTop"];
-                             preferences_["window"] = window;
-                             saveSoon();
-                         } else if (!failure.isEmpty())
-                             notify(failure, true);
-                         settingsSync_ = false;
-                         topmost_->setEnabled(connected_);
-                     });
-        });
+    connect(topmost_, &QCheckBox::toggled, this, [this](bool desired) {
+        if (!settingsSync_)
+            syncTopmost(desired, true);
     });
     connect(read, &QPushButton::clicked, this, [this] { readIntegration(); });
     connect(integrationAction_, &QPushButton::clicked, this, [this] {
@@ -251,13 +220,20 @@ void MainWindow::buildSettings() {
                 QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes)
             return;
         const auto dismissed = preferences_["taskManagerPromptDismissed"];
+        auto window = preferences_["window"].toObject();
+        window["width"] = std::clamp(width(), 960, 3840);
+        window["height"] = std::clamp(height(), 640, 2160);
+        window["zoomFactor"] = 1;
+        if (actualTopmost_)
+            window["alwaysOnTop"] = *actualTopmost_;
         preferences_ = {{"version", 1},
                         {"density", "compact"},
                         {"sidebarCollapsed", false},
                         {"processView", "flat"},
                         {"taskManagerPromptDismissed", dismissed},
+                        {"window", window},
                         {"pages", QJsonObject()}};
-        zoom_ = 1;
+        applyAppearance();
         sidebar_->setFixedWidth(204);
         for (int i = 0; i < nav_.size(); ++i)
             nav_[i]->setText(titles_[i]);
@@ -274,15 +250,89 @@ void MainWindow::updateSettings() {
     density_->setCurrentIndex(std::max(0, density_->findData(preferences_["density"].toString())));
     zoomBox_->setCurrentIndex(std::max(0, zoomBox_->findData(zoom_)));
     freezeBox_->setChecked(frozen_);
-    topmost_->setChecked(preferences_["window"].toObject()["alwaysOnTop"].toBool());
+    topmost_->setTristate(!actualTopmost_.has_value());
+    topmost_->setCheckState(actualTopmost_ ? (*actualTopmost_ ? Qt::Checked : Qt::Unchecked)
+                                           : Qt::PartiallyChecked);
+    topmost_->setToolTip(actualTopmost_ ? QStringLiteral("Windows 已读回当前窗口状态。")
+                                        : QStringLiteral("尚未从 Windows 确认窗口置顶状态。"));
     interval_->setEnabled(connected_);
-    topmost_->setEnabled(connected_);
+    topmost_->setEnabled(connected_ && actualTopmost_.has_value() && !applyingTopmost_);
     settingsSync_ = false;
     sourceStatus_->setText(
         QString(
             "Qt %1 Widgets + .NET 10 · JSON.NET · CsWin32\n最近真实采样  %2\nWindows 原生数据：CPU / 内存 / "
             "进程 / SCM / Startup / WTS / PDH / IP Helper / ETW；不可读或未预热字段保持未知及原因。")
             .arg(qVersion(), formatValue(latest_["capturedAtUtc"], "date")));
+}
+void MainWindow::applyAppearance(bool restoreWindowState) {
+    const auto window = preferences_["window"].toObject();
+    zoom_ = std::clamp(window["zoomFactor"].toDouble(1), .75, 2.);
+    auto font = qApp->font();
+    font.setPixelSize(qRound(14 * zoom_));
+    qApp->setFont(font);
+    const auto rowHeight = qRound((preferences_["density"].toString() == "standard" ? 40 : 32) * zoom_);
+    for (auto view : {table_, sensors_}) {
+        const auto scroll = view->verticalScrollBar()->value();
+        view->setProperty("rowHeight", rowHeight);
+        view->doItemsLayout();
+        view->verticalScrollBar()->setValue(scroll);
+    }
+    sidebar_->setFixedWidth(preferences_["sidebarCollapsed"].toBool() ? 56 : 204);
+    for (int i = 0; i < nav_.size(); ++i)
+        nav_[i]->setText(preferences_["sidebarCollapsed"].toBool() ? QString() : titles_[i]);
+    updateSettings();
+    if (restoreWindowState) {
+        const auto desired = window["alwaysOnTop"];
+        syncTopmost(desired.isBool() ? std::optional<bool>(desired.toBool()) : std::nullopt);
+    }
+}
+void MainWindow::syncTopmost(std::optional<bool> desired, bool persist) {
+    if (!connected_ || applyingTopmost_)
+        return;
+    applyingTopmost_ = true;
+    updateSettings();
+    const auto finish = [this, desired, persist](const QJsonObject& state, const QString& error) {
+        applyingTopmost_ = false;
+        if (state["available"].toBool() && state["alwaysOnTop"].isBool()) {
+            actualTopmost_ = state["alwaysOnTop"].toBool();
+            if (desired && *actualTopmost_ != *desired)
+                notify("Windows 读回的窗口置顶状态与请求不一致，请重新核验后再操作。", true);
+            if (persist && desired && *actualTopmost_ == *desired) {
+                auto window = preferences_["window"].toObject();
+                window["width"] = std::clamp(width(), 960, 3840);
+                window["height"] = std::clamp(height(), 640, 2160);
+                window["zoomFactor"] = zoom_;
+                window["alwaysOnTop"] = *actualTopmost_;
+                preferences_["window"] = window;
+                saveSoon();
+            }
+        } else {
+            // Missing HWND/read failures are unknown, never unchecked state
+            // mirrored into the persisted user preference.
+            actualTopmost_.reset();
+        }
+        if (!error.isEmpty())
+            notify(error, true);
+        updateSettings();
+    };
+    api_.get("desktop/window-state", this,
+             [this, desired, finish](const QJsonObject& state, const QString& error, int) {
+                 if (!error.isEmpty() || !state["available"].toBool() || !state["alwaysOnTop"].isBool() ||
+                     !desired || state["alwaysOnTop"].toBool() == *desired) {
+                     finish(state, error);
+                     return;
+                 }
+                 // This established API is a toggle: read first, toggle at
+                 // most once, and read actual Windows state again.
+                 api_.post("window/always-on-top", {}, this,
+                           [this, finish](const QJsonObject&, const QString& failure, int) {
+                               api_.get("desktop/window-state", this,
+                                        [finish, failure](const QJsonObject& actual, const QString& readError,
+                                                          int) {
+                                            finish(actual, failure.isEmpty() ? readError : failure);
+                                        });
+                           });
+             });
 }
 void MainWindow::readIntegration(bool first) {
     if (!connected_)

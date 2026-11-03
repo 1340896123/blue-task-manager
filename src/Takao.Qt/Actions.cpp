@@ -37,20 +37,6 @@ QLabel* errorLabel(QWidget* parent) {
     label->setAccessibleName("操作错误");
     return label;
 }
-QString objectText(const QJsonObject& object) {
-    QStringList text;
-    for (auto it = object.begin(); it != object.end(); ++it) {
-        if (it.key() == "unavailable")
-            continue;
-        if (it.value().isObject() || it.value().isArray())
-            continue;
-        text << it.key() + "  " + formatValue(it.value(), {});
-    }
-    const auto reason = reasonText(object);
-    if (!reason.isEmpty())
-        text << "\n不可用原因\n" + reason;
-    return text.join("\n");
-}
 QString identityText(const QJsonObject& target) {
     return target["name"].toString() + QString("  (PID %1)").arg(target["pid"].toInteger());
 }
@@ -333,7 +319,7 @@ void MainWindow::details(QJsonObject target) {
         return;
     }
     if (page_ == 2) {
-        locateProcess(target["pid"].toInteger());
+        locateProcess(target["pid"].toInteger(), target["identity"].toString());
         return;
     }
     if (!target["creationTimeFileTime"].isString()) {
@@ -446,16 +432,43 @@ void MainWindow::serviceDetails(const QJsonObject& target) {
                      notify(error, true);
                      return;
                  }
-                 presentText("服务详情 · " + result["name"].toString(),
-                             "名称  " + result["name"].toString() + "\n显示名称  " +
-                                 result["displayName"].toString() + "\n状态  " +
-                                 formatValue(result["state"], "state") + "\nPID  " +
-                                 formatValue(result["pid"], "number") + "\n路径  " +
-                                 formatValue(result["binaryPath"], {}) + "\n启动类型  " +
-                                 formatValue(result["startType"], {}) + "\n账户  " +
-                                 formatValue(result["account"], {}) + "\n依赖  " +
-                                 result["dependencies"].toVariant().toStringList().join(", ") + "\n" +
-                                 reasonText(result));
+                 const auto missing = result["unavailable"].toObject();
+                 const auto rawDependencies = result["dependencies"];
+                 QString dependencies = QStringLiteral("—（未能读取依赖服务）");
+                 if (rawDependencies.isArray()) {
+                     QStringList names;
+                     for (const auto& value : rawDependencies.toArray())
+                         if (value.isString())
+                             names << value.toString();
+                     if (!names.isEmpty())
+                         dependencies =
+                             names.join(", ") +
+                             (missing.contains("dependencies") ? QStringLiteral("（部分结果）") : QString());
+                     else if (!missing.contains("configuration") && !missing.contains("dependencies"))
+                         dependencies = QStringLiteral("无依赖服务");
+                 }
+                 const QHash<QString, QString> startTypes{{"SERVICE_AUTO_START", "自动"},
+                                                          {"SERVICE_DEMAND_START", "手动"},
+                                                          {"SERVICE_DISABLED", "已禁用"},
+                                                          {"SERVICE_BOOT_START", "引导"},
+                                                          {"SERVICE_SYSTEM_START", "系统"}};
+                 const auto rawStart = result["startType"];
+                 const auto startType = rawStart.isNull()
+                                            ? QStringLiteral("—")
+                                            : startTypes.value(rawStart.toString(), rawStart.toString());
+                 QStringList lines{"名称  " + formatValue(result["name"], {}),
+                                   "显示名称  " + formatValue(result["displayName"], {}),
+                                   "状态  " + formatValue(result["state"], "state"),
+                                   "PID  " + formatValue(result["pid"], "number"),
+                                   "路径  " + formatValue(result["binaryPath"], {}),
+                                   "启动类型  " + startType,
+                                   "账户  " + formatValue(result["account"], {}),
+                                   "依赖服务  " + dependencies,
+                                   "采集时间  " + formatValue(result["capturedAtUtc"], "date")};
+                 const auto reason = reasonText(result);
+                 if (!reason.isEmpty())
+                     lines << "不可用原因\n" + reason;
+                 presentText("服务详情 · " + result["name"].toString(), lines.join("\n"));
              });
 }
 void MainWindow::setPriority(const QJsonObject& target, const QString& priority) {
@@ -526,16 +539,30 @@ void MainWindow::controlService(const QJsonObject& target, const QString& comman
                 35000);
         });
 }
-void MainWindow::locateProcess(qint64 pid) {
+bool MainWindow::locateProcess(qint64 pid, const QString& expectedIdentity) {
+    if (expectedIdentity.isEmpty()) {
+        notify("缺少可验证的进程创建身份，不能仅凭 PID 跨页定位。", true);
+        return false;
+    }
     QJsonObject row;
     for (const auto& value : latest_["processes"].toArray())
-        if (value.toObject()["pid"].toInteger() == pid) {
+        if (value.toObject()["pid"].toInteger() == pid &&
+            value.toObject()["identity"].toString() == expectedIdentity) {
             row = value.toObject();
             break;
         }
     if (row.isEmpty()) {
-        notify("关联进程已退出或当前快照尚未读取，未定位到其它身份。", true);
-        return;
+        notify("所选进程身份已退出或当前快照尚未读取；未跳转到复用该 PID 的其它进程。", true);
+        return false;
+    }
+    if (frozen_) {
+        bool visible = false;
+        for (const auto& item : shown_["processes"].toArray())
+            visible = visible || item.toObject()["identity"].toString() == expectedIdentity;
+        if (!visible) {
+            notify("冻结的展示快照不包含此进程身份。请先取消冻结，再重新定位。", true);
+            return false;
+        }
     }
     switchPage(5);
     search_->clear();
@@ -548,7 +575,65 @@ void MainWindow::locateProcess(qint64 pid) {
         table_->setCurrentIndex(idx);
         table_->scrollTo(idx);
         table_->setFocus();
+        return true;
     }
+    notify("当前筛选或展示快照中未找到该创建身份，未定位其它进程。", true);
+    return false;
+}
+void MainWindow::locateServiceProcess(const QJsonObject& service) {
+    const auto name = service["name"].toString();
+    const auto route = "services/" + QString::fromUtf8(QUrl::toPercentEncoding(name)) + "/details";
+    const auto matches = [service](const QJsonObject& current) {
+        return current["name"].toString().compare(service["name"].toString(), Qt::CaseInsensitive) == 0 &&
+               current["state"] == service["state"] && current["pid"] == service["pid"] &&
+               current["pid"].isDouble() && current["pid"].toInteger() > 0;
+    };
+    api_.get(
+        route, this, [this, route, matches, name](const QJsonObject& current, const QString& error, int) {
+            if (!error.isEmpty() || !matches(current)) {
+                notify(error.isEmpty() ? QStringLiteral("服务关联已变化，请刷新后重新选择。") : error, true);
+                return;
+            }
+            api_.get(
+                "snapshot", this,
+                [this, route, matches, current, name](const QJsonObject& snapshot, const QString& failure,
+                                                      int) {
+                    if (!failure.isEmpty()) {
+                        notify(failure, true);
+                        return;
+                    }
+                    QJsonObject process;
+                    for (const auto& value : snapshot["processes"].toArray()) {
+                        const auto row = value.toObject();
+                        if (row["pid"] == current["pid"] && row["identity"].isString()) {
+                            process = row;
+                            break;
+                        }
+                    }
+                    if (process.isEmpty()) {
+                        notify("当前服务关联进程已退出或尚未取得创建身份，请刷新后重试。", true);
+                        return;
+                    }
+                    api_.get(
+                        route, this,
+                        [this, matches, process, snapshot, name](const QJsonObject& confirmed,
+                                                                 const QString& readError, int) {
+                            if (!readError.isEmpty() || !matches(confirmed)) {
+                                notify(readError.isEmpty()
+                                           ? QStringLiteral("核验期间服务关联发生变化，未定位其它进程。")
+                                           : readError,
+                                       true);
+                                return;
+                            }
+                            if (snapshot["sampleId"].toInteger() >= latest_["sampleId"].toInteger())
+                                latest_ = snapshot;
+                            if (!frozen_)
+                                shown_ = latest_;
+                            if (locateProcess(process["pid"].toInteger(), process["identity"].toString()))
+                                notify("已定位服务 " + name + " 的当前关联进程；此关联不表示历史进程身份。");
+                        });
+                });
+        });
 }
 void MainWindow::contextMenu(const QPoint& point) {
     if (!point.isNull()) {
@@ -601,7 +686,8 @@ void MainWindow::contextMenu(const QPoint& point) {
         add(
             "复制路径", [target] { QApplication::clipboard()->setText(target["path"].toString()); },
             target["path"].isString());
-        add("转到详细信息", [this, target] { locateProcess(target["pid"].toInteger()); });
+        add("转到详细信息",
+            [this, target] { locateProcess(target["pid"].toInteger(), target["identity"].toString()); });
     } else if (page_ == 3) {
         add(
             "打开来源位置", [this, target] { post("startup/open-location", {{"id", target["id"]}}); },
@@ -618,7 +704,7 @@ void MainWindow::contextMenu(const QPoint& point) {
         add("停止服务…", [this, target] { controlService(target, "stop"); });
         add("重启服务…", [this, target] { controlService(target, "restart"); });
         add(
-            "转到进程", [this, target] { locateProcess(target["pid"].toInteger()); },
+            "转到当前关联进程", [this, target] { locateServiceProcess(target); },
             target["pid"].toInteger() > 0);
     } else if (page_ == 4)
         add("查看该会话的进程", [this, target] {

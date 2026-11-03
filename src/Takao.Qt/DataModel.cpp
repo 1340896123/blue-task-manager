@@ -1,6 +1,7 @@
 #include "DataModel.h"
 #include "Theme.h"
 #include <QDateTime>
+#include <QJsonDocument>
 #include <QLocale>
 #include <QSet>
 #include <cmath>
@@ -9,6 +10,15 @@ QString rowIdentity(const QJsonObject& row) {
     for (const auto& key : {"identity", "id", "name"})
         if (row[key].isString())
             return row[key].toString();
+    if (row.contains("protocol") && row.contains("localAddress")) {
+        // Endpoint identities are tuples, not PIDs. JSON preserves component
+        // boundaries even for IPv6 addresses containing ':' characters.
+        QJsonArray endpoint;
+        for (const auto& key :
+             {"pid", "protocol", "addressFamily", "localAddress", "localPort", "remoteAddress", "remotePort"})
+            endpoint.append(row[key]);
+        return QString::fromUtf8(QJsonDocument(endpoint).toJson(QJsonDocument::Compact));
+    }
     return QString::number(row["sessionId"].toInt(-1));
 }
 QString formatValue(const QJsonValue& value, const QString& format) {
@@ -20,7 +30,13 @@ QString formatValue(const QJsonValue& value, const QString& format) {
         return value.toBool() ? QStringLiteral("已启用") : QStringLiteral("已禁用");
     if (format == "running")
         return value.toBool() ? QStringLiteral("运行中") : QStringLiteral("已退出");
-    double n = value.isString() ? value.toString().toDouble() : value.toDouble();
+    bool numeric = value.isDouble();
+    const double nValue = value.isString() ? value.toString().toDouble(&numeric) : value.toDouble();
+    const bool numericFormat = format == "percent" || format == "bytes" || format == "rate" ||
+                               format == "cpuTime" || format == "duration" || format == "number";
+    if ((numericFormat && !numeric) || (numeric && !std::isfinite(nValue)))
+        return QStringLiteral("—");
+    double n = nValue;
     if (format == "percent")
         return QString::number(n, 'f', 1) + " %";
     if (format == "bytes" || format == "rate") {
@@ -52,8 +68,13 @@ QString formatValue(const QJsonValue& value, const QString& format) {
             {"paused", "已暂停"},  {"active", "活动"},           {"disconnected", "已断开"}};
         return labels.value(value.toString(), value.toString());
     }
-    if (value.isDouble())
-        return QLocale().toString(value.toInteger());
+    if (value.isDouble()) {
+        // QJsonValue::toInteger returns its default for fractional doubles.
+        // Preserve integer IDs exactly, but retain sensor/timing fractions.
+        if (std::trunc(n) == n && n >= -9223372036854775808.0 && n < 9223372036854775808.0)
+            return QLocale().toString(value.toInteger());
+        return QLocale().toString(n, 'g', 15);
+    }
     if (value.isBool())
         return value.toBool() ? "是" : "否";
     return value.toString();
@@ -101,7 +122,7 @@ int DataModel::columnCount(const QModelIndex&) const {
 }
 QJsonValue DataModel::raw(const Node* node, const QString& key) const {
     if (key == "io") {
-        if (node->row["ioReadBytesPerSecond"].isNull() || node->row["ioWriteBytesPerSecond"].isNull())
+        if (!node->row["ioReadBytesPerSecond"].isDouble() || !node->row["ioWriteBytesPerSecond"].isDouble())
             return QJsonValue();
         return node->row["ioReadBytesPerSecond"].toDouble() + node->row["ioWriteBytesPerSecond"].toDouble();
     }

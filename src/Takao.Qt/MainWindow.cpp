@@ -13,6 +13,7 @@
 #include <QPainterPath>
 #include <QPointer>
 #include <QResizeEvent>
+#include <QScopedValueRollback>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QShortcut>
@@ -394,8 +395,8 @@ void MainWindow::bootstrap() {
                         nav_[i]->setText(preferences_["sidebarCollapsed"].toBool() ? QString() : titles_[i]);
                     restorePagePreference();
                     showColumnsForCurrentPage();
-                    table_->setProperty("rowHeight",
-                                        preferences_["density"].toString() == "standard" ? 40 : 32);
+                    applyAppearance(true);
+                    applySnapshot();
                     if (!result["warning"].isNull())
                         notify(result["warning"].toObject()["message"].toString(), true);
                     readIntegration(true);
@@ -467,6 +468,8 @@ void MainWindow::switchPage(int index) {
         return;
     if (!loadingPreferences_)
         capturePagePreference();
+    switchingPage_ = true;
+    pendingPageRestore_ = false;
     page_ = index;
     pageTitle_->setText(titles_[index]);
     for (int i = 0; i < nav_.size(); ++i)
@@ -532,6 +535,7 @@ void MainWindow::switchPage(int index) {
     restorePagePreference();
     applySnapshot();
     applySearch(search_->text());
+    switchingPage_ = false;
     if (index == 7) {
         readIntegration();
         readUpdates();
@@ -557,10 +561,12 @@ void MainWindow::showColumnsForCurrentPage() {
 void MainWindow::updateTable() {
     const auto chosen = selected();
     const auto identity =
-        chosen.isEmpty()
+        (pendingPageRestore_ || chosen.isEmpty())
             ? preferences_["pages"].toObject()[keys_[page_]].toObject()["selectedIdentity"].toString()
             : rowIdentity(chosen);
-    const auto scroll = table_->verticalScrollBar()->value();
+    const auto scroll = pendingPageRestore_
+                            ? preferences_["pages"].toObject()[keys_[page_]].toObject()["scrollTop"].toInt()
+                            : table_->verticalScrollBar()->value();
     QJsonArray rows;
     if (processPage())
         rows = shown_["processes"].toArray();
@@ -610,7 +616,12 @@ void MainWindow::updateTable() {
     const auto restored = proxy_->mapFromSource(model_->find(identity));
     if (restored.isValid())
         table_->setCurrentIndex(restored);
+    // setColumns resets the model and clamps its old scrollbar to zero.
+    // Restore page position only after actual rows and view geometry exist.
+    table_->doItemsLayout();
     table_->verticalScrollBar()->setValue(scroll);
+    if (!rows.isEmpty() || processPage() || !shown_["slowDataCapturedAtUtc"].isNull())
+        pendingPageRestore_ = false;
     updatingModel_ = false;
     count_->setText(QString("%1 项").arg(rows.size()));
     loadVisibleIcons();
@@ -688,7 +699,8 @@ void MainWindow::applySampling(int interval, bool paused) {
     });
 }
 void MainWindow::capturePagePreference() {
-    if (loadingPreferences_ || page_ < 0 || page_ >= keys_.size())
+    if (loadingPreferences_ || switchingPage_ || updatingModel_ || pendingPageRestore_ || page_ < 0 ||
+        page_ >= keys_.size())
         return;
     auto pages = preferences_["pages"].toObject();
     auto pref = pages[keys_[page_]].toObject();
@@ -723,6 +735,7 @@ void MainWindow::capturePagePreference() {
     preferences_["searchQuery"] = search_->text();
 }
 void MainWindow::restorePagePreference() {
+    const QScopedValueRollback<bool> restoring(switchingPage_, true);
     const auto p = preferences_["pages"].toObject()[keys_[page_]].toObject();
     if (page_ == 1) {
         const auto perf = preferences_["pages"].toObject()["performance"].toObject();
@@ -750,7 +763,7 @@ void MainWindow::restorePagePreference() {
                 table_->sortByColumn(i, p["sortDirection"].toString() == "descending" ? Qt::DescendingOrder
                                                                                       : Qt::AscendingOrder);
         }
-        table_->verticalScrollBar()->setValue(p["scrollTop"].toInt());
+        pendingPageRestore_ = true;
     }
 }
 void MainWindow::saveSoon() {
@@ -787,8 +800,8 @@ void MainWindow::resizeEvent(QResizeEvent* event) {
         window["width"] = std::clamp(width(), 960, 3840);
         window["height"] = std::clamp(height(), 640, 2160);
         window["zoomFactor"] = zoom_;
-        if (!window.contains("alwaysOnTop"))
-            window["alwaysOnTop"] = false;
+        if (actualTopmost_)
+            window["alwaysOnTop"] = *actualTopmost_;
         preferences_["window"] = window;
         saveSoon();
     }
