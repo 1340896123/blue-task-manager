@@ -57,10 +57,8 @@ try {
     }
     Check $true 'every installed payload file matches the build SHA256 inventory'
     Check ((Ifeo-Fingerprint) -eq $beforeIfeo) 'installation leaves the complete actual taskmgr IFEO key unchanged'
-    $env:TASKMANAGER_RELEASE_DIRECTORY = $installation
-    $env:TASKMANAGER_ADMIN_EVIDENCE_PREFIX = 'installed-administrator-desktop'
-    & node.exe (Join-Path $PSScriptRoot 'admin-desktop.mjs') *> (Join-Path $output 'installed-desktop.log')
-    Check ($LASTEXITCODE -eq 0) 'installed production Electron desktop passes real elevated token, local coreclr, workload and close checks'
+    & (Join-Path $PSScriptRoot 'qt-lifecycle.ps1') -ReleaseDirectory $installation -OutputDirectory (Join-Path $output 'qt-lifecycle')
+    Check ((Get-Content (Join-Path $output 'qt-lifecycle/results.json') -Raw | ConvertFrom-Json).result -eq 'PASS') 'installed Qt + .NET production lifecycle passes'
     $sentinel = Join-Path $installation 'user-added-file.txt'
     [IO.File]::WriteAllText($sentinel, 'This file belongs to this test and is outside the package inventory.')
     Check ((Run-Setup $InstallerPath "/S /D=$installation") -eq 0) 'same-version installation repairs the existing dedicated installation'

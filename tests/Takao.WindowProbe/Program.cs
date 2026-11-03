@@ -7,7 +7,7 @@ using Windows.Win32.NetworkManagement.IpHelper;
 using Windows.Win32.System.ProcessStatus;
 using Windows.Win32.Graphics.Dxgi;
 
-// JSON emitted to redirected Node/Playwright pipes must be UTF-8 on Windows too.
+// JSON emitted to redirected test pipes must be UTF-8 on Windows too.
 Console.OutputEncoding = new System.Text.UTF8Encoding(false);
 
 if (ProductIconProbe.TryRun(args)) return;
@@ -132,19 +132,19 @@ PInvoke.EnumWindows((window, unused) =>
         // Win32_Process datetime is precise to microseconds; allow its <1us truncation.
         var actual = ((ulong)(uint)created.dwHighDateTime << 32) | (uint)created.dwLowDateTime;
         if (actual / 10 != expected / 10) return true;
-        if (NativeUi.ClassName(window) != "Chrome_WidgetWin_1" || NativeUi.Title(window) != "Takao") return true;
+        if (!NativeUi.ClassName(window).StartsWith("Qt", StringComparison.Ordinal) || NativeUi.Title(window) != "Takao") return true;
         target = window; return false;
     }
     return true;
 }, default);
 if (target.IsNull) throw new InvalidOperationException("No visible window owned by the test host tree.");
 if (args.Length > 1 && args[1] == "restore") PInvoke.ShowWindow(target, SHOW_WINDOW_CMD.SW_RESTORE);
-if (args.Length > 3 && args[1] == "resize")
+if (args.Length > 3 && args[1] is "resize" or "resize-frame")
 {
     PInvoke.ShowWindow(target, SHOW_WINDOW_CMD.SW_RESTORE);
     if (!PInvoke.GetWindowRect(target, out var beforeRect) || !PInvoke.GetClientRect(target, out var beforeClient)) throw new InvalidOperationException("Native client bounds unavailable.");
-    var clientWidth = int.Parse(args[2]) + (beforeRect.right - beforeRect.left) - (beforeClient.right - beforeClient.left);
-    var clientHeight = int.Parse(args[3]) + (beforeRect.bottom - beforeRect.top) - (beforeClient.bottom - beforeClient.top);
+    var clientWidth = int.Parse(args[2]) + (args[1] == "resize" ? (beforeRect.right - beforeRect.left) - (beforeClient.right - beforeClient.left) : 0);
+    var clientHeight = int.Parse(args[3]) + (args[1] == "resize" ? (beforeRect.bottom - beforeRect.top) - (beforeClient.bottom - beforeClient.top) : 0);
     if (!PInvoke.SetWindowPos(target, default, 0, 0, clientWidth, clientHeight, SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOZORDER | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE))
         throw new InvalidOperationException("Native resize failed.");
 }

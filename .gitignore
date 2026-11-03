@@ -1,4 +1,4 @@
-# Frontend / Electron
+# Development caches and historical build output
 node_modules/
 dist/
 .vite/
@@ -18,6 +18,8 @@ obj/
 .vs/
 *.user
 *.suo
+__pycache__/
+*.pyc
 
 # Local state and secrets
 .env

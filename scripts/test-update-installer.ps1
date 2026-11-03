@@ -94,9 +94,7 @@ if (args.Length == 1 && args[0].StartsWith("--hold=") && int.TryParse(args[0][7.
     Copy-Item -LiteralPath (Join-Path $payload 'Takao.Host.exe') -Destination (Join-Path $payload 'Takao.Launcher.exe')
     Copy-Item -LiteralPath (Join-Path $payload 'Takao.Host.exe') -Destination (Join-Path $payload 'TaskManager.Host.exe')
     Copy-Item -LiteralPath (Join-Path $payload 'Takao.Host.exe') -Destination (Join-Path $payload 'TaskManager.Launcher.exe')
-    $electron=Join-Path $payload '.electron/node_modules/electron/dist'
-    New-Item -ItemType Directory -Path $electron -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $payload 'Takao.Host.exe') -Destination (Join-Path $electron 'electron.exe')
+    Copy-Item -LiteralPath (Join-Path $payload 'Takao.Host.exe') -Destination (Join-Path $payload 'Takao.Qt.exe')
     $entries=@(Get-ChildItem -LiteralPath $payload -Recurse -Force)
     $install=@();$delete=@();$paths=@();$verify=@()
     foreach($entry in $entries){$relative=$entry.FullName.Substring($payload.Length+1);$paths+='!insertmacro CheckPayloadPath "'+(Escape-Nsis $relative)+'"';if($entry.PSIsContainer){continue};$parent=Split-Path -Parent $relative;$install+='SetOutPath "$INSTDIR'+$(if($parent){'\'+(Escape-Nsis $parent)})+'"';$install+='File "'+(Escape-Nsis $entry.FullName)+'"';$delete+='Delete "$INSTDIR\'+(Escape-Nsis $relative)+'"';if(-not $parent){$verify+='Push "$INSTDIR\'+(Escape-Nsis $relative)+'"';$verify+='Push "'+(Get-FileHash -LiteralPath $entry.FullName -Algorithm SHA256).Hash+'"';$verify+='Call un.VerifyFile'}}

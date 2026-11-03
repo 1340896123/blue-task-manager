@@ -67,7 +67,7 @@ if ($config.runtimeOptions.framework -or $config.runtimeOptions.frameworks -or @
 foreach ($framework in $config.runtimeOptions.includedFrameworks) {
     if ($framework.version -ne [string]$project.Project.PropertyGroup.DesktopRuntimeVersion) { throw "Runtime version mismatch: $($framework.name)" }
 }
-foreach ($file in @('restore-windows-task-manager.cmd','Takao.Launcher.exe','Takao.Launcher.dll','Takao.Launcher.deps.json','Takao.Launcher.runtimeconfig.json','coreclr.dll','hostfxr.dll','hostpolicy.dll','System.Private.CoreLib.dll','Microsoft.AspNetCore.dll','licenses/Microsoft.NETCore.App/LICENSE.txt','licenses/Microsoft.NETCore.App/THIRD-PARTY-NOTICES.TXT','licenses/Microsoft.AspNetCore.App/LICENSE.txt','licenses/Microsoft.AspNetCore.App/THIRD-PARTY-NOTICES.TXT','wwwroot/index.html','.electron/main.js','.electron/custom_main.js','.electron/node_modules/electron/dist/electron.exe','.electron/node_modules/electron/dist/LICENSE','.electron/node_modules/electron/dist/LICENSES.chromium.html')) {
+foreach ($file in @('restore-windows-task-manager.cmd','Takao.Launcher.exe','Takao.Launcher.dll','Takao.Launcher.deps.json','Takao.Launcher.runtimeconfig.json','coreclr.dll','hostfxr.dll','hostpolicy.dll','System.Private.CoreLib.dll','Microsoft.AspNetCore.dll','licenses/Microsoft.NETCore.App/LICENSE.txt','licenses/Microsoft.NETCore.App/THIRD-PARTY-NOTICES.TXT','licenses/Microsoft.AspNetCore.App/LICENSE.txt','licenses/Microsoft.AspNetCore.App/THIRD-PARTY-NOTICES.TXT','Takao.Qt.exe','Qt6Core.dll','Qt6Widgets.dll','Qt6Network.dll','platforms/qwindows.dll','licenses/Qt/LGPL-3.0-only.txt','licenses/Qt/NOTICE.md')) {
     if (-not (Test-Path -LiteralPath (Join-Path $payload $file) -PathType Leaf)) { throw "Missing installer payload file: $file" }
 }
 $launcherConfig = Get-Content -LiteralPath (Join-Path $payload 'Takao.Launcher.runtimeconfig.json') -Raw | ConvertFrom-Json
@@ -77,9 +77,9 @@ foreach ($entryAlias in @(@('Takao.Host.exe','TaskManager.Host.exe'), @('Takao.L
     if (-not (Test-Path -LiteralPath $legacyEntry -PathType Leaf) -or (Get-FileHash -LiteralPath $legacyEntry -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $currentEntry -Algorithm SHA256).Hash) { throw 'Legacy entry aliases must load the same current Takao application.' }
 }
 if ($launcherConfig.runtimeOptions.framework -or $launcherConfig.runtimeOptions.frameworks -or @($launcherConfig.runtimeOptions.includedFrameworks).Count -ne 1 -or $launcherConfig.runtimeOptions.includedFrameworks[0].version -ne [string]$project.Project.PropertyGroup.DesktopRuntimeVersion) { throw 'Launcher must share the pinned self-contained .NET runtime.' }
-$bridge = Get-Content -LiteralPath (Join-Path $payload '.electron/package.json') -Raw | ConvertFrom-Json
-if ($bridge.version -ne $Version -or $bridge.devDependencies.electron -ne [string]$project.Project.PropertyGroup.ElectronVersion) { throw 'Electron bridge version does not match project.' }
-if ((Get-Content -LiteralPath (Join-Path $payload '.electron/node_modules/electron/dist/version') -Raw).Trim() -ne [string]$project.Project.PropertyGroup.ElectronVersion) { throw 'Actual Electron distribution version differs.' }
+foreach ($file in @('msvcp140.dll','vcruntime140.dll','Qt6Gui.dll','Qt6Svg.dll')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $payload $file) -PathType Leaf)) { throw "Missing native runtime file: $file" }
+}
 $entries = @(Get-ChildItem -LiteralPath $payload -Recurse -Force)
 if ($entries | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'Payload cannot contain filesystem links.' }
 if ($entries | Where-Object { $_.Name -in @('.git','preferences.json','test-results','tests') -or $_.Name -match '^\.env(?:\.|$)' -or $_.Extension -in @('.pdb','.log','.pid') }) { throw 'Payload contains repository, test, debug, or private state.' }

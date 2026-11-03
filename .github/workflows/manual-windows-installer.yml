@@ -41,7 +41,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node.js
+      - name: Set up Node.js (native API test tooling only)
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.16.0'
@@ -160,14 +160,6 @@ jobs:
           retention-days: 14
           compression-level: 0
 
-      - name: Upload application screenshots
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: installer-screenshots-${{ github.run_number }}-${{ github.run_attempt }}
-          path: output/installer-ci/screenshots/*.png
-          if-no-files-found: error
-          retention-days: 14
-
       - name: Upload available acceptance diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -176,8 +168,7 @@ jobs:
           path: |
             output/installer-ci/acceptance.json
             output/installer-ci/acceptance.md
-            output/installer-ci/desktop-startup.json
-            output/installer-ci/screenshots/*.png
+            output/installer-ci/qt-lifecycle/results.json
           if-no-files-found: ignore
           retention-days: 14
 
@@ -288,9 +279,9 @@ jobs:
             "Release details: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/$env:SOURCE_SHA/docs/RELEASE-V1.1.1-STARTUP-STATUS.md",
             "Also includes the disk information, throughput-only disk charts and white performance chart baseline: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/$env:SOURCE_SHA/docs/RELEASE-V1.1.1-DISK-CHARTS.md",
             '',
-            'Includes .NET 10, ASP.NET Core and Electron. Installation and application startup require administrator permission. The installer is unsigned.',
+            'Includes .NET 10, ASP.NET Core and Qt 6 Widgets. Installation and application startup require administrator permission. The installer is unsigned.',
             '',
-            'The disposable Windows runner verified complete installed-file hashes, real Windows collection and local coreclr loading, at least 42 Electron desktop assertions, same-path reinstall, and uninstall with user-file preservation. IFEO configuration remained unchanged.',
+            'The disposable Windows runner verified installed-file hashes, real Windows collection and local coreclr loading, Qt + .NET lifecycle at 1920x1080, same-path reinstall, and uninstall with user-file preservation. IFEO configuration remained unchanged. Full UI interaction evidence is reported separately.',
             '',
             "Source commit: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/commit/$env:SOURCE_SHA",
             "Build and acceptance: $runUrl",

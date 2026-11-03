@@ -25,11 +25,9 @@ $required = @(
     'Takao.Launcher.exe', 'Takao.Launcher.dll', 'Takao.Launcher.deps.json', 'Takao.Launcher.runtimeconfig.json',
     'Newtonsoft.Json.dll', 'start.cmd', 'restore-windows-task-manager.cmd', 'README.md', 'docs/ACCEPTANCE-RESULTS.md',
     'docs/TASKBAR-INTEGRATION.md', 'design-system/takao/MASTER.md',
-    'wwwroot/index.html', 'wwwroot/icon.svg', 'wwwroot/favicon.ico',
-    '.electron/main.js', '.electron/custom_main.js', '.electron/takao.ico',
-    '.electron/node_modules/electron/dist/electron.exe',
-    '.electron/node_modules/electron/dist/LICENSE',
-    '.electron/node_modules/electron/dist/LICENSES.chromium.html'
+    'Takao.Qt.exe', 'Qt6Core.dll', 'Qt6Gui.dll', 'Qt6Widgets.dll', 'Qt6Network.dll',
+    'platforms/qwindows.dll', 'msvcp140.dll', 'vcruntime140.dll', 'takao.ico', 'licenses/Qt/LGPL-3.0-only.txt',
+    'licenses/Qt/NOTICE.md'
 )
 foreach ($relative in $required) {
     if (-not (Test-Path -LiteralPath (Join-Path $source $relative) -PathType Leaf)) { throw "Missing portable file: $relative" }
@@ -70,6 +68,6 @@ try {
 $hash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
 $releaseSums = @(Get-ChildItem -LiteralPath $destination -File | Where-Object { $_.Extension -in @('.exe','.zip') } | Sort-Object Name | ForEach-Object { (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + $_.Name })
 [IO.File]::WriteAllLines((Join-Path $destination 'SHA256SUMS'), $releaseSums, [Text.UTF8Encoding]::new($false))
-Write-Host "Verified $($files.Count) files, including .electron and dependency licenses."
+Write-Host "Verified $($files.Count) files, including Qt and dependency licenses."
 Write-Host $archivePath
 Write-Host "SHA256 $hash"

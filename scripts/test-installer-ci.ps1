@@ -332,7 +332,6 @@ function Invoke-HeadlessAcceptance([string]$Stage) {
     $start.Environment['DOTNET_ROOT'] = $missingRuntime
     $start.Environment['DOTNET_ROOT_X64'] = $missingRuntime
     $start.Environment['DOTNET_MULTILEVEL_LOOKUP'] = '0'
-    [void]$start.Environment.Remove('TASKMANAGER_CDP_PORT')
     $start.RedirectStandardOutput = $true
     $start.RedirectStandardError = $true
     $child = [Diagnostics.Process]::new()
@@ -380,70 +379,13 @@ function Invoke-HeadlessAcceptance([string]$Stage) {
     }
 }
 
-function Copy-DesktopScreenshots([DateTime]$Since) {
-    $destination = Join-Path $output 'screenshots'
-    New-Item -ItemType Directory -Path $destination -Force | Out-Null
-    $candidates = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot 'output/playwright') -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '^final-desktop[-a-z0-9]+\.png$' -and $_.LastWriteTimeUtc -ge $Since.AddSeconds(-2) })
-    foreach ($file in $candidates) {
-        Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $destination $file.Name) -Force
-        if (-not $report.screenshots.Contains($file.Name)) { $report.screenshots.Add($file.Name) }
-    }
-}
-
 function Invoke-DesktopAcceptance {
-    $started = [DateTime]::UtcNow
-    # Hosted runners can expose several node.exe applications on PATH. Select
-    # the first (the setup-node version) instead of stringifying every match.
-    $node = (Get-Command node -CommandType Application | Select-Object -First 1).Source
-    $start = [Diagnostics.ProcessStartInfo]::new($node)
-    $start.UseShellExecute = $false
-    $start.CreateNoWindow = $true
-    $start.WorkingDirectory = $projectRoot
-    $start.ArgumentList.Add('tests/desktop-e2e.mjs')
-    $start.Environment['TASKMANAGER_RELEASE_DIRECTORY'] = $installDirectory
-    $start.Environment['TASKMANAGER_DESKTOP_PORT'] = '5214'
-    $start.Environment['TASKMANAGER_CDP_PORT'] = '9242'
-    $start.RedirectStandardOutput = $true
-    $start.RedirectStandardError = $true
-    $child = [Diagnostics.Process]::new()
-    $child.StartInfo = $start
-    if (-not $child.Start()) { throw 'The installed real Electron acceptance process could not be started.' }
-    Add-OwnedProcess $child
-    $stdout = $child.StandardOutput.ReadToEndAsync()
-    $stderr = $child.StandardError.ReadToEndAsync()
-    try {
-        $deadline = [DateTime]::UtcNow.AddMinutes(8)
-        while (-not $child.WaitForExit(800)) {
-            Update-OwnedDescendants
-            if ([DateTime]::UtcNow -ge $deadline) { throw 'The installed Electron acceptance exceeded its time limit.' }
-        }
-        if ($child.ExitCode -ne 0) {
-            # This test prints assertion names and standard exception stacks,
-            # never bootstrap credentials or complete Windows snapshots.
-            Write-Host ($stdout.GetAwaiter().GetResult())
-            Write-Host ($stderr.GetAwaiter().GetResult())
-        }
-        Assert-Condition ($child.ExitCode -eq 0) 'Existing real Electron desktop acceptance exits successfully against the installed directory'
-        $resultPath = Join-Path $projectRoot 'output/playwright/final-desktop-results.json'
-        if (-not (Test-Path -LiteralPath $resultPath -PathType Leaf) -or (Get-Item -LiteralPath $resultPath).LastWriteTimeUtc -lt $started) { throw 'The installed Electron acceptance did not create a fresh result.' }
-        $desktopResult = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
-        Assert-Condition ($desktopResult.result -ceq 'PASS' -and $desktopResult.assertions -ge 42) 'At least 42 existing production Electron/UI/native assertions pass after installation'
-        $report.desktopAssertions = [int]$desktopResult.assertions
-        Assert-NoInstalledProcess 'after the desktop close flow'
-    } finally {
-        Copy-DesktopScreenshots $started
-        $startupDiagnostic = Join-Path $projectRoot 'output/playwright/final-desktop-startup.json'
-        if ((Test-Path -LiteralPath $startupDiagnostic -PathType Leaf) -and (Get-Item -LiteralPath $startupDiagnostic).LastWriteTimeUtc -ge $started) {
-            Copy-Item -LiteralPath $startupDiagnostic -Destination (Join-Path $output 'desktop-startup.json') -Force
-        }
-        if (-not $child.HasExited) {
-            Update-OwnedDescendants
-            foreach ($entry in @($ownedProcesses | Sort-Object -Property Depth -Descending)) { Stop-OwnedIdentity $entry }
-        }
-        $child.Dispose()
-        [void]$stdout.GetAwaiter().GetResult()
-        [void]$stderr.GetAwaiter().GetResult()
-    }
+    & (Join-Path $projectRoot 'tests/qt-lifecycle.ps1') -ReleaseDirectory $installDirectory -OutputDirectory (Join-Path $output 'qt-lifecycle')
+    $resultPath = Join-Path $output 'qt-lifecycle/results.json'
+    $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    Assert-Condition ($result.result -ceq 'PASS') 'Installed Qt + .NET lifecycle and real native API pass at 1920x1080'
+    $report.desktopAssertions = [int]$result.assertions
+    Assert-NoInstalledProcess 'after the Qt desktop close flow'
 }
 
 function Save-AcceptanceReport {
@@ -508,9 +450,9 @@ try {
         'Takao.Host.exe', 'Takao.Host.dll', 'Takao.Host.deps.json', 'Takao.Host.runtimeconfig.json',
         'Takao.Launcher.exe', 'Takao.Launcher.dll', 'Takao.Launcher.deps.json', 'Takao.Launcher.runtimeconfig.json',
         'coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'System.Private.CoreLib.dll', 'Microsoft.AspNetCore.Server.Kestrel.Core.dll',
-        'Newtonsoft.Json.dll', 'restore-windows-task-manager.cmd', 'wwwroot/index.html', 'wwwroot/favicon.ico',
-        '.electron/main.js', '.electron/custom_main.js', '.electron/takao.ico', '.electron/package-lock.json',
-        '.electron/node_modules/electron/dist/electron.exe', '.electron/node_modules/electron/dist/LICENSE', '.electron/node_modules/electron/dist/LICENSES.chromium.html'
+        'Newtonsoft.Json.dll', 'restore-windows-task-manager.cmd', 'Takao.Qt.exe',
+        'Qt6Core.dll', 'Qt6Gui.dll', 'Qt6Widgets.dll', 'Qt6Network.dll', 'platforms/qwindows.dll',
+        'licenses/Qt/LGPL-3.0-only.txt', 'licenses/Qt/NOTICE.md'
     )
     foreach ($relative in $required) {
         if (-not (Test-Path -LiteralPath (Join-Path $payload $relative) -PathType Leaf)) { throw "Self-contained payload is incomplete: $relative" }
