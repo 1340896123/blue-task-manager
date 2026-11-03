@@ -99,6 +99,11 @@ int main(int argc, char** argv) {
             require(bootstrap["hostPid"].toInteger() == hostPid &&
                         bootstrap["desktopProcessId"].toInteger() == QCoreApplication::applicationPid(),
                     "Production Host owns the exact page-capture Qt child");
+            const auto preferences = request(inspector, "preferences");
+            const auto ui = preferences["preferences"].toObject();
+            require(preferences["warning"].isNull() && ui["density"].toString() == "compact" &&
+                        ui["processView"].toString() == "flat",
+                    "Temporary UI preferences load without a recovery warning");
             auto table = window.findChild<QTreeView*>("dataTable");
             waitFor([&] {
                 return window.windowHandle() && window.windowHandle()->isExposed() && table &&

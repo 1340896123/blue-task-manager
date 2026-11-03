@@ -73,7 +73,9 @@ def main():
             # business data, user preferences, IFEO or OS settings are changed.
             atomic_json(profile / 'preferences.json', {
                 'version': 1, 'intervalMs': 1000,
-                'ui': {'version': 1, 'taskManagerPromptDismissed': True}})
+                'ui': {'version': 1, 'density': 'compact', 'sidebarCollapsed': False,
+                       'processView': 'flat', 'pages': {}, 'searchQuery': '',
+                       'taskManagerPromptDismissed': True}})
             progress = temporary / 'native-progress.json'
             acknowledgements = temporary / 'acknowledged-pngs'
             acknowledgements.mkdir()
