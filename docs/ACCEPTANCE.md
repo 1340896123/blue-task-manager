@@ -2,6 +2,10 @@
 
 # Takao 真实链路验收矩阵
 
+## 2026-11-04 图标缓存
+
+图标缓存采用 [ICON-CACHE.md](ICON-CACHE.md) 的 IC01～IC06，实际结果见 [ICON-CACHE-RESULTS.md](ICON-CACHE-RESULTS.md)：有界缓存策略、真实 HTTP 图标跨页复用、1080P 组件与实际键鼠分别记录，保留未执行的来源更新/故障分支。
+
 ## 2026-11-04 Fluent 全页验收
 
 本轮实际结果与证据见 [FLUENT-DESIGN-RESULTS.md](FLUENT-DESIGN-RESULTS.md)，包含组件、1080P图像、对比度、生产生命周期与受阻的实际键鼠项。

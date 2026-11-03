@@ -102,6 +102,36 @@ int main(int argc,char** argv) {
             check(search->focusPolicy()!=Qt::NoFocus && !search->accessibleName().isEmpty(),"Shared search has native keyboard focus and an accessible name");
             check(qApp->font().pixelSize()==14,"Fluent desktop body typography uses the specified 14px system font");
             report["font"] = QJsonObject{{"requested",qApp->font().families().join(", ")},{"resolved",QFontInfo(qApp->font()).family()},{"search",QFontInfo(search->font()).family()},{"table",QFontInfo(table->font()).family()},{"navigation",QFontInfo(button(&window,"进程")->font()).family()}};
+            // Observe actual production HTTP-loaded icons, without inserting test images.
+            auto data = qobject_cast<DataModel*>(qobject_cast<DataProxy*>(table->model())->sourceModel());
+            QString hostIdentity;
+            for (const auto& value : request(inspector,"snapshot")["processes"].toArray()) {
+                const auto row = value.toObject();
+                if (row["pid"].toInteger() == hostPid) hostIdentity = row["identity"].toString();
+            }
+            check(data && !hostIdentity.isEmpty(),"Icon cache probe uses the real owning Host creation identity");
+            const auto previousQuery = search->text();
+            search->setText(QString::number(hostPid));
+            waitFor([&] {
+                const auto row = data->find(hostIdentity);
+                return row.isValid() && !data->icons.icon(row.data(DataModel::IconKeyRole).toString()).isNull();
+            },"The visible real Host icon loads through the production HTTP PNG endpoint");
+            const auto cachedKey = data->find(hostIdentity).data(DataModel::IconKeyRole).toString();
+            const auto decodedKey = data->icons.icon(cachedKey).cacheKey();
+            check(decodedKey != 0,"A real decoded application icon is present in the bounded cache");
+            search->setText(previousQuery);
+            for (const auto& page : QStringList{"详细信息","应用历史记录","进程"}) {
+                button(&window,page)->click();
+                waitFor([&] { return data->find(hostIdentity).isValid(); },"Owning Host identity is present: "+page);
+                hold(200);
+                const auto row = data->find(hostIdentity);
+                check(row.data(DataModel::IconKeyRole).toString() == cachedKey &&
+                          row.data(Qt::DecorationRole).value<QIcon>().cacheKey() == decodedKey,
+                      "The same HTTP-decoded icon is reused across page navigation: "+page);
+                check(data->icons.count() <= IconCache::capacity && data->icons.inFlight() <= IconCache::concurrency,
+                      "Real page icon loading remains within cache and request limits: "+page);
+            }
+            search->setText(previousQuery);
             const QStringList pages{"进程","性能","应用历史记录","启动应用","用户","详细信息","服务","设置"};
             for(int i=0;i<pages.size();++i) {
                 auto nav=button(&window,pages[i]); check(nav->minimumHeight()>=44 && nav->focusPolicy()!=Qt::NoFocus,"Navigation target/focus: "+pages[i]);
