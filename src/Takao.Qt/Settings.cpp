@@ -215,9 +215,10 @@ void MainWindow::buildSettings() {
         if (settingsSync_)
             return;
         const auto desiredZoom = zoomBox_->currentData().toDouble();
+        const auto normalSize = normalGeometry().size();
         auto w = preferences_["window"].toObject();
-        w["width"] = std::clamp(width(), 960, 3840);
-        w["height"] = std::clamp(height(), 640, 2160);
+        w["width"] = std::clamp(normalSize.width(), 960, 3840);
+        w["height"] = std::clamp(normalSize.height(), 640, 2160);
         w["zoomFactor"] = desiredZoom;
         if (actualTopmost_)
             w["alwaysOnTop"] = *actualTopmost_;
@@ -269,9 +270,10 @@ void MainWindow::buildSettings() {
                 QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes)
             return;
         const auto dismissed = preferences_["taskManagerPromptDismissed"];
+        const auto normalSize = normalGeometry().size();
         auto window = preferences_["window"].toObject();
-        window["width"] = std::clamp(width(), 960, 3840);
-        window["height"] = std::clamp(height(), 640, 2160);
+        window["width"] = std::clamp(normalSize.width(), 960, 3840);
+        window["height"] = std::clamp(normalSize.height(), 640, 2160);
         window["zoomFactor"] = 1;
         if (actualTopmost_)
             window["alwaysOnTop"] = *actualTopmost_;
@@ -368,9 +370,10 @@ void MainWindow::syncTopmost(std::optional<bool> desired, bool persist) {
             if (desired && *actualTopmost_ != *desired)
                 notify("Windows 读回的窗口置顶状态与请求不一致，请重新核验后再操作。", true);
             if (persist && desired && *actualTopmost_ == *desired) {
+                const auto normalSize = normalGeometry().size();
                 auto window = preferences_["window"].toObject();
-                window["width"] = std::clamp(width(), 960, 3840);
-                window["height"] = std::clamp(height(), 640, 2160);
+                window["width"] = std::clamp(normalSize.width(), 960, 3840);
+                window["height"] = std::clamp(normalSize.height(), 640, 2160);
                 window["zoomFactor"] = zoom_;
                 window["alwaysOnTop"] = *actualTopmost_;
                 preferences_["window"] = window;

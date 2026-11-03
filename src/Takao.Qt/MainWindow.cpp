@@ -932,16 +932,22 @@ void MainWindow::savePreferences() {
 void MainWindow::resizeEvent(QResizeEvent* event) {
     QMainWindow::resizeEvent(event);
     QTimer::singleShot(0, this, &MainWindow::loadVisibleIcons);
-    if (!isMaximized() && !isMinimized() && !loadingPreferences_) {
+    // Windows can deliver the resize before Qt's window-state change. Observe
+    // the settled state on the next event turn so maximized bounds never
+    // replace the user's normal restore size.
+    QTimer::singleShot(0, this, [this] {
+        if (closing_ || loadingPreferences_ || isMaximized() || isMinimized())
+            return;
+        const auto normalSize = normalGeometry().size();
         auto window = preferences_["window"].toObject();
-        window["width"] = std::clamp(width(), 960, 3840);
-        window["height"] = std::clamp(height(), 640, 2160);
+        window["width"] = std::clamp(normalSize.width(), 960, 3840);
+        window["height"] = std::clamp(normalSize.height(), 640, 2160);
         window["zoomFactor"] = zoom_;
         if (actualTopmost_)
             window["alwaysOnTop"] = *actualTopmost_;
         preferences_["window"] = window;
         saveSoon();
-    }
+    });
 }
 void MainWindow::closeEvent(QCloseEvent* event) {
     if (closing_) {
