@@ -886,7 +886,7 @@ void MainWindow::filters() {
     session->setSpecialValueText("全部会话");
     session->setValue(proxy_->session);
     form->addRow("会话 ID", session);
-    auto state = new QComboBox(d);
+    auto state = new Theme::ComboBox(d);
     state->addItem("全部状态", "all");
     state->addItem("运行中", "running");
     state->addItem("受限", "restricted");

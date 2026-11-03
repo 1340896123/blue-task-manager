@@ -977,7 +977,7 @@ void MainWindow::buildPerformance() {
     titleLine->addWidget(resourceValue_);
     right->addLayout(titleLine);
     right->addWidget(resourceInfo_);
-    cpuMode_ = new QComboBox();
+    cpuMode_ = new Theme::ComboBox();
     cpuMode_->setAccessibleName("CPU 图表模式");
     cpuMode_->addItems({"总体使用率", "逻辑处理器"});
     cpuMode_->setFixedWidth(Theme::settingControlWidth);

@@ -103,7 +103,7 @@ void MainWindow::buildSettings() {
         return label;
     };
     auto sampling = group("采样与显示");
-    interval_ = new QComboBox(content);
+    interval_ = new Theme::ComboBox(content);
     interval_->addItem("每 1 秒", 1000);
     interval_->addItem("每 2 秒", 2000);
     interval_->addItem("每 5 秒", 5000);
@@ -114,13 +114,13 @@ void MainWindow::buildSettings() {
     freezeBox_->setAccessibleName("冻结当前显示");
     card(sampling, "冻结显示", "保留当前画面，后台继续采集。暂停采集请使用页头按钮。", freezeBox_, 1);
     auto appearance = group("外观与窗口");
-    density_ = new QComboBox(content);
+    density_ = new Theme::ComboBox(content);
     density_->addItem("紧凑 · 32 px 数据行", "compact");
     density_->addItem("标准 · 40 px 数据行", "standard");
     density_->setAccessibleName("数据密度");
     choice(density_);
     card(appearance, "列表密度", "调整数据行间距，保留全部表格信息。", density_, 5);
-    zoomBox_ = new QComboBox(content);
+    zoomBox_ = new Theme::ComboBox(content);
     for (double factor : {.75, 1., 1.25, 1.5, 1.75, 2.})
         zoomBox_->addItem(QString::number(factor * 100, 'f', 0) + " %", factor);
     zoomBox_->setAccessibleName("文字大小");

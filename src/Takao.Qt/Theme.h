@@ -1,5 +1,6 @@
 #pragma once
 #include <QApplication>
+#include <QComboBox>
 #include <QDialog>
 #include <QIcon>
 #include <QLabel>
@@ -9,6 +10,7 @@
 #include <QPushButton>
 #include <QScreen>
 #include <QStyle>
+#include <QStyleOptionComboBox>
 #include <QSvgRenderer>
 #include <QVBoxLayout>
 #include <algorithm>
@@ -113,6 +115,22 @@ inline QIcon icon(int index) {
     renderer.render(&painter);
     return QIcon(image);
 }
+class ComboBox final : public QComboBox {
+  public:
+    using QComboBox::QComboBox;
+  protected:
+    void paintEvent(QPaintEvent* event) override {
+        QComboBox::paintEvent(event);
+        QStyleOptionComboBox option;
+        initStyleOption(&option);
+        const auto arrow = style()->subControlRect(QStyle::CC_ComboBox, &option, QStyle::SC_ComboBoxArrow, this);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QPen(isEnabled() ? text : disabledText, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        const QPointF center = arrow.center();
+        painter.drawPolyline(QPolygonF{center + QPointF(-4, -2), center + QPointF(0, 2), center + QPointF(4, -2)});
+    }
+};
 class NavigationButton final : public QPushButton {
   public:
     using QPushButton::QPushButton;
@@ -204,6 +222,7 @@ inline void apply(QApplication& application) {
       QLineEdit:focus,QComboBox:focus,QSpinBox:focus { border:2px solid @focus; padding:3px 7px; }
       QLineEdit:disabled,QComboBox:disabled,QSpinBox:disabled { background:@surfaceSubtle; color:@disabledText; border-color:@strokeSubtle; }
       QComboBox::drop-down { border:0; width:24px; }
+      QComboBox::down-arrow { image:none; }
       QComboBox QAbstractItemView { border:1px solid @strokeControl; background:@surface; selection-background-color:@selection; selection-color:@text; }
       QTreeView { background:@surface; border:2px solid @surface; border-radius:8px; alternate-background-color:@surface; }
       QTreeView:focus { border-color:@focus; }
