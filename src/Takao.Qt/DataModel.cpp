@@ -65,7 +65,20 @@ QString formatValue(const QJsonValue& value, const QString& format) {
         static const QHash<QString, QString> labels{
             {"running", "运行中"}, {"exited", "已退出"},         {"restricted", "受限"},
             {"stopped", "已停止"}, {"startPending", "正在启动"}, {"stopPending", "正在停止"},
-            {"paused", "已暂停"},  {"active", "活动"},           {"disconnected", "已断开"}};
+            {"paused", "已暂停"},  {"active", "活动"},           {"disconnected", "已断开"},
+            {"SERVICE_STOPPED", "已停止"}, {"SERVICE_RUNNING", "运行中"},
+            {"SERVICE_START_PENDING", "正在启动"}, {"SERVICE_STOP_PENDING", "正在停止"},
+            {"SERVICE_CONTINUE_PENDING", "正在继续"}, {"SERVICE_PAUSE_PENDING", "正在暂停"},
+            {"SERVICE_PAUSED", "已暂停"},
+            {"WTSActive", "活动"}, {"WTSConnected", "已连接"}, {"WTSConnectQuery", "正在查询连接"},
+            {"WTSShadow", "会话监视"}, {"WTSDisconnected", "已断开"}, {"WTSIdle", "空闲"},
+            {"WTSListen", "正在侦听"}, {"WTSReset", "正在重置"}, {"WTSDown", "离线"}, {"WTSInit", "正在初始化"},
+            {"MIB_TCP_STATE_CLOSED", "已关闭"}, {"MIB_TCP_STATE_LISTEN", "正在侦听"},
+            {"MIB_TCP_STATE_SYN_SENT", "已发送 SYN"}, {"MIB_TCP_STATE_SYN_RCVD", "已收到 SYN"},
+            {"MIB_TCP_STATE_ESTAB", "已建立"}, {"MIB_TCP_STATE_FIN_WAIT1", "FIN 等待 1"},
+            {"MIB_TCP_STATE_FIN_WAIT2", "FIN 等待 2"}, {"MIB_TCP_STATE_CLOSE_WAIT", "等待关闭"},
+            {"MIB_TCP_STATE_CLOSING", "正在关闭"}, {"MIB_TCP_STATE_LAST_ACK", "等待最终确认"},
+            {"MIB_TCP_STATE_TIME_WAIT", "时间等待"}, {"MIB_TCP_STATE_DELETE_TCB", "连接已删除"}};
         return labels.value(value.toString(), value.toString());
     }
     if (value.isDouble()) {

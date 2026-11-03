@@ -78,7 +78,7 @@ void MainWindow::buildSettings() {
     topmost_ = new QCheckBox("使 Takao 始终置顶", appearance);
     topmost_->setAccessibleName("始终置顶");
     appearanceForm->addRow(topmost_);
-    preferenceStatus_ = description("偏好通过 .NET JSON.NET 保存到当前账户配置目录。", appearance);
+    preferenceStatus_ = description("界面偏好保存在当前 Windows 账户中。", appearance);
     appearanceForm->addRow(preferenceStatus_);
     layout->addWidget(appearance);
     auto integration = new QGroupBox("任务管理器入口", content);
@@ -404,7 +404,7 @@ void MainWindow::promptFirstLaunch() {
     buttons->addWidget(replace);
     auto failure = new QLabel(d);
     failure->setWordWrap(true);
-    failure->setStyleSheet("color:#A4262C;");
+    failure->setStyleSheet(QStringLiteral("color:%1;").arg(Theme::danger.name()));
     layout->addWidget(failure);
     layout->addLayout(buttons);
     connect(replace, &QPushButton::clicked, d, [this, d, defer, settings, replace, failure] {
@@ -478,7 +478,7 @@ void MainWindow::applyIntegration(QString action, bool first) {
     layout->addWidget(label);
     auto error = new QLabel(d);
     error->setWordWrap(true);
-    error->setStyleSheet("color:#A4262C;");
+    error->setStyleSheet(QStringLiteral("color:%1;").arg(Theme::danger.name()));
     layout->addWidget(error);
     auto buttons = new QHBoxLayout();
     buttons->addStretch();

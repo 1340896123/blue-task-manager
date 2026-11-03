@@ -12,6 +12,7 @@ inline const QColor accent(QStringLiteral("#0067C0")), focus(QStringLiteral("#00
     selection(QStringLiteral("#E8EEF5")), border(QStringLiteral("#8A8A8A"));
 inline const QColor grid(QStringLiteral("#ECEFF2")), secondLine(QStringLiteral("#58636F")),
     danger(QStringLiteral("#A4262C")), warning(QStringLiteral("#8A4B00")), success(QStringLiteral("#107C10"));
+inline const QColor dangerSurface(QStringLiteral("#FDECEE"));
 inline QIcon icon(int index) {
     // Unified 24px outline language using simple Lucide-style SVG primitives.
     static const QStringList paths{

@@ -471,7 +471,7 @@ void MainWindow::switchPage(int index) {
     switchingPage_ = true;
     pendingPageRestore_ = false;
     page_ = index;
-    pageTitle_->setText(titles_[index]);
+    pageTitle_->setText(index == 2 ? titles_[index] + " · 本次会话" : titles_[index]);
     for (int i = 0; i < nav_.size(); ++i)
         nav_[i]->setChecked(i == index);
     table_->setRootIsDecorated(index == 0 && preferences_["processView"].toString() == "tree");
@@ -574,32 +574,32 @@ void MainWindow::updateTable() {
         for (const auto& item : shown_["history"].toArray()) {
             auto row = item.toObject();
             row["state"] = row["isRunning"].toBool() ? "running" : "exited";
-            row["cpu"] = row["observedCpuTime100ns"];
-            row["last"] = row["lastObservedAtUtc"];
+            row["cpu"] = row.value("observedCpuTime100ns");
+            row["last"] = row.value("lastObservedAtUtc");
             rows.append(row);
         }
     } else if (page_ == 3) {
         for (const auto& item : shown_["startupItems"].toArray()) {
             auto row = item.toObject();
-            row["location"] = row["locationPath"];
+            row["location"] = row.value("locationPath");
             rows.append(row);
         }
     } else if (page_ == 4) {
         for (const auto& item : shown_["users"].toArray()) {
             auto row = item.toObject();
-            row["name"] = row["userName"];
+            row["name"] = row.value("userName");
             row["identity"] = QString::number(row["sessionId"].toInt());
-            row["session"] = row["sessionId"];
-            row["station"] = row["stationName"];
-            row["count"] = row["processCount"];
-            row["cpu"] = row["cpuPercent"];
-            row["memory"] = row["workingSetBytes"];
+            row["session"] = row.value("sessionId");
+            row["station"] = row.value("stationName");
+            row["count"] = row.value("processCount");
+            row["cpu"] = row.value("cpuPercent");
+            row["memory"] = row.value("workingSetBytes");
             rows.append(row);
         }
     } else if (page_ == 6) {
         for (const auto& item : shown_["services"].toArray()) {
             auto row = item.toObject();
-            row["display"] = row["displayName"];
+            row["display"] = row.value("displayName");
             rows.append(row);
         }
     }
@@ -623,7 +623,7 @@ void MainWindow::updateTable() {
     if (!rows.isEmpty() || processPage() || !shown_["slowDataCapturedAtUtc"].isNull())
         pendingPageRestore_ = false;
     updatingModel_ = false;
-    count_->setText(QString("%1 项").arg(rows.size()));
+    count_->setText(page_ == 2 ? QString("%1 项 · 会话开始 %2").arg(rows.size()).arg(formatValue(shown_["sessionStartedAtUtc"], "date")) : QString("%1 项").arg(rows.size()));
     loadVisibleIcons();
     applySearch(search_->text());
     if (rows.isEmpty()) {
@@ -656,7 +656,8 @@ void MainWindow::notify(const QString& message, bool error) {
     toast_->setText(message);
     toast_->setAccessibleDescription(error ? "操作失败" : "操作完成");
     toast_->setStyleSheet(
-        error ? "QLabel { border-left:3px solid #A4262C; background:#FDE7E9; padding:10px; color:#A4262C; }"
+        error ? QStringLiteral("QLabel { border-left:3px solid %1; background:%2; padding:10px; color:%1; }")
+                    .arg(Theme::danger.name(), Theme::dangerSurface.name())
               : QString());
     toast_->show();
     toastTimer_.start(error ? 10000 : 5000);
@@ -831,6 +832,7 @@ void MainWindow::buildPerformance() {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(24);
     resources_ = new QListWidget(performance_);
+    resources_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     resources_->setAccessibleName("性能资源");
     resources_->setFixedWidth(240);
     resources_->setSpacing(4);
@@ -1185,10 +1187,10 @@ void MainWindow::readSensors() {
             const auto sensor = value.toObject();
             for (const auto& reading : sensor["readings"].toArray()) {
                 auto row = reading.toObject();
-                row["identity"] = row["id"];
+                row["identity"] = row.value("id");
                 row["sensor"] = sensor["name"];
-                row["name"] = row["label"];
-                row["originalName"] = row["originalLabel"];
+                row["name"] = row.value("label");
+                row["originalName"] = row.value("originalLabel");
                 rows.append(row);
             }
         }

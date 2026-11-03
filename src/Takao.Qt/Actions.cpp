@@ -33,7 +33,7 @@ class ActionDialog final : public QDialog {
 QLabel* errorLabel(QWidget* parent) {
     auto label = new QLabel(parent);
     label->setWordWrap(true);
-    label->setStyleSheet("color:#A4262C;");
+    label->setStyleSheet(QStringLiteral("color:%1;").arg(Theme::danger.name()));
     label->setAccessibleName("操作错误");
     return label;
 }
