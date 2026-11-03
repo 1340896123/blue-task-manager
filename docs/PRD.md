@@ -1,5 +1,9 @@
 # 产品需求：Takao
 
+## 2026-11-04 Fluent / WinUI 全页调整
+
+全部八页按 [FLUENT-DESIGN.md](FLUENT-DESIGN.md) 与MASTER顶部现行映射统一Windows 11 Fluent视觉：中性浅色层次、蓝色强调、清晰字阶、轻描边、4/8px空间、透明导航与独立选择指示；设置改为限宽分组SettingsCard。保持Qt Widgets + .NET10及全部真实数据、现有动作/API/身份保护，不改为WinUI/Web，不新增模拟业务。逐页布局与FUI01～FUI18联合Q系列验收，显示测试仅1920×1080/100%；本节覆盖下方旧视觉数值，历史文档保留。
+
 ## 2026-11-04 当前 Qt + .NET 迁移
 
 桌面技术改为 **Qt 6 Widgets 原生界面 + .NET 10/CsWin32/JSON.NET 后端**，删除 Electron/Electron.NET 和 React/Tailwind 活动渲染入口；保留八页、真实Windows数据与现有操作身份保护。通过既有回环 HTTP/JSON API 连接，不使用 Qt WebEngine 包装网页，不新增私有协议。当前页面合同、生命周期、成熟源码研究与Q01～Q10验收以 [QT-MIGRATION.md](QT-MIGRATION.md) 为准。

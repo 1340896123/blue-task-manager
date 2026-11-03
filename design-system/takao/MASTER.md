@@ -1,5 +1,17 @@
 # Takao — Windows Blue Design System
 
+## 2026-11-04 当前 Fluent / WinUI 视觉映射
+
+本节与 [FLUENT-DESIGN.md](../../docs/FLUENT-DESIGN.md) 为本轮全部八页的现行视觉规范，优先于下方同日早先Qt映射与历史排版数值。Qt 6.8.3 Widgets/C++17只映射Windows 11 Fluent习惯，不迁移WinUI、不承诺Mica/Acrylic；.NET10/CsWin32/JSON.NET、真实回环HTTP、已有页面/动作/身份保护保持。官方固定源码、技能不匹配后的桌面fallback、逐页调整及FUI01～FUI18验收均见该文档。
+
+- 浅色语义：window/navigation底 `#F3F3F3`，content `#F9F9F9`，surface `#FFFFFF`，surfaceSubtle `#F6F6F6`；textPrimary `#1A1A1A`、textSecondary `#5F5F5F`、textDisabled `#747474`。轻分隔strokeSubtle `#E5E5E5`、控件轮廓strokeControl `#D1D1D1`、必要底边/关键边界strokeKeyline `#8A8A8A`，不再让所有面板共用重灰边框。
+- accent/hover/pressed `#0067C0/#005FB8/#00539F`，蓝底白字；中性hover/pressed `#EDEDED/#E4E4E4`，selection/selectionHover `#E8EEF5/#DEE8F2`，独立2px focus `#005FB8`。success `#107C10/#DFF6DD`、warning `#8A4B00/#FFF4CE`、danger `#A4262C/#FDECEE`、info `#005FB8/#E8EEF5` 为前景/背景对；状态有文字。图表继续白底、grid `#ECEFF2`、蓝实线 `#0067C0` / 灰虚线 `#58636F`。
+- 字体使用本机Segoe UI Variable Text/Segoe UI与系统Microsoft YaHei UI中文fallback；caption12/16、body14/20、section20/28、pageTitle28/36、resourceTitle/metric32/40（px/行高），正文400、强调600；数字等宽，不下载在线字体。
+- 4/8px节奏；侧栏204/收起56px，导航与主命令44px命中；顶部56px、搜索480×36px、页头命令栏min56px、内容边距左右24/上16/下24px；当前普通列头40px，若采用已有同帧system来源的可选汇总列头则64px，数据32/40px。保留现有真实全局CPU/内存摘要，不虚构字段或新增汇总卡片。控件圆角4px、面板/弹层8px，卡片无常驻阴影。
+- 导航默认透明无框，中性选中底+3px蓝指示，焦点独立；单页一个标题/命令栏，至多一个蓝主动作；表格白底、轻分隔、清晰排序与选中，所有已有交互保留。性能左资源240px、与主图间16px；主/次图例保留线型和文字，未知/断流不补点。
+- 设置改为五组SettingsCard式布局：采样与显示、外观与窗口、任务管理器入口、版本与更新、来源与能力；内容靠左max1080px、组间24/标题下12/卡片间4px、卡片min76px/内边距16px；左标题与说明、右控件240px，路径max440px可选可换行。替代通栏重框QGroupBox和拉满输入的QFormLayout；入口与真实状态不删减。
+- 仅1920×1080物理像素/100%测试缩放，正文/说明≥4.5:1，信息图标/焦点/曲线/关键边界≥3:1；原生键盘/可访问名称、busy与真实结果、未知原因、焦点恢复均须验证。FUI与Q系列共同记录真实证据，历史截图不挪用。
+
 ## 2026-11-04 Qt 6 Widgets 当前映射与1080P验收
 
 桌面改为Qt 6 Widgets + .NET；已有Windows中性浅色、蓝色强调、八页侧栏、单一页头/命令栏、性能资源双栏方向保持。原CSS/Tailwind Token是历史表达，当前在Qt集中主题（QPalette/QSS/绘图常量）映射相同语义，禁止页面散落颜色/字号；不会通过Qt WebEngine复用网页。后续旧Electron/React/DOM条款只保留设计意图，具体实现合同见 [QT-MIGRATION.md](../../docs/QT-MIGRATION.md)。

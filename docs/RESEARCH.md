@@ -1,5 +1,11 @@
 # 开源实现研究与技术决策
 
+## Fluent / WinUI 桌面视觉（2026-11-04）
+
+已在线实际读取WinUI-Gallery固定提交 `7360ac322414e118eadfb0c7c2f4ecc31a218f59` 的SettingsPage.xaml、NavigationViewPage.xaml和TypographyPage.xaml，以及microsoft-ui-xaml固定提交 `b229fbd15ceb090a2952985955805650e41390d8` 的Common_themeresources_any.xaml、NavigationView_themeresources.xaml、CornerRadius_themeresources.xaml和TextBlock_themeresources.xaml。采用独立Text/Control/Card/Layer语义、透明导航/中性选中底/蓝指示、4px控件与8px弹层圆角、限宽设置卡片的标题/说明/右控件；不复制框架，不宣称Qt具有Mica/Acrylic。精确链接、已读位置、项目Token和八页落点见 [FLUENT-DESIGN.md](FLUENT-DESIGN.md)。
+
+用户指定ui-ux-pro-max的系统查询和一次收窄 `system monitor desktop` 仍返回Hero/CTA、橙色与在线字体，判为产品/平台不匹配，未persist/覆盖MASTER。Qt无支持stack，采用quick-reference桌面可访问性/反馈/性能通用规则作为明确fallback，并以官方源码形成视觉规格；不套手机矩阵。设置max1080px是本项目8px栅格决定，参考样例的1064px限宽原则；保留真实API/数据/身份保护与仅1080P验收。
+
 ## Qt + .NET 原生桌面迁移（2026-11-04）
 
 本轮实际通过GitHub API核验 TaskExplorer `master` 为 `9f3f95d22f07f759dd1e0114417529ba51decb01`，读取其 [ProcessModel.cpp](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/TaskExplorer/GUI/Models/ProcessModel.cpp) 与 [ProcessView.cpp](https://github.com/DavidXanatos/TaskExplorer/blob/9f3f95d22f07f759dd1e0114417529ba51decb01/TaskExplorer/GUI/TaskInfo/ProcessView.cpp)：采用Qt model/view、排序代理、按身份同步和列状态保存/恢复的思路，不复制GPL业务代码、不接入驱动/专有协议。Qt `v6.8.3` 的annotated tag解析到 `c07c2d5a527a644d36e7853d55132ae38921682f`；实际读取其 [HTTP示例](https://github.com/qt/qtbase/blob/c07c2d5a527a644d36e7853d55132ae38921682f/examples/network/http/httpwindow.cpp)，采用QNetworkAccessManager异步请求、finished/abort/错误处理。GUI通过现有回环HTTP/JSON连接.NET/CsWin32/JSON.NET，不另造协议或Windows采集层。
