@@ -1,5 +1,9 @@
 # Takao 架构与数据合同
 
+## 2026-11-04 图标缓存增量
+
+Qt 持有最多512条会话图标缓存与最多2个进行中请求，使用 Qt 公共缓存机制逐项淘汰，按可信来源身份合并并复用解码后的 QIcon；模型绘制只在缺图时读取共用主题图标。真实来源由既有 application-icon HTTP/PNG→ProcessIconService→CsWin32/Shell STA 解析，后端 path/mtime/AUMID 缓存继续适用，不新增协议或Windows采集器。失败退避、来源复核及异步回调边界见 [ICON-CACHE.md](ICON-CACHE.md)。
+
 ## 2026-11-04 当前架构：Qt 6 Widgets + .NET
 
 现行桌面为 `Takao.Host.exe`（.NET 10，管理员入口、Kestrel/JSON.NET、既有采集/操作服务）启动同目录 `Takao.Qt.exe`（Qt 6 Widgets 原生 model/view 界面）。Qt 的 QNetworkAccessManager 异步访问既有明确回环 `/api`，保留 Origin/写令牌/ETag/身份合同；Windows采集与系统更改由CsWin32后端负责。Host/Qt退出互相收敛，只清理本实例，`--headless`仍供真实API检查。
