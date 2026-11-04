@@ -1149,7 +1149,9 @@ void MainWindow::rebuildResources() {
             ids << prefix + o["id"].toString();
             names << (type == "physicalDisks"     ? "磁盘 " + o["name"].toString()
                       : type == "networkAdapters" ? o["alias"].toString()
-                                                  : "GPU " + QString::number(o["physicalIndex"].toInt()));
+                      : o["description"].toString().isEmpty()
+                          ? "GPU " + textOrUnknown(o["adapterLuid"]) + " / phys " + formatValue(o["physicalIndex"], "number")
+                          : (o["isSoftware"].toBool() ? QString("软件 GPU · ") : QString("GPU · ")) + o["description"].toString());
             values << (type == "physicalDisks" ? "读 " + formatValue(o["readBytesPerSecond"], "rate") +
                                                      "\n写 " + formatValue(o["writeBytesPerSecond"], "rate")
                        : type == "networkAdapters"

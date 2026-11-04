@@ -49,7 +49,7 @@ try {
         if ([DateTime]::UtcNow -gt $deadline) { throw 'Native wiring regression timed out.' }
     }
     $testExit = $testHost.ExitCode
-    $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    $result = Get-Content -LiteralPath $resultPath -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($testExit -ne 0 -or $result.result -ne 'PASS') { throw "Native wiring regression failed: $($result.error) (Host exit $testExit)." }
     Write-Host "Qt wiring PASS: $($result.checks.Count) real component checks. $OutputDirectory/results.json"
 }

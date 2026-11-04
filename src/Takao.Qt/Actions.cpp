@@ -876,7 +876,7 @@ void MainWindow::moreMenu() {
             out << w.toObject()["message"].toString();
         presentText("数据来源与状态", out.join("\n"));
     });
-    menu.exec(more_->mapToGlobal(QPoint(0, more_->height())));
+    menu.exec(more_->mapToGlobal(QPoint(more_->width() - menu.sizeHint().width(), more_->height())));
 }
 void MainWindow::columnMenu() {
     if (page_ == 1 || page_ == 7)

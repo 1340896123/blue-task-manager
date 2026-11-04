@@ -8,6 +8,8 @@
 
 本轮 [UI-INTEGRATION.md](UI-INTEGRATION.md) 的UI01～UI06与现行Q系列联合执行：真实ETW1450回退、专用TCP/UDP IPv4/IPv6吞吐、八页字段/原因/历史/跨页定位、1080P Qt交互和精确资源清理。原生/API与桌面证据分别记录，真实权限/无引擎/缺外部共享内存等不支持分支不写成已成功采集。
 
+本轮最终命令、实际结果、1080P截图与未执行范围见 [UI-INTEGRATION-RESULTS.md](UI-INTEGRATION-RESULTS.md)。普通manifest回退还须验证独立会话模式的真实并发订阅与单会话停止隔离。物理验收使用独立`tests/qt-ui-integration-desktop.py`，保留进入本轮前的未提交测试修改。
+
 ## 2026-11-04 图标缓存
 
 图标缓存采用 [ICON-CACHE.md](ICON-CACHE.md) 的 IC01～IC06，实际结果见 [ICON-CACHE-RESULTS.md](ICON-CACHE-RESULTS.md)：有界缓存策略、真实 HTTP 图标跨页复用、1080P 组件与实际键鼠分别记录，保留未执行的来源更新/故障分支。

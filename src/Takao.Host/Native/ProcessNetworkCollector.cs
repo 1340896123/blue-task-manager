@@ -249,7 +249,9 @@ internal sealed class EtwNetworkSession : IAsyncDisposable
                 // System logger slots are a smaller pool than ordinary ETW sessions.
                 // No ownership was acquired by the failed call. Try a fresh ordinary
                 // real-time session and enable the public manifest provider instead.
-                _properties->LogFileMode = PInvoke.EVENT_TRACE_REAL_TIME_MODE;
+                // Keep this provider's delivery independent of other sessions, as
+                // in TraceEvent/PerfView's standard user-provider session setup.
+                _properties->LogFileMode = PInvoke.EVENT_TRACE_REAL_TIME_MODE | PInvoke.EVENT_TRACE_INDEPENDENT_SESSION_MODE;
                 _properties->EnableFlags = 0;
                 _properties->Wnode.Guid = Guid.NewGuid();
                 error = PInvoke.StartTrace(out controller, _name, ref *_properties);

@@ -16,6 +16,7 @@ Directory.CreateDirectory(temporary);
 var children = new List<Process>();
 var facts = new List<object>();
 ProcessNetworkCollector? collector = null;
+ProcessNetworkCollector? peerCollector = null;
 try
 {
     var payload = new byte[44]; BinaryPrimitives.WriteUInt32LittleEndian(payload, 123); BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(4), 9876);
@@ -91,6 +92,48 @@ try
     sample = collector.Current;
     facts.Add(new { layouts = sample.Status.EventLayouts, sample.Status.ConsumedBuffers, sample.Status.FlushedBuffers });
     Check(sample.Status.FlushedBuffers > 0 && sample.Status.ConsumedBuffers > 0, "real buffers flow and the same consumer acknowledges each unique ETW marker");
+    // A second live subscriber must neither starve this session nor disable it
+    // when the peer stops. Both consumers observe the same real dedicated TCP flow.
+    peerCollector = new(() => settings);
+    using (var concurrentStop = new CancellationTokenSource())
+    {
+        var concurrentTraffic = Transfer("TCP4", endpoints["TCP4"], concurrentStop.Token, _ => { }, _ => { });
+        try
+        {
+            for (var attempt = 0; attempt < 12; attempt++)
+            {
+                collector.Request(rows); peerCollector.Request(rows); await Task.Delay(1100);
+                if (collector.Current.Status.Status == "available" && peerCollector.Current.Status.Status == "available" &&
+                    collector.Current.Processes.GetValueOrDefault(target.Identity)?.Receive > 1000 &&
+                    peerCollector.Current.Processes.GetValueOrDefault(target.Identity)?.Receive > 1000) break;
+            }
+            var primaryWindow = collector.Current; var peerWindow = peerCollector.Current;
+            facts.Add(new { concurrentPrimary = primaryWindow.Status, concurrentPeer = peerWindow.Status,
+                primaryReading = primaryWindow.Processes.GetValueOrDefault(target.Identity),
+                peerReading = peerWindow.Processes.GetValueOrDefault(target.Identity) });
+            Check(primaryWindow.Status.Status == "available" && peerWindow.Status.Status == "available" &&
+                primaryWindow.Processes.GetValueOrDefault(target.Identity) is { Receive: > 1000, Send: > 1000 } &&
+                peerWindow.Processes.GetValueOrDefault(target.Identity) is { Receive: > 1000, Send: > 1000 },
+                "two independently owned live sessions both receive the dedicated socket traffic");
+            Check(primaryWindow.Status.EventsLost == 0 && primaryWindow.Status.BuffersLost == 0 &&
+                peerWindow.Status.EventsLost == 0 && peerWindow.Status.BuffersLost == 0,
+                "concurrent provider subscribers retain complete windows without event or buffer loss");
+            var peerStoppedAt = DateTime.UtcNow;
+            await peerCollector.DisposeAsync(); peerCollector = null;
+            for (var attempt = 0; attempt < 12; attempt++)
+            {
+                collector.Request(rows); await Task.Delay(1100);
+                if (collector.Current.Status.CapturedAtUtc > peerStoppedAt && collector.Current.Status.Status == "available" &&
+                    collector.Current.Processes.GetValueOrDefault(target.Identity)?.Receive > 1000) break;
+            }
+            Check(collector.Current.Status.CapturedAtUtc > peerStoppedAt && collector.Current.Status.Status == "available" &&
+                collector.Current.Processes.GetValueOrDefault(target.Identity) is { Receive: > 1000, Send: > 1000 } &&
+                collector.Current.Status.EventsLost == 0 && collector.Current.Status.BuffersLost == 0,
+                "stopping the exact peer session preserves positive traffic in the surviving independent session");
+            facts.Add(new { survivingSession = collector.Current.Status });
+        }
+        finally { concurrentStop.Cancel(); await concurrentTraffic; }
+    }
     collector.SetPaused(true); settings = settings with { Paused = true };
     var paused = collector.Current; await Task.Delay(1200);
     Check(collector.Current == paused && paused.Status.Status == "paused", "pause publishes no new windows");
@@ -127,6 +170,7 @@ catch (Exception error)
 }
 finally
 {
+    if (peerCollector is not null) await peerCollector.DisposeAsync();
     if (collector is not null) await collector.DisposeAsync();
     foreach (var child in children) { if (!child.HasExited) child.Kill(); child.Dispose(); }
     Directory.Delete(temporary, true);
@@ -190,7 +234,10 @@ static async Task Fixture(string directory)
         endpoints.Add($"UDP{pair.Item2}={((IPEndPoint)udp.Client.LocalEndPoint!).Port}");
         tasks.Add(Task.Run(async () => { while (!stop.IsCancellationRequested) { var packet = await udp.ReceiveAsync(stop.Token); await udp.SendAsync(packet.Buffer, packet.RemoteEndPoint, stop.Token); } }));
     }
-    await File.WriteAllLinesAsync(Path.Combine(directory, "endpoints.txt"), endpoints);
+    var endpointFile = Path.Combine(directory, "endpoints.txt");
+    var endpointTemporary = endpointFile + ".tmp";
+    await File.WriteAllLinesAsync(endpointTemporary, endpoints);
+    File.Move(endpointTemporary, endpointFile);
     try { await Task.WhenAll(tasks); } catch (OperationCanceledException) { }
     finally { foreach (var item in owned) item.Dispose(); }
 }

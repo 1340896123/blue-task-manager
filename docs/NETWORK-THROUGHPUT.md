@@ -4,6 +4,8 @@
 
 当前系统logger返回1450时，按 [UI-INTEGRATION.md](UI-INTEGRATION.md) 回退到公开Microsoft-Windows-Kernel-Network manifest provider的自有普通实时session，版本0及ID/task/opcode独立验证；此前只支持classic v2的限制由此增量覆盖。新增状态source表明实际模式，保留原有窗口、身份、丢事件、未知/零值和清理规则。
 
+该普通实时会话同时设置公开`EVENT_TRACE_INDEPENDENT_SESSION_MODE`，沿用Microsoft PerfView的普通provider配置，避免受其他会话订阅影响。验收须以实际数据证明两个本轮自有会话能同时采到同一专用流量，并且停止其中一个后另一个继续有效；不以常量位断言代替真实隔离验证。最终结果见 [UI-INTEGRATION-RESULTS.md](UI-INTEGRATION-RESULTS.md)。
+
 日期：2026-10-25。用户要求补全网络吞吐；目前硬件网卡 `GetIfTable2` 已接入，但进程 `networkBytesPerSecond` 固定 null。本增量将其替换为真实 Windows ETW TCP/UDP 收发统计，覆盖历史“逐进程网络未接入”的范围。所有原生接口由 CsWin32 生成；同源 HTTP、JSON.NET、管理员入口、PID+创建 FILETIME 身份合同继续有效。
 
 ## 用户行为与数据语义

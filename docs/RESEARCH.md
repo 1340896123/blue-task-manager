@@ -1,5 +1,11 @@
 # 开源实现研究与技术决策
 
+## ETW普通会话隔离（2026-11-04）
+
+阶段3实际读取[Microsoft PerfView TraceEventSession.cs，9f071a5cb2e70cdfee13abc510344ab1e8840c90](https://github.com/microsoft/perfview/blob/9f071a5cb2e70cdfee13abc510344ab1e8840c90/src/TraceEvent/TraceEventSession.cs)的GetProperties：普通provider会话以`EVENT_TRACE_INDEPENDENT_SESSION_MODE`为基础，实时模式再叠加`EVENT_TRACE_REAL_TIME_MODE`。固定提交通过git ls-remote核对，并重新读取固定提交文件；本地证据`output/ui-integration/stage3/perfview-session-fixed.cs`。另核对微软win32metadata公开evntrace.h中的常量0x08000000。只采用公开模式与CsWin32绑定，不复制实现。
+
+独立logman与C#在当前现场普通模式均只有丢事件通知，framework-dependent/自包含及PS5/PS7启动链均复现，排除界面映射和打包专有故障；加标准独立模式后808条真实进程网络恢复、四协议8种布局全出现、事件/缓冲丢失为0。完整证据、并发会话回归和最终产物见[本轮验收](UI-INTEGRATION-RESULTS.md)。临时原始事件头诊断不含payload且未保留在正式代码中。
+
 ## 界面接入与进程网络回退（2026-11-04）
 
 现场经典系统logger返回1450，全部进程网络因此未知。实施前实际读取Microsoft krabsetw固定提交d626e49c41a2a324ad8b433b186703aa551373b3的普通ETW provider/session示例与provider.hpp，以及repnz ETW manifest固定提交d5f68e8acda5da154ab44e405b610dd8c2ba1164；本机wevtutil独立核对Kernel-Network的GUID、keyword、v0 event ID/task/opcode与PID/size首部。按公开provider回退，不复制源码、不引入驱动/自造协议、不停止他人session。精确链接、schema映射和三阶段八页接入范围见 [UI-INTEGRATION.md](UI-INTEGRATION.md)。

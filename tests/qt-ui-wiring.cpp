@@ -6,6 +6,7 @@
 #include <QDialog>
 #include <QElapsedTimer>
 #include <QJsonDocument>
+#include <QLocale>
 #include <QPlainTextEdit>
 #include <QSaveFile>
 #include <QThread>
@@ -106,7 +107,45 @@ int main(int argc, char** argv) {
             const auto details = dialog("进程详情")->findChild<QPlainTextEdit*>()->toPlainText();
             for (const auto& field : QStringList{"父 PID", "会话 ID", "累计 CPU 时间", "优先级", "网络窗口时间", "GPU 引擎", "GPU 采集时间", "服务来源时间"})
                 check(details.contains(field), "Actual process details exposes: " + field);
+            const auto verified = request(inspector, QString("processes/%1/details?creationTimeFileTime=%2")
+                .arg(hostPid).arg(hostRow["creationTimeFileTime"].toString()));
+            const auto process = verified["process"].toObject();
+            const auto lines = details.split('\n');
+            const QList<QPair<QString, QString>> facts{
+                {"创建身份", process["creationTimeFileTime"].toString()},
+                {"优先级", process["priority"].toString()},
+                {"路径", process["path"].toString()}};
+            for (const auto& fact : facts)
+                check(!fact.second.isEmpty() && lines.contains(fact.first + "  " + fact.second),
+                      "Rendered detail equals an independent real API read: " + fact.first);
+            for (const auto& field : QList<QPair<QString, QString>>{{"父 PID", "parentPid"}, {"会话 ID", "sessionId"}}) {
+                QString rendered;
+                for (const auto& line : lines)
+                    if (line.startsWith(field.first + "  ")) rendered = line.mid(field.first.size() + 2);
+                bool parsed = false;
+                const auto number = QLocale().toLongLong(rendered, &parsed);
+                check(parsed && process[field.second].isDouble() && number == process[field.second].toInteger(),
+                      "Localized numeric detail equals an independent real API read: " + field.first);
+            }
             dialog("进程详情")->close();
+            waitFor([&] {
+                const auto state = request(inspector, "snapshot")["processNetwork"].toObject();
+                report["networkObservation"] = state; save();
+                return state["status"] == "available";
+            },
+                    "Production network provider becomes available", 30000);
+            const auto network = request(inspector, "snapshot")["processNetwork"].toObject();
+            const auto provider = network["source"].toString();
+            check(provider == "classicSystemLogger" || provider == "kernelNetworkManifest",
+                  "Real network telemetry names its actual standard ETW provider");
+            report["networkSource"] = provider;
+            button(window, "设置")->click();
+            waitFor([&] { for (auto label : window.findChildren<QLabel*>())
+                if (label->accessibleName() == "Windows 数据采样状态")
+                    return label->text().contains(provider == "kernelNetworkManifest"
+                        ? "Windows Kernel-Network ETW" : "Windows 系统 ETW") && label->text().contains("可用");
+                return false; }, "Rendered source matches the independently read production provider");
+            check(true, "Settings renders the actual ETW provider and available source state");
             button(window, "用户")->click();
             waitFor([&] { return table->model()->rowCount() > 0; }, "Actual WTS sessions");
             table->setCurrentIndex(table->model()->index(0, 0));

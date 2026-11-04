@@ -46,7 +46,13 @@ with tempfile.TemporaryDirectory(prefix='Takao-Qt-Components-') as temporary:
         seen = set()
         sized = False
         while time.monotonic() < deadline:
-            report = json.loads(result_path.read_text(encoding='utf-8')) if result_path.exists() else {}
+            try:
+                report = json.loads(result_path.read_text(encoding='utf-8')) if result_path.exists() else {}
+            except (PermissionError, FileNotFoundError, json.JSONDecodeError):
+                # QSaveFile atomically replaces this Windows file. Retry only
+                # this read if the rename or an antivirus reader holds it briefly.
+                time.sleep(.05)
+                continue
             phase = report.get('phase', '')
             windows = [w for w in desktop.list_windows() if w['title']=='Takao'
                        and w['process'] and Path(w['process']).parent == fixture]

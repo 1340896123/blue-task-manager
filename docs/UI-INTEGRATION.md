@@ -26,9 +26,13 @@
 
 经典系统logger仅在创建返回1450时尝试普通实时session；启用provider失败时仍返回真实错误。永不接管/停止其他采集器，不更改Windows ETW全局设置。沿用唯一所有者、bounded队列、时间与丢事件检查、同消费者marker完整窗口和创建身份保护。
 
+阶段3补充：普通manifest回退会话必须同时使用公开的`EVENT_TRACE_INDEPENDENT_SESSION_MODE`。最终验收现场在普通模式下出现持续eventsLost，独立Windows logman短采也复现；采用Microsoft PerfView的标准独立会话配置后，实际四协议事件恢复且零丢失。成熟来源为[TraceEventSession.cs，9f071a5cb2e70cdfee13abc510344ab1e8840c90](https://github.com/microsoft/perfview/blob/9f071a5cb2e70cdfee13abc510344ab1e8840c90/src/TraceEvent/TraceEventSession.cs)的GetProperties；常量由CsWin32生成，不扩展协议或改系统全局日志设置。新增两个本轮自有采集器并发接收真实流量、停止其中一个不影响另一个的隔离验收。
+
 Qt阶段实施前实际读取 [Qt 6.8.3 QAbstractItemModel，c07c2d5a527a644d36e7853d55132ae38921682f](https://github.com/qt/qtbase/blob/c07c2d5a527a644d36e7853d55132ae38921682f/src/corelib/itemmodels/qabstractitemmodel.cpp)，核对DisplayRole与ToolTipRole等独立数据角色。采用精确字段原因及可访问说明，不把整行无关错误当作某个有效单元格的失败。ui-ux-pro-max定向 `error feedback recovery --domain ux` 命中Error Recovery与Error Feedback：就近显示错误及恢复步骤；沿用现有MASTER与Qt公共控件，不新增视觉系统或数据协议。
 
 Qt接线同时规定：查询按页保存和恢复，新页为空；旧版全局搜索仅向初始进程页迁移。会话定位清除旧查询/账户/状态筛选并保存新会话过滤；历史详情读取真实已观测记录，已退出身份仍可查看，只有存活身份提供再次核验的定位入口。进程详情显示累计CPU/I/O、优先级/会话/父PID、网络/GPU独立来源时间与关联服务来源错误，失败保留最后有效观测。性能独立呈现可见字段/逻辑CPU失败及缺少设备的实际状态；HWiNFO缺失提供传感器模式/共享内存及许可检查步骤。
+
+GPU资源磁贴使用已匹配的真实description及软件适配器标志；缺少描述时用完整LUID/phys身份。`physicalIndex`不是Windows GPU编号，不再把不同适配器一律标为“GPU 0”。完整名称保留在原生列表文本与tooltip中。
 
 ## 验收
 
