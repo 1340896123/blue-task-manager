@@ -56,7 +56,7 @@ class MainWindow final : public QMainWindow {
     DataProxy* proxy_{};
     QWidget* performance_{};
     QListWidget* resources_{};
-    QLabel *resourceTitle_{}, *resourceInfo_{}, *resourceValue_{}, *perfStatus_{};
+    QLabel *resourceTitle_{}, *resourceInfo_{}, *resourceValue_{}, *perfStatus_{}, *resourceAvailability_{};
     QComboBox* cpuMode_{};
     QStackedWidget* perfStack_{};
     QWidget* chartsPage_{};
@@ -112,6 +112,8 @@ class MainWindow final : public QMainWindow {
     void terminateProcess(QJsonObject target = {});
     void terminateTree(const QJsonObject&);
     void details(QJsonObject target = {});
+    void historyDetails(const QJsonObject&);
+    void locateSession(const QJsonObject&);
     void serviceDetails(const QJsonObject&);
     void contextMenu(const QPoint&);
     void moreMenu();

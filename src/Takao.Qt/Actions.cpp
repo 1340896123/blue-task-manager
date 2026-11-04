@@ -325,14 +325,11 @@ void MainWindow::details(QJsonObject target) {
         return;
     }
     if (page_ == 4) {
-        switchPage(0);
-        proxy_->session = target["sessionId"].toInt();
-        proxy_->refreshFilter();
-        notify("已定位到所选 Windows 会话的进程。");
+        locateSession(target);
         return;
     }
     if (page_ == 2) {
-        locateProcess(target["pid"].toInteger(), target["identity"].toString());
+        historyDetails(target);
         return;
     }
     if (!target["creationTimeFileTime"].isString()) {
@@ -382,31 +379,47 @@ void MainWindow::details(QJsonObject target) {
                  [d, info](const QJsonObject& result, const QString& error, int) {
                      d->setProperty("reading", false);
                      if (!error.isEmpty()) {
-                         info->setPlainText("读取失败：" + error +
-                                            "\n保留此窗口，可关闭后重新选择真实进程。");
+                         info->setPlainText(info->property("lastData").toString() +
+                                            "\n读取失败：" + error +
+                                            "\n以上保留最后有效观测；可关闭后重新选择真实进程。");
                          return;
                      }
                      auto process = result["process"].toObject();
                      QStringList output{
                          identityText(process),
                          "创建身份  " + process["creationTimeFileTime"].toString(),
+                         "创建时间  " + formatValue(result["startedAtUtc"], "date"),
                          "采集时间  " + formatValue(result["capturedAtUtc"], "date"),
+                         "快照时间  " + formatValue(result["snapshotCapturedAtUtc"], "date"),
+                         "父 PID  " + formatValue(process["parentPid"], "number"),
+                         "会话 ID  " + formatValue(process["sessionId"], "number"),
                          "路径  " + formatValue(process["path"], {}),
                          "发布者（版本元数据）  " + formatValue(process["publisher"], {}),
                          "用户  " + formatValue(process["userName"], {}),
                          "CPU  " + formatValue(process["cpuPercent"], "percent"),
+                         "累计 CPU 时间  " + formatValue(process["totalCpuTime100ns"], "cpuTime"),
+                         "优先级  " + formatValue(process["priority"], {}),
                          "工作集  " + formatValue(process["workingSetBytes"], "bytes"),
                          "专用内存  " + formatValue(process["privateBytes"], "bytes"),
                          "句柄  " + formatValue(process["handleCount"], "number"),
                          "线程  " + formatValue(process["threadCount"], "number"),
+                         "I/O 读取速度  " + formatValue(process["ioReadBytesPerSecond"], "rate"),
+                         "I/O 写入速度  " + formatValue(process["ioWriteBytesPerSecond"], "rate"),
+                         "累计 I/O 读取  " + formatValue(process["ioReadBytes"], "bytes"),
+                         "累计 I/O 写入  " + formatValue(process["ioWriteBytes"], "bytes"),
                          "网络接收  " + formatValue(process["networkReceiveBytesPerSecond"], "rate"),
                          "网络发送  " + formatValue(process["networkSendBytesPerSecond"], "rate"),
+                         "网络窗口时间  " + formatValue(process["networkCapturedAtUtc"], "date"),
                          "GPU  " + formatValue(process["gpuPercent"], "percent"),
+                         "GPU 引擎  " + formatValue(process["gpuEngine"], {}),
+                         "GPU 采集时间  " + formatValue(process["gpuCapturedAtUtc"], "date"),
                          "运行时间  " + formatValue(result["uptimeSeconds"], "duration"),
-                         reasonText(process)};
+                         "服务来源时间  " + formatValue(result["relatedServicesCapturedAtUtc"], "date"),
+                         reasonText(result)};
                      for (const auto& service : result["relatedServices"].toArray())
                          output << "关联服务  " + service.toObject()["name"].toString();
                      const auto scroll = info->verticalScrollBar()->value();
+                     info->setProperty("lastData", output.join("\n"));
                      info->setPlainText(output.join("\n"));
                      info->verticalScrollBar()->setValue(scroll);
                  });
@@ -429,6 +442,59 @@ void MainWindow::details(QJsonObject target) {
     timer->start();
     d->open();
     refresh();
+}
+void MainWindow::historyDetails(const QJsonObject& target) {
+    auto d = new QDialog(this);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->setWindowTitle("本次会话观测 · " + identityText(target));
+    d->resize(Theme::dialogWidth, 550);
+    auto layout = Theme::dialogLayout(d);
+    auto text = new QPlainTextEdit(d);
+    text->setReadOnly(true);
+    text->setAccessibleName("本次会话历史详情");
+    text->setPlainText(QStringList{
+        identityText(target), "进程身份  " + target["identity"].toString(),
+        "状态  " + formatValue(target["isRunning"], "running"),
+        "首次观测  " + formatValue(target["firstObservedAtUtc"], "date"),
+        "最后观测  " + formatValue(target["lastObservedAtUtc"], "date"),
+        "观测 CPU 时间  " + formatValue(target["observedCpuTime100ns"], "cpuTime"),
+        "观测 I/O 读取  " + formatValue(target["observedIoReadBytes"], "bytes"),
+        "观测 I/O 写入  " + formatValue(target["observedIoWriteBytes"], "bytes"),
+        "仅累计本程序观测期间的有效增量；已退出条目保留历史，未知不表示零。",
+        reasonText(target, "cpu"), reasonText(target, "observedIoReadBytes"),
+        reasonText(target, "observedIoWriteBytes")}.join("\n"));
+    layout->addWidget(text);
+    auto commands = new QHBoxLayout();
+    auto locate = button("查看当前进程", d);
+    locate->setEnabled(connected_ && target["isRunning"].toBool());
+    locate->setToolTip(locate->isEnabled() ? "重新核对创建身份后定位到详细信息。" : "该身份已退出，历史观测仍可查看。");
+    commands->addWidget(locate);
+    commands->addStretch();
+    auto close = button("关闭", d);
+    commands->addWidget(close);
+    layout->addLayout(commands);
+    connect(close, &QPushButton::clicked, d, &QDialog::accept);
+    connect(locate, &QPushButton::clicked, d, [this, d, target] {
+        if (locateProcess(target["pid"].toInteger(), target["identity"].toString()))
+            d->accept();
+    });
+    d->open();
+}
+void MainWindow::locateSession(const QJsonObject& target) {
+    if (!target["sessionId"].isDouble()) {
+        notify("无法确认此 Windows 会话 ID，请刷新来源后重试。", true);
+        return;
+    }
+    switchPage(0);
+    search_->clear();
+    proxy_->onlyCurrentUser = false;
+    proxy_->state = "all";
+    proxy_->session = target["sessionId"].toInt();
+    proxy_->refreshFilter();
+    capturePagePreference();
+    saveSoon();
+    table_->setFocus();
+    notify(QString("正在显示 Windows 会话 %1 的真实进程。").arg(proxy_->session));
 }
 void MainWindow::startupDetails(const QJsonObject& target) {
     presentText(
@@ -588,6 +654,8 @@ bool MainWindow::locateProcess(qint64 pid, const QString& expectedIdentity) {
         table_->setCurrentIndex(idx);
         table_->scrollTo(idx);
         table_->setFocus();
+        capturePagePreference();
+        saveSoon();
         return true;
     }
     notify("当前筛选或展示快照中未找到该创建身份，未定位其它进程。", true);
@@ -727,11 +795,11 @@ void MainWindow::contextMenu(const QPoint& point) {
             "转到当前关联进程", [this, target] { locateServiceProcess(target); },
             target["pid"].toInteger() > 0);
     } else if (page_ == 4)
-        add("查看该会话的进程", [this, target] {
-            switchPage(0);
-            proxy_->session = target["sessionId"].toInt();
-            proxy_->refreshFilter();
-        });
+        add("查看该会话的进程", [this, target] { locateSession(target); });
+    else if (page_ == 2)
+        add("查看当前进程", [this, target] {
+            locateProcess(target["pid"].toInteger(), target["identity"].toString());
+        }, target["isRunning"].toBool());
     menu.addSeparator();
     add("复制名称", [target] { QApplication::clipboard()->setText(target["name"].toString()); });
     menu.exec(point.isNull()
@@ -803,7 +871,7 @@ void MainWindow::moreMenu() {
                         "本次会话开始  " + formatValue(latest_["sessionStartedAtUtc"], "date"),
                         "后台来源时间  " + formatValue(latest_["slowDataCapturedAtUtc"], "date"),
                         "真实采样耗时  " + formatValue(latest_["samplingDurationMs"], "number") + " ms",
-                        reasonText(latest_["processNetwork"].toObject())};
+                        networkStatusText(latest_["processNetwork"].toObject())};
         for (const auto& w : latest_["warnings"].toArray())
             out << w.toObject()["message"].toString();
         presentText("数据来源与状态", out.join("\n"));

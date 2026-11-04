@@ -252,7 +252,7 @@ void MainWindow::buildSettings() {
     connect(status, &QPushButton::clicked, this, [this] {
         QStringList lines{
             "采样时间  " + formatValue(latest_["capturedAtUtc"], "date"),
-            "后端来源  Microsoft.Windows.CsWin32", reasonText(latest_["processNetwork"].toObject()),
+            "后端来源  Microsoft.Windows.CsWin32", networkStatusText(latest_["processNetwork"].toObject()),
             reasonText(latest_["telemetry"].toObject()), reasonText(latest_["hwInfo"].toObject())};
         const auto capabilities = bootstrap_["capabilities"].toObject();
         for (auto it = capabilities.begin(); it != capabilities.end(); ++it) {
@@ -310,9 +310,10 @@ void MainWindow::updateSettings() {
     interval_->setEnabled(connected_);
     topmost_->setEnabled(connected_ && actualTopmost_.has_value() && !applyingTopmost_);
     settingsSync_ = false;
-    sourceStatus_->setText(QString("最近真实采样  %1\n%2")
+    sourceStatus_->setText(QString("最近真实采样  %1\n%2\n%3")
         .arg(formatValue(latest_["capturedAtUtc"], "date"),
-             connected_ ? "已连接本机 Windows · 不可读指标保留未知及原因。" : "连接中断 · 保留最后成功采样。"));
+             connected_ ? "已连接本机 Windows · 不可读指标保留未知及原因。" : "连接中断 · 保留最后成功采样。",
+             networkStatusText(latest_["processNetwork"].toObject())));
 }
 void MainWindow::applyAppearance(bool restoreWindowState) {
     const auto window = preferences_["window"].toObject();

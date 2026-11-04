@@ -559,6 +559,7 @@ void MainWindow::applySnapshot() {
                           .arg(formatValue(system["cpuPercent"], "percent"),
                                formatValue(system["memoryPercent"], "percent"))
                           .arg(system["processCount"].toInt()));
+    summary_->setToolTip(networkStatusText(shown_["processNetwork"].toObject()));
     if (frozen_)
         setBanner("显示已冻结；后台继续真实采集。取消冻结后显示最新快照。");
     else if (latest_["paused"].toBool())
@@ -840,6 +841,10 @@ void MainWindow::capturePagePreference() {
     auto pages = preferences_["pages"].toObject();
     auto pref = pages[keys_[page_]].toObject();
     pref["query"] = search_->text();
+    if (processPage())
+        pref["filters"] = QJsonObject{{"currentUser", proxy_->onlyCurrentUser},
+                                     {"sessionId", proxy_->session < 0 ? QJsonValue() : QJsonValue(proxy_->session)},
+                                     {"state", proxy_->state}};
     if (page_ != 1 && page_ != 7 && !model_->columns.isEmpty()) {
         const auto column =
             std::clamp(table_->header()->sortIndicatorSection(), 0, int(model_->columns.size()) - 1);
@@ -880,7 +885,10 @@ void MainWindow::restorePagePreference() {
         cpuMode_->setCurrentIndex(perf["cpuGraphMode"].toString() == "logicalProcessors" ? 1 : 0);
     }
     const QSignalBlocker blocker(search_);
-    search_->setText(p["query"].toString(preferences_["searchQuery"].toString()));
+    // Legacy global search only migrates to the initial process page. A new
+    // page must start clear, rather than filtering unrelated settings/devices.
+    const bool legacyQuery = page_ == 0 && preferences_["pages"].toObject().isEmpty();
+    search_->setText(p["query"].toString(legacyQuery ? preferences_["searchQuery"].toString() : QString()));
     const auto filter = p["filters"].toObject();
     proxy_->onlyCurrentUser = filter["currentUser"].toBool();
     proxy_->session = filter["sessionId"].isDouble() ? filter["sessionId"].toInt() : -1;
@@ -1000,6 +1008,11 @@ void MainWindow::buildPerformance() {
     titleLine->addWidget(resourceValue_);
     right->addLayout(titleLine);
     right->addWidget(resourceInfo_);
+    resourceAvailability_ = new QLabel();
+    resourceAvailability_->setAccessibleName("设备来源状态");
+    resourceAvailability_->setWordWrap(true);
+    resourceAvailability_->setProperty("secondary", true);
+    right->addWidget(resourceAvailability_);
     cpuMode_ = new Theme::ComboBox();
     cpuMode_->setAccessibleName("CPU 图表模式");
     cpuMode_->addItems({"总体使用率", "逻辑处理器"});
@@ -1222,6 +1235,24 @@ void MainWindow::updatePerformance() {
     const auto sep = selectedResource_.indexOf(':');
     const auto type = selectedResource_.left(sep), id = selectedResource_.mid(sep + 1);
     const auto sys = shown_["system"].toObject();
+    QStringList unavailableDevices;
+    const auto telemetry = shown_["telemetry"].toObject();
+    for (const auto& group : QList<QPair<QString, QString>>{{"physicalDisks", "磁盘"},
+                                                           {"gpuAdapters", "GPU"},
+                                                           {"networkAdapters", "硬件网卡"}}) {
+        bool present = false;
+        for (const auto& item : shown_[group.first].toArray())
+            present = present || !item.toObject()["isTotal"].toBool();
+        if (!present) {
+            const auto reason = group.first == "networkAdapters"
+                                    ? reasonText(sys, "networkReceiveBytesPerSecond")
+                                    : reasonText(telemetry, group.first == "physicalDisks" ? "disk" : "gpu");
+            unavailableDevices << group.second + "：" +
+                (reason.isEmpty() ? QString("当前 Windows 来源没有返回可显示的设备；可刷新来源重试。") : reason);
+        }
+    }
+    resourceAvailability_->setText(unavailableDevices.join("\n"));
+    resourceAvailability_->setVisible(!unavailableDevices.isEmpty());
     QJsonObject device;
     const auto arrayKey = type == "disk"      ? "physicalDisks"
                           : type == "network" ? "networkAdapters"
@@ -1252,7 +1283,9 @@ void MainWindow::updatePerformance() {
         const auto state = shown_["hwInfo"].toObject();
         perfStatus_->setText(reasonText(state));
         facts_->setText("可选只读 SM2 来源 · 保留 HWiNFO "
-                        "原始分组、单位及会话最小/最大/平均值。未安装或未启用共享内存时显示实际原因。");
+                        "原始分组、单位及会话最小/最大/平均值。\n"
+                        "需要此来源时，请运行 HWiNFO 的传感器模式，在其设置中启用 Shared Memory Support，"
+                        "并确认当前版本/许可允许共享内存；本页会自动重读。其他 Windows 性能数据继续可用。");
         perfStatus_->setVisible(!perfStatus_->text().isEmpty());
         setFacts({});
         facts_->show();
@@ -1335,10 +1368,25 @@ void MainWindow::updatePerformance() {
                                      shown_["intervalMs"].toDouble(1000) / 1000.);
     }
     QStringList reasons;
-    if (type == "cpu" || type == "memory")
-        reasons << reasonText(sys, type == "cpu" ? "cpuPercent" : "memoryPercent");
-    else
+    if (type == "cpu") {
+        for (const auto& field : {"cpuPercent", "threadCount", "handleCount"})
+            reasons << reasonText(sys, field);
+        if (logical) {
+            reasons << reasonText(telemetry, "logicalProcessors");
+            for (const auto& processor : processors)
+                reasons << reasonText(processor.toObject(), "percent");
+        }
+    } else if (type == "memory") {
+        for (const auto& field : {"memoryPercent", "usedPhysicalBytes", "availablePhysicalBytes",
+                                  "totalPhysicalBytes", "commitBytes", "commitLimitBytes", "cacheBytes"})
+            reasons << reasonText(sys, field);
+    } else if (type == "disk") {
+        // Activity time is deliberately absent from the visible disk contract.
+        for (const auto& field : {"readBytesPerSecond", "writeBytesPerSecond", "model", "mediaType", "busType", "deviceNumber"})
+            reasons << reasonText(device, field);
+    } else
         reasons << reasonText(device);
+    reasons.removeDuplicates();
     reasons.removeAll({});
     perfStatus_->setText(reasons.join("\n"));
     perfStatus_->setVisible(!perfStatus_->text().isEmpty());
@@ -1387,6 +1435,8 @@ void MainWindow::readSensors() {
     if (!connected_ || selectedResource_ != "hwinfo:")
         return;
     api_.get("hwinfo/sensors", this, [this](const QJsonObject& source, const QString& error, int) {
+        if (selectedResource_ != "hwinfo:")
+            return;
         if (!error.isEmpty()) {
             perfStatus_->setText(error);
             perfStatus_->show();

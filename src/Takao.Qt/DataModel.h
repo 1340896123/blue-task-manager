@@ -14,6 +14,7 @@ struct Column {
 };
 QString formatValue(const QJsonValue&, const QString& format);
 QString reasonText(const QJsonObject& row, const QString& key = {});
+QString networkStatusText(const QJsonObject& source);
 QString rowIdentity(const QJsonObject&);
 
 class DataModel final : public QAbstractItemModel {

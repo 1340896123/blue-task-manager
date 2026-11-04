@@ -94,19 +94,55 @@ QString formatValue(const QJsonValue& value, const QString& format) {
 }
 QString reasonText(const QJsonObject& row, const QString& key) {
     const auto unavailable = row["unavailable"].toObject();
-    if (!key.isEmpty()) {
-        const auto specific = unavailable[key].toObject()["message"].toString();
-        if (!specific.isEmpty())
-            return specific;
-        if (key == "enabled")
-            return row["enabledReason"].toString();
-    }
     QStringList parts;
-    for (auto it = unavailable.begin(); it != unavailable.end(); ++it)
-        parts << it.value().toObject()["message"].toString();
+    if (key.isEmpty()) {
+        for (auto it = unavailable.begin(); it != unavailable.end(); ++it)
+            parts << it.value().toObject()["message"].toString();
+    } else {
+        QStringList fields{key};
+        if (key == "io")
+            fields << "ioReadBytesPerSecond" << "ioWriteBytesPerSecond";
+        if (key == "networkBytesPerSecond")
+            fields << "networkReceiveBytesPerSecond" << "networkSendBytesPerSecond";
+        if (key == "gpuEngine")
+            fields << "gpuPercent";
+        if (row.contains("stationName")) {
+            static const QHash<QString, QString> aliases{{"name", "userName"}, {"session", "sessionId"},
+                {"station", "stationName"}, {"count", "processCount"}, {"cpu", "cpuPercent"},
+                {"memory", "workingSetBytes"}};
+            if (aliases.contains(key))
+                fields << aliases[key];
+        }
+        for (const auto& field : fields)
+            parts << unavailable[field].toObject()["message"].toString();
+        if (key == "enabled")
+            parts << row["enabledReason"].toString();
+        if (key == "location" || key == "locationPath")
+            parts << row["locationReason"].toString();
+        if (row.contains("observedCpuTime100ns")) {
+            const auto observed = key == "cpu" ? QString("observedCpuTime100ns") : key;
+            if ((observed == "observedCpuTime100ns" || observed == "observedIoReadBytes" ||
+                 observed == "observedIoWriteBytes") && row[observed].isNull())
+                parts << "本次会话尚未取得此身份的有效累计观测；未知不表示零。";
+        }
+    }
     parts.removeDuplicates();
     parts.removeAll({});
     return parts.join("\n");
+}
+QString networkStatusText(const QJsonObject& source) {
+    const auto mode = source["source"].toString();
+    const auto label = mode == "kernelNetworkManifest" ? QString("Windows Kernel-Network ETW")
+                     : mode == "classicSystemLogger" ? QString("Windows 系统 ETW")
+                                                        : QString("Windows ETW（等待来源）");
+    const auto status = source["status"].toString();
+    const auto state = status == "available" ? QString("可用")
+                     : status == "warmingUp" ? QString("预热中")
+                     : status == "paused" ? QString("已暂停") : QString("不可用 · ") + status;
+    QStringList lines{label + " · " + state,
+                      "网络窗口时间  " + formatValue(source["capturedAtUtc"], "date"), reasonText(source)};
+    lines.removeAll({});
+    return lines.join("\n");
 }
 DataModel::DataModel(QObject* parent) : QAbstractItemModel(parent), root_(std::make_unique<Node>()) {}
 QModelIndex DataModel::index(int row, int column, const QModelIndex& parentIndex) const {
