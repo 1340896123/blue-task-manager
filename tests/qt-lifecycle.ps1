@@ -55,8 +55,16 @@ try {
     Check (([IO.Path]::GetFullPath(($qtProcess.Modules | Where-Object ModuleName -eq 'Qt6Widgets.dll' | Select-Object -First 1).FileName)) -eq [IO.Path]::GetFullPath((Join-Path $ReleaseDirectory 'Qt6Widgets.dll'))) 'the native window loads the published Qt Widgets runtime'
     $qtIdentity = & $probe process-elevation $qtProcess.Id | ConvertFrom-Json
     Check $qtIdentity.elevated 'Qt inherits the production elevated token'
-    $window = & $probe "$($qtProcess.Id):$($qtIdentity.creationTimeFileTime)" resize-frame 1920 1080 | ConvertFrom-Json
-    Check ($LASTEXITCODE -eq 0 -and $window.title -eq 'Takao' -and $window.width -eq 1920 -and $window.height -eq 1080) 'the only Win32 display geometry is a 1920x1080 Qt window'
+    $window = $null
+    $frameDeadline = [DateTime]::UtcNow.AddSeconds(8)
+    do {
+        $window = & $probe "$($qtProcess.Id):$($qtIdentity.creationTimeFileTime)" resize-frame 1920 1080 | ConvertFrom-Json
+        $frameExit = $LASTEXITCODE
+        if ($frameExit -eq 0 -and $window.title -eq 'Takao' -and $window.width -eq 1920 -and $window.height -eq 1080) { break }
+        Start-Sleep -Milliseconds 150
+    } while ([DateTime]::UtcNow -lt $frameDeadline)
+    $window | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $OutputDirectory 'window-frame.json') -Encoding utf8
+    Check ($frameExit -eq 0 -and $window.title -eq 'Takao' -and $window.width -eq 1920 -and $window.height -eq 1080) "the only Win32 display geometry is a 1920x1080 Qt window (actual $($window.width)x$($window.height))"
     $deadline = [DateTime]::UtcNow.AddSeconds(10)
     while (@($snapshot.processes | Where-Object pid -eq $qtProcess.Id).Count -ne 1 -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200; $snapshot = Read-Api 'snapshot' }
     Check (@($snapshot.processes | Where-Object pid -eq $qtProcess.Id).Count -eq 1) 'real CsWin32 sample includes Qt'

@@ -130,6 +130,13 @@ jobs:
       - name: Build the locked self-contained installer
         run: ./scripts/build-installer.ps1 -MakeNsisPath $env:TASKMANAGER_NSIS_COMPILER -ReleaseTag $env:TASKMANAGER_RELEASE_TAG -SourceCommit $env:TASKMANAGER_SOURCE_COMMIT
 
+      - name: Configure the disposable runner display at 1080p
+        run: |
+          if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') {
+            throw 'Display configuration is restricted to the disposable hosted runner.'
+          }
+          Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
       - name: Verify the installed application and uninstall
         run: |
           ./scripts/test-installer-ci.ps1 `
@@ -168,7 +175,7 @@ jobs:
           path: |
             output/installer-ci/acceptance.json
             output/installer-ci/acceptance.md
-            output/installer-ci/qt-lifecycle/results.json
+            output/installer-ci/qt-lifecycle/
           if-no-files-found: ignore
           retention-days: 14
 
