@@ -4,6 +4,8 @@
 
 当前安装器包含 Qt 6 Widgets + .NET 10 自包含运行库，沿用手动工作流及标准 NSIS 安装/卸载验收。发布 job 要求实际 Qt 生命周期证据：`framework=Qt 6 Widgets`、`display=1920x1080`、至少20项检查且数量一致、专用进程结束确认；完整结果随 `desktopLifecycle` 写入安装验收 JSON。旧 Electron 的42项门槛不用于当前 Qt 发布。八页实值及本地62项真实键鼠结果见 [UI-INTEGRATION-RESULTS.md](UI-INTEGRATION-RESULTS.md)，不冒充 CI 安装或物理输入结果。
 
+Launcher的复制通过MSBuild公开的`GetTargetPath`取得实际输出目录，覆盖AnyCPU/x64及RID配置；不得依赖本机旧`bin/Release`产物掩盖云端`bin/x64/Release`的差异。发布附件为工作流已核验的安装器、兼容别名、校验清单与安装验收报告；本地WGC截图的保存位置见本地报告，不宣称包含在CI附件中。
+
 2026-10-26 更新交接：CI 在构建前把已核验标签和源码提交传为 `TASKMANAGER_RELEASE_TAG` / `TASKMANAGER_SOURCE_COMMIT`。构建脚本通过只读 PE 元数据核对 Host 的 AssemblyMetadata，再将同一身份写入 NSIS 版本资源、产品标记和卸载记录；CI 从实际安装 API 再读回。独立验收产物可用 `build-installer.ps1 -SkipBuild -PayloadDirectory <完整目录> -OutputDirectory <独立输出目录>`，默认构建路径保持原有约定。
 
 安装器只接受 `/S /TASKMANAGERUPDATE=<32位小写hex>` 的明确更新请求，无 `/D` 覆盖且现有产品记录与标记一致后才开启总计最多 60 秒的映像解锁等待。固定产品键保存 `LastUpdateAttemptId/Result/Error`，完整成功后重启固定 Host；普通安装和卸载仍立即拒绝占用。机制与验证边界见 [更新安装器验收](UPDATE-INSTALLER-RESULTS.md)。

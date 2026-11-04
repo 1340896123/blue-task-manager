@@ -40,8 +40,14 @@
     <Content Remove="wwwroot\**\*" />
   </ItemGroup>
   <Target Name="CopyTakaoLauncher" AfterTargets="Build">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\Takao.Launcher\Takao.Launcher.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework);RuntimeIdentifier=$(RuntimeIdentifier)">
+      <Output TaskParameter="TargetOutputs" ItemName="_TakaoLauncherTargetPath" />
+    </MSBuild>
+    <Error Condition="'@(_TakaoLauncherTargetPath)' == ''" Text="The Launcher target path could not be resolved for the active build configuration." />
     <ItemGroup>
-      <LauncherArtifact Include="$(MSBuildThisFileDirectory)..\Takao.Launcher\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\Takao.Launcher.exe;$(MSBuildThisFileDirectory)..\Takao.Launcher\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\Takao.Launcher.dll;$(MSBuildThisFileDirectory)..\Takao.Launcher\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\Takao.Launcher.deps.json;$(MSBuildThisFileDirectory)..\Takao.Launcher\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\Takao.Launcher.runtimeconfig.json" />
+      <LauncherArtifact Include="@(_TakaoLauncherTargetPath);@(_TakaoLauncherTargetPath->'%(RootDir)%(Directory)Takao.Launcher.exe');@(_TakaoLauncherTargetPath->'%(RootDir)%(Directory)Takao.Launcher.deps.json');@(_TakaoLauncherTargetPath->'%(RootDir)%(Directory)Takao.Launcher.runtimeconfig.json')" />
     </ItemGroup>
     <Copy SourceFiles="@(LauncherArtifact)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
     <!-- Preserve existing IFEO commands without rewriting system configuration.
