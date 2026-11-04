@@ -1,5 +1,9 @@
 # 后端 API 合同
 
+## 2026-11-04 进程网络来源回退
+
+`snapshot.processNetwork`新增 `source:string|null`：`classicSystemLogger`为经典系统logger，`kernelNetworkManifest`为系统logger容量不足时成功启用的Microsoft-Windows-Kernel-Network普通实时session；尚无有效session时为null。收发/合计/独立capturedAtUtc、status/unavailable与identity语义不变；eventLayouts为诊断字符串，manifest布局另带event ID，不能用该字符串替代可用性判断。公开schema与真实链路要求见 [UI-INTEGRATION.md](UI-INTEGRATION.md)。
+
 ## 2026-11-04 Qt 原生桌面增量
 
 现行界面为Qt 6 Widgets，全部数据/动作仍经下文HTTP/JSON.NET合同。`GET bootstrap`增加 `desktopFramework:"Qt 6 Widgets"` 与 `desktopProcessId:number|null`；`desktop` 表示本次Qt子进程存活，headless为false。Qt使用原有bootstrap令牌与精确Origin，不接受外部重定向、不传递命令行令牌。

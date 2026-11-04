@@ -43,7 +43,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         ["serviceControl"] = new(true, "CsWin32 SCM；最小动作权限、同句柄状态/PID核验、15秒有界观察", "成功取决于当前用户权限，不自动提权或停止依赖服务。"),
         ["shellLocations"] = new(true, "CsWin32 Shell公开接口/固定Windows系统入口"),
         ["efficiency"] = new(true, "CsWin32 ProcessPowerThrottling + SetPriorityClass + 原生读回", "每个目标需按身份读取实际能力；外部效率模式不覆盖，没有恢复基线不关闭。"),
-        ["processNetwork"] = new(true, "CsWin32 Windows ETW TCP/UDP IPv4/IPv6；独立系统实时logger、完整消费窗口、PID+创建FILETIME", "包括Windows报告的回环/虚拟网络，不等于硬件网卡合计；权限、预热、丢事件和过期逐项反馈。"),
+        ["processNetwork"] = new(true, "CsWin32 Windows ETW TCP/UDP IPv4/IPv6；独立系统logger，资源不足时回退Microsoft-Windows-Kernel-Network普通实时session；完整消费窗口、PID+创建FILETIME", "包括Windows报告的回环/虚拟网络，不等于硬件网卡合计；权限、预热、丢事件和过期逐项反馈。"),
         ["processGpu"] = new(true, "CsWin32 PDH English GPU Engine；最忙单引擎，两样本与创建身份校验", "需驱动提供有效计数器；无实例、预热或受限时null并给原因。"),
         ["gpuAdapters"] = new(true, "CsWin32 PDH；同适配器引擎先跨PID汇总，再取最忙引擎，含软件适配器", "按计数器LUID/phys索引标识；phys索引不是Windows GPU编号或实体硬件保证，真实DXGI描述单独匹配。"),
         ["gpuIdentity"] = new(true, "CsWin32 DXGI CreateDXGIFactory1 / IDXGIAdapter1.GetDesc1，按完整AdapterLuid精确匹配", "描述/软件标志按实际读取，失败不影响PDH指标；不推断Windows GPU编号。"),

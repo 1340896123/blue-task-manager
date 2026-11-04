@@ -4,6 +4,10 @@
 
 # Takao 真实链路验收矩阵
 
+## 2026-11-04 界面占位接入
+
+本轮 [UI-INTEGRATION.md](UI-INTEGRATION.md) 的UI01～UI06与现行Q系列联合执行：真实ETW1450回退、专用TCP/UDP IPv4/IPv6吞吐、八页字段/原因/历史/跨页定位、1080P Qt交互和精确资源清理。原生/API与桌面证据分别记录，真实权限/无引擎/缺外部共享内存等不支持分支不写成已成功采集。
+
 ## 2026-11-04 图标缓存
 
 图标缓存采用 [ICON-CACHE.md](ICON-CACHE.md) 的 IC01～IC06，实际结果见 [ICON-CACHE-RESULTS.md](ICON-CACHE-RESULTS.md)：有界缓存策略、真实 HTTP 图标跨页复用、1080P 组件与实际键鼠分别记录，保留未执行的来源更新/故障分支。

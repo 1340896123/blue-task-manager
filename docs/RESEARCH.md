@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 界面接入与进程网络回退（2026-11-04）
+
+现场经典系统logger返回1450，全部进程网络因此未知。实施前实际读取Microsoft krabsetw固定提交d626e49c41a2a324ad8b433b186703aa551373b3的普通ETW provider/session示例与provider.hpp，以及repnz ETW manifest固定提交d5f68e8acda5da154ab44e405b610dd8c2ba1164；本机wevtutil独立核对Kernel-Network的GUID、keyword、v0 event ID/task/opcode与PID/size首部。按公开provider回退，不复制源码、不引入驱动/自造协议、不停止他人session。精确链接、schema映射和三阶段八页接入范围见 [UI-INTEGRATION.md](UI-INTEGRATION.md)。
+
 ## Fluent / WinUI 桌面视觉（2026-11-04）
 
 已在线实际读取WinUI-Gallery固定提交 `7360ac322414e118eadfb0c7c2f4ecc31a218f59` 的SettingsPage.xaml、NavigationViewPage.xaml和TypographyPage.xaml，以及microsoft-ui-xaml固定提交 `b229fbd15ceb090a2952985955805650e41390d8` 的Common_themeresources_any.xaml、NavigationView_themeresources.xaml、CornerRadius_themeresources.xaml和TextBlock_themeresources.xaml。采用独立Text/Control/Card/Layer语义、透明导航/中性选中底/蓝指示、4px控件与8px弹层圆角、限宽设置卡片的标题/说明/右控件；不复制框架，不宣称Qt具有Mica/Acrylic。精确链接、已读位置、项目Token和八页落点见 [FLUENT-DESIGN.md](FLUENT-DESIGN.md)。

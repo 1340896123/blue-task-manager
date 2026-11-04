@@ -1,5 +1,9 @@
 # Takao 架构与数据合同
 
+## 2026-11-04 界面接入与ETW回退
+
+现有HTTP/JSON.NET/CsWin32链继续复用；classic ETW系统logger创建返回1450时，以Microsoft-Windows-Kernel-Network公开manifest provider启用独立普通实时session，保留严格事件schema、FILETIME身份、完整marker窗口和本实例清理，新增processNetwork.source表明实际模式。八页接线与原因映射规范见 [UI-INTEGRATION.md](UI-INTEGRATION.md)。
+
 ## 2026-11-04 图标缓存增量
 
 Qt 持有最多512条会话图标缓存与最多2个进行中请求，使用 Qt 公共缓存机制逐项淘汰，按可信来源身份合并并复用解码后的 QIcon；模型绘制只在缺图时读取共用主题图标。真实来源由既有 application-icon HTTP/PNG→ProcessIconService→CsWin32/Shell STA 解析，后端 path/mtime/AUMID 缓存继续适用，不新增协议或Windows采集器。失败退避、来源复核及异步回调边界见 [ICON-CACHE.md](ICON-CACHE.md)。

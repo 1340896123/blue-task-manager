@@ -1,5 +1,9 @@
 # 逐进程网络吞吐补全
 
+## 2026-11-04 系统logger资源回退
+
+当前系统logger返回1450时，按 [UI-INTEGRATION.md](UI-INTEGRATION.md) 回退到公开Microsoft-Windows-Kernel-Network manifest provider的自有普通实时session，版本0及ID/task/opcode独立验证；此前只支持classic v2的限制由此增量覆盖。新增状态source表明实际模式，保留原有窗口、身份、丢事件、未知/零值和清理规则。
+
 日期：2026-10-25。用户要求补全网络吞吐；目前硬件网卡 `GetIfTable2` 已接入，但进程 `networkBytesPerSecond` 固定 null。本增量将其替换为真实 Windows ETW TCP/UDP 收发统计，覆盖历史“逐进程网络未接入”的范围。所有原生接口由 CsWin32 生成；同源 HTTP、JSON.NET、管理员入口、PID+创建 FILETIME 身份合同继续有效。
 
 ## 用户行为与数据语义

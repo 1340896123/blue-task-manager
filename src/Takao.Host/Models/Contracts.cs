@@ -149,6 +149,7 @@ public sealed record SnapshotDto(long SampleId, DateTime CapturedAtUtc, DateTime
 public sealed record ProcessNetworkStatusDto(DateTime? CapturedAtUtc, string Status, uint EventsLost, uint BuffersLost,
     double? CollectionDurationMs, IReadOnlyDictionary<string, Unavailable> Unavailable)
 {
+    public string? Source { get; init; }
     public double? WindowDurationMs { get; init; }
     public uint FlushedBuffers { get; init; }
     public uint ConsumedBuffers { get; init; }

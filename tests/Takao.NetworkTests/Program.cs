@@ -27,6 +27,19 @@ try
             Check(!NetworkEventParser.TryParse(provider, 2, opcode, payload.AsSpan(0, opcode >= 26 ? 43 : 19), 9000, out _), "truncated transfer is rejected");
         }
     Check(!NetworkEventParser.TryParse(Guid.NewGuid(), 2, 10, payload, 9000, out _) && !NetworkEventParser.TryParse(NetworkEventParser.Tcp, 2, 14, payload, 9000, out _), "unrelated providers and retransmits are excluded");
+    foreach (var (eventId, task, opcode) in new (ushort, ushort, byte)[]
+        { (10, 10, 10), (11, 10, 11), (26, 10, 10), (27, 10, 11), (42, 11, 42), (43, 11, 43), (58, 11, 42), (59, 11, 43) })
+    {
+        var ipv6 = eventId is 26 or 27 or 58 or 59;
+        Check(NetworkEventParser.TryParse(NetworkEventParser.KernelNetwork, 0, opcode, payload, 9000, out var transfer, eventId, task)
+            && transfer.Pid == 123 && transfer.Size == 9876 && transfer.Receive == (eventId is 11 or 27 or 43 or 59),
+            $"manifest v0 ID{eventId}/task{task}/op{opcode} reads payload identity, bytes and direction");
+        Check(!NetworkEventParser.TryParse(NetworkEventParser.KernelNetwork, 2, opcode, payload, 9000, out _, eventId, task)
+            && !NetworkEventParser.TryParse(NetworkEventParser.KernelNetwork, 0, opcode, payload, 9000, out _, eventId, 99)
+            && !NetworkEventParser.TryParse(NetworkEventParser.KernelNetwork, 0, 14, payload, 9000, out _, eventId, task)
+            && !NetworkEventParser.TryParse(NetworkEventParser.KernelNetwork, 0, opcode, payload.AsSpan(0, ipv6 ? 43 : 19), 9000, out _, eventId, task),
+            "manifest mismatched version/task/opcode and truncated IP payloads are rejected");
+    }
     var rows = new List<ProcessDto>();
     for (var index = 0; index < 2; index++)
     {
@@ -45,6 +58,8 @@ try
     for (var i = 0; i < 12; i++) { collector.Request(rows); await Task.Delay(1200); if (collector.Current.Status.Status == "available") break; }
     var sample = collector.Current;
     Check(sample.Status.Status == "available", "real ETW session becomes available: " + JsonConvert.SerializeObject(sample.Status));
+    Check(sample.Status.Source is "classicSystemLogger" or "kernelNetworkManifest", "actual ETW provider mode is exposed, including system-logger capacity fallback");
+    facts.Add(new { source = sample.Status.Source });
     Check(sample.Processes[target.Identity].Receive == 0 && sample.Processes[target.Identity].Send == 0, "complete quiet windows report genuine zero");
     foreach (var protocol in new[] { "TCP4", "UDP4", "TCP6", "UDP6" })
     {

@@ -1,5 +1,9 @@
 # 工程规范
 
+## 2026-11-04 占位与接线规范
+
+按 [UI-INTEGRATION.md](UI-INTEGRATION.md) 先统一盘点、再以三个顺序子代理完成后端/Qt/真实验收并独立提交。列别名及合成值必须映射真实原因，详情与定位必须使用当前身份或历史观测；ETW回退仅创建和释放自有session，按manifest版本、event ID/task/opcode验证，不停他人采集器、不把缺失变0。
+
 ## 2026-11-04 图标缓存规范
 
 按 [ICON-CACHE.md](ICON-CACHE.md) 实施 Qt 有界 LRU、可信来源键、并发合并、失败退避和可见项复核；禁止整库清空式淘汰、按名称/PID/裸路径误合并应用、在 DecorationRole 命中时仍生成默认SVG图标。沿用现有 HTTP/PNG、JSON.NET/CsWin32 与 MASTER Token，不持久化采集行或新增业务模拟数据；按阶段提交并保留现有工作区改动。

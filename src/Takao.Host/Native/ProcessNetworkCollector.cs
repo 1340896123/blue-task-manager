@@ -16,21 +16,29 @@ internal sealed record ProcessNetworkReading(double? Receive, double? Send, Unav
 internal sealed record ProcessNetworkSample(ProcessNetworkStatusDto Status, IReadOnlyDictionary<string, ProcessNetworkReading> Processes);
 internal readonly record struct NetworkTransfer(uint Pid, uint Size, bool Receive, long FileTime);
 
-/// <summary>Only the documented classic TCP/UDP transfer events; never packet contents or endpoint data.</summary>
+/// <summary>Classic v2 and manifest v0 TCP/UDP transfers; never packet contents or endpoint data.</summary>
 internal static class NetworkEventParser
 {
     internal static readonly Guid Tcp = new("9a280ac0-c8e0-11d1-84e2-00c04fb998a2");
     internal static readonly Guid Udp = new("bf3a50c5-a9c9-4988-a005-2df0b7c80f80");
-    internal static bool IsTransfer(Guid provider, byte opcode) => (provider == Tcp || provider == Udp) && opcode is 10 or 11 or 26 or 27;
+    internal static readonly Guid KernelNetwork = new("7dd42a49-5329-4832-8dfd-43d979153a88");
+    internal static bool IsTransfer(Guid provider, byte opcode, ushort eventId = 0, ushort task = 0) =>
+        provider == KernelNetwork
+            ? task == 10 && (eventId is 10 or 26 && opcode == 10 || eventId is 11 or 27 && opcode == 11)
+              || task == 11 && (eventId is 42 or 58 && opcode == 42 || eventId is 43 or 59 && opcode == 43)
+            : (provider == Tcp || provider == Udp) && opcode is 10 or 11 or 26 or 27;
 
-    internal static bool TryParse(Guid provider, byte version, byte opcode, ReadOnlySpan<byte> payload, long fileTime, out NetworkTransfer transfer)
+    internal static bool TryParse(Guid provider, byte version, byte opcode, ReadOnlySpan<byte> payload, long fileTime, out NetworkTransfer transfer, ushort eventId = 0, ushort task = 0)
     {
         transfer = default;
-        if (!IsTransfer(provider, opcode)) return false;
-        // Windows 10/11 uses version 2. Older v0/v1 reorder PID/size and must not be guessed.
-        // The shared v2 prefix is followed by 2 addresses and 2 ports (20 / 44 bytes).
-        if (version != 2 || payload.Length < (opcode is 26 or 27 ? 44 : 20) || fileTime <= 0) return false;
-        transfer = new(BinaryPrimitives.ReadUInt32LittleEndian(payload), BinaryPrimitives.ReadUInt32LittleEndian(payload[4..]), opcode is 11 or 27, fileTime);
+        if (!IsTransfer(provider, opcode, eventId, task)) return false;
+        var manifest = provider == KernelNetwork;
+        // These are separate schemas: classic v2, manifest v0. Both have PID/size
+        // first, then two IPv4/IPv6 addresses and two ports. Never guess older layouts.
+        var ipv6 = manifest ? eventId is 26 or 27 or 58 or 59 : opcode is 26 or 27;
+        if (version != (manifest ? 0 : 2) || payload.Length < (ipv6 ? 44 : 20) || fileTime <= 0) return false;
+        transfer = new(BinaryPrimitives.ReadUInt32LittleEndian(payload), BinaryPrimitives.ReadUInt32LittleEndian(payload[4..]),
+            manifest ? eventId is 11 or 27 or 43 or 59 : opcode is 11 or 27, fileTime);
         return true;
     }
 }
@@ -131,7 +139,7 @@ internal sealed class ProcessNetworkCollector : IAsyncDisposable
                     var status = new ProcessNetworkStatusDto(DateTime.FromFileTimeUtc(boundary), statusReason is null ? "available" : statusReason.Code,
                         flushed.EventsLost, flushed.BuffersLost, Stopwatch.GetElapsedTime(started).TotalMilliseconds,
                         statusReason is null ? new Dictionary<string, Unavailable>() : new Dictionary<string, Unavailable> { ["source"] = statusReason })
-                    { WindowDurationMs = seconds > 0 ? seconds * 1000 : null, ConsumedBuffers = flushed.Consumed, FlushedBuffers = flushed.Written, EventLayouts = _session.Layouts };
+                    { WindowDurationMs = seconds > 0 ? seconds * 1000 : null, ConsumedBuffers = flushed.Consumed, FlushedBuffers = flushed.Written, EventLayouts = _session.Layouts, Source = _session.Source };
                     lock (_gate) if (!_paused && requested.Epoch == _epoch) _current = new(status, rates);
                     lastFileTime = boundary; lastTick = tick; epoch = requested.Epoch;
                     lastEventsLost = flushed.EventsLost; lastBuffersLost = flushed.BuffersLost;
@@ -189,7 +197,7 @@ internal sealed class EtwNetworkException(Unavailable reason) : Exception(reason
     internal Unavailable Reason { get; } = reason;
 }
 
-/// <summary>Owns exactly one uniquely named Windows system logger. Never adopts an existing logger.</summary>
+/// <summary>Owns one unique ETW logger; capacity fallback uses the standard manifest provider.</summary>
 internal sealed class EtwNetworkSession : IAsyncDisposable
 {
     private const int MaxEvents = 262_144;
@@ -213,6 +221,7 @@ internal sealed class EtwNetworkSession : IAsyncDisposable
     private Task? _consume;
     private volatile uint _consumed;
     private volatile bool _stopping;
+    internal string Source { get; private set; } = "classicSystemLogger";
     internal IReadOnlyList<string> Layouts { get { lock (_gate) return _layouts.Order(StringComparer.Ordinal).ToArray(); } }
 
     internal unsafe EtwNetworkSession()
@@ -235,8 +244,25 @@ internal sealed class EtwNetworkSession : IAsyncDisposable
             _properties->FlushTimer = 1;
             _properties->LoggerNameOffset = (uint)sizeof(EVENT_TRACE_PROPERTIES);
             var error = PInvoke.StartTrace(out var controller, _name, ref *_properties);
+            if ((uint)error == 1450)
+            {
+                // System logger slots are a smaller pool than ordinary ETW sessions.
+                // No ownership was acquired by the failed call. Try a fresh ordinary
+                // real-time session and enable the public manifest provider instead.
+                _properties->LogFileMode = PInvoke.EVENT_TRACE_REAL_TIME_MODE;
+                _properties->EnableFlags = 0;
+                _properties->Wnode.Guid = Guid.NewGuid();
+                error = PInvoke.StartTrace(out controller, _name, ref *_properties);
+                if (error == 0) Source = "kernelNetworkManifest";
+            }
             if (error != 0) throw Error(error, "创建独立ETW网络会话失败");
             _controller = controller; // Only a successful StartTrace grants ownership.
+            if (Source == "kernelNetworkManifest")
+            {
+                error = PInvoke.EnableTraceEx2(_controller, NetworkEventParser.KernelNetwork,
+                    (uint)ENABLECALLBACK_ENABLED_STATE.EVENT_CONTROL_CODE_ENABLE_PROVIDER, 4, 0x30, 0, 1000, null);
+                if (error != 0) throw Error(error, "启用Microsoft-Windows-Kernel-Network失败");
+            }
             var registration = PInvoke.EventRegister(_markerProvider, null, null, out _markerHandle);
             if (registration != 0) throw Error((WIN32_ERROR)registration, "注册ETW内部采样边界失败");
             error = PInvoke.EnableTraceEx2(_controller, _markerProvider, (uint)ENABLECALLBACK_ENABLED_STATE.EVENT_CONTROL_CODE_ENABLE_PROVIDER, 0, 0, 0, 1000, null);
@@ -301,12 +327,14 @@ internal sealed class EtwNetworkSession : IAsyncDisposable
                         session._markerCompletion?.TrySetResult(header.TimeStamp);
                 return;
             }
-            if (!NetworkEventParser.IsTransfer(header.ProviderId, header.EventDescriptor.Opcode)) return;
+            if (!NetworkEventParser.IsTransfer(header.ProviderId, header.EventDescriptor.Opcode, header.EventDescriptor.Id, header.EventDescriptor.Task)) return;
             var payload = record->UserData == null ? ReadOnlySpan<byte>.Empty : new ReadOnlySpan<byte>(record->UserData, record->UserDataLength);
             lock (session._gate)
             {
-                if (session._layouts.Count < 16) session._layouts.Add($"{(header.ProviderId == NetworkEventParser.Tcp ? "TCP" : "UDP")}/v{header.EventDescriptor.Version}/op{header.EventDescriptor.Opcode}/{record->UserDataLength}B");
-                if (!NetworkEventParser.TryParse(header.ProviderId, header.EventDescriptor.Version, header.EventDescriptor.Opcode, payload, header.TimeStamp, out var transfer))
+                var manifest = header.ProviderId == NetworkEventParser.KernelNetwork;
+                var protocol = manifest ? header.EventDescriptor.Task == 10 ? "TCP" : "UDP" : header.ProviderId == NetworkEventParser.Tcp ? "TCP" : "UDP";
+                if (session._layouts.Count < 16) session._layouts.Add($"{(manifest ? "manifest/" : "")}{protocol}/v{header.EventDescriptor.Version}/op{header.EventDescriptor.Opcode}/id{header.EventDescriptor.Id}/{record->UserDataLength}B");
+                if (!NetworkEventParser.TryParse(header.ProviderId, header.EventDescriptor.Version, header.EventDescriptor.Opcode, payload, header.TimeStamp, out var transfer, header.EventDescriptor.Id, header.EventDescriptor.Task))
                     session._windowReason = new("notSupported", "ETW网络事件版本或长度不受支持，未猜测PID或字节数。");
                 else if (transfer.FileTime < session._closedBoundary) session._windowReason = new("eventsLost", "ETW出现晚于完整窗口送达的旧事件，当前窗口重新预热。");
                 else if (session._events.Count >= MaxEvents) session._windowReason = new("capacity", "ETW网络窗口超过262144个事件上限，当前窗口不可用。");
