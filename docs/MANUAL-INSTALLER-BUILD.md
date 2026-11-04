@@ -1,5 +1,9 @@
 # 手动构建 Windows 安装包
 
+## 2026-11-04 当前 Qt 发布合同
+
+当前安装器包含 Qt 6 Widgets + .NET 10 自包含运行库，沿用手动工作流及标准 NSIS 安装/卸载验收。发布 job 要求实际 Qt 生命周期证据：`framework=Qt 6 Widgets`、`display=1920x1080`、至少20项检查且数量一致、专用进程结束确认；完整结果随 `desktopLifecycle` 写入安装验收 JSON。旧 Electron 的42项门槛不用于当前 Qt 发布。八页实值及本地62项真实键鼠结果见 [UI-INTEGRATION-RESULTS.md](UI-INTEGRATION-RESULTS.md)，不冒充 CI 安装或物理输入结果。
+
 2026-10-26 更新交接：CI 在构建前把已核验标签和源码提交传为 `TASKMANAGER_RELEASE_TAG` / `TASKMANAGER_SOURCE_COMMIT`。构建脚本通过只读 PE 元数据核对 Host 的 AssemblyMetadata，再将同一身份写入 NSIS 版本资源、产品标记和卸载记录；CI 从实际安装 API 再读回。独立验收产物可用 `build-installer.ps1 -SkipBuild -PayloadDirectory <完整目录> -OutputDirectory <独立输出目录>`，默认构建路径保持原有约定。
 
 安装器只接受 `/S /TASKMANAGERUPDATE=<32位小写hex>` 的明确更新请求，无 `/D` 覆盖且现有产品记录与标记一致后才开启总计最多 60 秒的映像解锁等待。固定产品键保存 `LastUpdateAttemptId/Result/Error`，完整成功后重启固定 Host；普通安装和卸载仍立即拒绝占用。机制与验证边界见 [更新安装器验收](UPDATE-INSTALLER-RESULTS.md)。
@@ -41,7 +45,7 @@ GitHub Actions仅由`workflow_dispatch`手动触发Windows x64 Release安装包�
 
 管理员/安装生命周期适用R系列验收；测试不得通过伪造环境变量绕过本机UAC。CI在开始时检查实际Windows管理员令牌，缺少提升权限应失败而非宣称成功。构建job只有仓库读取权限；`needs: installer`的独立发布job才具备`contents: write`，不检出源码或运行包内脚本，仅下载本次已验证交付集。以上是实施合同，实际验证结果在后续记录。
 
-发布job独立核对原始四文件delivery中Setup的SHA256、单条SHA256SUMS、验收PASS、源提交SHA、安装器名称/版本/哈希及至少42项桌面断言。随后在新的发布暂存目录增加字节相同的旧文件名别名，生成双文件名同散列校验清单，原始delivery保持四文件。发布前再次检查目标不存在，再通过标准Git refs API原子创建固定SHA的新tag；冲突即失败。随后创建draft、上传并确认五个附件完整，两个安装器的size/digest和各自官方URL与已验文件一致，再次确认tag指向后公开Release。构建/安装验收失败不创建tag或Release；发布上传失败时保留本次tag和未公开draft供排查，重试须使用新的tag，不会将不完整draft公开。
+发布job独立核对原始四文件delivery中Setup的SHA256、单条SHA256SUMS、验收PASS、源提交SHA、安装器名称/版本/哈希及完整Qt生命周期证据。随后在新的发布暂存目录增加字节相同的旧文件名别名，生成双文件名同散列校验清单，原始delivery保持四文件。发布前再次检查目标不存在，再通过标准Git refs API原子创建固定SHA的新tag；冲突即失败。随后创建draft、上传并确认五个附件完整，两个安装器的size/digest和各自官方URL与已验文件一致，再次确认tag指向后公开Release。构建/安装验收失败不创建tag或Release；发布上传失败时保留本次tag和未公开draft供排查，重试须使用新的tag，不会将不完整draft公开。
 
 草稿阶段的 GitHub `html_url` 和资产下载地址可能使用官方 `untagged-<hex>` 临时引用，即使 `tag_name` 已是正式标签。校验始终固定release ID、标签、源码和预发布状态，并将五个唯一、已上传资产的大小/散列绑定本次本地发布暂存；草稿资产必须使用同仓库、同 `html_url` 引用的官方 HTTPS 下载路径。公开后再次核验同一身份与全部资产，页面和下载路径必须改为正式标签。`tests/release-upload-validation.ps1` 从工作流提取实际函数，以真实草稿/公开API字段及错误host、仓库、引用、文件名、大小和散列等负例回归；不发布或修改任何Release。
 
@@ -55,7 +59,7 @@ GitHub Actions仅由`workflow_dispatch`手动触发Windows x64 Release安装包�
   -PayloadDirectory output/Takao-win-x64
 ```
 
-此入口只允许在一次性GitHub-hosted Windows runner且真实提升的64位PowerShell中执行；不要在开发机伪造CI环境。它创建RUNNER_TEMP内独立且带空格的测试目录，依次验证静默安装、完整payload哈希和快捷方式/卸载记录、无全局.NET目录的真实Host/API/coreclr、现有42项Electron桌面验收、同路径重装后真实启动和卸载。测试自建note必须在卸载后保持原哈希，以证明没有通配删除用户文件。全程独立读取HKLM64 IFEO全键和子键，原始临时导出取哈希后立即删除，报告不保存注册表值、写令牌或全机快照。
+此入口只允许在一次性GitHub-hosted Windows runner且真实提升的64位PowerShell中执行；不要在开发机伪造CI环境。它创建RUNNER_TEMP内独立且带空格的测试目录，依次验证静默安装、完整payload哈希和快捷方式/卸载记录、无全局.NET目录的真实Host/API/coreclr、当前20项Qt生命周期验收、同路径重装后真实启动和卸载。测试自建note必须在卸载后保持原哈希，以证明没有通配删除用户文件。全程独立读取HKLM64 IFEO全键和子键，原始临时导出取哈希后立即删除，报告不保存注册表值、写令牌或全机快照。
 
 `output/installer-ci/acceptance.json`和`acceptance.md`记录实际通过项、失败状态和限制；失败时只清理测试保存的PID+创建时间身份，保留失败安装目录供一次性runner诊断。`output/installer-ci/delivery`平铺Setup.exe、只引用这个EXE的`SHA256SUMS`及两份报告；应用截图单独上传。工作流要求完整交付集全部非空，不能把缺少报告的构建当作已验收安装包。
 

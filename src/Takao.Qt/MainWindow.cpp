@@ -14,6 +14,7 @@
 #include <QResizeEvent>
 #include <QRegularExpression>
 #include <QScopedValueRollback>
+#include <QSaveFile>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QShortcut>
@@ -921,14 +922,23 @@ void MainWindow::savePreferences() {
         return;
     }
     saving_ = true;
-    api_.post("preferences", preferences_, this,
-              [this](const QJsonObject& result, const QString& error, int) {
+    const auto requestedPreferences = preferences_;
+    api_.post("preferences", requestedPreferences, this,
+              [this, requestedPreferences](const QJsonObject& result, const QString& error, int) {
                   saving_ = false;
                   if (savePending_) {
                       savePending_ = false;
                       saveSoon();
                   }
                   if (!error.isEmpty()) {
+                      const auto diagnostic = qEnvironmentVariable("TASKMANAGER_QT_PREFERENCE_DIAGNOSTIC");
+                      if (!diagnostic.isEmpty()) {
+                          QSaveFile file(diagnostic);
+                          if (file.open(QIODevice::WriteOnly)) {
+                              file.write(QJsonDocument(requestedPreferences).toJson(QJsonDocument::Indented));
+                              file.commit();
+                          }
+                      }
                       notify("偏好未保存：" + error, true);
                       return;
                   }

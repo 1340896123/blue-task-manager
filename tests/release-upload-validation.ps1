@@ -4,16 +4,20 @@ Set-StrictMode -Version Latest
 $root = Split-Path -Parent $PSScriptRoot
 $workflow = [IO.File]::ReadAllText((Join-Path $root '.github/workflows/manual-windows-installer.yml'))
 $functions = @()
+$lifecycleGates = @()
 foreach ($match in [regex]::Matches($workflow, '(?m)^ {8}run: \|\r?\n(?<body>(?:(?: {10}.*)?\r?\n)+)')) {
     $source = $match.Groups['body'].Value -replace '(?m)^ {10}', ''
     $tokens = $null; $errors = $null
     $ast = [Management.Automation.Language.Parser]::ParseInput($source, [ref]$tokens, [ref]$errors)
     if ($errors.Count) { throw 'Workflow PowerShell must parse before its validation function can be tested.' }
     $functions += @($ast.FindAll({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -ceq 'Assert-UploadedRelease'}, $true))
+    $lifecycleGates += @($ast.FindAll({param($node) $node -is [Management.Automation.Language.IfStatementAst] -and $node.Extent.Text.Contains('$acceptance.desktopAssertions')}, $true))
 }
 if ($functions.Count -ne 1) { throw 'Expected one actual release validation function in the workflow.' }
+if ($lifecycleGates.Count -ne 1) { throw 'Expected one actual Qt lifecycle acceptance gate in the workflow.' }
 # Test the exact workflow function without executing any publish/network commands.
 . ([scriptblock]::Create($functions[0].Extent.Text))
+$lifecycleGate = [scriptblock]::Create('$lifecycle = $acceptance.desktopLifecycle; ' + $lifecycleGates[0].Extent.Text)
 $fixtures = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'fixtures/release-url-metadata.json') -Raw | ConvertFrom-Json
 $previousServer = $env:GITHUB_SERVER_URL; $previousRepository = $env:GITHUB_REPOSITORY; $previousSource = $env:SOURCE_SHA
 $checks = [Collections.Generic.List[object]]::new()
@@ -30,6 +34,19 @@ function Check-Release([string]$Name, [object]$Fixture, [scriptblock]$Mutation, 
     $rejected = $false
     try { Assert-UploadedRelease $candidate ([bool]$Fixture.release.draft) } catch { $rejected = $true }
     if ($rejected -ne $Reject) { throw "Unexpected release validation outcome: $Name" }
+    $checks.Add([ordered]@{name=$Name;result='PASS';expected=$(if($Reject){'rejected'}else{'accepted'})})
+}
+function Check-QtEvidence([string]$Name, [scriptblock]$Mutation, [bool]$Reject) {
+    # Receipt metadata fixtures validate the actual publisher gate; they are
+    # never used as application data or as evidence of executing a desktop.
+    $env:SOURCE_SHA = 'a' * 40
+    $acceptance = [pscustomobject]@{ result='PASS'; sourceCommit=$env:SOURCE_SHA; desktopAssertions=20;
+        desktopLifecycle=[pscustomobject]@{ result='PASS'; framework='Qt 6 Widgets'; display='1920x1080';
+            assertions=20; checks=@(1..20); ownedProcess=[pscustomobject]@{completed=$true} } }
+    if ($Mutation) { & $Mutation $acceptance }
+    $rejected = $false
+    try { & $lifecycleGate } catch { $rejected = $true }
+    if ($rejected -ne $Reject) { throw "Unexpected lifecycle validation outcome: $Name" }
     $checks.Add([ordered]@{name=$Name;result='PASS';expected=$(if($Reject){'rejected'}else{'accepted'})})
 }
 try {
@@ -69,6 +86,15 @@ try {
     }
     Check-Release 'draft asset cannot use final tag while its page is untagged' $fixtures.draft {param($r) $r.assets[0].browser_download_url = $r.assets[0].browser_download_url -replace '/untagged-[^/]+/', ('/' + $r.tag_name + '/')} $true
     Check-Release 'published page cannot remain untagged' $fixtures.published {param($r) $r.html_url = $r.html_url -replace '[^/]+$', 'untagged-1212ae520a9db1e1484b'} $true
+    Check-QtEvidence 'complete current Qt lifecycle with 20 checks' $null $false
+    Check-QtEvidence 'future complete Qt lifecycle with additional checks' {param($r) $r.desktopAssertions=21; $r.desktopLifecycle.assertions=21; $r.desktopLifecycle.checks=@(1..21)} $false
+    Check-QtEvidence 'old Electron receipt cannot satisfy the Qt gate' {param($r) $r.desktopAssertions=42; $r.desktopLifecycle.framework='Electron.NET'; $r.desktopLifecycle.assertions=42; $r.desktopLifecycle.checks=@(1..42)} $true
+    Check-QtEvidence 'wrong source cannot satisfy lifecycle evidence' {param($r) $r.sourceCommit='b'*40} $true
+    Check-QtEvidence 'failed lifecycle cannot be published' {param($r) $r.desktopLifecycle.result='FAIL'} $true
+    Check-QtEvidence 'incomplete checks cannot be published' {param($r) $r.desktopLifecycle.checks=@(1..19)} $true
+    Check-QtEvidence 'wrong display cannot be published' {param($r) $r.desktopLifecycle.display='1280x720'} $true
+    Check-QtEvidence 'unconfirmed termination cannot be published' {param($r) $r.desktopLifecycle.ownedProcess.completed=$false} $true
+    Check-QtEvidence 'missing lifecycle cannot be published' {param($r) $r.PSObject.Properties.Remove('desktopLifecycle')} $true
 } finally {
     $env:GITHUB_SERVER_URL = $previousServer; $env:GITHUB_REPOSITORY = $previousRepository; $env:SOURCE_SHA = $previousSource
 }

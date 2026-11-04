@@ -217,8 +217,9 @@ jobs:
           $checksum = [regex]::Match($checksums, $pattern)
           if (-not $checksum.Success -or $checksum.Groups['hash'].Value -cne $actualHash) { throw 'Setup.exe does not match the single SHA256SUMS entry.' }
           $acceptance = Get-Content -LiteralPath (Join-Path $delivery 'acceptance.json') -Raw | ConvertFrom-Json
-          if ($acceptance.result -cne 'PASS' -or $acceptance.sourceCommit -cne $env:SOURCE_SHA -or $acceptance.desktopAssertions -lt 42) {
-            throw 'Acceptance must pass at least 42 desktop assertions against this exact workflow commit.'
+          $lifecycle = $acceptance.desktopLifecycle
+          if ($acceptance.result -cne 'PASS' -or $acceptance.sourceCommit -cne $env:SOURCE_SHA -or $acceptance.desktopAssertions -lt 20 -or $lifecycle.result -cne 'PASS' -or $lifecycle.framework -cne 'Qt 6 Widgets' -or $lifecycle.display -cne '1920x1080' -or $lifecycle.assertions -ne $acceptance.desktopAssertions -or $lifecycle.checks.Count -ne $lifecycle.assertions -or $lifecycle.ownedProcess.completed -ne $true) {
+            throw 'Acceptance must include the complete passing Qt lifecycle evidence at 1920x1080 for this exact workflow commit.'
           }
           if ($acceptance.installer.filename -cne $installerName -or $acceptance.installer.version -cne $env:PACKAGE_VERSION -or $acceptance.installer.sha256 -cne $actualHash -or $acceptance.installer.bytes -ne (Get-Item -LiteralPath $installer).Length) {
             throw 'The independently hashed executable differs from the accepted installer.'
@@ -273,11 +274,11 @@ jobs:
           $notes = @(
             "Windows x64 NSIS installer, package version $env:PACKAGE_VERSION.",
             '',
-            'Startup apps now display real Windows enabled/disabled states, with correct status sorting and live detail refresh. Run, 32-bit Run and Startup folders retain their exact state sources.',
-            'Only recognized Windows approval records are interpreted. Unknown formats, scope conflicts and RunOnce keep explicit reasons; status changes continue through Windows startup settings.',
-            "Startup fix and local Windows verification (514 assertions): $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/$env:SOURCE_SHA/docs/STARTUP-STATUS-RESULTS.md",
-            "Release details: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/$env:SOURCE_SHA/docs/RELEASE-V1.1.1-STARTUP-STATUS.md",
-            "Also includes the disk information, throughput-only disk charts and white performance chart baseline: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/$env:SOURCE_SHA/docs/RELEASE-V1.1.1-DISK-CHARTS.md",
+            'Native Qt 6 Widgets desktop with Windows blue Fluent styling, eight pages, compact default window and bounded application icon caching.',
+            'Real process network telemetry uses independent standard Windows ETW sessions with TCP/UDP IPv4/IPv6, process identity checks and explicit warm-up or loss states.',
+            'Completes process and exited-history details, session navigation, page-specific searches, GPU identities and command menu placement.',
+            "Local Windows verification: network 71, native API 80, Qt components 80 and 1080p physical input 62 checks. Scope and limitations: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/blob/$env:SOURCE_SHA/docs/UI-INTEGRATION-RESULTS.md",
+            'HWiNFO sensors require its running shared-memory source; unavailable or protected data retains its actual reason.',
             '',
             'Includes .NET 10, ASP.NET Core and Qt 6 Widgets. Installation and application startup require administrator permission. The installer is unsigned.',
             '',

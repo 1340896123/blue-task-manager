@@ -47,6 +47,7 @@ $report = [ordered]@{
     ifeoFingerprints = [ordered]@{}
     headlessRuns = [Collections.Generic.List[object]]::new()
     desktopAssertions = 0
+    desktopLifecycle = $null
     shortcuts = [Collections.Generic.List[object]]::new()
     screenshots = [Collections.Generic.List[string]]::new()
     installationRetainedOnFailure = $false
@@ -383,8 +384,9 @@ function Invoke-DesktopAcceptance {
     & (Join-Path $projectRoot 'tests/qt-lifecycle.ps1') -ReleaseDirectory $installDirectory -OutputDirectory (Join-Path $output 'qt-lifecycle')
     $resultPath = Join-Path $output 'qt-lifecycle/results.json'
     $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
-    Assert-Condition ($result.result -ceq 'PASS') 'Installed Qt + .NET lifecycle and real native API pass at 1920x1080'
+    Assert-Condition ($result.result -ceq 'PASS' -and $result.framework -ceq 'Qt 6 Widgets' -and $result.display -ceq '1920x1080' -and $result.assertions -ge 20 -and $result.checks.Count -eq $result.assertions -and $result.ownedProcess.completed -eq $true) 'Installed Qt + .NET lifecycle and real native API pass at 1920x1080'
     $report.desktopAssertions = [int]$result.assertions
+    $report.desktopLifecycle = $result
     Assert-NoInstalledProcess 'after the Qt desktop close flow'
 }
 

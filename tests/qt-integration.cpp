@@ -78,6 +78,26 @@ void verifyAliases(QTreeView* table, const QList<QPair<QString,QString>>& fields
     }
     check(table->model()->rowCount()>0 && matching,page+": native display aliases preserve the actual immutable DTO values");
 }
+void verifyComboPopup(QComboBox* combo) {
+    const auto current=combo->currentIndex();
+    const auto value=combo->currentData();
+    combo->showPopup();
+    hold(250);
+    const auto view=combo->view();
+    bool complete=view->isVisible() && view->width()>=combo->width();
+    for(int row=0;row<combo->count();++row) {
+        const auto rect=view->visualRect(combo->model()->index(row,combo->modelColumn(),combo->rootModelIndex()));
+        complete=complete && rect.height()>=Theme::controlHeight && view->viewport()->rect().contains(rect);
+    }
+    check(complete,"Fluent popup shows every real option in full-width rows: "+combo->accessibleName());
+    check(combo->style()->styleHint(QStyle::SH_ComboBox_Popup,nullptr,combo)==0 &&
+          dynamic_cast<Theme::ComboItemDelegate*>(combo->itemDelegate()) &&
+          view->window()->windowFlags().testFlag(Qt::NoDropShadowWindowHint),
+          "Fluent native list avoids menu delegates, scroller arrows and heavy shadow: "+combo->accessibleName());
+    combo->hidePopup();
+    check(combo->currentIndex()==current && combo->currentData()==value,
+          "Closing the native popup preserves the real current option: "+combo->accessibleName());
+}
 }
 
 int main(int argc,char** argv) {
@@ -155,8 +175,11 @@ int main(int argc,char** argv) {
                     auto settingsContent=window.findChild<QWidget*>("settingsContent");
                     check(settingsContent && settingsContent->width()<=1080,"Fluent settings content is limited to 1080px");
                     for(auto box:window.findChildren<QComboBox*>())
-                        if(box->accessibleName()=="采样间隔" || box->accessibleName()=="数据密度" || box->accessibleName()=="文字大小")
+                        if(box->accessibleName()=="采样间隔" || box->accessibleName()=="数据密度" || box->accessibleName()=="文字大小") {
+                            waitFor([&]{return box->isVisible();},"Settings field is not visible: "+box->accessibleName());
                             check(box->width()<=240 && box->isVisible(),"Settings field keeps a readable control width: "+box->accessibleName()+QString(" (width=%1, visible=%2, hidden=%3, search=%4)").arg(box->width()).arg(box->isVisible()).arg(box->isHidden()).arg(search->text()));
+                            verifyComboPopup(box);
+                        }
                     QScrollArea* settingsScroll=nullptr;
                     for(auto area:window.findChildren<QScrollArea*>())if(area->isVisible() && settingsContent && area->isAncestorOf(settingsContent))settingsScroll=area;
                     check(settingsScroll && settingsScroll->verticalScrollBar()->maximum()>0,"Settings groups remain reachable through the native scroll area");
@@ -175,6 +198,7 @@ int main(int argc,char** argv) {
             for(auto list:window.findChildren<QListWidget*>())if(list->accessibleName()=="性能资源")resources=list;
             for(auto box:window.findChildren<QComboBox*>())if(box->accessibleName()=="CPU 图表模式")cpuMode=box;
             check(resources && resources->count()>=3 && cpuMode,"Real resources and CPU mode controls exist");
+            verifyComboPopup(cpuMode);
             cpuMode->setCurrentIndex(1);hold(500);check(!window.findChildren<Chart*>().isEmpty(),"Logical CPU mode creates native charts from real data");observe("09-logical-cpu");cpuMode->setCurrentIndex(0);
             for(const auto& prefix:QStringList{"disk:","network:","gpu:","hwinfo:"}) {
                 for(int i=0;i<resources->count();++i) if(resources->item(i)->data(Qt::UserRole).toString().startsWith(prefix)) {

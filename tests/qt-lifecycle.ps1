@@ -112,7 +112,7 @@ try {
         if (@(Read-OwnedTraceSessions $prefix) -contains $session) { & logman.exe stop $session -ets | Out-Null }
     }
     Check (@(Read-OwnedTraceSessions $prefix).Count -eq 0) 'no exact test-owned ETW logger remains after the deliberate crash'
-    @{result='PASS';assertions=$checks.Count;checks=@($checks);ownedProcess=$workloadEvidence;display='1920x1080';scope='Production Qt lifecycle and real native API; WM_CLOSE is window management, not a physical input assertion'} | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $OutputDirectory 'results.json') -Encoding utf8
+    @{result='PASS';framework=$bootstrap.desktopFramework;assertions=$checks.Count;checks=@($checks);ownedProcess=$workloadEvidence;display='1920x1080';scope='Production Qt lifecycle and real native API; WM_CLOSE is window management, not a physical input assertion'} | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $OutputDirectory 'results.json') -Encoding utf8
 } catch {
     @{result='FAIL';assertions=$checks.Count;checks=@($checks);error=$_.Exception.Message;stack=$_.ScriptStackTrace} | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $OutputDirectory 'results.json') -Encoding utf8
     throw
