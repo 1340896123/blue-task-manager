@@ -190,8 +190,8 @@ MainWindow::MainWindow(QUrl origin, qint64 hostPid) : api_(std::move(origin), th
     connect(&pollTimer_, &QTimer::timeout, this, &MainWindow::poll);
     slowTimer_.setInterval(3000);
     connect(&slowTimer_, &QTimer::timeout, this, [this] {
-        if (page_ == 1 && selectedResource_ == "hwinfo:")
-            readSensors();
+        if (page_ == 8 && (systemInformation_.isEmpty() || systemInformation_["status"].toString() == "loading"))
+            readSystemInformation();
         if (page_ == 7)
             readUpdates();
     });
@@ -309,7 +309,8 @@ void MainWindow::buildUi() {
     auto sidebarLayout = new QVBoxLayout(sidebar_);
     sidebarLayout->setContentsMargins(Theme::space2, Theme::space2, Theme::space2, Theme::space2);
     sidebarLayout->setSpacing(Theme::space1);
-    for (int i = 0; i < keys_.size(); ++i) {
+    nav_.resize(keys_.size());
+    for (const int i : {0, 1, 2, 3, 4, 5, 6, 8, 7}) {
         auto b = new Theme::NavigationButton(titles_[i], sidebar_);
         b->setFixedHeight(Theme::navigationHeight);
         b->setMinimumWidth(0);
@@ -317,7 +318,8 @@ void MainWindow::buildUi() {
         b->setAccessibleName(titles_[i]);
         b->setCheckable(true);
         b->setProperty("nav", true);
-        b->setIcon(Theme::icon(i));
+        b->setIcon(Theme::icon(i == 8 ? 10 : i));
+        b->setObjectName("navigation-" + keys_[i]);
         b->setIconSize(QSize(Theme::iconSize, Theme::iconSize));
         b->setToolTip(titles_[i] + QString(" (Alt+%1)").arg(i + 1));
         if (i == 7)
@@ -340,7 +342,7 @@ void MainWindow::buildUi() {
                     switchPage(7);
             });
         }
-        nav_ << b;
+        nav_[i] = b;
         connect(b, &QPushButton::clicked, this, [this, i] { switchPage(i); });
         auto shortcut = new QShortcut(QKeySequence(QString("Alt+%1").arg(i + 1)), this);
         connect(shortcut, &QShortcut::activated, this, [this, i] { switchPage(i); });
@@ -404,6 +406,11 @@ void MainWindow::buildUi() {
     stack_->addWidget(performance_);
     buildSettings();
     stack_->addWidget(settingsPage_);
+    systemInformationPage_ = new SystemInformationView(stack_);
+    stack_->addWidget(systemInformationPage_);
+    connect(systemInformationPage_->verticalScrollBar(), &QScrollBar::valueChanged, this, [this] {
+        if (page_ == 8) { capturePagePreference(); saveSoon(); }
+    });
     contentLayout->addWidget(stack_, 1);
     body->addWidget(content, 1);
     body->setContentsMargins(0, 0, Theme::space2, Theme::space2);
@@ -455,6 +462,7 @@ void MainWindow::buildUi() {
     connect(pause_, &QPushButton::clicked, this,
             [this] { applySampling(intervalMs_, !latest_["paused"].toBool()); });
     connect(refresh_, &QPushButton::clicked, this, [this] {
+        if (page_ == 8) { readSystemInformation(true); return; }
         post("refresh", {});
         poll();
         if (page_ == 7) {
@@ -486,7 +494,10 @@ void MainWindow::buildUi() {
     connect(escape, &QAction::triggered, this, [this] {
         if (search_->hasFocus()) {
             search_->clear();
-            table_->setFocus();
+            if (page_ == 8)
+                systemInformationPage_->setFocus(Qt::ShortcutFocusReason);
+            else
+                table_->setFocus();
         }
     });
     switchPage(0);
@@ -609,6 +620,8 @@ void MainWindow::applySnapshot() {
         updatePerformance();
     else if (page_ == 7)
         updateSettings();
+    else if (page_ == 8)
+        updateSystemInformation();
     else
         updateTable();
     updateCaption();
@@ -630,11 +643,12 @@ void MainWindow::switchPage(int index) {
         nav_[i]->setChecked(i == index);
     table_->setRootIsDecorated(index == 0 && preferences_["processView"].toString() == "tree");
     table_->setItemsExpandable(table_->rootIsDecorated());
-    stack_->setCurrentIndex(index == 1 ? 1 : index == 7 ? 2 : 0);
+    stack_->setCurrentIndex(index == 1 ? 1 : index == 7 ? 2 : index == 8 ? 3 : 0);
     terminate_->setVisible(processPage());
-    detail_->setVisible(index != 1 && index != 7);
+    detail_->setVisible(index != 1 && index != 7 && index != 8);
     pause_->setVisible(index == 0 || index == 1 || index == 5 || index == 7);
-    run_->setVisible(index != 7);
+    run_->setVisible(index != 7 && index != 8);
+    more_->setVisible(index != 8);
     pageCaption_.clear();
     sourceMessage_.clear();
     searchMessage_.clear();
@@ -642,16 +656,19 @@ void MainWindow::switchPage(int index) {
         pageCaption_ = "实时资源 · Windows 实际采样";
     else if (index == 7)
         pageCaption_ = "采样、外观与系统入口";
+    else if (index == 8)
+        pageCaption_ = "真实硬件概览 · Windows 系统信息";
     updateCaption();
     pageAction_->setVisible(index == 2 || index == 3 || index == 6);
     pageAction_->setText(index == 2 ? "清除本次会话统计…" : index == 3 ? "Windows 启动设置" : "Windows 服务管理器");
     pageAction_->setAccessibleName(pageAction_->text());
-    search_->setPlaceholderText(index == 7 ? "搜索设置  (Ctrl+F)"
-                                : index == 1 ? "搜索设备或传感器  (Ctrl+F)"
+    search_->setPlaceholderText(index == 8 ? "搜索硬件型号或类别  (Ctrl+F)"
+                                : index == 7 ? "搜索设置  (Ctrl+F)"
+                                : index == 1 ? "搜索设备  (Ctrl+F)"
                                 : index == 3 ? "搜索名称、来源或启动命令  (Ctrl+F)"
                                 : index == 6 ? "搜索服务名称或状态  (Ctrl+F)"
                                              : "搜索名称、PID 或发布者  (Ctrl+F)");
-    if (index != 1 && index != 7) {
+    if (index != 1 && index != 7 && index != 8) {
         QList<Column> c;
         if (processPage())
             c = {{"name", "名称", "", 250},
@@ -709,8 +726,8 @@ void MainWindow::switchPage(int index) {
         readIntegration();
         readUpdates();
     }
-    if (index == 1)
-        readSensors();
+    if (index == 8)
+        readSystemInformation();
 }
 void MainWindow::showColumnsForCurrentPage() {
     const auto p = preferences_["pages"].toObject()[keys_[page_]].toObject();
@@ -825,7 +842,8 @@ void MainWindow::updateSelectionActions() {
     detail_->setEnabled(connected_ && !row.isEmpty());
     run_->setEnabled(connected_);
     pause_->setEnabled(connected_);
-    refresh_->setEnabled(connected_);
+    refresh_->setEnabled(connected_ && (page_ != 8 || !readingSystemInformation_));
+    refresh_->setText(page_ == 8 && readingSystemInformation_ ? "正在读取…" : "刷新");
     pageAction_->setEnabled(connected_);
 }
 void MainWindow::notify(const QString& message, bool error) {
@@ -905,7 +923,7 @@ void MainWindow::capturePagePreference() {
         pref["filters"] = QJsonObject{{"currentUser", proxy_->onlyCurrentUser},
                                      {"sessionId", proxy_->session < 0 ? QJsonValue() : QJsonValue(proxy_->session)},
                                      {"state", proxy_->state}};
-    if (page_ != 1 && page_ != 7 && !model_->columns.isEmpty()) {
+    if (page_ != 1 && page_ != 7 && page_ != 8 && !model_->columns.isEmpty()) {
         const auto column =
             std::clamp(table_->header()->sortIndicatorSection(), 0, int(model_->columns.size()) - 1);
         pref["sortKey"] = model_->columns.value(column).key;
@@ -930,6 +948,8 @@ void MainWindow::capturePagePreference() {
         if (!pref.contains("scrollTop"))
             pref["scrollTop"] = 0;
     }
+    if (page_ == 8)
+        pref["scrollTop"] = systemInformationPage_->scrollPosition();
     pages[keys_[page_]] = pref;
     preferences_["pages"] = pages;
     preferences_["searchQuery"] = search_->text();
@@ -938,7 +958,15 @@ void MainWindow::restorePagePreference() {
     const QScopedValueRollback<bool> restoring(switchingPage_, true);
     const auto p = preferences_["pages"].toObject()[keys_[page_]].toObject();
     if (page_ == 1) {
-        const auto perf = preferences_["pages"].toObject()["performance"].toObject();
+        auto pages = preferences_["pages"].toObject();
+        auto perf = pages["performance"].toObject();
+        if (perf["resourceType"].toString() == "hwinfo") {
+            perf["resourceType"] = "cpu";
+            perf["resourceId"] = "";
+            pages["performance"] = perf;
+            preferences_["pages"] = pages;
+            saveSoon();
+        }
         if (!perf["resourceType"].isNull() && !perf["resourceType"].toString().isEmpty())
             selectedResource_ = perf["resourceType"].toString() + ":" + perf["resourceId"].toString();
         const QSignalBlocker modeBlock(cpuMode_);
@@ -955,9 +983,9 @@ void MainWindow::restorePagePreference() {
     proxy_->state = filter["state"].toString("all");
     proxy_->query = search_->text();
     proxy_->refreshFilter();
-    sensorProxy_->query = search_->text();
-    sensorProxy_->refreshFilter();
-    if (page_ != 1 && page_ != 7) {
+    if (page_ == 8)
+        systemInformationPage_->restoreScroll(p["scrollTop"].toInt());
+    if (page_ != 1 && page_ != 7 && page_ != 8) {
         const auto widths = p["columnWidths"].toObject();
         for (int i = 0; i < model_->columns.size(); ++i) {
             if (widths.contains(model_->columns[i].key))
@@ -1101,32 +1129,6 @@ void MainWindow::buildPerformance() {
     chartsLayout_->setSpacing(Theme::space3);
     chartScroll->setWidget(chartsPage_);
     perfStack_->addWidget(chartScroll);
-    sensorModel_ = new DataModel(this);
-    sensorProxy_ = new DataProxy(this);
-    auto sensorPage = new QWidget(perfStack_);
-    auto sensorLayout = new QVBoxLayout(sensorPage);
-    sensorLayout->setContentsMargins(0, 0, 0, 0);
-    sensorEmpty_ = new QLabel("正在读取 HWiNFO 传感器…", sensorPage);
-    sensorEmpty_->setAccessibleName("HWiNFO 可用性状态");
-    sensorEmpty_->setAlignment(Qt::AlignCenter);
-    sensorEmpty_->setWordWrap(true);
-    sensorEmpty_->setProperty("secondary", true);
-    sensorLayout->addWidget(sensorEmpty_, 1);
-    sensors_ = createTable(sensorModel_, sensorProxy_, sensorPage);
-    sensors_->setAccessibleName("HWiNFO 真实传感器");
-    sensorModel_->setColumns({{"sensor", "传感器", "", 220},
-                              {"name", "项目", "", 220},
-                              {"unit", "单位", "", 90},
-                              {"value", "当前", "number", 130},
-                              {"minimum", "最小", "number", 130},
-                              {"maximum", "最大", "number", 130},
-                              {"average", "平均", "number", 130},
-                              {"originalName", "原名", "", 220}});
-    for (int i = 0; i < sensorModel_->columns.size(); ++i)
-        sensors_->setColumnWidth(i, sensorModel_->columns[i].width);
-    sensorLayout->addWidget(sensors_, 1);
-    sensors_->hide();
-    perfStack_->addWidget(sensorPage);
     right->addWidget(perfStack_, 1);
     facts_ = new QLabel();
     facts_->setProperty("secondary", true);
@@ -1155,8 +1157,6 @@ void MainWindow::buildPerformance() {
             p["resourceId"] = selectedResource_.mid(separator + 1);
             pages["performance"] = p;
             preferences_["pages"] = pages;
-            if (selectedResource_ == "hwinfo:")
-                readSensors();
             saveSoon();
         }
     });
@@ -1228,11 +1228,6 @@ void MainWindow::rebuildResources() {
                                  formatValue(o["sendBytesPerSecond"], "rate")
                            : formatValue(o["utilizationPercent"], "percent"));
         }
-    ids << "hwinfo:";
-    names << "HWiNFO 传感器";
-    values << QString("%1 项 · %2")
-                  .arg(shown_["hwInfo"].toObject()["readingCount"].toInt())
-                  .arg(shown_["hwInfo"].toObject()["status"].toString());
     const QSignalBlocker block(resources_);
     bool rebuild = resources_->count() != ids.size();
     if (!rebuild)
@@ -1270,7 +1265,7 @@ void MainWindow::rebuildResources() {
                 a = numberOrNan(h["cpuPercent"]);
             else if (kind == "memory")
                 a = numberOrNan(h["memoryPercent"]);
-            else if (kind != "hwinfo") {
+            else {
                 const auto key = kind == "disk"      ? "physicalDisks"
                                  : kind == "network" ? "networkAdapters"
                                                      : "gpuAdapters";
@@ -1283,8 +1278,7 @@ void MainWindow::rebuildResources() {
                     }
                 }
             }
-            if (kind != "hwinfo")
-                firstSeries.append(QPointF(t, a));
+            firstSeries.append(QPointF(t, a));
             if (kind == "network" || kind == "disk")
                 secondSeries.append(QPointF(t, b));
         }
@@ -1332,13 +1326,13 @@ void MainWindow::updatePerformance() {
         if (value.toObject()["id"].toString() == id)
             device = value.toObject();
     cpuMode_->setVisible(type == "cpu");
-    perfStack_->setCurrentIndex(type == "hwinfo" ? 1 : 0);
+    perfStack_->setCurrentIndex(0);
     resourceTitle_->setText(type == "cpu"       ? "CPU"
                             : type == "memory"  ? "内存"
                             : type == "disk"    ? "磁盘"
                             : type == "network" ? "以太网 / Wi-Fi"
                             : type == "gpu"     ? "GPU"
-                                                : "HWiNFO");
+                                                : "GPU");
     resourceInfo_->setText(type == "disk"
                                ? textOrUnknown(device["model"]) + "  " + textOrUnknown(device["mediaType"]) +
                                      " / " + textOrUnknown(device["busType"])
@@ -1350,18 +1344,6 @@ void MainWindow::updatePerformance() {
                             : type == "memory" ? formatValue(sys["usedPhysicalBytes"], "bytes")
                             : type == "gpu"    ? formatValue(device["utilizationPercent"], "percent")
                                                : QString());
-    if (type == "hwinfo") {
-        const auto state = shown_["hwInfo"].toObject();
-        perfStatus_->setText(reasonText(state));
-        facts_->setText("可选只读 SM2 来源 · 保留 HWiNFO "
-                        "原始分组、单位及会话最小/最大/平均值。\n"
-                        "需要此来源时，请运行 HWiNFO 的传感器模式，在其设置中启用 Shared Memory Support，"
-                        "并确认当前版本/许可允许共享内存；本页会自动重读。其他 Windows 性能数据继续可用。");
-        perfStatus_->setVisible(!perfStatus_->text().isEmpty());
-        setFacts({});
-        facts_->show();
-        return;
-    }
     const bool logical = type == "cpu" && cpuMode_->currentIndex() == 1;
     const auto processors = shown_["logicalProcessors"].toArray();
     const auto key = selectedResource_ + (logical ? "logical" : "total") +
@@ -1502,43 +1484,8 @@ void MainWindow::updatePerformance() {
                   {"Adapter LUID", textOrUnknown(device["adapterLuid"])},
                   {"最近采样", formatValue(shown_["capturedAtUtc"], "date")}});
 }
-void MainWindow::readSensors() {
-    if (!connected_ || selectedResource_ != "hwinfo:")
-        return;
-    api_.get("hwinfo/sensors", this, [this](const QJsonObject& source, const QString& error, int) {
-        if (selectedResource_ != "hwinfo:")
-            return;
-        if (!error.isEmpty()) {
-            perfStatus_->setText(error);
-            perfStatus_->show();
-            sensorEmpty_->setText("无法读取 HWiNFO 传感器\n" + error);
-            sensorEmpty_->show();
-            sensors_->hide();
-            return;
-        }
-        sensorsData_ = source;
-        QJsonArray rows;
-        for (const auto& value : source["sensors"].toArray()) {
-            const auto sensor = value.toObject();
-            for (const auto& reading : sensor["readings"].toArray()) {
-                auto row = reading.toObject();
-                row["identity"] = row.value("id");
-                row["sensor"] = sensor["name"];
-                row["name"] = row.value("label");
-                row["originalName"] = row.value("originalLabel");
-                rows.append(row);
-            }
-        }
-        sensorModel_->setRows(rows);
-        perfStatus_->setText(reasonText(source));
-        perfStatus_->setVisible(!perfStatus_->text().isEmpty());
-        sensors_->setVisible(!rows.isEmpty());
-        sensorEmpty_->setVisible(rows.isEmpty());
-        sensorEmpty_->setText("当前没有可显示的 HWiNFO 传感器\n" + reasonText(source));
-    });
-}
 void MainWindow::loadVisibleIcons() {
-    if (!connected_ || closing_ || updatingModel_ || page_ == 1 || page_ == 4 || page_ == 7 ||
+    if (!connected_ || closing_ || updatingModel_ || page_ == 1 || page_ == 4 || page_ == 7 || page_ == 8 ||
         !table_->isVisible() || model_->icons.inFlight() >= IconCache::concurrency)
         return;
     auto index = table_->indexAt(QPoint(12, 6));
@@ -1570,11 +1517,12 @@ void MainWindow::loadVisibleIcons() {
 }
 void MainWindow::applySearch(const QString& query) {
     proxy_->query = query;
-    sensorProxy_->query = query;
     proxy_->refreshFilter();
-    sensorProxy_->refreshFilter();
     searchMessage_.clear();
-    if (page_ == 7) {
+    if (page_ == 8) {
+        if (systemInformationPage_->filter(query) == 0)
+            searchMessage_ = "没有匹配的硬件信息。请清空搜索或使用其它型号 / 类别。";
+    } else if (page_ == 7) {
         int visible = 0;
         for (auto group : settingsPage_->findChildren<QWidget*>()) {
             if (!group->property("settingsGroup").toBool())

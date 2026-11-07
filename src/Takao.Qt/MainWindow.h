@@ -2,6 +2,7 @@
 #include "ApiClient.h"
 #include "Chart.h"
 #include "DataModel.h"
+#include "SystemInformationView.h"
 #include <QCheckBox>
 #include <QComboBox>
 #include <QGridLayout>
@@ -29,8 +30,8 @@ class MainWindow final : public QMainWindow {
 
   private:
     const QStringList keys_{"processes", "performance", "history",  "startup",
-                            "users",     "details",     "services", "settings"};
-    const QStringList titles_{"进程", "性能", "应用历史记录", "启动应用", "用户", "详细信息", "服务", "设置"};
+                            "users",     "details",     "services", "settings", "systemInformation"};
+    const QStringList titles_{"进程", "性能", "应用历史记录", "启动应用", "用户", "详细信息", "服务", "设置", "系统信息"};
     ApiClient api_;
     qint64 expectedHost_;
     QJsonObject bootstrap_, preferences_, latest_, shown_, integration_, updates_;
@@ -62,15 +63,16 @@ class MainWindow final : public QMainWindow {
     QWidget* chartsPage_{};
     QGridLayout* chartsLayout_{};
     QVector<Chart*> charts_;
-    QTreeView* sensors_{};
-    DataModel* sensorModel_{};
-    DataProxy* sensorProxy_{};
     QLabel* facts_{};
     QGridLayout* factsLayout_{};
     QVector<QLabel*> factLabels_, factValues_;
-    QLabel* sensorEmpty_{};
     QString selectedResource_ = QStringLiteral("cpu:"), chartLayoutKey_;
-    QJsonObject sensorsData_;
+    SystemInformationView* systemInformationPage_{};
+    QJsonObject systemInformation_;
+    QString systemInformationError_;
+    bool readingSystemInformation_ = false;
+    void readSystemInformation(bool refresh = false);
+    void updateSystemInformation();
     QWidget* settingsPage_{};
     QComboBox *interval_{}, *density_{}, *zoomBox_{};
     QCheckBox *topmost_{}, *freezeBox_{};
@@ -89,7 +91,6 @@ class MainWindow final : public QMainWindow {
     void updatePerformance();
     void setFacts(const QList<QPair<QString, QString>>&);
     void rebuildResources();
-    void readSensors();
     void updateSettings();
     void applyAppearance(bool restoreWindowState = false);
     void syncTopmost(std::optional<bool> desired = {}, bool persist = false);

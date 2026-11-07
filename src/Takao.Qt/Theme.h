@@ -38,7 +38,7 @@ inline constexpr int sidebarWidth = 204, sidebarCompact = 56, navigationHeight =
     topHeight = 56, commandBarHeight = 56, headerHeight = 40, compactRow = 32, standardRow = 40,
     panelRadius = 8, controlRadius = 4, focusWidth = 2, indicatorWidth = 3, indicatorHeight = 16,
     resourceWidth = 240, resourceTileHeight = 80, resourceDiskHeight = 96,
-    settingsWidth = 1080, settingControlWidth = 240, pathWidth = 440, settingMinHeight = 76,
+    settingsWidth = 1080, systemInfoLabelWidth = 112, settingControlWidth = 240, pathWidth = 440, settingMinHeight = 76,
     dialogWidth = 560, detailDialogWidth = 720, dialogClearance = 96, iconSize = 20, summaryMetricWidth = 112,
     statusIconSize = 14, chartMinHeight = 190, logicalChartHeight = 180, mainChartHeight = 330;
 inline constexpr qreal maximumHeat = .16, chartLineWidth = 2., sparkLineWidth = 1.5;
@@ -110,7 +110,14 @@ inline QIcon icon(int index) {
         "<path d='m14 3-1 4 4 4 4-1a7 7 0 0 1-9 9l-6 3-4-4 7-6a7 7 0 0 1 5-9Z'/>",
         "<circle cx='12' cy='12' r='3'/><path d='m9 3-1 3-3 1-2 4 2 2v4l4 2 3-1 3 1 4-2v-4l2-2-2-4-3-1-1-3Z'/>",
         "<circle cx='10.5' cy='10.5' r='6.5'/><path d='m16 16 5 5'/>",
-        "<path d='M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4'/>"};
+        "<path d='M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4'/>",
+        "<rect x='3' y='3' width='18' height='14' rx='2'/><path d='M8 21h8m-4-4v4'/>",
+        "<rect x='6' y='6' width='12' height='12' rx='2'/><path d='M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4'/>",
+        "<rect x='3' y='5' width='18' height='14' rx='2'/><circle cx='11' cy='12' r='4'/><path d='M21 9h2m-2 6h2M6 19v3m4-3v3'/>",
+        "<rect x='4' y='3' width='16' height='18' rx='1'/><rect x='7' y='6' width='6' height='6'/><path d='M16 6v9M7 16h6m-6 3h6'/>",
+        "<path d='M3 7h18v10H3zM6 4v3m4-3v3m4-3v3m4-3v3M6 17v3m4-3v3m4-3v3m4-3v3M7 10v4m5-4v4m5-4v4'/>",
+        "<rect x='4' y='3' width='16' height='18' rx='2'/><circle cx='12' cy='10' r='4'/><path d='m12 10 4 5M7 18h2m6 0h2'/>",
+        "<rect x='3' y='3' width='18' height='14' rx='2'/><path d='M7 21h10m-5-4v4'/>"};
     static QList<QIcon> cached(paths.size());
     if (index < 0 || index >= paths.size())
         return {};

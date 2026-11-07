@@ -812,7 +812,7 @@ void MainWindow::moreMenu() {
     auto add = [&](const QString& text, auto callback) {
         connect(menu.addAction(text), &QAction::triggered, this, callback);
     };
-    if (page_ != 1 && page_ != 7) {
+    if (page_ != 1 && page_ != 7 && page_ != 8) {
         add("导出当前筛选 CSV…", [this] { exportCsv(); });
         add("显示列 / 设置列宽…", [this] { columnMenu(); });
     }
@@ -879,7 +879,7 @@ void MainWindow::moreMenu() {
     menu.exec(more_->mapToGlobal(QPoint(more_->width() - menu.sizeHint().width(), more_->height())));
 }
 void MainWindow::columnMenu() {
-    if (page_ == 1 || page_ == 7)
+    if (page_ == 1 || page_ == 7 || page_ == 8)
         return;
     auto d = new QDialog(this);
     d->setAttribute(Qt::WA_DeleteOnClose);

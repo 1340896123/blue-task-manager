@@ -344,7 +344,7 @@ void MainWindow::applyAppearance(bool restoreWindowState) {
                                          summaries->sizeHint().height() + Theme::space2}));
     }
     const auto rowHeight = qRound((preferences_["density"].toString() == "standard" ? Theme::standardRow : Theme::compactRow) * zoom_);
-    for (auto view : {table_, sensors_}) {
+    for (auto view : {table_}) {
         const auto scroll = view->verticalScrollBar()->value();
         view->setProperty("rowHeight", rowHeight);
         view->doItemsLayout();
