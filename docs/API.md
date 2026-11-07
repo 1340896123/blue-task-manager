@@ -1,5 +1,9 @@
 # 后端 API 合同
 
+## 2026-11-07 系统信息
+
+新增只读 `GET /api/system-information`，`?refresh=true`重新采集，普通GET使用60秒独立有界缓存、并发合并。根对象 `status,capturedAtUtc,unavailable,processors[],graphicsAdapters[],motherboard,memory,disks[],displays[],operatingSystem` 及各类型/可空字段见 [SYSTEM-INFORMATION.md](SYSTEM-INFORMATION.md)。继续JSON.NET、逐字段原因和既有回环访问限制；不复制到snapshot/history。页面偏好新增systemInformation且最多九页；旧hwinfo偏好在Qt回退CPU，旧HWiNFO API仅作兼容、无可见页面。
+
 ## 2026-11-04 进程网络来源回退
 
 `snapshot.processNetwork`新增 `source:string|null`：`classicSystemLogger`为经典系统logger，`kernelNetworkManifest`为系统logger容量不足时成功启用的Microsoft-Windows-Kernel-Network普通实时session；尚无有效session时为null。收发/合计/独立capturedAtUtc、status/unavailable与identity语义不变；eventLayouts为诊断字符串，manifest布局另带event ID，不能用该字符串替代可用性判断。公开schema与真实链路要求见 [UI-INTEGRATION.md](UI-INTEGRATION.md)。

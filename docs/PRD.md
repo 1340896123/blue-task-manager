@@ -1,5 +1,9 @@
 # 产品需求：Takao
 
+## 2026-11-07 系统信息与 HWiNFO 页面移除
+
+左侧“服务”下方新增“系统信息”，以真实Windows硬件概览展示CPU、显卡、主板、逐条内存、逐块磁盘、多显示器及Windows系统；删除性能页HWiNFO入口/页面/配置说明，旧选中偏好回退CPU。沿用浅色Windows蓝色，不照抄参考图硬件数值；可靠来源缺失明确不可用。当前合同与SI01～SI06定向验收见 [SYSTEM-INFORMATION.md](SYSTEM-INFORMATION.md)，本增量覆盖历史HWiNFO页面保留要求。
+
 ## 2026-11-07 顶部汇总与提示清理
 
 顶部CPU、内存和全机进程数改为标签/大号蓝色数值的三组清晰层级；移除所有占用内容布局的toast/banner通知与“关闭提示”，不再显示正常成功通知。真实状态移入已有页头次级文字，操作失败保留可读错误，安全确认及未知值语义保持。规格与SC01～SC06见 [SUMMARY-CLEANUP.md](SUMMARY-CLEANUP.md)，本增量覆盖历史必须显示成功toast/InfoBar的要求。

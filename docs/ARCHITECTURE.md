@@ -1,5 +1,9 @@
 # Takao 架构与数据合同
 
+## 2026-11-07 独立系统信息来源
+
+[SYSTEM-INFORMATION.md](SYSTEM-INFORMATION.md) 定义独立 `GET /api/system-information` 硬件概览及刷新：.NET/CsWin32读取标准SMBIOS、DXGI、存储与显示接口/系统注册表，JSON.NET经既有回环HTTP供Qt异步消费。独立有界缓存/并发合并，不阻塞实时采样，不把静态硬件放入每秒snapshot或历史；逐字段null与原因保持。Qt新增系统信息页面并删除HWiNFO可见页面，兼容旧接口不要求继续展示。
+
 ## 2026-11-04 界面接入与ETW回退
 
 现有HTTP/JSON.NET/CsWin32链继续复用；classic ETW系统logger创建返回1450时，以Microsoft-Windows-Kernel-Network公开manifest provider启用独立普通实时session，保留严格事件schema、FILETIME身份、完整marker窗口和本实例清理，新增processNetwork.source表明实际模式。八页接线与原因映射规范见 [UI-INTEGRATION.md](UI-INTEGRATION.md)。

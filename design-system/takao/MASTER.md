@@ -1,5 +1,9 @@
 # Takao — Windows Blue Design System
 
+## 2026-11-07 系统信息
+
+按 [SYSTEM-INFORMATION.md](../../docs/SYSTEM-INFORMATION.md) 在服务下方增加系统信息导航，硬件概览使用浅色Fluent与Windows蓝色，按CPU/显卡/主板/内存/硬盘/显示器/系统纵向排列。沿用当前页标题/正文/caption、44px命中、4/8px空间及蓝色可见焦点；设备型号可选择/换行，未知值附原因。标签列Token建议 `systemInfoLabelWidth=112px`，内容限宽沿用1080px设置内容，设备行按内容自然增高。删除性能HWiNFO页面，不新增正常成功banner；刷新状态/部分失败/采集时间放现有页头caption。本节覆盖历史HWiNFO可见页要求；技能查询未匹配桌面产品，沿用现有MASTER和通用桌面规则，不采用营销生成结果。
+
 ## 2026-11-07 顶部汇总与提示清理
 
 按 [SUMMARY-CLEANUP.md](../../docs/SUMMARY-CLEANUP.md) 覆盖原单行淡灰汇总与内容区InfoBar/toast：顶部56px保持，三组无卡片两行指标使用caption12px/secondary标签和`SummaryMetric=24px`、600、accent数值；数字采用numericFont，CPU/内存保留百分号、进程明确标签。汇总单组宽度建议`summaryMetricWidth=112px`，组间`space3=12px`，通过搜索自适应与窄导航保证现有最小窗口不溢出，刷新不移动其它组。缺失显示“—”及原因，不归零。

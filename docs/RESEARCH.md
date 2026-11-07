@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 系统硬件概览（2026-11-07）
+
+实际读取固定提交的TaskExplorer `SystemInfoView.cpp` 与LibreHardwareMonitor `SMBios.cs`，参考资源分组/按需刷新与SMBIOS主板、CPU、逐DIMM标准字段，采用本项目CsWin32/JSON.NET/Qt现有HTTP架构，不复制GPL业务代码/驱动/私有协议。源码链接、取舍、真实来源与不可推测字段见 [SYSTEM-INFORMATION.md](SYSTEM-INFORMATION.md)。
+
 ## ETW普通会话隔离（2026-11-04）
 
 阶段3实际读取[Microsoft PerfView TraceEventSession.cs，9f071a5cb2e70cdfee13abc510344ab1e8840c90](https://github.com/microsoft/perfview/blob/9f071a5cb2e70cdfee13abc510344ab1e8840c90/src/TraceEvent/TraceEventSession.cs)的GetProperties：普通provider会话以`EVENT_TRACE_INDEPENDENT_SESSION_MODE`为基础，实时模式再叠加`EVENT_TRACE_REAL_TIME_MODE`。固定提交通过git ls-remote核对，并重新读取固定提交文件；本地证据`output/ui-integration/stage3/perfview-session-fixed.cs`。另核对微软win32metadata公开evntrace.h中的常量0x08000000。只采用公开模式与CsWin32绑定，不复制实现。
