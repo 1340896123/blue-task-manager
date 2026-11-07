@@ -1,0 +1,30 @@
+{
+  "result": "PASS",
+  "scope": "Only hardware page text and shared navigation/focus colors",
+  "checks": [
+    {
+      "foreground": "text",
+      "background": "content",
+      "ratio": 16.531,
+      "minimum": 4.5
+    },
+    {
+      "foreground": "secondary",
+      "background": "content",
+      "ratio": 6.065,
+      "minimum": 4.5
+    },
+    {
+      "foreground": "accent",
+      "background": "app",
+      "ratio": 5.113,
+      "minimum": 4.5
+    },
+    {
+      "foreground": "focus",
+      "background": "selection",
+      "ratio": 5.401,
+      "minimum": 3.0
+    }
+  ]
+}

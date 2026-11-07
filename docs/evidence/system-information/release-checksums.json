@@ -1,0 +1,22 @@
+{
+  "sourceCommit": "c5106ebe70dd3069638ea8ee000ca3a4fc0c357e",
+  "artifacts": [
+    {
+      "path": "E:\\taskManager\\output\\system-information\\release\\Takao.Host.dll",
+      "sha256": "C3B09495141CD4605D4B4DC77F9F5A44CEB658C080017649DF3C20A70410F0F7"
+    },
+    {
+      "path": "E:\\taskManager\\src\\Takao.Host\\bin\\Release\\net10.0-windows10.0.19041.0\\Takao.Host.dll",
+      "sha256": "C3B09495141CD4605D4B4DC77F9F5A44CEB658C080017649DF3C20A70410F0F7"
+    },
+    {
+      "path": "E:\\taskManager\\output\\system-information\\release\\Takao.Qt.exe",
+      "sha256": "EE3256CD98CCBD64E90BBE8376408554633ACDE5BD00EC5962FFECEBFA3C1EB2"
+    },
+    {
+      "path": "E:\\taskManager\\output\\qt-build\\Takao.Qt.exe",
+      "sha256": "EE3256CD98CCBD64E90BBE8376408554633ACDE5BD00EC5962FFECEBFA3C1EB2"
+    }
+  ],
+  "result": "PASS"
+}
