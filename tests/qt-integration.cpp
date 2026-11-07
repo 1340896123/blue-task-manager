@@ -25,10 +25,16 @@ QJsonObject report;
 void save() {
     report["checks"] = checks;
     report["phase"] = phase;
-    QSaveFile file(output);
-    if (!file.open(QIODevice::WriteOnly)) throw std::runtime_error("Cannot write test evidence");
-    file.write(QJsonDocument(report).toJson(QJsonDocument::Indented));
-    if (!file.commit()) throw std::runtime_error("Cannot commit test evidence");
+    const auto evidence = QJsonDocument(report).toJson(QJsonDocument::Indented);
+    // The WGC observer reads this file concurrently. Windows can briefly deny
+    // the atomic rename while that reader owns a handle without delete sharing.
+    for (int attempt = 0; attempt < 10; ++attempt) {
+        QSaveFile file(output);
+        if (file.open(QIODevice::WriteOnly) && file.write(evidence) == evidence.size() && file.commit())
+            return;
+        QThread::msleep(25);
+    }
+    throw std::runtime_error("Cannot commit test evidence after bounded retries");
 }
 void check(bool condition, const QString& message) {
     if (!condition) throw std::runtime_error(message.toStdString());
@@ -211,7 +217,34 @@ int main(int argc,char** argv) {
             check(interval && density && freeze,"Sampling, density and freeze use named native controls");
             interval->setCurrentIndex(interval->findData(2000));waitFor([&]{return request(inspector,"bootstrap")["settings"].toObject()["intervalMs"].toInt()==2000;},"Apply real interval");check(true,"Qt sampling interval reaches the real backend");
             auto pause=button(&window,"暂停采集");pause->click();waitFor([&]{return request(inspector,"snapshot")["paused"].toBool();},"Pause native sampling");
-            const auto paused=request(inspector,"snapshot")["sampleId"].toInteger();hold(1300);check(request(inspector,"snapshot")["sampleId"].toInteger()==paused,"Paused sampling does not invent new samples");observe("10-paused");pause->click();
+            const auto paused=request(inspector,"snapshot")["sampleId"].toInteger();hold(1300);check(request(inspector,"snapshot")["sampleId"].toInteger()==paused,"Paused sampling does not invent new samples");
+            const auto pausedSystem=request(inspector,"snapshot")["system"].toObject();
+            const QList<QPair<QString,QString>> summaryFields{{"cpuSummary","cpuPercent"},{"memorySummary","memoryPercent"},{"processSummary","processCount"}};
+            for(const auto& field:summaryFields) {
+                auto label=window.findChild<QLabel*>(field.first);
+                const auto expected=formatValue(pausedSystem[field.second],field.second=="processCount"?"number":"percent");
+                waitFor([&]{return label && label->text()==expected;},"Paused resource summary matches the independently read production value: "+field.second);
+                check(label->font().pixelSize()==24 && label->font().weight()>=QFont::DemiBold &&
+                      label->palette().color(QPalette::WindowText)==Theme::accent && !label->accessibleName().isEmpty(),
+                      "Resource summary is readable, named and visually prominent: "+field.second);
+            }
+            check(window.findChild<QWidget*>("appTopArea")->height()==56,"Prominent resource summaries retain the existing 56px top bar");
+            button(&window,"进程")->click();hold(200);
+            const auto processPosition=table->mapTo(&window,QPoint());
+            const auto processExtent=table->size();
+            auto caption=window.findChild<QLabel*>("pageCaption");
+            search->setText("Takao-no-matching-process-during-pause");hold(650);
+            check(table->model()->rowCount()==0 && caption && caption->text().contains("暂停") &&
+                  table->mapTo(&window,QPoint())==processPosition && table->size()==processExtent,
+                  "Empty search preserves the paused page status and the process table geometry");
+            check(window.findChild<QLabel*>("processSummary")->text()==formatValue(pausedSystem["processCount"],"number"),
+                  "Search filters do not replace the true whole-system process count");
+            search->clear();hold(150);
+            bool notice=false;
+            for(auto label:window.findChildren<QLabel*>())notice=notice || label->property("notice").toBool();
+            for(auto control:window.findChildren<QPushButton*>())notice=notice || control->text()=="关闭提示";
+            check(!notice,"The main window contains no layout notification bars or dismiss-notice control");
+            observe("10-paused");button(&window,"设置")->click();pause->click();
             waitFor([&]{return !request(inspector,"snapshot")["paused"].toBool();},"Resume native sampling");hold(350);
             interval->setCurrentIndex(interval->findData(1000));waitFor([&]{return request(inspector,"bootstrap")["settings"].toObject()["intervalMs"].toInt()==1000;},"Restore real one-second interval");
             density->setCurrentIndex(density->findData("standard"));check(table->property("rowHeight").toInt()==40,"Standard density applies the actual native row height");density->setCurrentIndex(density->findData("compact"));
@@ -229,6 +262,8 @@ int main(int argc,char** argv) {
             waitFor([&]{return !dialog("运行新任务");},"Real workload starts");
             waitFor([&]{for(const auto& value:request(inspector,"snapshot")["processes"].toArray()){const auto row=value.toObject();if(row["name"].toString()=="Takao.TestWorkload.exe"&&row["parentPid"].toInteger()==hostPid){owned=row;return true;}}return false;},"Observe the exact test workload");
             targetIdentity=owned["identity"].toString();check(!targetIdentity.isEmpty() && owned["canTerminate"].toBool(),"Created workload has a real creation identity");
+            check(table->mapTo(&window,QPoint())==processPosition && table->size()==processExtent,
+                  "Successful real process creation does not shift the table for a success notice");
             search->setText(targetIdentity);waitFor([&]{return table->model()->rowCount()==1;},"Unique identity search");table->setCurrentIndex(table->model()->index(0,0));table->setFocus();
             check(table->currentIndex().data(DataModel::IdentityRole).toString()==targetIdentity,"Selection remains tied to the exact test identity");
             button(&window,"详情")->click();waitFor([&]{return dialog("进程详情");},"Open real process details");auto detail=dialog("进程详情");auto tabs=detail->findChild<QTabWidget*>();tabs->setCurrentIndex(1);
@@ -242,7 +277,8 @@ int main(int argc,char** argv) {
             check(!processByIdentity(request(inspector,"snapshot"),targetIdentity).isEmpty(),"Cancel leaves the exact dedicated process alive");
             button(&window,"结束任务")->click();waitFor([&]{return dialog("结束任务");},"Reopen identity confirmation");auto confirm=button(dialog("结束任务"),"确认结束任务");confirm->click();check(!confirm->isEnabled(),"Termination disables while waiting for actual Windows completion");
             waitFor([&]{return !dialog("结束任务") && processByIdentity(request(inspector,"snapshot"),targetIdentity).isEmpty();},"Confirm actual dedicated process exit");targetIdentity.clear();
-            check(true,"Confirmed termination removes the real process and closes the Qt modal");observe("15-termination-feedback");
+            check(table->mapTo(&window,QPoint())==processPosition && table->size()==processExtent,
+                  "Confirmed real process termination closes the modal without a notification layout shift");observe("15-termination-feedback");
             check(formatValue(1.25,"number").contains("1.25")||formatValue(1.25,"number").contains("1,25"),"Decimal sensor values are preserved");
             check(formatValue(QJsonValue(QJsonValue::Null),"number")==QStringLiteral("—"),"Unknown sensor values stay unknown");
             report["result"]="PASS";phase="completed";save();window.close();

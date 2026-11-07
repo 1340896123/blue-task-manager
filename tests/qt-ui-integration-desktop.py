@@ -416,7 +416,7 @@ def extended_checks():
     click_visible_text(r'^每\s*1\s*秒$')
     until(lambda:api('bootstrap')['settings']['intervalMs']==1000)
     key('tab');key('space')
-    entries=desktop.ocr_window(hwnd,region=(210,120,1850,260))
+    entries=desktop.ocr_window(hwnd,region=(210,65,1850,135))
     check(any('冻结' in row['text'] for row in entries),'Space toggles freeze and exposes the visible frozen state in the page caption')
     sample=api('snapshot')['sampleId']
     until(lambda:api('snapshot')['sampleId']>sample)

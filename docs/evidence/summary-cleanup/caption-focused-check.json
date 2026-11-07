@@ -1,0 +1,17 @@
+{
+  "result": "PASS",
+  "scope": "Targeted offline OCR of saved real WGC frame after physical Space input; no fresh desktop run",
+  "source": "output\\summary-cleanup\\stage3\\desktop-final\\failure.png",
+  "clientRegion": [
+    210,
+    65,
+    1850,
+    135
+  ],
+  "texts": [
+    "设置",
+    "暂停采集",
+    "刷新",
+    "显示已冻结·后台继续采集"
+  ]
+}
