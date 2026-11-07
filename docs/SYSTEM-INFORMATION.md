@@ -28,7 +28,7 @@
 | 类别 | 必须取得或明确不可用的事实 | 推荐真源与口径 |
 |---|---|---|
 | 处理器 | 型号、厂商、物理核心、逻辑处理器 | SMBIOS type 4；需要时用注册表硬件描述与 `GetLogicalProcessorInformationEx`。多插槽不得把全机线程数复制成每颗 CPU 的线程数。 |
-| 显卡 | 各硬件适配器型号、专用显存 | DXGI `EnumAdapters1/GetDesc1`；保留适配器身份及软件标记，不把共享内存算作专用显存，不从 PDH 引擎名猜型号。 |
+| 显卡 | 各物理设备型号、专用显存及明确的软件/虚拟/逻辑口径 | DXGI `EnumAdapters1/GetDesc1`；CsWin32调用D3DKMT公开只读查询，确认单物理节点后按实际PnP设备实例合并逻辑别名。不同PnP实例即使型号相同也保留；多节点/查询失败保持独立逻辑LUID与原因，不把共享内存算作专用显存。 |
 | 主板 | 厂商、产品、版本 | SMBIOS type 2；厂商占位字符串当缺失处理，不展示为真实产品。 |
 | 内存 | 安装总量、可确认的条数、逐条插槽/厂商/料号/容量/类型/速度 | SMBIOS type 17；支持扩展容量/速度字段和未知哨兵。速度单位为 MT/s，配置速度标为固件报告值，不称实时测量 MHz。全机可用物理内存与安装容量分开。 |
 | 硬盘 | 逐物理设备型号/实际容量/SSD或HDD/总线及总量 | 经验证的物理设备编号 + 存储描述符、seek-penalty 与 `IOCTL_DISK_GET_LENGTH_INFO`；容量为字节，UI 用一致的 GiB/TiB，不累加分区/盘符或把标称营销容量作实际容量。部分容量未知时总量明确不完整。 |
@@ -47,6 +47,7 @@
 - 每个子对象均有 `unavailable` 映射，沿用 `{code,message,nativeErrorCode?}`；可缺字段为 null。数组真实为空与枚举失败通过独立原因区分，失败不能把条数/容量变成零。
 - processor：`id,name,manufacturer,coreCount,logicalProcessorCount`。
 - graphics adapter：`id,name,dedicatedMemoryBytes,isSoftware`。
+- graphics adapter另含`physicalDeviceId:string|null`、`adapterKind:physical|software|virtual|logical`及`logicalAdapterIds[]`。物理身份未经确认时不按名称去重，UI明确“逻辑适配器（物理身份未确认）”；ROOT/SWD设备明确虚拟，DXGI软件标记优先保持软件口径。当前硬件节点数不为1时不按首节点PnP键合并聚合适配器。
 - motherboard：`manufacturer,product,version`。
 - memory：`installedBytes,moduleCount,modules[]`；module：`id,deviceLocator,manufacturer,partNumber,capacityBytes,memoryType,speedMtPerSecond,configuredSpeedMtPerSecond`。
 - disk：`id,deviceNumber,model,capacityBytes,mediaType,busType`。

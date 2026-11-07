@@ -8,7 +8,12 @@ public sealed record SystemInformationDto(string Status, DateTime? CapturedAtUtc
 public sealed record ProcessorInformationDto(string Id, string? Name, string? Manufacturer, uint? CoreCount,
     uint? LogicalProcessorCount, IReadOnlyDictionary<string, Unavailable> Unavailable);
 public sealed record GraphicsInformationDto(string Id, string? Name, string? DedicatedMemoryBytes, bool IsSoftware,
-    IReadOnlyDictionary<string, Unavailable> Unavailable);
+    IReadOnlyDictionary<string, Unavailable> Unavailable)
+{
+    public string? PhysicalDeviceId { get; init; }
+    public string AdapterKind { get; init; } = "logical";
+    public IReadOnlyList<string> LogicalAdapterIds { get; init; } = [];
+}
 public sealed record MotherboardInformationDto(string? Manufacturer, string? Product, string? Version,
     IReadOnlyDictionary<string, Unavailable> Unavailable);
 public sealed record MemoryInformationDto(string? InstalledBytes, int? ModuleCount, IReadOnlyList<MemoryModuleInformationDto> Modules,

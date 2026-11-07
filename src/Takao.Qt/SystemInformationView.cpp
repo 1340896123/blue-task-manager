@@ -132,8 +132,12 @@ void SystemInformationView::setInformation(const QJsonObject& information) {
         auto graphics = group("graphicsAdapters", "显卡", 12);
         for (const auto& entry : information["graphicsAdapters"].toArray()) {
             const auto row = entry.toObject();
+            const auto kind = row["adapterKind"].toString();
+            const auto source = row["isSoftware"].toBool() ? QStringLiteral("软件适配器")
+                : kind == "physical" ? QStringLiteral("物理显卡")
+                : kind == "virtual" ? QStringLiteral("虚拟适配器") : QStringLiteral("逻辑适配器（物理身份未确认）");
             device(graphics, row["id"].toString(), value(row, "name"),
-                   {fact("专用显存", bytes(row, "dedicatedMemoryBytes")), row["isSoftware"].toBool() ? QStringLiteral("软件适配器") : QStringLiteral("硬件适配器")}, row);
+                   {fact("专用显存", bytes(row, "dedicatedMemoryBytes")), source}, row);
         }
         if (information["graphicsAdapters"].toArray().isEmpty()) absent(graphics, "graphicsAdapters");
         auto motherboard = group("motherboard", "主板", 13);

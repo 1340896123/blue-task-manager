@@ -45,6 +45,7 @@ internal static class SystemInformationCollector
     {
         IDXGIFactory1? factory = null;
         var results = new List<GraphicsInformationDto>();
+        var physical = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         try
         {
             PInvoke.CreateDXGIFactory1(out factory).ThrowOnFailure();
@@ -63,8 +64,18 @@ internal static class SystemInformationCollector
                     var missing = new Dictionary<string, Unavailable>();
                     if (name is null) missing["name"] = SystemInformationFirmware.Missing("DXGI未提供显卡型号。");
                     var id = $"luid_0x{unchecked((uint)native.AdapterLuid.HighPart):x8}_0x{native.AdapterLuid.LowPart:x8}";
-                    results.Add(new(id, name, ((ulong)native.DedicatedVideoMemory).ToString(CultureInfo.InvariantCulture),
-                        (native.Flags & DXGI_ADAPTER_FLAG.DXGI_ADAPTER_FLAG_SOFTWARE) != 0, missing));
+                    var software = (native.Flags & DXGI_ADAPTER_FLAG.DXGI_ADAPTER_FLAG_SOFTWARE) != 0;
+                    var identity = GpuPhysicalIdentity.Read(native.AdapterLuid, software);
+                    if (identity.Error is { } error) missing["physicalDeviceId"] = error;
+                    if (identity.DeviceId is { } key && physical.TryGetValue(key, out var existing))
+                    {
+                        var previous = results[existing];
+                        results[existing] = previous with { LogicalAdapterIds = previous.LogicalAdapterIds.Append(id).ToArray() };
+                        continue;
+                    }
+                    if (identity.DeviceId is { } mapped) physical[mapped] = results.Count;
+                    results.Add(new(id, name, ((ulong)native.DedicatedVideoMemory).ToString(CultureInfo.InvariantCulture), software, missing)
+                    { PhysicalDeviceId = identity.DeviceId, AdapterKind = identity.Kind, LogicalAdapterIds = [id] });
                 }
                 finally { if (adapter is not null) Marshal.ReleaseComObject(adapter); }
             }
