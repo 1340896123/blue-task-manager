@@ -11,7 +11,10 @@ using Windows.Win32.System.Ioctl;
 namespace Takao.Host.Native;
 
 internal sealed record DiskIdentity(uint? DeviceNumber, string? Model, string? MediaType, string? BusType,
-    DateTime? CapturedAtUtc, IReadOnlyDictionary<string, Unavailable> Unavailable);
+    DateTime? CapturedAtUtc, IReadOnlyDictionary<string, Unavailable> Unavailable)
+{
+    internal string? CapacityBytes { get; init; }
+}
 
 /// <summary>Owned by the deferred PDH worker. No device handle survives a read or enters the snapshot lock.</summary>
 internal sealed class DiskIdentityCache
@@ -54,14 +57,23 @@ internal sealed class DiskIdentityCache
             && uint.TryParse(name.AsSpan(0, end), NumberStyles.None, CultureInfo.InvariantCulture, out number) && number <= MaximumDeviceNumber;
     }
 
-    private static unsafe DiskIdentity Read(string instance)
+    // The hardware overview requests capacity on the same verified device
+    // handle as model/media/bus, without changing the sampler's access rights.
+    internal static DiskIdentity ReadHardware(string instance) => Read(instance, true);
+    private static unsafe DiskIdentity Read(string instance, bool includeCapacity = false)
     {
         if (!TryDeviceNumber(instance, out var expected)) return Failed(new("identityMismatch", "PhysicalDisk实例没有可验证的物理磁盘编号；保留原始实例。"));
         try
         {
-            using var device = PInvoke.CreateFile($@"\\.\PhysicalDrive{expected}", 0, FILE_SHARE_MODE.FILE_SHARE_READ | FILE_SHARE_MODE.FILE_SHARE_WRITE,
+            using var device = PInvoke.CreateFile($@"\\.\PhysicalDrive{expected}", includeCapacity ? 0x80000000u : 0u, FILE_SHARE_MODE.FILE_SHARE_READ | FILE_SHARE_MODE.FILE_SHARE_WRITE,
                 null, FILE_CREATION_DISPOSITION.OPEN_EXISTING, 0, null);
-            if (device.IsInvalid) return Failed(Error(Marshal.GetLastPInvokeError(), "打开物理磁盘身份失败"));
+            if (device.IsInvalid)
+            {
+                var failure = Error(Marshal.GetLastPInvokeError(), "打开物理磁盘身份失败");
+                if (!includeCapacity) return Failed(failure);
+                var readable = Read(instance);
+                return readable with { Unavailable = new Dictionary<string, Unavailable>(readable.Unavailable) { ["capacityBytes"] = failure } };
+            }
             Span<byte> numberBytes = stackalloc byte[sizeof(STORAGE_DEVICE_NUMBER)];
             if (!PInvoke.DeviceIoControl(device, PInvoke.IOCTL_STORAGE_GET_DEVICE_NUMBER, [], numberBytes, out var returned, null))
                 return Failed(Error(Marshal.GetLastPInvokeError(), "读取物理磁盘编号失败"));
@@ -108,7 +120,17 @@ internal sealed class DiskIdentityCache
                     else media = seek.IncursSeekPenalty ? "HDD" : "SSD";
                 }
             }
-            return new(expected, model, media, bus, DateTime.UtcNow, missing);
+            string? capacity = null;
+            if (includeCapacity)
+            {
+                Span<byte> lengthBytes = stackalloc byte[sizeof(GET_LENGTH_INFORMATION)];
+                if (!PInvoke.DeviceIoControl(device, PInvoke.IOCTL_DISK_GET_LENGTH_INFO, [], lengthBytes, out returned, null))
+                    missing["capacityBytes"] = Error(Marshal.GetLastPInvokeError(), "读取磁盘实际容量失败");
+                else if (returned != lengthBytes.Length || System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian(lengthBytes) <= 0)
+                    missing["capacityBytes"] = Invalid("磁盘容量长度或值无效");
+                else capacity = System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian(lengthBytes).ToString(CultureInfo.InvariantCulture);
+            }
+            return new(expected, model, media, bus, DateTime.UtcNow, missing) { CapacityBytes = capacity };
         }
         catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException)
         { return Failed(new("notSupported", "Windows存储身份查询接口不可用。", exception.HResult)); }

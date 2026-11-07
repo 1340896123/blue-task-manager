@@ -56,6 +56,7 @@ builder.Services.AddSingleton<ProcessManagementService>();
 builder.Services.AddSingleton<ShellActionService>();
 builder.Services.AddSingleton<ServiceActionService>();
 builder.Services.AddSingleton<TaskManagerIntegrationService>();
+builder.Services.AddSingleton<SystemInformationService>();
 builder.Services.AddResponseCompression(options => options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>());
 builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options => options.Level = System.IO.Compression.CompressionLevel.Fastest);
 builder.Services.AddSingleton<SnapshotService>();

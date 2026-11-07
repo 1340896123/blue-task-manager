@@ -11,7 +11,7 @@ public sealed class PreferencesService
     private Persisted persisted = new(1, 1000, new());
     private Unavailable? warning;
     private static readonly JsonSerializerSettings Json = new() { ContractResolver = new CamelCasePropertyNamesContractResolver(), MaxDepth = 12, MissingMemberHandling = MissingMemberHandling.Error, TypeNameHandling = TypeNameHandling.None };
-    private static readonly HashSet<string> Pages = ["processes", "details", "performance", "history", "startup", "users", "services", "settings"];
+    private static readonly HashSet<string> Pages = ["processes", "details", "performance", "history", "startup", "users", "services", "settings", "systemInformation"];
     private static readonly HashSet<string> Keys = ["name", "pid", "parentPid", "sessionId", "threadCount", "handleCount", "priority", "cpuPercent", "workingSetBytes", "privateBytes", "io", "ioReadBytesPerSecond", "ioWriteBytesPerSecond", "gpuPercent", "gpuEngine", "path", "publisher", "userName", "state", "startedAtUtc", "uptimeSeconds", "networkBytesPerSecond", "cpu", "memory", "source", "display", "session", "station", "count", "last", "observedCpuTime100ns", "observedIoReadBytes", "observedIoWriteBytes", "firstObservedAtUtc", "lastObservedAtUtc", "isRunning", "command", "enabled", "location"];
     private static readonly HashSet<string> ProcessColumns = ["name", "pid", "state", "parentPid", "sessionId", "threadCount", "handleCount", "priority", "cpuPercent", "workingSetBytes", "privateBytes", "io", "networkBytesPerSecond", "gpuPercent", "gpuEngine", "userName", "publisher", "path"];
     private static readonly HashSet<string> SensorColumns = ["sensor", "originalSensor", "name", "originalName", "unit", "value", "minimum", "maximum", "average", "type", "identity"];
@@ -71,7 +71,7 @@ public sealed class PreferencesService
     }
     private static void Validate(UiPreferences ui)
     {
-        if (ui is null || ui.Version != 1 || ui.Density is not ("compact" or "standard") || ui.ProcessView is not ("flat" or "tree") || ui.Pages?.Count > 8) Invalid();
+        if (ui is null || ui.Version != 1 || ui.Density is not ("compact" or "standard") || ui.ProcessView is not ("flat" or "tree") || ui.Pages?.Count > 9) Invalid();
         if (ui!.SearchQuery?.Length > 256 || ui.SearchQuery?.Contains('\0') == true) Invalid();
         foreach (var pair in ui!.Pages ?? new Dictionary<string, PagePreference>())
         {

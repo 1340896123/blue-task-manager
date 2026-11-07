@@ -184,3 +184,10 @@ ResumeThread
 PostMessageW
 IsZoomed
 GetExitCodeProcess
+GetSystemFirmwareTable
+EnumDisplayDevicesW
+EnumDisplaySettingsW
+QueryDosDeviceW
+IOCTL_DISK_GET_LENGTH_INFO
+GET_LENGTH_INFORMATION
+GetNativeSystemInfo

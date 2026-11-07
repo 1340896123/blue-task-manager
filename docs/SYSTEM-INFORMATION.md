@@ -53,6 +53,8 @@
 - display：`id,name,widthPixels,heightPixels,refreshRateHz,widthMillimeters,heightMillimeters`。
 - operating system：`caption,displayVersion,build,architecture`。
 
+实际容量字段 `installedBytes/capacityBytes/dedicatedMemoryBytes` 为十进制字符串或 null，避免JSON数字精度损失；CPU核心/线程、条数、像素/毫米和MT/s为可空数字，显卡`isSoftware`保留真实DXGI标记。
+
 硬件概览由独立后台单任务采集，普通读取 TTL 60 秒、并发刷新合并，不阻塞实时进程/PDH采样或Qt GUI线程；首次读取与刷新有明确加载及有界等待。列表/固件/字符串/原生缓冲有上限，原生句柄/COM/缓冲均释放，关闭不遗留无限任务。分组失败隔离，不因一块磁盘拒绝访问丢掉其他硬件；旧值若保留必须标记过期/读取失败，不冒充刚采集成功。
 
 页面偏好新增 `systemInformation`（页面白名单和最多九页同步）；保持原有 `settings` 的技术身份和页索引兼容。查询/滚动偏好可用，禁止持久化硬件概览。旧 HWiNFO 偏好只做显示迁移，不删用户其他偏好。

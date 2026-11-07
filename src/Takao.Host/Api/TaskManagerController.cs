@@ -8,7 +8,7 @@ namespace Takao.Host.Api;
 [ApiController]
 [Route("api")]
 public sealed class TaskManagerController(SnapshotService snapshots, ProcessActionService actions, LocalAccessGuard guard, DesktopWindowService desktop, PreferencesService preferences,
-    ProcessQueryService queries, ProcessConnections connections, ProcessIconService icons, ProcessManagementService management, ShellActionService shell, ServiceActionService services, TaskManagerIntegrationService integration) : ControllerBase
+    ProcessQueryService queries, ProcessConnections connections, ProcessIconService icons, ProcessManagementService management, ShellActionService shell, ServiceActionService services, TaskManagerIntegrationService integration, SystemInformationService systemInformation) : ControllerBase
 {
     [HttpGet("health")]
     public IActionResult Health() => Ok(new { platform = "Windows", version = "1.1.1", ready = snapshots.Current is not null, processId = Environment.ProcessId, nativeSource = "Microsoft.Windows.CsWin32", json = "Newtonsoft.Json" });
@@ -31,6 +31,10 @@ public sealed class TaskManagerController(SnapshotService snapshots, ProcessActi
 
     [HttpGet("hwinfo/sensors")]
     public IActionResult HwInfoSensors() => Ok(snapshots.HwInfo);
+
+    [HttpGet("system-information")]
+    public async Task<IActionResult> SystemInformation([FromQuery] bool refresh = false) =>
+        Ok(await systemInformation.ReadAsync(refresh, HttpContext.RequestAborted));
 
     [HttpPost("preferences")]
     public IActionResult Preferences(UiPreferences request) => Ok(preferences.Save(request));

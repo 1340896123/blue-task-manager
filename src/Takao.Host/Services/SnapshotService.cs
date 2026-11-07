@@ -28,6 +28,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     {
         ["processes"] = new(true, "CsWin32 Toolhelp / GetProcessTimes / PSAPI / GetProcessIoCounters"),
         ["system"] = new(true, "CsWin32 GetSystemTimes / GlobalMemoryStatusEx / GetPerformanceInfo / GetTickCount64"),
+        ["systemInformation"] = new(true, "CsWin32 SMBIOS / DXGI / Storage IOCTL / 显示枚举与EDID / Windows注册表；独立按需缓存"),
         ["logicalProcessors"] = new(true, "CsWin32 PDH English Processor Information % Processor Time；真实group,index、独立来源时间及相邻样本"),
         ["hwInfo"] = new(true, "CsWin32 HWiNFO SM2只读共享内存；独立后台缓存/有界互斥同步", "可选来源：需HWiNFO运行并由其当前版本/许可启用共享内存。"),
         ["network"] = new(true, "CsWin32 GetIfTable2：仅Up状态真实硬件适配器总量；排除过滤、虚拟、回环和隧道接口"),
