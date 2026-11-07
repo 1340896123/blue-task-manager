@@ -23,7 +23,7 @@ checks = []
 pairs = [
     ('text', 'surface', 4.5), ('secondary', 'surface', 4.5),
     ('secondary', 'app', 4.5), ('text', 'selection', 4.5),
-    ('accent', 'selection', 4.5), ('surface', 'accent', 4.5),
+    ('accent', 'selection', 4.5), ('accent', 'app', 4.5), ('surface', 'accent', 4.5),
     ('danger', 'surface', 4.5), ('warning', 'surface', 4.5),
     ('danger', 'dangerSurface', 4.5),
     ('accent', 'surface', 3), ('secondLine', 'surface', 3),

@@ -39,10 +39,10 @@ inline constexpr int sidebarWidth = 204, sidebarCompact = 56, navigationHeight =
     panelRadius = 8, controlRadius = 4, focusWidth = 2, indicatorWidth = 3, indicatorHeight = 16,
     resourceWidth = 240, resourceTileHeight = 80, resourceDiskHeight = 96,
     settingsWidth = 1080, settingControlWidth = 240, pathWidth = 440, settingMinHeight = 76,
-    dialogWidth = 560, detailDialogWidth = 720, dialogClearance = 96, iconSize = 20,
+    dialogWidth = 560, detailDialogWidth = 720, dialogClearance = 96, iconSize = 20, summaryMetricWidth = 112,
     statusIconSize = 14, chartMinHeight = 190, logicalChartHeight = 180, mainChartHeight = 330;
 inline constexpr qreal maximumHeat = .16, chartLineWidth = 2., sparkLineWidth = 1.5;
-enum class Type { Caption = 12, Body = 14, BodyLarge = 16, Section = 20, PageTitle = 28, Metric = 32 };
+enum class Type { Caption = 12, Body = 14, BodyLarge = 16, Section = 20, SummaryMetric = 24, PageTitle = 28, Metric = 32 };
 inline QFont font(Type role = Type::Body, bool strong = false) {
     auto result = qApp->font();
     const auto scale = result.pixelSize() > 0 ? result.pixelSize() / 14. : 1.;
@@ -350,6 +350,7 @@ inline void apply(QApplication& application) {
       QCheckBox:focus { border-color:@focus; }
       QCheckBox::indicator { width:18px; height:18px; }
       QLabel[secondary="true"] { color:@secondary; }
+      QLabel[summaryMetric="true"] { color:@accent; }
       QLabel[notice="true"] { background:@infoSurface; color:@text; padding:12px; border:1px solid @strokeSubtle; border-radius:4px; }
       QLabel[notice="true"][status="danger"] { background:@dangerSurface; color:@danger; }
       QLabel[notice="true"][status="success"] { background:@successSurface; color:@text; }

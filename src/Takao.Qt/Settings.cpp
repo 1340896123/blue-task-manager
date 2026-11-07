@@ -335,8 +335,14 @@ void MainWindow::applyAppearance(bool restoreWindowState) {
             push->setFixedHeight(std::max(standard, push->fontMetrics().height() + Theme::space3));
         }
     }
-    if (auto top = findChild<QWidget*>("appTopArea"))
-        top->setFixedHeight(std::max(Theme::topHeight, search_->height() + Theme::space2));
+    if (auto summaries = findChild<QWidget*>("systemSummary")) {
+        for (auto group : summaries->findChildren<QWidget*>())
+            if (group->property("summaryGroup").toBool())
+                group->setFixedWidth(qRound(Theme::summaryMetricWidth * zoom_));
+        if (auto top = findChild<QWidget*>("appTopArea"))
+            top->setFixedHeight(std::max({Theme::topHeight, search_->height() + Theme::space2,
+                                         summaries->sizeHint().height() + Theme::space2}));
+    }
     const auto rowHeight = qRound((preferences_["density"].toString() == "standard" ? Theme::standardRow : Theme::compactRow) * zoom_);
     for (auto view : {table_, sensors_}) {
         const auto scroll = view->verticalScrollBar()->value();

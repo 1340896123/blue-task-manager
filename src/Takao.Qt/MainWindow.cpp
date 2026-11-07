@@ -24,6 +24,23 @@
 #include <cmath>
 
 namespace {
+// The caption shares the existing heading row. Long source errors remain
+// available to accessibility and tooltips without widening the command bar.
+class ElidedCaption final : public QLabel {
+    QString content_;
+    void render() { QLabel::setText(fontMetrics().elidedText(content_, Qt::ElideRight, width())); }
+  public:
+    using QLabel::QLabel;
+    void setContent(const QString& text, const QString& detail) {
+        content_ = text;
+        setToolTip(detail);
+        setAccessibleDescription(detail);
+        render();
+    }
+  protected:
+    void resizeEvent(QResizeEvent* event) override { QLabel::resizeEvent(event); render(); }
+    void changeEvent(QEvent* event) override { QLabel::changeEvent(event); render(); }
+};
 class RowDelegate final : public QStyledItemDelegate {
   public:
     using QStyledItemDelegate::QStyledItemDelegate;
@@ -169,8 +186,6 @@ MainWindow::MainWindow(QUrl origin, qint64 hostPid) : api_(std::move(origin), th
     saveTimer_.setSingleShot(true);
     saveTimer_.setInterval(700);
     connect(&saveTimer_, &QTimer::timeout, this, &MainWindow::savePreferences);
-    toastTimer_.setSingleShot(true);
-    connect(&toastTimer_, &QTimer::timeout, toastArea_, &QWidget::hide);
     pollTimer_.setInterval(500);
     connect(&pollTimer_, &QTimer::timeout, this, &MainWindow::poll);
     slowTimer_.setInterval(3000);
@@ -244,16 +259,47 @@ void MainWindow::buildUi() {
     search_->setPlaceholderText("搜索名称、PID 或发布者  (Ctrl+F)");
     search_->setMaxLength(256);
     search_->setClearButtonEnabled(true);
-    search_->setFixedWidth(480);
+    search_->setMinimumWidth(240);
+    search_->setMaximumWidth(480);
     search_->setFixedHeight(Theme::searchHeight);
     search_->addAction(Theme::icon(8), QLineEdit::LeadingPosition);
     searchLabel->setBuddy(search_);
     topLayout->addWidget(searchLabel);
-    topLayout->addWidget(search_);
+    topLayout->addWidget(search_, 1);
     topLayout->addStretch();
-    summary_ = new QLabel("正在连接本机 Windows…", top);
-    summary_->setProperty("secondary", true);
-    topLayout->addWidget(summary_);
+    auto summaries = new QWidget(top);
+    summaries->setObjectName("systemSummary");
+    auto summaryLayout = new QHBoxLayout(summaries);
+    summaryLayout->setContentsMargins(0, 0, 0, 0);
+    summaryLayout->setSpacing(Theme::space4);
+    auto metric = [&](const QString& title, const QString& name) {
+        auto group = new QWidget(summaries);
+        group->setProperty("summaryGroup", true);
+        group->setFixedWidth(Theme::summaryMetricWidth);
+        auto column = new QVBoxLayout(group);
+        column->setContentsMargins(0, 0, 0, 0);
+        column->setSpacing(0);
+        auto label = new QLabel(title, group);
+        label->setProperty("secondary", true);
+        Theme::type(label, Theme::Type::Caption);
+        auto value = new QLabel("—", group);
+        value->setObjectName(name);
+        value->setAccessibleName(title);
+        value->setAccessibleDescription("尚未取得有效 Windows 采样。");
+        value->setToolTip(value->accessibleDescription());
+        value->setProperty("numericType", true);
+        value->setProperty("summaryMetric", true);
+        Theme::type(value, Theme::Type::SummaryMetric, true);
+        value->setFont(Theme::numericFont(Theme::Type::SummaryMetric, true));
+        column->addWidget(label);
+        column->addWidget(value);
+        summaryLayout->addWidget(group);
+        return value;
+    };
+    cpuSummary_ = metric("CPU", "cpuSummary");
+    memorySummary_ = metric("内存", "memorySummary");
+    processSummary_ = metric("进程", "processSummary");
+    topLayout->addWidget(summaries);
     root->addWidget(top);
     auto body = new QHBoxLayout();
     body->setSpacing(0);
@@ -318,12 +364,15 @@ void MainWindow::buildUi() {
     pageTitle_->setProperty("title", true);
     Theme::type(pageTitle_, Theme::Type::PageTitle, true);
     heading->addWidget(pageTitle_);
-    count_ = new QLabel(content);
+    count_ = new ElidedCaption(content);
+    count_->setObjectName("pageCaption");
+    count_->setAccessibleName("页面状态");
+    count_->setMinimumWidth(0);
+    count_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     count_->setProperty("secondary", true);
     Theme::type(count_, Theme::Type::Caption);
     heading->addWidget(count_);
-    commands->addLayout(heading);
-    commands->addStretch();
+    commands->addLayout(heading, 1);
     run_ = button("运行新任务", content, true);
     run_->setToolTip("运行新任务 (Ctrl+N)");
     terminate_ = button("结束任务", content);
@@ -340,27 +389,6 @@ void MainWindow::buildUi() {
     for (auto b : {pageAction_, run_, terminate_, detail_, pause_, refresh_, more_})
         commands->addWidget(b);
     contentLayout->addWidget(commandBar);
-    banner_ = new QLabel(content);
-    banner_->setProperty("notice", true);
-    banner_->setWordWrap(true);
-    banner_->hide();
-    contentLayout->addWidget(banner_);
-    toastArea_ = new QWidget(content);
-    auto feedbackLayout = new QHBoxLayout(toastArea_);
-    feedbackLayout->setContentsMargins(0, 0, 0, 0);
-    feedbackLayout->setSpacing(Theme::space2);
-    toast_ = new QLabel(toastArea_);
-    toast_->setProperty("notice", true);
-    toast_->setWordWrap(true);
-    toast_->setAccessibleName("操作结果");
-    feedbackLayout->addWidget(toast_, 1);
-    auto dismiss = button("关闭提示", toastArea_);
-    dismiss->setProperty("command", true);
-    dismiss->setFixedHeight(Theme::secondaryCommandHeight);
-    connect(dismiss, &QPushButton::clicked, toastArea_, &QWidget::hide);
-    feedbackLayout->addWidget(dismiss);
-    toastArea_->hide();
-    contentLayout->addWidget(toastArea_);
     stack_ = new QStackedWidget(content);
     gridPage_ = new QWidget(stack_);
     auto gridLayout = new QVBoxLayout(gridPage_);
@@ -469,17 +497,22 @@ void MainWindow::bootstrap() {
     api_.get("bootstrap", this, [this](const QJsonObject& value, const QString& error, int) {
         if (!error.isEmpty()) {
             connected_ = false;
-            setBanner(error, true);
+            connectionError_ = error;
+            updateCaption();
             QTimer::singleShot(2500, this, &MainWindow::bootstrap);
             return;
         }
         if (value["hostPid"].toInteger() != expectedHost_) {
-            setBanner("当前服务身份与启动主机不一致，已停止连接。请从完整程序目录重新启动。", true);
+            connected_ = false;
+            connectionError_ = "当前服务身份与启动主机不一致，已停止连接。请从完整程序目录重新启动。";
+            updateCaption();
             return;
         }
         bootstrap_ = value;
         api_.setToken(value["token"].toString());
         connected_ = true;
+        connectionError_.clear();
+        updateCaption();
         intervalMs_ = value["settings"].toObject()["intervalMs"].toInt(1000);
         proxy_->currentUser = value["currentUserName"].toString();
         pollTimer_.start();
@@ -516,7 +549,7 @@ void MainWindow::bootstrap() {
                         notify(result["warning"].toObject()["message"].toString(), true);
                     readIntegration(true);
                 } else {
-                    setBanner(e, true);
+                    notify(e, true);
                     loadingPreferences_ = false;
                 }
                 updateSettings();
@@ -534,18 +567,20 @@ void MainWindow::poll() {
             polling_ = false;
             if (!error.isEmpty()) {
                 connected_ = false;
-                setBanner(error + " 保留上次成功快照；正在重试。", true);
+                connectionError_ = error + " 保留上次成功快照；正在重试。";
+                updateCaption();
                 updateSelectionActions();
                 return;
             }
             connected_ = true;
+            connectionError_.clear();
             if (status != 304) {
                 latest_ = value;
                 if (!frozen_)
                     shown_ = latest_;
                 applySnapshot();
-            } else if (!banner_->text().isEmpty() && !frozen_ && !latest_["paused"].toBool()) {
-                setBanner({});
+            } else {
+                updateCaption();
                 updateSelectionActions();
             }
         },
@@ -556,17 +591,19 @@ void MainWindow::applySnapshot() {
         return;
     intervalMs_ = latest_["intervalMs"].toInt(1000);
     const auto system = shown_["system"].toObject();
-    summary_->setText(QString("CPU %1    内存 %2    %3 个进程")
-                          .arg(formatValue(system["cpuPercent"], "percent"),
-                               formatValue(system["memoryPercent"], "percent"))
-                          .arg(system["processCount"].toInt()));
-    summary_->setToolTip(networkStatusText(shown_["processNetwork"].toObject()));
-    if (frozen_)
-        setBanner("显示已冻结；后台继续真实采集。取消冻结后显示最新快照。");
-    else if (latest_["paused"].toBool())
-        setBanner("采集已暂停 · 正在显示最后有效快照。继续后重新采样，不补造历史。");
-    else
-        setBanner({});
+    auto updateMetric = [&](QLabel* label, const QString& key, const QString& unit) {
+        label->setText(formatValue(system[key], unit));
+        auto detail = reasonText(system, key);
+        if (!system[key].isDouble() && detail.isEmpty())
+            detail = "尚未取得有效 Windows 采样。";
+        const auto description = label->accessibleName() + " " + label->text() +
+                                 (detail.isEmpty() ? QString() : " · " + detail);
+        label->setAccessibleDescription(description);
+        label->setToolTip(description);
+    };
+    updateMetric(cpuSummary_, "cpuPercent", "percent");
+    updateMetric(memorySummary_, "memoryPercent", "percent");
+    updateMetric(processSummary_, "processCount", "number");
     pause_->setText(latest_["paused"].toBool() ? "继续采集" : "暂停采集");
     if (page_ == 1)
         updatePerformance();
@@ -574,6 +611,7 @@ void MainWindow::applySnapshot() {
         updateSettings();
     else
         updateTable();
+    updateCaption();
     updateSelectionActions();
 }
 bool MainWindow::processPage() const {
@@ -597,11 +635,14 @@ void MainWindow::switchPage(int index) {
     detail_->setVisible(index != 1 && index != 7);
     pause_->setVisible(index == 0 || index == 1 || index == 5 || index == 7);
     run_->setVisible(index != 7);
-    count_->clear();
+    pageCaption_.clear();
+    sourceMessage_.clear();
+    searchMessage_.clear();
     if (index == 1)
-        count_->setText("实时资源 · Windows 实际采样");
+        pageCaption_ = "实时资源 · Windows 实际采样";
     else if (index == 7)
-        count_->setText("采样、外观与系统入口");
+        pageCaption_ = "采样、外观与系统入口";
+    updateCaption();
     pageAction_->setVisible(index == 2 || index == 3 || index == 6);
     pageAction_->setText(index == 2 ? "清除本次会话统计…" : index == 3 ? "Windows 启动设置" : "Windows 服务管理器");
     pageAction_->setAccessibleName(pageAction_->text());
@@ -753,20 +794,22 @@ void MainWindow::updateTable() {
     if (!rows.isEmpty() || processPage() || !shown_["slowDataCapturedAtUtc"].isNull())
         pendingPageRestore_ = false;
     updatingModel_ = false;
-    count_->setText(page_ == 2 ? QString("本次会话 · %1 项 · 会话开始 %2").arg(rows.size()).arg(formatValue(shown_["sessionStartedAtUtc"], "date"))
+    pageCaption_ = page_ == 2 ? QString("本次会话 · %1 项 · 会话开始 %2").arg(rows.size()).arg(formatValue(shown_["sessionStartedAtUtc"], "date"))
                     : page_ == 3 ? QString("%1 个启动项 · Windows 实际来源").arg(rows.size())
                     : page_ == 4 ? QString("%1 个 Windows 登录会话").arg(rows.size())
                     : page_ == 6 ? QString("%1 项服务 · Windows 服务控制管理器").arg(rows.size())
                     : page_ == 5 ? QString("%1 个进程 · 完整详细信息").arg(rows.size())
-                                 : QString("%1 个进程").arg(rows.size()));
+                                 : QString("%1 个进程").arg(rows.size());
+    sourceMessage_.clear();
     applySearch(search_->text());
     if (rows.isEmpty()) {
         const auto slow = shown_["slowDataCapturedAtUtc"];
         if (!processPage() && slow.isNull())
-            setBanner("正在读取 Windows 后台来源；尚未取得首个结果。");
+            sourceMessage_ = "正在读取 Windows 后台来源；尚未取得首个结果。";
         else
-            setBanner("当前来源没有可显示的项目。");
+            sourceMessage_ = "当前来源没有可显示的项目。";
     }
+    updateCaption();
 }
 QJsonObject MainWindow::selected() const {
     const auto idx = table_->currentIndex();
@@ -788,20 +831,36 @@ void MainWindow::updateSelectionActions() {
 void MainWindow::notify(const QString& message, bool error) {
     if (message.isEmpty())
         return;
-    toast_->setText((error ? QStringLiteral("×  ") : QStringLiteral("✓  ")) + message);
-    toast_->setAccessibleDescription(error ? "操作失败" : "操作完成");
-    Theme::state(toast_, error ? "danger" : "success");
-    toast_->show();
-    toastArea_->show();
-    toastTimer_.stop();
-    if (!error)
-        toastTimer_.start(4000);
+    // Successful actions are reflected by the actual controls/list. Errors
+    // remain readable in the existing caption without inserting a notice row.
+    operationError_ = error ? message : QString();
+    updateCaption();
 }
-void MainWindow::setBanner(const QString& message, bool error) {
-    banner_->setText(message.isEmpty() ? QString() : (error ? QStringLiteral("×  ") : QStringLiteral("i  ")) + message);
-    Theme::state(banner_, error ? "danger" : "info");
-    banner_->setAccessibleName(error ? "连接或来源错误" : "数据状态");
-    banner_->setVisible(!message.isEmpty());
+void MainWindow::updateCaption() {
+    QString text = pageCaption_, detail = pageCaption_, status;
+    if (!connected_) {
+        text = connectionError_.isEmpty() ? "正在连接本机 Windows…"
+               : shown_.isEmpty() ? "连接失败 · 尚无有效快照" : "连接中断 · 上次快照已过期";
+        detail = connectionError_.isEmpty() ? text : connectionError_;
+        status = connectionError_.isEmpty() ? "info" : "danger";
+    } else if (!operationError_.isEmpty()) {
+        text = "操作失败 · " + operationError_;
+        detail = text;
+        status = "danger";
+    } else if (frozen_) {
+        text = "显示已冻结 · 后台继续采集";
+        detail = "显示已冻结；后台继续真实采集。取消冻结后显示最新快照。";
+        status = "warning";
+    } else if (latest_["paused"].toBool()) {
+        text = "采集已暂停 · 显示最后有效快照";
+        detail = "采集已暂停；正在显示最后有效快照。继续后重新采样，不补造历史。";
+        status = "warning";
+    } else if (!searchMessage_.isEmpty() || !sourceMessage_.isEmpty()) {
+        detail = !searchMessage_.isEmpty() ? searchMessage_ : sourceMessage_;
+        text = detail.section(QChar(0x3002), 0, 0).section(QChar(0xff1b), 0, 0);
+    }
+    Theme::state(count_, status);
+    static_cast<ElidedCaption*>(count_)->setContent(text, detail);
 }
 void MainWindow::post(const QString& route, const QJsonObject& body,
                       std::function<void(const QJsonObject&)> done, int timeout) {
@@ -1514,6 +1573,7 @@ void MainWindow::applySearch(const QString& query) {
     sensorProxy_->query = query;
     proxy_->refreshFilter();
     sensorProxy_->refreshFilter();
+    searchMessage_.clear();
     if (page_ == 7) {
         int visible = 0;
         for (auto group : settingsPage_->findChildren<QWidget*>()) {
@@ -1532,14 +1592,11 @@ void MainWindow::applySearch(const QString& query) {
             visible += match;
         }
         if (!visible)
-            setBanner("没有匹配的设置。请清空搜索或使用其它关键词。");
-        else if (!frozen_ && !latest_["paused"].toBool())
-            setBanner({});
+            searchMessage_ = "没有匹配的设置。请清空搜索或使用其它关键词。";
     } else if (page_ != 1) {
         if (!query.isEmpty() && proxy_->rowCount() == 0 && !shown_.isEmpty())
-            setBanner("没有匹配的项目。请清空搜索或使用其它名称 / PID。");
-        else if (!frozen_ && !latest_["paused"].toBool() && connected_)
-            setBanner({});
+            searchMessage_ = "没有匹配的项目。请清空搜索或使用其它名称 / PID。";
     }
+    updateCaption();
     loadVisibleIcons();
 }

@@ -42,13 +42,13 @@ class MainWindow final : public QMainWindow {
     QSet<QString> collapsed_, pendingActions_;
     int page_ = 0, intervalMs_ = 1000;
     double zoom_ = 1;
-    QTimer pollTimer_, saveTimer_, toastTimer_, slowTimer_, iconTimer_;
+    QTimer pollTimer_, saveTimer_, slowTimer_, iconTimer_;
     QLineEdit* search_{};
-    QLabel *pageTitle_{}, *count_{}, *banner_{}, *toast_{}, *summary_{};
+    QLabel *pageTitle_{}, *count_{}, *cpuSummary_{}, *memorySummary_{}, *processSummary_{};
+    QString pageCaption_, connectionError_, operationError_, sourceMessage_, searchMessage_;
     QWidget* sidebar_{};
     QVector<QPushButton*> nav_;
     QPushButton *pause_{}, *run_{}, *terminate_{}, *more_{}, *refresh_{}, *detail_{}, *pageAction_{}, *navUpdate_{};
-    QWidget* toastArea_{};
     QStackedWidget* stack_{};
     QWidget* gridPage_{};
     QTreeView* table_{};
@@ -98,7 +98,7 @@ class MainWindow final : public QMainWindow {
     void applyIntegration(QString action, bool first = false);
     void promptFirstLaunch();
     void notify(const QString&, bool error = false);
-    void setBanner(const QString&, bool error = false);
+    void updateCaption();
     void saveSoon();
     void savePreferences();
     void capturePagePreference();
