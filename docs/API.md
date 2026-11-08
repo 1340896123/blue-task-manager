@@ -1,5 +1,9 @@
 # 后端 API 合同
 
+## 2026-11-08 按需历史投影
+
+`GET /api/snapshot` 保持完整兼容；标准query `view=live|history|performance` 按需排除两类历史，其它字段和真实未知原因保持。投影间弱ETag不同，同投影同revision条件请求304空体，非法view400；固定少量表示缓存随revision失效。具体语义及Qt切页/冻结边界见 [LOCAL-SNAPSHOT-TRAFFIC.md](LOCAL-SNAPSHOT-TRAFFIC.md)。
+
 ## 2026-11-07 系统信息
 
 新增只读 `GET /api/system-information`，`?refresh=true`重新采集，普通GET使用60秒独立有界缓存、并发合并。根对象 `status,capturedAtUtc,unavailable,processors[],graphicsAdapters[],motherboard,memory,disks[],displays[],operatingSystem` 及各类型/可空字段见 [SYSTEM-INFORMATION.md](SYSTEM-INFORMATION.md)。继续JSON.NET、逐字段原因和既有回环访问限制；不复制到snapshot/history。页面偏好新增systemInformation且最多九页；旧hwinfo偏好在Qt回退CPU，旧HWiNFO API仅作兼容、无可见页面。

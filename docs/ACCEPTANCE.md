@@ -4,6 +4,8 @@
 
 # Takao 真实链路验收矩阵
 
+本机快照持续流量修复只执行 [LOCAL-SNAPSHOT-TRAFFIC.md](LOCAL-SNAPSHOT-TRAFFIC.md) LT01～LT06：真实投影/压缩/ETag、Qt切页、采样周期与暂停、完整冻结及实际流量对照；不默认执行历史完整N系列或全页回归。结果记 `LOCAL-SNAPSHOT-TRAFFIC-RESULTS.md`。
+
 本轮导航/命令按钮的实际结果见 [统一按钮定向验收](SHELL-BUTTONS-RESULTS.md)：33项原生组件、17项物理检查、六组对比度与三个代表页1080P截图通过；其它尺寸/字号和未触发状态仅审查，不计实测。
 
 ## 2026-11-08 导航与命令按钮统一

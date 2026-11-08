@@ -1,5 +1,9 @@
 # Takao 架构与数据合同
 
+## 2026-11-08 本机快照投影
+
+沿用Qt→Kestrel回环HTTP、JSON.NET、自动gzip和弱ETag，增加固定白名单 `snapshot?view=live|history|performance`，只按需传两类历史；默认完整表示保持兼容。按revision/view有界缓存并区分ETag，Qt串行读取、切页重取且防止旧view迟到覆盖，冻结按需获取一份完整真实快照。轮询匹配采样周期，暂停时节流；ETW统计和Host采样保持原语义。合同与LT01～LT06见 [LOCAL-SNAPSHOT-TRAFFIC.md](LOCAL-SNAPSHOT-TRAFFIC.md)。
+
 ## 2026-11-07 独立系统信息来源
 
 [SYSTEM-INFORMATION.md](SYSTEM-INFORMATION.md) 定义独立 `GET /api/system-information` 硬件概览及刷新：.NET/CsWin32读取标准SMBIOS、DXGI、存储与显示接口/系统注册表，JSON.NET经既有回环HTTP供Qt异步消费。独立有界缓存/并发合并，不阻塞实时采样，不把静态硬件放入每秒snapshot或历史；逐字段null与原因保持。Qt新增系统信息页面并删除HWiNFO可见页面，兼容旧接口不要求继续展示。
