@@ -59,6 +59,7 @@ void SystemInformationView::setInformation(const QJsonObject& information) {
         const auto focusName = focus && isAncestorOf(focus) ? focus->objectName() : QString();
         information_ = information;
         groups_.clear();
+        text_.clear();
         auto wrapper = new QWidget(this);
         auto outer = new QHBoxLayout(wrapper);
         outer->setContentsMargins(0, 0, Theme::space2, Theme::space2);
@@ -72,6 +73,7 @@ void SystemInformationView::setInformation(const QJsonObject& information) {
         outer->addWidget(content_, 1, Qt::AlignTop);
         outer->addStretch();
         auto group = [&](const QString& key, const QString& title, int icon) {
+            text_ << QString() << title;
             auto row = new QWidget(content_);
             row->setObjectName("hardware-" + key);
             row->setProperty("hardwareGroup", true);
@@ -102,6 +104,8 @@ void SystemInformationView::setInformation(const QJsonObject& information) {
             return items;
         };
         auto device = [&](QVBoxLayout* items, const QString& key, const QString& name, const QStringList& facts, const QJsonObject& source) {
+            text_ << "  " + name;
+            if (!facts.isEmpty()) text_ << "    " + facts.join("    ");
             auto entry = new QWidget(items->parentWidget());
             entry->setObjectName("hardware-device-" + key);
             auto block = new QVBoxLayout(entry);
@@ -111,6 +115,7 @@ void SystemInformationView::setInformation(const QJsonObject& information) {
             if (!facts.isEmpty()) block->addWidget(label(facts.join("    "), "hardware-facts-" + key, entry, false, true));
             const auto reason = reasonText(source);
             if (!reason.isEmpty()) {
+                text_ << "    部分信息不可用：" + reason;
                 entry->setToolTip(reason);
                 entry->setAccessibleDescription(reason);
                 block->addWidget(label("部分信息不可用：" + reason, "hardware-reason-" + key, entry, false, true));
@@ -192,7 +197,9 @@ void SystemInformationView::setInformation(const QJsonObject& information) {
             if (auto target = findChild<QWidget*>(focusName); target && target->isVisible()) target->setFocus(Qt::OtherFocusReason);
         });
     }
+    information_ = information;
 }
+QString SystemInformationView::plainText() const { return text_.join('\n').trimmed(); }
 int SystemInformationView::filter(const QString& query) {
     query_ = query;
     int visible = 0;

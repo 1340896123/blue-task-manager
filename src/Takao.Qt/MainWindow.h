@@ -43,7 +43,7 @@ class MainWindow final : public QMainWindow {
     QSet<QString> collapsed_, pendingActions_;
     int page_ = 0, intervalMs_ = 1000;
     double zoom_ = 1;
-    QTimer pollTimer_, saveTimer_, slowTimer_, iconTimer_;
+    QTimer pollTimer_, saveTimer_, slowTimer_, iconTimer_, copyFeedbackTimer_;
     QLineEdit* search_{};
     QLabel *pageTitle_{}, *count_{}, *cpuSummary_{}, *memorySummary_{}, *processSummary_{};
     QString pageCaption_, connectionError_, operationError_, sourceMessage_, searchMessage_;
@@ -71,8 +71,10 @@ class MainWindow final : public QMainWindow {
     QJsonObject systemInformation_;
     QString systemInformationError_;
     bool readingSystemInformation_ = false;
+    QPushButton* copySystemInformation_{};
     void readSystemInformation(bool refresh = false);
     void updateSystemInformation();
+    void copySystemInformation();
     QWidget* settingsPage_{};
     QComboBox *interval_{}, *density_{}, *zoomBox_{};
     QCheckBox *topmost_{}, *freezeBox_{};

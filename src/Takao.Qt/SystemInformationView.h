@@ -11,9 +11,11 @@ class SystemInformationView final : public QScrollArea {
     int filter(const QString&);
     int scrollPosition() const;
     void restoreScroll(int);
+    QString plainText() const;
   private:
     QWidget* content_{};
     QVector<QWidget*> groups_;
     QJsonObject information_;
     QString query_;
+    QStringList text_;
 };

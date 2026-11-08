@@ -17,6 +17,7 @@ def main():
     parser.add_argument('--release', required=True)
     parser.add_argument('--control-skill', required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--copy-only', action='store_true')
     args = parser.parse_args()
     sys.path.insert(0, str(Path(args.control_skill) / 'scripts'))
     import computer_control as desktop
@@ -28,6 +29,8 @@ def main():
               'input': 'FYLHelper; real mouse and keyboard; M_ResolutionUsed before opening each input session',
               'capture': 'WGC, 1920x1080 visible window pixels at 100%; no image resizing',
               'checks': checks, 'screenshots': captures, 'primaryResolution': desktop.get_primary_resolution()}
+    if args.copy_only:
+        report['scope'] = 'System information copy only, plus command visibility on the existing processes page'
     started = time.monotonic()
     host = hwnd = qt_pid = token = None
     original_clipboard = desktop.get_clipboard_text()
@@ -113,6 +116,67 @@ def main():
     def persisted_query(value):
         return api('preferences')['preferences'].get('pages', {}).get('systemInformation', {}).get('query') == value
 
+    def copy_flow(device, hardware):
+        # Locate the rendered labels at native pixel size before sending input.
+        commands = (1600, 65, 1910, 155)
+        copy = desktop.find_text(hwnd, '复制', match='exact', region=commands)
+        refresh = desktop.find_text(hwnd, '刷新', match='exact', region=commands)
+        check(copy is not None and refresh is not None, 'Visible native Copy and Refresh commands are present')
+        check(copy['bbox_client'][2] < refresh['bbox_client'][0], 'Copy is visibly left of Refresh')
+        left, top, right, bottom = copy['bbox_client']
+        center = ((left + right) // 2, (top + bottom) // 2)
+        shot('01-copy-command-1080p')
+        device.click(*center)
+        text = until(lambda: (lambda value: value if value and value.startswith('系统信息') else None)(desktop.get_clipboard_text()))
+        shot('02-copied-feedback-1080p')
+        check(hardware['capturedAtUtc'] in text, 'Physical mouse Copy writes the current real collection timestamp')
+        for category in ('处理器', '显卡', '主板', '内存', '硬盘', '显示器', '系统'):
+            check(category in text, 'System clipboard includes category: ' + category)
+        for key, field in (('processors', 'name'), ('graphicsAdapters', 'name'), ('disks', 'model'), ('displays', 'name')):
+            for item in hardware[key]:
+                check(not item.get(field) or item[field] in text, 'System clipboard includes the real device from ' + key)
+        check('状态：' in text and 'GiB' in text, 'System clipboard retains readable status and capacity units')
+        until(lambda: desktop.find_text(hwnd, '复制', match='exact', region=commands))
+        # A successful physical click leaves the native button focused. Prove
+        # keyboard activation by replacing only our test clipboard content.
+        desktop.set_clipboard_text('Takao-copy-keyboard-probe')
+        device.press('space')
+        until(lambda: desktop.get_clipboard_text() == text)
+        check(True, 'Focused Copy supports physical Space activation')
+        desktop.set_clipboard_text('Takao-copy-enter-probe')
+        device.press('enter')
+        until(lambda: desktop.get_clipboard_text() == text)
+        check(True, 'Focused Copy supports physical Enter activation')
+        shot('03-copy-keyboard-focus-1080p')
+        device.hotkey('ctrl', 'f')
+        device.hotkey('ctrl', 'a')
+        device.paste_text('Takao-copy-no-matching-hardware')
+        until(lambda: persisted_query('Takao-copy-no-matching-hardware'))
+        time.sleep(.2)
+        device.click(*center)
+        until(lambda: desktop.get_clipboard_text() == text)
+        check(persisted_query('Takao-copy-no-matching-hardware'), 'Copy preserves the active no-match search and copies hidden hardware')
+        shot('04-copy-filtered-1080p')
+        device.hotkey('ctrl', 'f')
+        device.press('escape')
+        until(lambda: persisted_query(''))
+        device.move_to(900, 800)
+        device.scroll(-12)
+        time.sleep(.3)
+        device.click(*center)
+        until(lambda: desktop.get_clipboard_text() == text)
+        check(api('system-information')['capturedAtUtc'] == hardware['capturedAtUtc'], 'Mouse and keyboard copies do not refresh the real hardware source')
+        shot('05-copy-scrolled-1080p')
+        device.press('f5')
+        updated = until(lambda: (lambda value: value if value['capturedAtUtc'] != hardware['capturedAtUtc'] else None)(api('system-information')))
+        time.sleep(.4)
+        device.click(*center)
+        until(lambda: updated['capturedAtUtc'] in (desktop.get_clipboard_text() or ''))
+        check(True, 'Copy after a real F5 refresh uses the latest collection time')
+        navigate(device, '进程', (0, 80, 205, 140))
+        check(desktop.find_text(hwnd, '复制', match='exact', region=commands) is None, 'Copy command is absent on the existing processes page')
+        shot('06-copy-hidden-on-processes-1080p')
+
     try:
         profile = Path(temporary.name) / 'preferences'
         profile.mkdir()
@@ -158,43 +222,46 @@ def main():
         with desktop.Input(hwnd) as device:
             navigate(device, '系统信息', (0, 370, 205, 525))
             time.sleep(.5)
-            overview = shot('01-system-information-1080p')
-            # OCR the actual category column at native pixel size. Whole-frame
-            # OCR downsamples 1920px frames and loses small Chinese glyphs.
-            text = ' '.join(item['text'] for item in desktop.ocr_frame(overview.crop((210, 155, 345, 1045))))
-            for category in ('处理器', '显卡', '主板', '内存', '硬盘'):
-                check(category in text, 'Real native navigation displays category: ' + category)
-            device.hotkey('ctrl', 'f')
-            device.hotkey('ctrl', 'a')
-            device.paste_text('Takao-no-such-hardware-SI')
-            until(lambda: persisted_query('Takao-no-such-hardware-SI'))
-            time.sleep(.3)
-            empty = shot('02-system-information-empty-1080p')
-            check(any('没有匹配' in item['text'] for item in desktop.ocr_frame(empty)), 'Unmatched hardware search has an explicit empty state')
-            device.press('escape')
-            until(lambda: persisted_query(''))
-            # Scroll inside the actual hardware content observed in the first
-            # WGC frame; wheel input goes through the same FYLHelper session.
-            device.move_to(900, 800)
-            device.scroll(-12)
-            time.sleep(.3)
-            lower = shot('02b-system-information-lower-1080p')
-            text = ' '.join(item['text'] for item in desktop.ocr_frame(lower.crop((210, 155, 1330, 1045))))
-            check('显示器' in text and 'Windows' in text, 'Esc restores the hardware view and physical scrolling exposes display and Windows facts')
-            check('HWiNFO' not in text, 'Hardware overview contains no removed HWiNFO sensor content')
-            previous = api('system-information')['capturedAtUtc']
-            device.press('f5')
-            until(lambda: api('system-information')['capturedAtUtc'] != previous)
-            check(True, 'Physical F5 refresh advances the real native hardware collection timestamp')
-            navigate(device, '性能', (0, 90, 205, 195))
-            performance = shot('03-performance-without-hwinfo-1080p')
-            text = ' '.join(item['text'] for item in desktop.ocr_frame(performance))
-            check('HWiNFO' not in text and 'CPU' in text, 'Legacy HWiNFO preference opens CPU and the sensor entry is absent')
-            navigate(device, '设置', (0, 960, 205, 1048))
-            shot('04-settings-navigation-1080p')
-            check(True, 'Existing settings navigation remains available after inserting the new page')
-            navigate(device, '系统信息', (0, 370, 205, 525))
-            check(persisted_query(''), 'New-page query remains isolated and restores after visiting other pages')
+            if args.copy_only:
+                copy_flow(device, hardware)
+            else:
+                overview = shot('01-system-information-1080p')
+                # OCR the actual category column at native pixel size. Whole-frame
+                # OCR downsamples 1920px frames and loses small Chinese glyphs.
+                text = ' '.join(item['text'] for item in desktop.ocr_frame(overview.crop((210, 155, 345, 1045))))
+                for category in ('处理器', '显卡', '主板', '内存', '硬盘'):
+                    check(category in text, 'Real native navigation displays category: ' + category)
+                device.hotkey('ctrl', 'f')
+                device.hotkey('ctrl', 'a')
+                device.paste_text('Takao-no-such-hardware-SI')
+                until(lambda: persisted_query('Takao-no-such-hardware-SI'))
+                time.sleep(.3)
+                empty = shot('02-system-information-empty-1080p')
+                check(any('没有匹配' in item['text'] for item in desktop.ocr_frame(empty)), 'Unmatched hardware search has an explicit empty state')
+                device.press('escape')
+                until(lambda: persisted_query(''))
+                # Scroll inside the actual hardware content observed in the first
+                # WGC frame; wheel input goes through the same FYLHelper session.
+                device.move_to(900, 800)
+                device.scroll(-12)
+                time.sleep(.3)
+                lower = shot('02b-system-information-lower-1080p')
+                text = ' '.join(item['text'] for item in desktop.ocr_frame(lower.crop((210, 155, 1330, 1045))))
+                check('显示器' in text and 'Windows' in text, 'Esc restores the hardware view and physical scrolling exposes display and Windows facts')
+                check('HWiNFO' not in text, 'Hardware overview contains no removed HWiNFO sensor content')
+                previous = api('system-information')['capturedAtUtc']
+                device.press('f5')
+                until(lambda: api('system-information')['capturedAtUtc'] != previous)
+                check(True, 'Physical F5 refresh advances the real native hardware collection timestamp')
+                navigate(device, '性能', (0, 90, 205, 195))
+                performance = shot('03-performance-without-hwinfo-1080p')
+                text = ' '.join(item['text'] for item in desktop.ocr_frame(performance))
+                check('HWiNFO' not in text and 'CPU' in text, 'Legacy HWiNFO preference opens CPU and the sensor entry is absent')
+                navigate(device, '设置', (0, 960, 205, 1048))
+                shot('04-settings-navigation-1080p')
+                check(True, 'Existing settings navigation remains available after inserting the new page')
+                navigate(device, '系统信息', (0, 370, 205, 525))
+                check(persisted_query(''), 'New-page query remains isolated and restores after visiting other pages')
         report['result'] = 'PASS'
     except BaseException as error:
         report.update(result='FAIL', error=f'{type(error).__name__}: {error}', traceback=traceback.format_exc())

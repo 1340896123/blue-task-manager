@@ -381,14 +381,20 @@ void MainWindow::buildUi() {
     terminate_->setProperty("danger", true);
     detail_ = button("详情", content);
     pause_ = button("暂停采集", content);
+    copySystemInformation_ = button("复制", content);
+    copySystemInformation_->setObjectName("copySystemInformation");
+    copySystemInformation_->setAccessibleName("复制系统信息");
+    copySystemInformation_->setAutoDefault(true);
+    copySystemInformation_->setEnabled(false);
+    copySystemInformation_->setFixedWidth(copySystemInformation_->fontMetrics().horizontalAdvance("已复制") + Theme::space8);
     refresh_ = button("刷新", content);
     more_ = button("更多", content);
     pageAction_ = button("", content);
-    for (auto b : {terminate_, detail_, pause_, refresh_, more_, pageAction_}) {
+    for (auto b : {terminate_, detail_, pause_, copySystemInformation_, refresh_, more_, pageAction_}) {
         b->setProperty("command", true);
         b->setFixedHeight(Theme::secondaryCommandHeight);
     }
-    for (auto b : {pageAction_, run_, terminate_, detail_, pause_, refresh_, more_})
+    for (auto b : {pageAction_, run_, terminate_, detail_, pause_, copySystemInformation_, refresh_, more_})
         commands->addWidget(b);
     contentLayout->addWidget(commandBar);
     stack_ = new QStackedWidget(content);
@@ -451,6 +457,13 @@ void MainWindow::buildUi() {
     connect(terminate_, &QPushButton::clicked, this, [this] { terminateProcess(); });
     connect(detail_, &QPushButton::clicked, this, [this] { details(); });
     connect(more_, &QPushButton::clicked, this, &MainWindow::moreMenu);
+    connect(copySystemInformation_, &QPushButton::clicked, this, &MainWindow::copySystemInformation);
+    copyFeedbackTimer_.setSingleShot(true);
+    copyFeedbackTimer_.setInterval(1800);
+    connect(&copyFeedbackTimer_, &QTimer::timeout, this, [this] {
+        copySystemInformation_->setText("复制");
+        copySystemInformation_->setAccessibleName("复制系统信息");
+    });
     connect(pageAction_, &QPushButton::clicked, this, [this] {
         if (page_ == 2) {
             if (Theme::confirm(this, "清除统计", "仅清除本程序本次采集会话的历史，不修改 Windows 应用使用历史。",
@@ -649,6 +662,7 @@ void MainWindow::switchPage(int index) {
     pause_->setVisible(index == 0 || index == 1 || index == 5 || index == 7);
     run_->setVisible(index != 7 && index != 8);
     more_->setVisible(index != 8);
+    copySystemInformation_->setVisible(index == 8);
     pageCaption_.clear();
     sourceMessage_.clear();
     searchMessage_.clear();
@@ -844,6 +858,14 @@ void MainWindow::updateSelectionActions() {
     pause_->setEnabled(connected_);
     refresh_->setEnabled(connected_ && (page_ != 8 || !readingSystemInformation_));
     refresh_->setText(page_ == 8 && readingSystemInformation_ ? "正在读取…" : "刷新");
+    const bool hasHardware = !systemInformation_["capturedAtUtc"].toString().isEmpty() &&
+                             systemInformation_["status"].toString() != "loading";
+    copySystemInformation_->setEnabled(page_ == 8 && hasHardware);
+    const auto copyDescription = hasHardware
+        ? QStringLiteral("复制当前完整系统信息，包含搜索隐藏及滚动区外内容，不重新采集。")
+        : QStringLiteral("尚未取得系统信息快照，请等待硬件信息加载。");
+    copySystemInformation_->setToolTip(copyDescription);
+    copySystemInformation_->setAccessibleDescription(copyDescription);
     pageAction_->setEnabled(connected_);
 }
 void MainWindow::notify(const QString& message, bool error) {

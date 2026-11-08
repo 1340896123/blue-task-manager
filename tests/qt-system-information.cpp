@@ -2,6 +2,7 @@
 #include "MainWindow.h"
 #include "Theme.h"
 #include <QCommandLineParser>
+#include <QClipboard>
 #include <QElapsedTimer>
 #include <QJsonDocument>
 #include <QSaveFile>
@@ -37,6 +38,60 @@ QJsonObject request(ApiClient& client, const QString& route) {
     if (!failure.isEmpty()) throw std::runtime_error(failure.toStdString());
     return result;
 }
+void checkCopy(MainWindow& window, SystemInformationView* page, QLineEdit* search,
+               const QJsonObject& hardware, ApiClient& inspector) {
+    auto copy = window.findChild<QPushButton*>("copySystemInformation");
+    QPushButton* refresh = nullptr;
+    for (auto button : window.findChildren<QPushButton*>())
+        if (button->accessibleName() == "刷新") refresh = button;
+    require(copy && copy->isVisible() && copy->isEnabled() && refresh, "Loaded real hardware enables the native copy command");
+    require(copy->accessibleName() == "复制系统信息" && !copy->accessibleDescription().isEmpty(), "Copy has a Chinese accessible name and scope description");
+    require(copy->geometry().right() < refresh->geometry().left() && copy->height() == refresh->height(), "Copy sits left of refresh with the same native command height");
+    const auto copyBounds = copy->geometry(), refreshBounds = refresh->geometry();
+    const auto priorClipboard = QApplication::clipboard()->text();
+    search->setFocus();
+    copy->click();
+    QCoreApplication::processEvents();
+    const auto copied = QApplication::clipboard()->text();
+    require(copied.startsWith("系统信息\n") && copied.contains(hardware["capturedAtUtc"].toString()), "Actual system clipboard contains the current collected timestamp");
+    require(copied.contains("状态：") && copied.contains("GiB"), "Copied plain text retains status and displayed units");
+    for (const auto& key : {"processors", "graphicsAdapters", "motherboard", "memory", "disks", "displays", "operatingSystem"}) {
+        const auto group = window.findChild<QWidget*>("hardware-" + QString(key));
+        require(copied.contains(group->property("groupTitle").toString()), "Clipboard contains real category: " + QString(key));
+        for (const auto label : group->findChildren<QLabel*>())
+            require(label->text().isEmpty() || copied.contains(label->text()), "Clipboard retains rendered hardware fact or reason");
+    }
+    require(search->hasFocus() && copy->text() == "已复制", "Copy confirms through its label without stealing the existing input focus");
+    require(copy->geometry() == copyBounds && refresh->geometry() == refreshBounds, "Success feedback does not move either command");
+    search->setText("内存");
+    copy->click();
+    QCoreApplication::processEvents();
+    if (QApplication::clipboard()->text() != copied || search->text() != "内存") {
+        report["copyDifference"] = QJsonObject{{"initialHeader", copied.section('\n', 0, 4)},
+            {"filteredHeader", QApplication::clipboard()->text().section('\n', 0, 4)}, {"query", search->text()},
+            {"initialLength", copied.size()}, {"filteredLength", QApplication::clipboard()->text().size()}};
+        save();
+    }
+    require(QApplication::clipboard()->text() == copied && search->text() == "内存", "Filtered search still copies the complete snapshot and preserves the query");
+    search->setText("Takao-copy-no-matching-hardware");
+    copy->click();
+    QCoreApplication::processEvents();
+    require(QApplication::clipboard()->text() == copied, "An empty search result still copies the complete real snapshot");
+    search->clear();
+    QCoreApplication::processEvents();
+    page->verticalScrollBar()->setValue(page->verticalScrollBar()->maximum());
+    const auto scroll = page->scrollPosition();
+    copy->setFocus();
+    copy->click();
+    QCoreApplication::processEvents();
+    require(QApplication::clipboard()->text() == copied && page->scrollPosition() == scroll && copy->hasFocus(), "Scrolled copy preserves full content, scroll position and command focus");
+    require(request(inspector, "system-information")["capturedAtUtc"] == hardware["capturedAtUtc"], "Copy does not trigger a new hardware collection");
+    waitFor([&] { return copy->text() == "复制"; }, "Copy feedback did not reset", 4000);
+    require(copy->geometry() == copyBounds, "Copy label resets without changing layout");
+    window.findChild<QPushButton*>("navigation-processes")->click();
+    require(!copy->isVisible(), "Copy is hidden on the original processes page");
+    QApplication::clipboard()->setText(priorClipboard);
+}
 }
 int main(int argc, char** argv) {
     QApplication app(argc, argv); app.setApplicationName("Takao"); Theme::apply(app);
@@ -44,9 +99,11 @@ int main(int argc, char** argv) {
     output = qEnvironmentVariable("TASKMANAGER_QT_SYSTEM_INFORMATION_RESULT");
     if (output.isEmpty()) return 2;
     const auto hostPid = parser.value("host-pid").toLongLong();
+    const bool copyOnly = qEnvironmentVariableIsSet("TASKMANAGER_QT_COPY_ONLY");
     MainWindow window(QUrl(parser.value("origin")), hostPid); window.resize(1920, 1080); window.show();
     ApiClient inspector(QUrl(parser.value("origin")), &app);
     report = {{"result", "RUNNING"}, {"scope", "New system information / existing CPU modes / settings only; real Host and native Qt components; no physical input assertions"}};
+    if (copyOnly) report["scope"] = "System information copy only; real Host, native Qt and system clipboard; no physical input assertions";
     QTimer::singleShot(0, &window, [&] {
         try {
             const auto bootstrap = request(inspector, "bootstrap");
@@ -60,10 +117,14 @@ int main(int argc, char** argv) {
             };
             auto page = static_cast<SystemInformationView*>(window.findChild<QScrollArea*>("systemInformationPage"));
             if (!page) throw std::runtime_error("System information view missing");
+            if (copyOnly) require(!window.findChild<QPushButton*>("copySystemInformation")->isEnabled(), "Copy is disabled before the first real hardware snapshot");
             navigation("systemInformation")->click();
             auto hardware = request(inspector, "system-information");
             const auto processor = hardware["processors"].toArray().first().toObject();
             waitFor([&] { return window.findChild<QLabel*>("hardware-name-" + processor["id"].toString()); }, "Actual hardware has not rendered");
+            if (copyOnly) {
+                checkCopy(window, page, search, hardware, inspector);
+            } else {
             require(navigation("services")->y() < navigation("systemInformation")->y() && navigation("systemInformation")->y() < navigation("settings")->y(), "System information sits immediately after services and before bottom settings");
             require(search->text().isEmpty(), "New hardware page starts with its own search preference");
             for (const auto& key : {"processors", "graphicsAdapters", "motherboard", "memory", "disks", "displays", "operatingSystem"})
@@ -121,6 +182,7 @@ int main(int argc, char** argv) {
             waitFor([&] { return request(inspector, "preferences")["preferences"].toObject()["pages"].toObject()["systemInformation"].toObject()["query"].toString() == "内存"; }, "New hardware preference was not saved");
             require(true, "New hardware query saves through the production preference validator");
             require(request(inspector, "preferences")["preferences"].toObject()["pages"].toObject()["performance"].toObject()["resourceType"].toString() == "cpu", "Migrated HWiNFO selection is persisted as the actual CPU resource");
+            }
             report["result"] = "PASS"; save();
         } catch (const std::exception& error) { report["result"] = "FAIL"; report["error"] = error.what(); save(); }
         const auto code = report["result"] == "PASS" ? 0 : 1;
