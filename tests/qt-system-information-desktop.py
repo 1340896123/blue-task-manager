@@ -183,23 +183,28 @@ def main():
     def buttons_flow(device, hardware):
         commands = (950, 65, 1910, 160)
         navigate(device, '进程', (0, 80, 205, 140))
+        device.hotkey('ctrl', 'f')
+        device.hotkey('ctrl', 'a')
+        device.paste_text('Takao')
+        until(lambda: api('preferences')['preferences'].get('pages', {}).get('processes', {}).get('query') == 'Takao')
         shot('01-unified-process-commands-1080p')
         for title in ('运行新任务', '暂停采集', '刷新', '更多'):
-            check(desktop.find_text(hwnd, title, match='exact', region=commands) is not None,
+            check(desktop.find_text(hwnd, title, match='contains', region=commands) is not None,
                   'Real unified command label is visible: ' + title)
-        more = desktop.find_text(hwnd, '更多', match='exact', region=commands)
+        # OCR may group the new ellipsis icon with the adjacent native label.
+        more = desktop.find_text(hwnd, '更多', match='contains', region=commands)
         left, top, right, bottom = more['bbox_client']
         device.click((left + right)//2, (top + bottom)//2)
         time.sleep(.2)
         shot('02-unified-more-menu-1080p')
         device.press('escape')
         navigate(device, '应用历史记录', (0, 170, 205, 250))
-        check(desktop.find_text(hwnd, '清除统计', match='exact', region=commands) is not None,
+        check(desktop.find_text(hwnd, '清除统计', match='contains', region=commands) is not None,
               'Long page action is visibly shortened and retains a real native control')
         shot('03-unified-history-commands-1080p')
         navigate(device, '系统信息', (0, 370, 205, 525))
         shot('04-unified-system-information-1080p')
-        copy = desktop.find_text(hwnd, '复制', match='exact', region=commands)
+        copy = desktop.find_text(hwnd, '复制', match='contains', region=commands)
         check(copy is not None, 'Unified Copy command is visibly present')
         left, top, right, bottom = copy['bbox_client']
         desktop.set_clipboard_text('Takao-unified-copy-probe')

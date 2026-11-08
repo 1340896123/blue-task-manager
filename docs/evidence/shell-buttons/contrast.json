@@ -1,0 +1,60 @@
+{
+  "result": "PASS",
+  "method": "WCAG relative luminance of the reused semantic tokens; component checks verify actual Qt rendering",
+  "checks": [
+    {
+      "role": "text and icons",
+      "state": "normal",
+      "foreground": "#1A1A1A",
+      "background": "#EDEDED",
+      "ratio": 14.866,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "role": "text and icons",
+      "state": "hover or selected",
+      "foreground": "#1A1A1A",
+      "background": "#E4E4E4",
+      "ratio": 13.688,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "role": "text and icons",
+      "state": "pressed",
+      "foreground": "#1A1A1A",
+      "background": "#D1D1D1",
+      "ratio": 11.397,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "role": "keyboard focus",
+      "state": "normal",
+      "foreground": "#005FB8",
+      "background": "#EDEDED",
+      "ratio": 5.388,
+      "minimum": 3.0,
+      "passed": true
+    },
+    {
+      "role": "keyboard focus",
+      "state": "hover or selected",
+      "foreground": "#005FB8",
+      "background": "#E4E4E4",
+      "ratio": 4.961,
+      "minimum": 3.0,
+      "passed": true
+    },
+    {
+      "role": "keyboard focus",
+      "state": "pressed",
+      "foreground": "#005FB8",
+      "background": "#D1D1D1",
+      "ratio": 4.131,
+      "minimum": 3.0,
+      "passed": true
+    }
+  ]
+}
