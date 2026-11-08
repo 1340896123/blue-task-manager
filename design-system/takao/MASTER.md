@@ -1,5 +1,9 @@
 # Takao — Windows Blue Design System
 
+## 2026-11-08 系统信息复制命令
+
+“复制”位于系统信息页“刷新”左侧，复用现有中性原生次命令按钮及 `secondaryCommandHeight=32px`，与刷新等高对齐，沿用正文、4/8px间距与蓝色可见焦点；有中文可访问名称和说明，Tab顺序与视觉一致。固定按钮宽度容纳“复制/已复制”，反馈不移动相邻命令；不增加成功toast/banner/浮层。未加载快照时为真实禁用并说明原因，错误沿用既有文字机制。无新色值或Token，详见 [复制合同](../../docs/SYSTEM-INFORMATION.md#2026-11-08-复制增量)。
+
 ## 2026-11-07 系统信息
 
 按 [SYSTEM-INFORMATION.md](../../docs/SYSTEM-INFORMATION.md) 在服务下方增加系统信息导航，硬件概览使用浅色Fluent与Windows蓝色，按CPU/显卡/主板/内存/硬盘/显示器/系统纵向排列。沿用当前页标题/正文/caption、44px命中、4/8px空间及蓝色可见焦点；设备型号可选择/换行，未知值附原因。标签列Token建议 `systemInfoLabelWidth=112px`，内容限宽沿用1080px设置内容，设备行按内容自然增高。删除性能HWiNFO页面，不新增正常成功banner；刷新状态/部分失败/采集时间放现有页头caption。本节覆盖历史HWiNFO可见页要求；技能查询未匹配桌面产品，沿用现有MASTER和通用桌面规则，不采用营销生成结果。

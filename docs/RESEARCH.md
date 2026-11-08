@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 系统信息复制（2026-11-08）
+
+实际通过 GitHub API 解析 Qt qtbase `6.8` 到固定提交 `feb9556bde250306b5a1157aaccb76106844909e`，读取 [QClipboard 官方源码片段](https://github.com/qt/qtbase/blob/feb9556bde250306b5a1157aaccb76106844909e/src/gui/doc/snippets/code/src_gui_kernel_qclipboard.cpp)：`QGuiApplication::clipboard()`、`text()`、`setText(newText)`提供标准平台文本交换。采用此公开 Qt API，在现有系统信息 View/命令栏中复用当前真实快照和格式，不新增依赖/HTTP协议/Windows采集。七类文本范围、未知与过期状态、稳定按钮反馈及技能查询取舍见 [复制增量](SYSTEM-INFORMATION.md#2026-11-08-复制增量)。
+
 ## 系统硬件概览（2026-11-07）
 
 实际读取固定提交的TaskExplorer `SystemInfoView.cpp` 与LibreHardwareMonitor `SMBios.cs`，参考资源分组/按需刷新与SMBIOS主板、CPU、逐DIMM标准字段，采用本项目CsWin32/JSON.NET/Qt现有HTTP架构，不复制GPL业务代码/驱动/私有协议。源码链接、取舍、真实来源与不可推测字段见 [SYSTEM-INFORMATION.md](SYSTEM-INFORMATION.md)。

@@ -2,6 +2,26 @@
 
 日期：2026-11-07。本文覆盖旧 HWiNFO 页面保留要求，不改变既有 CPU 总体/逻辑处理器图表。界面继续采用 Qt 6 Widgets + .NET 10、Windows 浅色蓝色视觉、JSON.NET 与 CsWin32。
 
+## 2026-11-08 复制增量
+
+- 系统信息页右上角在“刷新”左侧新增原生“复制”按钮，复制当前已加载的整份硬件概览；搜索仅影响阅读，不限制复制范围，滚动区外的设备也须完整包含。
+- 输出为可粘贴的中文纯文本：标题、当前快照采集时间与状态，随后按处理器、显卡、主板、内存、硬盘、显示器、系统顺序输出型号、事实、单位及已有不可用原因。复用展示格式，未知仍为“—”并保留原因，不输出原始 JSON 或额外采集序列号/密钥。
+- 复制复用内存快照，不请求硬件刷新或改变搜索、滚动及焦点。未取得快照时禁用并说明原因；保留旧快照的刷新中/失败场景可复制，但文本须明确正在刷新或已过期/失败原因，不宣称旧值为最新成功结果。
+- 使用 Qt 标准 `QGuiApplication::clipboard()` / `QClipboard::setText()`；确认剪贴板文本后按钮短暂显示“已复制”，固定宽度容纳两种文字，随后恢复“复制”。失败按现有错误文字机制反馈，不显示成功；不新增 toast/banner/浮层。按钮有中文可访问名称、用途说明、原生 Tab/Space/Enter 入口及可见蓝色焦点。
+- 沿用现有中性次命令按钮和 `secondaryCommandHeight=32px`，与刷新等高对齐，复用4/8px间距和正文/焦点 Token，不增加页面级配色或新的视觉系统；不将手机触控44pt规则套到桌面次命令。
+
+实际核验 [Qt 官方 QClipboard 代码片段，qtbase 6.8 固定提交 feb9556bde250306b5a1157aaccb76106844909e](https://github.com/qt/qtbase/blob/feb9556bde250306b5a1157aaccb76106844909e/src/gui/doc/snippets/code/src_gui_kernel_qclipboard.cpp)：以 `QGuiApplication::clipboard()` 取得平台剪贴板，`text()`/`setText()`读取/写入文本。采用公开 Qt API，无新依赖、Windows 私有剪贴板协议或后端路由。技能定向查询 `button action feedback desktop` 返回移动端/AI条目，未采用；按合同收窄 `keyboard navigation focus`，命中 Keyboard Navigation 与跨平台 Focus States，采用顺序键盘操作与可见焦点；桌面风格仍复用 MASTER。
+
+本次仅选择 SI01 的 Qt 构建以及 SI04/SI06 中复制直接相关内容，另用以下定向编号记录结果，不重跑未改动的后端采集、性能/设置或全页矩阵：
+
+| ID | 直接相关验收 |
+|---|---|
+| SIC01 | Qt Release 构建；真实 Host 快照加载后按钮启用、加载前禁用；真实系统剪贴板读回与当前快照一致，含七类、全部设备、时间、单位及已存在未知原因。 |
+| SIC02 | 在搜索筛选/无匹配与非顶端滚动时复制仍含完整概览；复制不刷新硬件、不改变采集时间、查询、滚动或焦点；复制后按钮短暂反馈且命令栏无布局跳动。 |
+| SIC03 | 仅1920×1080/100%正式Qt实拍和鼠标/键盘验证“复制”位于刷新左侧、原生可达、中文可访问名称与清晰焦点；保存命令、退出码、截图和未诱发的失败分支。测试只关闭测试专用Host/Qt。 |
+
+可复用 `cmake --build output/system-information/qt-build --target Takao.Qt Takao.Qt.SystemInformation --parallel 4` 构建；组件/桌面入口参考 `scripts/test-system-information-components.ps1`、`scripts/test-system-information-desktop.ps1`，只执行本次新增的复制检查。实际运行命令和结果另记复制专项结果文档。
+
 ## 用户目标与布局
 
 在左侧“服务”下方、底部“设置”之前增加“系统信息”导航，点击进入独立页面。页面按参考图的阅读顺序展示处理器、显卡、主板、内存、硬盘、显示器、Windows 系统；主板/逐条内存/逐块磁盘和多显示器不能只用整机总数替代。截图中的型号和数字仅为布局参考，生产界面必须取本机真实值。
