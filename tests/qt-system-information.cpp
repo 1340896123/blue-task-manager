@@ -44,6 +44,10 @@ void checkCopy(MainWindow& window, SystemInformationView* page, QLineEdit* searc
     QPushButton* refresh = nullptr;
     for (auto button : window.findChildren<QPushButton*>())
         if (button->accessibleName() == "刷新") refresh = button;
+    // Loading completion changes Refresh's text and queues a command-bar
+    // layout. Measure the completed layout before checking copy feedback.
+    QCoreApplication::processEvents();
+    window.findChild<QWidget*>("pageCommandBar")->layout()->activate();
     require(copy && copy->isVisible() && copy->isEnabled() && refresh, "Loaded real hardware enables the native copy command");
     require(copy->accessibleName() == "复制系统信息" && !copy->accessibleDescription().isEmpty(), "Copy has a Chinese accessible name and scope description");
     require(copy->geometry().right() < refresh->geometry().left() && copy->height() == refresh->height(), "Copy sits left of refresh with the same native command height");
@@ -81,10 +85,14 @@ void checkCopy(MainWindow& window, SystemInformationView* page, QLineEdit* searc
     QCoreApplication::processEvents();
     page->verticalScrollBar()->setValue(page->verticalScrollBar()->maximum());
     const auto scroll = page->scrollPosition();
+    report["hardwareScrollMaximum"] = page->verticalScrollBar()->maximum();
+    report["hardwareScrollPosition"] = scroll;
     copy->setFocus();
     copy->click();
     QCoreApplication::processEvents();
-    require(QApplication::clipboard()->text() == copied && page->scrollPosition() == scroll && copy->hasFocus(), "Scrolled copy preserves full content, scroll position and command focus");
+    require(QApplication::clipboard()->text() == copied && page->scrollPosition() == scroll && copy->hasFocus(),
+            scroll > 0 ? "Scrolled copy preserves full content, scroll position and command focus"
+                       : "All real hardware fits without scrolling; copy preserves full content and command focus");
     require(request(inspector, "system-information")["capturedAtUtc"] == hardware["capturedAtUtc"], "Copy does not trigger a new hardware collection");
     waitFor([&] { return copy->text() == "复制"; }, "Copy feedback did not reset", 4000);
     require(copy->geometry() == copyBounds, "Copy label resets without changing layout");
