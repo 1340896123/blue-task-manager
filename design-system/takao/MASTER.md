@@ -1,5 +1,21 @@
 # Takao — Windows Blue Design System
 
+## 2026-11-08 导航与页头统一按钮
+
+用户标注的左侧导航和右上页头命令采用同族圆角灰底、黑字与线性图标。导航在同一展开/收起状态下等宽，页头命令固定等宽；共用高度、圆角、图标与状态，不以蓝主按钮或红字区分这些页头动作。危险操作保留真实确认及禁用语义，蓝色焦点与导航选择指示保留。限定区域规则通过专用属性应用，设置卡片、弹窗和其它控件沿用既有规则。
+
+| Token | 值 / 现有角色映射 |
+|---|---|
+| shellButtonHeight | 44px；按当前字体需要统一增高 |
+| shellCommandWidth | 120px；按当前字体统一计算下限，容纳图标与“运行新任务” |
+| shellButtonRadius | 4px，复用controlRadius |
+| shellButtonBackground / Hover / Pressed | #EDEDED / #E4E4E4 / #D1D1D1，复用hover / pressed / strokeControl |
+| shellButtonText / DisabledText | #1A1A1A / #747474，复用text / disabledText |
+| shellButtonIcon / CommandGap | 20px / 8px，复用iconSize / space2；图标与文字间由原生按钮布局 |
+| shellButtonFocus | 2px #005FB8，复用focusWidth / focus |
+
+同一命令栏所有按钮采用相同实际宽高，复制反馈、暂停/继续与读取忙态不改变按钮边界；水平内边距可用现有space2～space3以容纳文字。长页面命令使用“清除统计 / 启动设置 / 服务管理器”，完整用途保留于可访问名称与提示。默认1100宽保持完整常用命令；不足时将必要次动作纳入现有“更多”，保留原动作与键盘入口，不靠裁切文字压缩命令。当前合同与SB01～SB03见 [SHELL-BUTTONS.md](../../docs/SHELL-BUTTONS.md)。
+
 ## 2026-11-08 系统信息复制命令
 
 “复制”位于系统信息页“刷新”左侧，复用现有中性原生次命令按钮及 `secondaryCommandHeight=32px`，与刷新等高对齐，沿用正文、4/8px间距与蓝色可见焦点；有中文可访问名称和说明，Tab顺序与视觉一致。固定按钮宽度容纳“复制/已复制”，反馈不移动相邻命令；不增加成功toast/banner/浮层。未加载快照时为真实禁用并说明原因，错误沿用既有文字机制。无新色值或Token，详见 [复制合同](../../docs/SYSTEM-INFORMATION.md#2026-11-08-复制增量)。

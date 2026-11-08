@@ -1,5 +1,9 @@
 # 开源实现研究与技术决策
 
+## 导航与命令按钮统一（2026-11-08）
+
+实际读取 [Qt qtbase QPushButton固定源码](https://github.com/qt/qtbase/blob/feb9556bde250306b5a1157aaccb76106844909e/src/widgets/widgets/qpushbutton.cpp) 的`sizeHint()`与`initStyleOption()`：原生按钮合并图标宽度及间距、字体文本尺寸，再由`QStyle::sizeFromContents`计算控件尺寸。采用现有QPushButton/QIcon与集中QSS，统一宽度需为图标和最长常见标签留足空间；沿用已有缓存矢量图标族，为缺失命令补同族图形，不引入依赖或协议。用户指定UI/UX技能首次查询`button consistent icon keyboard`返回Mobile Back Button等不匹配项，未采用；收窄`keyboard navigation focus`命中跨平台Focus States，采用可见焦点及顺序键盘操作，Qt尺寸与布局以现行MASTER为准。
+
 ## 系统信息复制（2026-11-08）
 
 实际通过 GitHub API 解析 Qt qtbase `6.8` 到固定提交 `feb9556bde250306b5a1157aaccb76106844909e`，读取 [QClipboard 官方源码片段](https://github.com/qt/qtbase/blob/feb9556bde250306b5a1157aaccb76106844909e/src/gui/doc/snippets/code/src_gui_kernel_qclipboard.cpp)：`QGuiApplication::clipboard()`、`text()`、`setText(newText)`提供标准平台文本交换。采用此公开 Qt API，在现有系统信息 View/命令栏中复用当前真实快照和格式，不新增依赖/HTTP协议/Windows采集。七类文本范围、未知与过期状态、稳定按钮反馈及技能查询取舍见 [复制增量](SYSTEM-INFORMATION.md#2026-11-08-复制增量)。
