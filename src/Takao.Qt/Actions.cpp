@@ -809,6 +809,12 @@ void MainWindow::contextMenu(const QPoint& point) {
 }
 void MainWindow::moreMenu() {
     QMenu menu(this);
+    for (auto control : overflowCommands_) {
+        auto action = menu.addAction(control->icon(), control->accessibleName());
+        action->setEnabled(control->isEnabled());
+        connect(action, &QAction::triggered, control, &QPushButton::click);
+    }
+    if (!overflowCommands_.isEmpty()) menu.addSeparator();
     auto add = [&](const QString& text, auto callback) {
         connect(menu.addAction(text), &QAction::triggered, this, callback);
     };
@@ -829,17 +835,17 @@ void MainWindow::moreMenu() {
         });
         add("筛选进程…", [this] { filters(); });
     }
-    if (page_ == 2)
+    if (page_ == 2 && !overflowCommands_.contains(pageAction_))
         add("清除本次会话统计…", [this] {
             if (Theme::confirm(this, "清除统计",
                                "仅清除本程序本次采集会话的历史，不修改 Windows 应用使用历史。",
                                "清除统计", true))
                 post("history/reset", {});
         });
-    if (page_ == 3)
+    if (page_ == 3 && !overflowCommands_.contains(pageAction_))
         add("Windows 启动设置",
             [this] { post("desktop/open-system-location", {{"location", "startupSettings"}}); });
-    if (page_ == 6)
+    if (page_ == 6 && !overflowCommands_.contains(pageAction_))
         add("Windows 服务管理器",
             [this] { post("desktop/open-system-location", {{"location", "services"}}); });
     menu.addSeparator();

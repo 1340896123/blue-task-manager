@@ -42,6 +42,8 @@ inline constexpr int sidebarWidth = 204, sidebarCompact = 56, navigationHeight =
     dialogWidth = 560, detailDialogWidth = 720, dialogClearance = 96, iconSize = 20, summaryMetricWidth = 112,
     statusIconSize = 14, chartMinHeight = 190, logicalChartHeight = 180, mainChartHeight = 330;
 inline constexpr qreal maximumHeat = .16, chartLineWidth = 2., sparkLineWidth = 1.5;
+inline constexpr int shellButtonHeight = 44, shellCommandWidth = 120;
+enum CommandIcon { NewTask = 17, EndTask, Information, Pause, Play, Refresh, More, Copy, Clear };
 enum class Type { Caption = 12, Body = 14, BodyLarge = 16, Section = 20, SummaryMetric = 24, PageTitle = 28, Metric = 32 };
 inline QFont font(Type role = Type::Body, bool strong = false) {
     auto result = qApp->font();
@@ -117,7 +119,16 @@ inline QIcon icon(int index) {
         "<rect x='4' y='3' width='16' height='18' rx='1'/><rect x='7' y='6' width='6' height='6'/><path d='M16 6v9M7 16h6m-6 3h6'/>",
         "<path d='M3 7h18v10H3zM6 4v3m4-3v3m4-3v3m4-3v3M6 17v3m4-3v3m4-3v3m4-3v3M7 10v4m5-4v4m5-4v4'/>",
         "<rect x='4' y='3' width='16' height='18' rx='2'/><circle cx='12' cy='10' r='4'/><path d='m12 10 4 5M7 18h2m6 0h2'/>",
-        "<rect x='3' y='3' width='18' height='14' rx='2'/><path d='M7 21h10m-5-4v4'/>"};
+        "<rect x='3' y='3' width='18' height='14' rx='2'/><path d='M7 21h10m-5-4v4'/>",
+        "<rect x='3' y='3' width='18' height='18' rx='2'/><path d='M12 7v10M7 12h10'/>",
+        "<rect x='5' y='5' width='14' height='14' rx='2'/>",
+        "<circle cx='12' cy='12' r='9'/><path d='M12 11v6m0-10v1'/>",
+        "<path d='M8 5v14M16 5v14'/>",
+        "<path d='m8 4 12 8-12 8Z'/>",
+        "<path d='M20 7v5h-5M4 17v-5h5'/><path d='M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2'/>",
+        "<circle cx='5' cy='12' r='1'/><circle cx='12' cy='12' r='1'/><circle cx='19' cy='12' r='1'/>",
+        "<rect x='8' y='8' width='13' height='13' rx='2'/><path d='M16 8V3H3v13h5'/>",
+        "<path d='M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7'/>"};
     static QList<QIcon> cached(paths.size());
     if (index < 0 || index >= paths.size())
         return {};
@@ -306,6 +317,14 @@ inline void apply(QApplication& application) {
       QPushButton[nav="true"]:pressed { background:@pressed; }
       QPushButton[nav="true"]:focus { border-color:@focus; padding:0 12px; }
       QPushButton[nav="true"][collapsed="true"] { padding:0; text-align:center; }
+      QPushButton[shell="true"] { background:@hover; color:@text; border:2px solid transparent; border-radius:4px; padding:0 8px; }
+      QPushButton[shell="true"]:hover,QPushButton[shell="true"]:checked { background:@pressed; color:@text; }
+      QPushButton[shell="true"]:pressed { background:@strokeControl; }
+      QPushButton[shell="true"]:focus { border-color:@focus; padding:0 8px; }
+      QPushButton[shell="true"]:disabled { background:@hover; color:@disabledText; border-color:transparent; }
+      QPushButton[shell="true"][nav="true"] { text-align:left; padding:0 12px; }
+      QPushButton[shell="true"][nav="true"]:focus { padding:0 12px; }
+      QPushButton[shell="true"][nav="true"][collapsed="true"] { padding:0; text-align:center; }
       QLineEdit,QComboBox,QSpinBox { background:@surface; border:1px solid @strokeControl; border-bottom-color:@border; border-radius:4px; padding:4px 8px; min-height:20px; selection-background-color:@accent; selection-color:@surface; }
       QComboBox { combobox-popup:0; }
       QLineEdit:hover,QComboBox:hover,QSpinBox:hover { background:@content; }

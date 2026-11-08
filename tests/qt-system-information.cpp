@@ -100,6 +100,50 @@ void checkCopy(MainWindow& window, SystemInformationView* page, QLineEdit* searc
     require(!copy->isVisible(), "Copy is hidden on the original processes page");
     QApplication::clipboard()->setText(priorClipboard);
 }
+void checkButtons(MainWindow& window, const QJsonObject& hardware) {
+    auto navigate = [&](const QString& key) {
+        window.findChild<QPushButton*>("navigation-" + key)->click();
+        QCoreApplication::processEvents();
+        window.findChild<QWidget*>("pageCommandBar")->layout()->activate();
+    };
+    navigate("processes");
+    QSize commandSize;
+    int commandCount = 0;
+    for (auto button : window.findChildren<QPushButton*>()) {
+        if (button->property("nav").toBool()) {
+            require(button->height() == Theme::shellButtonHeight && !button->icon().isNull(), "Navigation has the shared height and a real vector icon");
+        }
+        if (!button->property("shellCommand").toBool() || !button->isVisible()) continue;
+        if (commandSize.isEmpty()) commandSize = button->size();
+        require(button->size() == commandSize && !button->icon().isNull(), "Visible process commands share actual dimensions and have icons");
+        const auto image = button->grab().toImage();
+        const auto color = image.pixelColor(10, 10);
+        require(color == Theme::hover || color == Theme::pressed, "Actual shell button rendering has a neutral gray background");
+        if (button->isEnabled()) require(button->palette().color(QPalette::ButtonText) == Theme::text,
+                                         "Enabled shell button text is dark, including the former primary action");
+        ++commandCount;
+    }
+    require(commandCount == 6 && commandSize == QSize(Theme::shellCommandWidth, Theme::shellButtonHeight), "Wide process header shows six equal 120 by 44 commands");
+    navigate("history");
+    QPushButton* pageAction = nullptr;
+    for (auto button : window.findChildren<QPushButton*>())
+        if (button->accessibleName() == "清除本次会话统计…") pageAction = button;
+    require(pageAction && pageAction->text() == "清除统计" && pageAction->size() == commandSize && !pageAction->icon().isNull(),
+            "Long page command has a readable short label, full accessible name and the shared dimensions");
+    navigate("systemInformation");
+    auto copy = window.findChild<QPushButton*>("copySystemInformation");
+    require(copy && copy->isEnabled() && copy->size() == commandSize && !copy->icon().isNull(), "System information copy uses the same icon button size");
+    const auto prior = QApplication::clipboard()->text();
+    const auto bounds = copy->geometry();
+    copy->click();
+    QCoreApplication::processEvents();
+    require(QApplication::clipboard()->text().contains(hardware["capturedAtUtc"].toString()) && copy->text() == "已复制",
+            "Styled copy still writes the real current hardware snapshot");
+    require(copy->geometry() == bounds, "Copied feedback preserves the shared button bounds");
+    waitFor([&] { return copy->text() == "复制"; }, "Copy label reset", 4000);
+    require(copy->size() == commandSize, "Copy reset preserves uniform dimensions");
+    QApplication::clipboard()->setText(prior);
+}
 }
 int main(int argc, char** argv) {
     QApplication app(argc, argv); app.setApplicationName("Takao"); Theme::apply(app);
@@ -108,10 +152,12 @@ int main(int argc, char** argv) {
     if (output.isEmpty()) return 2;
     const auto hostPid = parser.value("host-pid").toLongLong();
     const bool copyOnly = qEnvironmentVariableIsSet("TASKMANAGER_QT_COPY_ONLY");
+    const bool buttonsOnly = qEnvironmentVariableIsSet("TASKMANAGER_QT_BUTTONS_ONLY");
     MainWindow window(QUrl(parser.value("origin")), hostPid); window.resize(1920, 1080); window.show();
     ApiClient inspector(QUrl(parser.value("origin")), &app);
     report = {{"result", "RUNNING"}, {"scope", "New system information / existing CPU modes / settings only; real Host and native Qt components; no physical input assertions"}};
     if (copyOnly) report["scope"] = "System information copy only; real Host, native Qt and system clipboard; no physical input assertions";
+    if (buttonsOnly) report["scope"] = "Shared shell buttons only: process, history and system information; production Host; no OS input assertions";
     QTimer::singleShot(0, &window, [&] {
         try {
             const auto bootstrap = request(inspector, "bootstrap");
@@ -130,7 +176,9 @@ int main(int argc, char** argv) {
             auto hardware = request(inspector, "system-information");
             const auto processor = hardware["processors"].toArray().first().toObject();
             waitFor([&] { return window.findChild<QLabel*>("hardware-name-" + processor["id"].toString()); }, "Actual hardware has not rendered");
-            if (copyOnly) {
+            if (buttonsOnly) {
+                checkButtons(window, hardware);
+            } else if (copyOnly) {
                 checkCopy(window, page, search, hardware, inspector);
             } else {
             require(navigation("services")->y() < navigation("systemInformation")->y() && navigation("systemInformation")->y() < navigation("settings")->y(), "System information sits immediately after services and before bottom settings");

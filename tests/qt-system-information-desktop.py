@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--control-skill', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--copy-only', action='store_true')
+    parser.add_argument('--buttons-only', action='store_true')
     args = parser.parse_args()
     sys.path.insert(0, str(Path(args.control_skill) / 'scripts'))
     import computer_control as desktop
@@ -31,6 +32,8 @@ def main():
               'checks': checks, 'screenshots': captures, 'primaryResolution': desktop.get_primary_resolution()}
     if args.copy_only:
         report['scope'] = 'System information copy only, plus command visibility on the existing processes page'
+    if args.buttons_only:
+        report['scope'] = 'Unified shell buttons: process, history and system information only'
     started = time.monotonic()
     host = hwnd = qt_pid = token = None
     original_clipboard = desktop.get_clipboard_text()
@@ -177,6 +180,37 @@ def main():
         check(desktop.find_text(hwnd, '复制', match='exact', region=commands) is None, 'Copy command is absent on the existing processes page')
         shot('06-copy-hidden-on-processes-1080p')
 
+    def buttons_flow(device, hardware):
+        commands = (950, 65, 1910, 160)
+        navigate(device, '进程', (0, 80, 205, 140))
+        shot('01-unified-process-commands-1080p')
+        for title in ('运行新任务', '暂停采集', '刷新', '更多'):
+            check(desktop.find_text(hwnd, title, match='exact', region=commands) is not None,
+                  'Real unified command label is visible: ' + title)
+        more = desktop.find_text(hwnd, '更多', match='exact', region=commands)
+        left, top, right, bottom = more['bbox_client']
+        device.click((left + right)//2, (top + bottom)//2)
+        time.sleep(.2)
+        shot('02-unified-more-menu-1080p')
+        device.press('escape')
+        navigate(device, '应用历史记录', (0, 170, 205, 250))
+        check(desktop.find_text(hwnd, '清除统计', match='exact', region=commands) is not None,
+              'Long page action is visibly shortened and retains a real native control')
+        shot('03-unified-history-commands-1080p')
+        navigate(device, '系统信息', (0, 370, 205, 525))
+        shot('04-unified-system-information-1080p')
+        copy = desktop.find_text(hwnd, '复制', match='exact', region=commands)
+        check(copy is not None, 'Unified Copy command is visibly present')
+        left, top, right, bottom = copy['bbox_client']
+        desktop.set_clipboard_text('Takao-unified-copy-probe')
+        device.click((left + right)//2, (top + bottom)//2)
+        text = until(lambda: (lambda value: value if value and hardware['capturedAtUtc'] in value else None)(desktop.get_clipboard_text()))
+        shot('05-unified-copied-focus-1080p')
+        desktop.set_clipboard_text('Takao-unified-keyboard-probe')
+        device.press('space')
+        until(lambda: desktop.get_clipboard_text() == text)
+        check(True, 'Styled Copy writes the real snapshot through mouse and physical Space')
+
     try:
         profile = Path(temporary.name) / 'preferences'
         profile.mkdir()
@@ -222,7 +256,9 @@ def main():
         with desktop.Input(hwnd) as device:
             navigate(device, '系统信息', (0, 370, 205, 525))
             time.sleep(.5)
-            if args.copy_only:
+            if args.buttons_only:
+                buttons_flow(device, hardware)
+            elif args.copy_only:
                 copy_flow(device, hardware)
             else:
                 overview = shot('01-system-information-1080p')

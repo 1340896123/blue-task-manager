@@ -335,7 +335,7 @@ void MainWindow::applyAppearance(bool restoreWindowState) {
             push->setFixedHeight(std::max(standard, push->fontMetrics().height() + Theme::space3));
         }
     }
-    copySystemInformation_->setFixedWidth(copySystemInformation_->fontMetrics().horizontalAdvance("已复制") + Theme::space8);
+    updateShellButtons();
     if (auto summaries = findChild<QWidget*>("systemSummary")) {
         for (auto group : summaries->findChildren<QWidget*>())
             if (group->property("summaryGroup").toBool())

@@ -2,7 +2,8 @@ param(
     [string]$ReleaseDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'output/system-information/release'),
     [string]$QtExecutable = (Join-Path (Split-Path -Parent $PSScriptRoot) 'output/system-information/qt-build/Takao.Qt.SystemInformation.exe'),
     [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'output/system-information/stage3/components'),
-    [switch]$CopyOnly
+    [switch]$CopyOnly,
+    [switch]$ButtonsOnly
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -12,6 +13,7 @@ finally { $taskIdentity.Dispose() }
 if (-not $taskElevated) {
     $arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" -ReleaseDirectory "' + $ReleaseDirectory + '" -QtExecutable "' + $QtExecutable + '" -OutputDirectory "' + $OutputDirectory + '"'
     if ($CopyOnly) { $arguments += ' -CopyOnly' }
+    if ($ButtonsOnly) { $arguments += ' -ButtonsOnly' }
     $worker = Start-Process (Get-Process -Id $PID).Path -Verb RunAs -WindowStyle Hidden -ArgumentList $arguments -PassThru -Wait
     exit $worker.ExitCode
 }
@@ -34,6 +36,7 @@ $variables = @{
     TASKMANAGER_QT_PREFERENCE_DIAGNOSTIC=(Join-Path $OutputDirectory 'rejected-preferences.json')
     TASKMANAGER_QT_1080P='1'; QT_SCALE_FACTOR='1'; QT_SCREEN_SCALE_FACTORS='1'
     TASKMANAGER_QT_COPY_ONLY=$(if ($CopyOnly) { '1' } else { $null })
+    TASKMANAGER_QT_BUTTONS_ONLY=$(if ($ButtonsOnly) { '1' } else { $null })
 }
 $previous = @{}
 $testHost = $null

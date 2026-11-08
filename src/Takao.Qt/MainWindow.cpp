@@ -318,6 +318,7 @@ void MainWindow::buildUi() {
         b->setAccessibleName(titles_[i]);
         b->setCheckable(true);
         b->setProperty("nav", true);
+        b->setProperty("shell", true);
         b->setIcon(Theme::icon(i == 8 ? 10 : i));
         b->setObjectName("navigation-" + keys_[i]);
         b->setIconSize(QSize(Theme::iconSize, Theme::iconSize));
@@ -329,6 +330,7 @@ void MainWindow::buildUi() {
             navUpdate_ = button("", sidebar_);
             navUpdate_->setProperty("command", true);
             navUpdate_->setProperty("iconCommand", true);
+            navUpdate_->setProperty("shell", true);
             navUpdate_->setMinimumWidth(0);
             navUpdate_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
             navUpdate_->setIcon(Theme::icon(9));
@@ -356,6 +358,7 @@ void MainWindow::buildUi() {
     contentLayout->setSpacing(Theme::space4);
     auto commandBar = new QWidget(content);
     commandBar->setObjectName("pageCommandBar");
+    commandBar->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     commandBar->setMinimumHeight(Theme::commandBarHeight);
     auto commands = new QHBoxLayout(commandBar);
     commands->setContentsMargins(0, 0, 0, 0);
@@ -386,7 +389,6 @@ void MainWindow::buildUi() {
     copySystemInformation_->setAccessibleName("复制系统信息");
     copySystemInformation_->setAutoDefault(true);
     copySystemInformation_->setEnabled(false);
-    copySystemInformation_->setFixedWidth(copySystemInformation_->fontMetrics().horizontalAdvance("已复制") + Theme::space8);
     refresh_ = button("刷新", content);
     more_ = button("更多", content);
     pageAction_ = button("", content);
@@ -396,6 +398,16 @@ void MainWindow::buildUi() {
     }
     for (auto b : {pageAction_, run_, terminate_, detail_, pause_, copySystemInformation_, refresh_, more_})
         commands->addWidget(b);
+    const QList<QPair<QPushButton*, int>> commandIcons{{run_, Theme::NewTask}, {terminate_, Theme::EndTask},
+        {detail_, Theme::Information}, {pause_, Theme::Pause}, {copySystemInformation_, Theme::Copy},
+        {refresh_, Theme::Refresh}, {more_, Theme::More}, {pageAction_, Theme::Clear}};
+    for (const auto& entry : commandIcons) {
+        entry.first->setProperty("shell", true);
+        entry.first->setProperty("shellCommand", true);
+        entry.first->setIcon(Theme::icon(entry.second));
+        entry.first->setIconSize(QSize(Theme::iconSize, Theme::iconSize));
+    }
+    updateShellButtons();
     contentLayout->addWidget(commandBar);
     stack_ = new QStackedWidget(content);
     gridPage_ = new QWidget(stack_);
@@ -629,6 +641,8 @@ void MainWindow::applySnapshot() {
     updateMetric(memorySummary_, "memoryPercent", "percent");
     updateMetric(processSummary_, "processCount", "number");
     pause_->setText(latest_["paused"].toBool() ? "继续采集" : "暂停采集");
+    pause_->setIcon(Theme::icon(latest_["paused"].toBool() ? Theme::Play : Theme::Pause));
+    pause_->setAccessibleName(pause_->text());
     if (page_ == 1)
         updatePerformance();
     else if (page_ == 7)
@@ -674,8 +688,10 @@ void MainWindow::switchPage(int index) {
         pageCaption_ = "真实硬件概览 · Windows 系统信息";
     updateCaption();
     pageAction_->setVisible(index == 2 || index == 3 || index == 6);
-    pageAction_->setText(index == 2 ? "清除本次会话统计…" : index == 3 ? "Windows 启动设置" : "Windows 服务管理器");
-    pageAction_->setAccessibleName(pageAction_->text());
+    pageAction_->setText(index == 2 ? "清除统计" : index == 3 ? "启动设置" : "服务管理器");
+    pageAction_->setAccessibleName(index == 2 ? "清除本次会话统计…" : index == 3 ? "Windows 启动设置" : "Windows 服务管理器");
+    pageAction_->setToolTip(pageAction_->accessibleName());
+    pageAction_->setIcon(Theme::icon(index == 2 ? static_cast<int>(Theme::Clear) : index == 3 ? 3 : 6));
     search_->setPlaceholderText(index == 8 ? "搜索硬件型号或类别  (Ctrl+F)"
                                 : index == 7 ? "搜索设置  (Ctrl+F)"
                                 : index == 1 ? "搜索设备  (Ctrl+F)"
@@ -867,6 +883,47 @@ void MainWindow::updateSelectionActions() {
     copySystemInformation_->setToolTip(copyDescription);
     copySystemInformation_->setAccessibleDescription(copyDescription);
     pageAction_->setEnabled(connected_);
+    layoutShellCommands();
+}
+void MainWindow::updateShellButtons() {
+    if (!run_) return;
+    const auto metrics = run_->fontMetrics();
+    const auto height = std::max(Theme::shellButtonHeight, metrics.height() + Theme::space6);
+    const auto width = std::max(Theme::shellCommandWidth,
+        metrics.horizontalAdvance("运行新任务") + Theme::iconSize + Theme::space1 + Theme::space6);
+    for (auto control : {pageAction_, run_, terminate_, detail_, pause_, copySystemInformation_, refresh_, more_})
+        control->setFixedSize(width, height);
+    for (auto control : nav_) control->setFixedHeight(height);
+    if (navUpdate_) navUpdate_->setFixedHeight(height);
+    layoutShellCommands();
+}
+void MainWindow::layoutShellCommands() {
+    auto bar = findChild<QWidget*>("pageCommandBar");
+    if (!bar || !more_ || !pageTitle_) return;
+    overflowCommands_.clear();
+    terminate_->setVisible(processPage());
+    run_->setVisible(page_ != 7 && page_ != 8);
+    refresh_->show();
+    pageAction_->setVisible(page_ == 2 || page_ == 3 || page_ == 6);
+    detail_->setVisible(page_ != 1 && page_ != 7 && page_ != 8);
+    pause_->setVisible(page_ == 0 || page_ == 1 || page_ == 5 || page_ == 7);
+    auto required = [&] {
+        int count = 0;
+        for (auto control : {pageAction_, run_, terminate_, detail_, pause_, copySystemInformation_, refresh_, more_})
+            if (!control->isHidden()) ++count;
+        return count * run_->width() + count * Theme::space2 + pageTitle_->sizeHint().width();
+    };
+    // Restore first, then move only secondary commands into the existing menu.
+    // The transient layout never changes persisted page or sidebar preferences.
+    if (!more_->isHidden()) {
+        for (auto control : {detail_, pause_, refresh_, pageAction_, terminate_, run_}) {
+            if (required() <= bar->width()) break;
+            if (!control->isHidden()) {
+                control->hide();
+                overflowCommands_ << control;
+            }
+        }
+    }
 }
 void MainWindow::notify(const QString& message, bool error) {
     if (message.isEmpty())
@@ -1057,6 +1114,7 @@ void MainWindow::savePreferences() {
 }
 void MainWindow::resizeEvent(QResizeEvent* event) {
     QMainWindow::resizeEvent(event);
+    QTimer::singleShot(0, this, &MainWindow::layoutShellCommands);
     QTimer::singleShot(0, this, &MainWindow::loadVisibleIcons);
     // Windows can deliver the resize before Qt's window-state change. Observe
     // the settled state on the next event turn so maximized bounds never

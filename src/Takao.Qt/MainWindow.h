@@ -49,6 +49,7 @@ class MainWindow final : public QMainWindow {
     QString pageCaption_, connectionError_, operationError_, sourceMessage_, searchMessage_;
     QWidget* sidebar_{};
     QVector<QPushButton*> nav_;
+    QVector<QPushButton*> overflowCommands_;
     QPushButton *pause_{}, *run_{}, *terminate_{}, *more_{}, *refresh_{}, *detail_{}, *pageAction_{}, *navUpdate_{};
     QStackedWidget* stack_{};
     QWidget* gridPage_{};
@@ -90,6 +91,8 @@ class MainWindow final : public QMainWindow {
     void switchPage(int);
     void updateTable();
     void updateSelectionActions();
+    void updateShellButtons();
+    void layoutShellCommands();
     void updatePerformance();
     void setFacts(const QList<QPair<QString, QString>>&);
     void rebuildResources();
