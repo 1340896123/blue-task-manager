@@ -80,6 +80,9 @@ int main(int argc, char** argv) {
                   "Production Host owns this exact native wiring harness");
             auto table = window.findChild<QTreeView*>("dataTable");
             auto search = window.findChild<QLineEdit*>("globalSearch");
+            auto picker = window.findChild<QPushButton*>("windowPicker");
+            check(picker && picker->accessibleName() == "拖动窗口定位" && picker->toolTip().contains("PID"),
+                  "Window picker exposes a keyboard-focusable PID targeting affordance");
             waitFor([&] { return table && search && search->text() == "Takao-wiring-loaded" &&
                 !request(inspector, "snapshot")["slowDataCapturedAtUtc"].isNull(); }, "Initial real table and applied preference query");
             search->setText("Takao-wiring-unmatched-query");

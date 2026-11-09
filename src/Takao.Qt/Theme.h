@@ -325,6 +325,10 @@ inline void apply(QApplication& application) {
       QPushButton[shell="true"][nav="true"] { text-align:left; padding:0 12px; }
       QPushButton[shell="true"][nav="true"]:focus { padding:0 12px; }
       QPushButton[shell="true"][nav="true"][collapsed="true"] { padding:0; text-align:center; }
+      QPushButton#windowPicker { padding:0; min-width:52px; }
+      QPushButton#windowPicker:hover { background:@hover; }
+      QPushButton#windowPicker:focus { padding:0; border:2px solid @focus; }
+      QPushButton#windowPicker[dragging="true"] { background:@infoSurface; border:2px solid @accent; }
       QLineEdit,QComboBox,QSpinBox { background:@surface; border:1px solid @strokeControl; border-bottom-color:@border; border-radius:4px; padding:4px 8px; min-height:20px; selection-background-color:@accent; selection-color:@surface; }
       QComboBox { combobox-popup:0; }
       QLineEdit:hover,QComboBox:hover,QSpinBox:hover { background:@content; }
