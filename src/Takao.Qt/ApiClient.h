@@ -18,10 +18,14 @@ class ApiClient final : public QObject {
         token_ = token.toUtf8();
     }
     QByteArray snapshotEtag;
+    QByteArray snapshotEtagFor(const QString& route) const {
+        return route == snapshotEtagRoute_ ? snapshotEtag : QByteArray{};
+    }
 
   private:
     QNetworkAccessManager manager_;
     QUrl origin_;
     QByteArray token_;
+    QString snapshotEtagRoute_;
     void request(const QString&, const QJsonObject*, QObject*, Callback, const QByteArray&, int);
 };

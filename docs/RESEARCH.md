@@ -1,5 +1,11 @@
 # 开源实现研究与技术决策
 
+## 本机快照传输（2026-11-09）
+
+本次实际读取 Qt 6.8.3 固定提交 [qhttpnetworkconnection.cpp](https://github.com/qt/qtbase/blob/c07c2d5a527a644d36e7853d55132ae38921682f/src/network/access/qhttpnetworkconnection.cpp)：没有手写 `Accept-Encoding` 时，Qt 自动声明支持的编码并开启 `autoDecompress`；手写此头会接管该行为。现有服务实测 gzip 正常，采用 Qt 原有协商与异步请求，减少重复传输内容，沿用标准 HTTP 查询参数、ETag/304，不新增传输协议。另实际读取同提交 [qtimer.cpp](https://github.com/qt/qtbase/blob/c07c2d5a527a644d36e7853d55132ae38921682f/src/corelib/kernel/qtimer.cpp) 的单次定时器说明，采用完成后按当前采样周期重启的 `QTimer`，保持串行读取。
+
+实际读取 JSON.NET 13.0.4 的 [CamelCasePropertyNamesContractResolver.cs](https://github.com/JamesNK/Newtonsoft.Json/blob/13.0.4/Src/Newtonsoft.Json/Serialization/CamelCasePropertyNamesContractResolver.cs) 与 [DefaultContractResolver.cs](https://github.com/JamesNK/Newtonsoft.Json/blob/13.0.4/Src/Newtonsoft.Json/Serialization/DefaultContractResolver.cs)：前者为兼容旧行为，在实例之间按 resolver 类型共享合同；后者持有实例级合同缓存。不同投影使用独立 `DefaultContractResolver` 和原有 camelCase 命名策略，避免首个请求的字段集合污染其它视图。规格与定向验证范围见 [LOCAL-SNAPSHOT-TRAFFIC.md](LOCAL-SNAPSHOT-TRAFFIC.md)。
+
 ## 导航与命令按钮统一（2026-11-08）
 
 实际读取 [Qt qtbase QPushButton固定源码](https://github.com/qt/qtbase/blob/feb9556bde250306b5a1157aaccb76106844909e/src/widgets/widgets/qpushbutton.cpp) 的`sizeHint()`与`initStyleOption()`：原生按钮合并图标宽度及间距、字体文本尺寸，再由`QStyle::sizeFromContents`计算控件尺寸。采用现有QPushButton/QIcon与集中QSS，统一宽度需为图标和最长常见标签留足空间；沿用已有缓存矢量图标族，为缺失命令补同族图形，不引入依赖或协议。用户指定UI/UX技能首次查询`button consistent icon keyboard`返回Mobile Back Button等不匹配项，未采用；收窄`keyboard navigation focus`命中跨平台Focus States，采用可见焦点及顺序键盘操作，Qt尺寸与布局以现行MASTER为准。

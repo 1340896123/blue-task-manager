@@ -17,9 +17,17 @@ public sealed class TaskManagerController(SnapshotService snapshots, ProcessActi
     public IActionResult Bootstrap() => Ok(new { token = guard.Token, settings = snapshots.Settings, capabilities = SnapshotService.Capabilities, version = "1.1.1", desktop = desktop.Available, desktopFramework = "Qt 6 Widgets", desktopProcessId = desktop.ProcessId, hostPid = Environment.ProcessId, currentUserName = CurrentIdentity.Name, currentSessionId = CurrentIdentity.SessionId });
 
     [HttpGet("snapshot")]
-    public IActionResult Snapshot()
+    public IActionResult Snapshot([FromQuery] string? view = null)
     {
-        var representation = snapshots.Representation;
+        var projection = view switch
+        {
+            null or "" => SnapshotView.Full,
+            "live" => SnapshotView.Live,
+            "history" => SnapshotView.History,
+            "performance" => SnapshotView.Performance,
+            _ => throw new ApiException(400, "invalidSnapshotView", "快照视图只允许 live、history 或 performance；省略时读取完整快照。")
+        };
+        var representation = snapshots.RepresentationFor(projection);
         if (representation is null) return StatusCode(503, new ErrorEnvelope(new("warmingUp", "Windows 首次采样尚未完成，请稍后重试。")));
         Response.Headers.ETag = representation.ETag;
         if (Request.Headers.IfNoneMatch.ToString().Split(',').Any(value => value.Trim() is "*" || value.Trim().Replace("W/", "", StringComparison.Ordinal) == representation.ETag.Replace("W/", "", StringComparison.Ordinal))) return StatusCode(304);

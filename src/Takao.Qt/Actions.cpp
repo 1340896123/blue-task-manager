@@ -675,10 +675,8 @@ void MainWindow::locateServiceProcess(const QJsonObject& service) {
                 notify(error.isEmpty() ? QStringLiteral("服务关联已变化，请刷新后重新选择。") : error, true);
                 return;
             }
-            api_.get(
-                "snapshot", this,
-                [this, route, matches, current, name](const QJsonObject& snapshot, const QString& failure,
-                                                      int) {
+            refreshSnapshot(
+                [this, route, matches, current, name](const QJsonObject& snapshot, const QString& failure) {
                     if (!failure.isEmpty()) {
                         notify(failure, true);
                         return;
@@ -697,7 +695,7 @@ void MainWindow::locateServiceProcess(const QJsonObject& service) {
                     }
                     api_.get(
                         route, this,
-                        [this, matches, process, snapshot, name](const QJsonObject& confirmed,
+                        [this, matches, process, name](const QJsonObject& confirmed,
                                                                  const QString& readError, int) {
                             if (!readError.isEmpty() || !matches(confirmed)) {
                                 notify(readError.isEmpty()
@@ -706,10 +704,6 @@ void MainWindow::locateServiceProcess(const QJsonObject& service) {
                                        true);
                                 return;
                             }
-                            if (snapshot["sampleId"].toInteger() >= latest_["sampleId"].toInteger())
-                                latest_ = snapshot;
-                            if (!frozen_)
-                                shown_ = latest_;
                             if (locateProcess(process["pid"].toInteger(), process["identity"].toString()))
                                 notify("已定位服务 " + name + " 的当前关联进程；此关联不表示历史进程身份。");
                         });
@@ -852,11 +846,9 @@ void MainWindow::moreMenu() {
     auto freeze = menu.addAction("冻结显示（后台继续采集）");
     freeze->setCheckable(true);
     freeze->setChecked(frozen_);
+    freeze->setEnabled(!freezePending_);
     connect(freeze, &QAction::triggered, this, [this](bool checked) {
-        frozen_ = checked;
-        if (!checked)
-            shown_ = latest_;
-        applySnapshot();
+        setFrozen(checked);
     });
     auto collapsed = menu.addAction("折叠侧栏");
     collapsed->setCheckable(true);

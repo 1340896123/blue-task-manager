@@ -186,7 +186,8 @@ MainWindow::MainWindow(QUrl origin, qint64 hostPid) : api_(std::move(origin), th
     saveTimer_.setSingleShot(true);
     saveTimer_.setInterval(700);
     connect(&saveTimer_, &QTimer::timeout, this, &MainWindow::savePreferences);
-    pollTimer_.setInterval(500);
+    pollTimer_.setSingleShot(true);
+    pollTimer_.setInterval(intervalMs_);
     connect(&pollTimer_, &QTimer::timeout, this, &MainWindow::poll);
     slowTimer_.setInterval(3000);
     connect(&slowTimer_, &QTimer::timeout, this, [this] {
@@ -589,7 +590,6 @@ void MainWindow::bootstrap() {
         updateCaption();
         intervalMs_ = value["settings"].toObject()["intervalMs"].toInt(1000);
         proxy_->currentUser = value["currentUserName"].toString();
-        pollTimer_.start();
         poll();
         if (loadingPreferences_)
             api_.get("preferences", this, [this](const QJsonObject& result, const QString& e, int) {
@@ -631,34 +631,111 @@ void MainWindow::bootstrap() {
         readUpdates();
     });
 }
-void MainWindow::poll() {
-    if (polling_ || bootstrap_.isEmpty() || closing_)
+QString MainWindow::snapshotRoute() const {
+    return page_ == 1 ? QStringLiteral("snapshot?view=performance")
+         : page_ == 2 ? QStringLiteral("snapshot?view=history") : QStringLiteral("snapshot?view=live");
+}
+void MainWindow::schedulePoll() {
+    if (closing_)
         return;
+    if (pollPending_ || freezePending_) {
+        pollPending_ = false;
+        QTimer::singleShot(0, this, &MainWindow::poll);
+    } else
+        pollTimer_.start(latest_["paused"].toBool() ? std::max(5000, intervalMs_) : intervalMs_);
+}
+void MainWindow::refreshSnapshot(SnapshotCallback done) {
+    snapshotCallbacks_.append(std::move(done));
+    poll();
+}
+void MainWindow::poll() {
+    if (bootstrap_.isEmpty() || closing_)
+        return;
+    if (polling_) {
+        pollPending_ = true;
+        return;
+    }
+    pollTimer_.stop();
+    pollPending_ = false;
     polling_ = true;
+    const bool freezing = freezePending_;
+    const auto route = freezing ? QStringLiteral("snapshot") : snapshotRoute();
+    auto callbacks = std::move(snapshotCallbacks_);
+    snapshotCallbacks_.clear();
     api_.get(
-        "snapshot", this,
-        [this](const QJsonObject& value, const QString& error, int status) {
+        route, this,
+        [this, route, freezing, callbacks = std::move(callbacks)](const QJsonObject& value, const QString& error, int status) {
             polling_ = false;
             if (!error.isEmpty()) {
                 connected_ = false;
                 connectionError_ = error + " 保留上次成功快照；正在重试。";
+                if (freezing) {
+                    freezePending_ = false;
+                    freezeBox_->setEnabled(true);
+                    updateSettings();
+                    notify("无法取得完整冻结快照：" + error, true);
+                }
                 updateCaption();
                 updateSelectionActions();
+                for (const auto& done : callbacks) done({}, error);
+                schedulePoll();
                 return;
             }
             connected_ = true;
             connectionError_.clear();
+            // A completed request may belong to a page that was left while it
+            // was in flight. Its validator stays bound to its original route.
+            if (!freezing && route != snapshotRoute()) {
+                for (const auto& done : callbacks) done(value, {});
+                pollPending_ = true;
+                schedulePoll();
+                return;
+            }
             if (status != 304) {
                 latest_ = value;
-                if (!frozen_)
+                latestSnapshotRoute_ = route;
+                intervalMs_ = latest_["intervalMs"].toInt(intervalMs_);
+                if (freezing) {
+                    freezePending_ = false;
+                    freezeBox_->setEnabled(true);
+                    if (value.contains("history") && value.contains("performanceHistory")) {
+                        frozen_ = true;
+                        shown_ = latest_;
+                        operationError_.clear();
+                    } else
+                        notify("本机服务未返回完整历史，未冻结显示。请重试。", true);
+                    updateSettings();
+                } else if (!frozen_)
                     shown_ = latest_;
                 applySnapshot();
             } else {
                 updateCaption();
                 updateSelectionActions();
             }
+            for (const auto& done : callbacks) done(status == 304 ? latest_ : value, {});
+            schedulePoll();
         },
-        api_.snapshotEtag);
+        !freezing && latestSnapshotRoute_ == route ? api_.snapshotEtagFor(route) : QByteArray{});
+}
+void MainWindow::setFrozen(bool checked) {
+    if (checked) {
+        if (frozen_ || freezePending_)
+            return;
+        freezePending_ = true;
+        operationError_.clear();
+        freezeBox_->setEnabled(false);
+        {
+            const QSignalBlocker block(freezeBox_);
+            freezeBox_->setChecked(false);
+        }
+        updateCaption();
+        poll();
+    } else if (frozen_) {
+        frozen_ = false;
+        shown_ = latest_;
+        applySnapshot();
+        poll();
+    }
 }
 void MainWindow::applySnapshot() {
     if (shown_.isEmpty())
@@ -796,6 +873,7 @@ void MainWindow::switchPage(int index) {
     }
     if (index == 8)
         readSystemInformation();
+    poll();
 }
 void MainWindow::showColumnsForCurrentPage() {
     const auto p = preferences_["pages"].toObject()[keys_[page_]].toObject();
@@ -813,6 +891,14 @@ void MainWindow::showColumnsForCurrentPage() {
     }
 }
 void MainWindow::updateTable() {
+    if (page_ == 2 && !shown_.contains("history")) {
+        model_->setRows({}, false);
+        pageCaption_ = "正在读取本次会话历史…";
+        sourceMessage_ = "正在读取 Windows 本次会话观测；尚未取得此页历史快照。";
+        searchMessage_.clear();
+        updateCaption();
+        return;
+    }
     const auto chosen = selected();
     const auto identity =
         (pendingPageRestore_ || chosen.isEmpty())
@@ -982,6 +1068,10 @@ void MainWindow::updateCaption() {
         text = "操作失败 · " + operationError_;
         detail = text;
         status = "danger";
+    } else if (freezePending_) {
+        text = "正在读取完整冻结快照…";
+        detail = "读取成功后冻结同一时刻的全部页面；后台继续真实采集。";
+        status = "info";
     } else if (frozen_) {
         text = "显示已冻结 · 后台继续采集";
         detail = "显示已冻结；后台继续真实采集。取消冻结后显示最新快照。";
@@ -993,6 +1083,10 @@ void MainWindow::updateCaption() {
     } else if (!searchMessage_.isEmpty() || !sourceMessage_.isEmpty()) {
         detail = !searchMessage_.isEmpty() ? searchMessage_ : sourceMessage_;
         text = detail.section(QChar(0x3002), 0, 0).section(QChar(0xff1b), 0, 0);
+    }
+    if (connected_ && !frozen_ && !freezePending_ && operationError_.isEmpty() && page_ == 1 && !shown_.contains("performanceHistory")) {
+        text = "正在读取性能历史…";
+        detail = "正在读取 Windows 性能历史，尚未取得此页曲线来源。";
     }
     Theme::state(count_, status);
     static_cast<ElidedCaption*>(count_)->setContent(text, detail);
@@ -1024,6 +1118,8 @@ void MainWindow::applySampling(int interval, bool paused) {
     pause_->setEnabled(false);
     post("settings", {{"intervalMs", interval}, {"paused", paused}}, [this](const QJsonObject& result) {
         intervalMs_ = result["intervalMs"].toInt(intervalMs_);
+        latest_["paused"] = result["paused"];
+        latest_["intervalMs"] = intervalMs_;
         notify(result["paused"].toBool() ? "已暂停采集。" : "已继续真实采集。");
         api_.snapshotEtag.clear();
         poll();

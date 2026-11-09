@@ -16,7 +16,7 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
     private SamplingSettings _settings = new(preferences.IntervalMs, false);
     private readonly string _instance = Guid.NewGuid().ToString("N");
     private long _revision;
-    private SnapshotRepresentation? _serialized;
+    private readonly SnapshotRepresentation?[] _serialized = new SnapshotRepresentation?[4];
     private SnapshotDto? _snapshot;
     private DateTime _sessionStartedAt = DateTime.UtcNow;
     private bool _resetHistory;
@@ -55,20 +55,20 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
 
     public SamplingSettings Settings { get { lock (_gate) return _settings; } }
     public SnapshotDto? Current { get { lock (_gate) { SynchronizePreferenceWarning(); return _snapshot; } } }
-    public SnapshotRepresentation? Representation
+    public SnapshotRepresentation? Representation => RepresentationFor(SnapshotView.Full);
+    public SnapshotRepresentation? RepresentationFor(SnapshotView view)
     {
-        get
+        if ((uint)view >= _serialized.Length) throw new ArgumentOutOfRangeException(nameof(view));
+        lock (_gate)
         {
-            lock (_gate)
-            {
-                SynchronizePreferenceWarning();
-                if (_snapshot is null) return null;
-                // Weak ETags describe the same JSON representation across negotiated gzip/identity encoding.
-                return _serialized ??= new($"W/\"{_instance}-{_revision}\"", System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(_snapshot, SnapshotJson.Settings)));
-            }
+            SynchronizePreferenceWarning();
+            if (_snapshot is null) return null;
+            // Each fixed projection has its own validator. gzip/identity still
+            // negotiate the same weak representation without changing semantics.
+            return _serialized[(int)view] ??= new($"W/\"{_instance}-{_revision}-{view}\"", System.Text.Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(_snapshot, SnapshotJson.For(view))));
         }
     }
-    private void Invalidate() { _revision++; _serialized = null; }
+    private void Invalidate() { _revision++; Array.Clear(_serialized); }
     private void SynchronizePreferenceWarning()
     {
         if (_snapshot is null) return;

@@ -61,8 +61,12 @@ void ApiClient::request(const QString& route, const QJsonObject* body, QObject* 
                         error = QStringLiteral("无法读取本机服务：%1。请重试。").arg(reply->errorString());
                 } else if (status != 304 && (parse.error != QJsonParseError::NoError || !document.isObject()))
                     error = QStringLiteral("本机服务返回的数据格式无效。");
-                if (route == QStringLiteral("snapshot") && status == 200 && error.isEmpty())
+                if ((route == QStringLiteral("snapshot") || route == QStringLiteral("snapshot?view=live") ||
+                     route == QStringLiteral("snapshot?view=history") || route == QStringLiteral("snapshot?view=performance")) &&
+                    status == 200 && error.isEmpty()) {
                     snapshotEtag = reply->rawHeader(QByteArrayLiteral("ETag"));
+                    snapshotEtagRoute_ = route;
+                }
                 reply->deleteLater();
                 if (guard)
                     callback(object, error, status);

@@ -36,6 +36,10 @@ class MainWindow final : public QMainWindow {
     ApiClient api_;
     qint64 expectedHost_;
     QJsonObject bootstrap_, preferences_, latest_, shown_, integration_, updates_;
+    QString latestSnapshotRoute_;
+    bool pollPending_ = false, freezePending_ = false;
+    using SnapshotCallback = std::function<void(const QJsonObject&, const QString&)>;
+    QVector<SnapshotCallback> snapshotCallbacks_;
     bool connected_ = false, polling_ = false, frozen_ = false, loadingPreferences_ = true,
          settingsSync_ = false, closing_ = false, firstPrompt_ = false;
     bool updatingModel_ = false, saving_ = false, savePending_ = false;
@@ -89,6 +93,10 @@ class MainWindow final : public QMainWindow {
     void buildSettings();
     void bootstrap();
     void poll();
+    QString snapshotRoute() const;
+    void schedulePoll();
+    void setFrozen(bool);
+    void refreshSnapshot(SnapshotCallback);
     void applySnapshot();
     void switchPage(int);
     void updateTable();

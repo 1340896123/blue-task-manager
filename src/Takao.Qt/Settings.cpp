@@ -198,10 +198,7 @@ void MainWindow::buildSettings() {
     connect(freezeBox_, &QCheckBox::toggled, this, [this](bool checked) {
         if (settingsSync_)
             return;
-        frozen_ = checked;
-        if (!checked)
-            shown_ = latest_;
-        applySnapshot();
+        setFrozen(checked);
     });
     connect(density_, &QComboBox::currentIndexChanged, this, [this] {
         if (settingsSync_)
