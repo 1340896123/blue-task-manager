@@ -266,6 +266,9 @@ void MainWindow::buildUi() {
     searchLabel->setBuddy(search_);
     topLayout->addWidget(searchLabel);
     topLayout->addWidget(search_, 1);
+    windowPicker_ = new WindowPickerButton(top);
+    windowPicker_->setIgnoredProcessIds({QCoreApplication::applicationPid(), expectedHost_});
+    topLayout->addWidget(windowPicker_);
     topLayout->addStretch();
     auto summaries = new QWidget(top);
     summaries->setObjectName("systemSummary");
@@ -437,6 +440,41 @@ void MainWindow::buildUi() {
         applySearch(text);
         capturePagePreference();
         saveSoon();
+    });
+    connect(windowPicker_, &WindowPickerButton::selectionFailed, this, [this](const QString& message) {
+        notify(message, true);
+    });
+    connect(windowPicker_, &WindowPickerButton::helpRequested, this, [this] {
+        search_->setFocus(Qt::ShortcutFocusReason);
+    });
+    connect(windowPicker_, &WindowPickerButton::pidPicked, this, [this](qint64 pid) {
+        if (!processPage())
+            switchPage(0);
+        search_->setText(QString::number(pid));
+        search_->setFocus(Qt::OtherFocusReason);
+        QTimer::singleShot(0, this, [this, pid] {
+            std::function<QModelIndex(const QModelIndex&)> findPid = [&](const QModelIndex& parent) -> QModelIndex {
+                const auto count = proxy_->rowCount(parent);
+                for (int row = 0; row < count; ++row) {
+                    const auto index = proxy_->index(row, 0, parent);
+                    const auto object = QJsonObject::fromVariantMap(index.data(DataModel::ObjectRole).toMap());
+                    if (object["pid"].toInteger() == pid)
+                        return index;
+                    const auto child = findPid(index);
+                    if (child.isValid())
+                        return child;
+                }
+                return {};
+            };
+            const auto index = findPid({});
+            if (index.isValid()) {
+                table_->setCurrentIndex(index);
+                table_->scrollTo(index, QAbstractItemView::PositionAtCenter);
+                updateSelectionActions();
+            } else {
+                notify(QStringLiteral("已按 PID %1 搜索，但当前快照中没有该进程。请刷新后重试。 ").arg(pid), true);
+            }
+        });
     });
     connect(table_->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             [this] { updateSelectionActions(); });

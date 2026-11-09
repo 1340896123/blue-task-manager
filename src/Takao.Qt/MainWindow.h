@@ -3,6 +3,7 @@
 #include "Chart.h"
 #include "DataModel.h"
 #include "SystemInformationView.h"
+#include "WindowPicker.h"
 #include <QCheckBox>
 #include <QComboBox>
 #include <QGridLayout>
@@ -45,6 +46,7 @@ class MainWindow final : public QMainWindow {
     double zoom_ = 1;
     QTimer pollTimer_, saveTimer_, slowTimer_, iconTimer_, copyFeedbackTimer_;
     QLineEdit* search_{};
+    WindowPickerButton* windowPicker_{};
     QLabel *pageTitle_{}, *count_{}, *cpuSummary_{}, *memorySummary_{}, *processSummary_{};
     QString pageCaption_, connectionError_, operationError_, sourceMessage_, searchMessage_;
     QWidget* sidebar_{};
