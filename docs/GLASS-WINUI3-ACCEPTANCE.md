@@ -17,6 +17,7 @@
 
 - 标题栏延伸到 48px 客户区，标题栏/侧栏使用低透明度玻璃表面，DWM backdrop 失败时保留不透明回退。
 - 自定义标题栏已接入无边框窗口：最小化、最大化/还原、关闭、拖拽、双击最大化和边缘缩放均调用 MewUI 真实窗口 API；按钮使用中文工具提示，搜索区与窗口按钮分离。
+- 公共主框架已抽出 `ShellComponents` 与 `ShellTokens`，统一 WindowShell、标题栏、侧栏、页头、命令栏和 DataSurface；现有六个数据页继续复用真实 GridView 选择/排序/刷新行为。
 - 主题偏好为 `light`、`dark`、`system`，通过 JSON.NET 校验和原子保存；启动与设置运行时切换均接入 `ThemeVariant`。
 - 侧栏导航为 44px Fluent 字形图标加可见标签，保留键盘选择、工具提示和选中语义。
 - 进程页增加真实网络/GPU列；性能页展示真实设备摘要和 `PerformanceHistory` 成功采样点，不补预热数据。
