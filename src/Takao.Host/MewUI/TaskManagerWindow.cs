@@ -624,7 +624,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildDetailsPage()
     {
-        detailGrid = new GridView { ItemsSource = detailItems, ShowGridLines = false, ZebraStriping = false };
+        detailGrid = new GridView { ItemsSource = detailItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         detailGrid.Columns(
             new GridViewColumn<ProcessDto>().Header("名称").StarWidth(2, minWidth: 260).Text(row => row.Name),
             new GridViewColumn<ProcessDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
@@ -642,9 +642,13 @@ internal sealed class TaskManagerView : UserControl
         var run = new Button().Content("运行新任务").OnClick(RunTask);
         var end = new Button().Content("结束任务").IsEnabled(false).OnClick(EndSelected);
         detailGrid.OnSelectionChanged(value => end.IsEnabled = value is ProcessDto row && row.CanTerminate);
-        var command = new DockPanel().Spacing(8).Children(
-            LiveText(() => $"真实进程身份：{snapshots.Current?.Processes.Count ?? 0} 条。"),
-            new StackPanel().DockRight().Horizontal().Spacing(8).Children(run, end));
+        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+            new StackPanel().Vertical().Spacing(4).Children(
+                new TextBlock().Text("详细信息").SemiBold(),
+                LiveText(() => snapshots.Current is { } current
+                    ? $"当前真实采样 · {current.Processes.Count.ToString(CultureInfo.InvariantCulture)} 个进程身份"
+                    : "等待 Windows 首次成功采样").FontSize(ThemeFontSize.Small)),
+            ShellComponents.CommandBar(run, end).DockRight());
         return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(detailGrid).Row(1));
     }
 
