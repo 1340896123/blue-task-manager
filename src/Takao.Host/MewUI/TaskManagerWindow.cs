@@ -468,7 +468,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildHistoryPage()
     {
-        historyGrid = new GridView { ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false };
+        historyGrid = new GridView { ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         historyGrid.Columns(
             new GridViewColumn<ProcessHistoryDto>().Header("名称").StarWidth(3, minWidth: 260).Text(row => row.Name),
             new GridViewColumn<ProcessHistoryDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
@@ -486,13 +486,19 @@ internal sealed class TaskManagerView : UserControl
             UpdateOtherRows();
             statusText!.Text = "本次会话历史已清除。";
         });
-        var command = new DockPanel().Spacing(8).Children(
-            new StackPanel().Horizontal().Spacing(8).Children(
+        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+            new StackPanel().Vertical().Spacing(4).Children(
+                new TextBlock().Text("本次会话").SemiBold(),
                 LiveText(() => snapshots.Current is { } current
                     ? $"会话开始：{current.SessionStartedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss} · 已观测 {current.History.Count.ToString(CultureInfo.InvariantCulture)} 个进程身份"
-                    : "等待 Windows 首次成功采样")),
+                    : "等待 Windows 首次成功采样").FontSize(ThemeFontSize.Small)),
             new StackPanel().DockRight().Horizontal().Spacing(8).Children(locate, reset));
-        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(historyGrid).Row(1));
+        var emptyHint = LiveText(() => snapshots.Current is null
+            ? "正在等待 Windows 首次成功采样；历史记录会在成功采样后出现。"
+            : historyRows.Count == 0
+                ? "本次会话尚无历史记录。清除统计后会保留新的真实采样。"
+                : "历史数据来自本次会话的真实 Windows 采样。未知字段保留原因，不以 0 填充.").FontSize(ThemeFontSize.Small);
+        return new Grid().Rows("Auto, Auto, *").Children(command, emptyHint.Row(1), ShellComponents.DataSurface(historyGrid).Row(2));
     }
 
     private FrameworkElement BuildStartupPage()
