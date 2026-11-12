@@ -41,6 +41,7 @@ public sealed class PreferencesService
         { warning = new("preferencesRecovered", "保存的界面偏好无法读取，已恢复默认；下次保存将替换该配置。"); }
     }
     public int IntervalMs { get { lock (gate) return persisted.IntervalMs; } }
+    public string Theme { get { lock (gate) return persisted.Ui.Theme; } }
     public Unavailable? Warning { get { lock (gate) return warning; } }
     public PreferencesResult Current { get { lock (gate) return new(persisted.Ui, warning); } }
     public PreferencesResult Save(UiPreferences value)
@@ -49,6 +50,17 @@ public sealed class PreferencesService
         lock (gate) { Write(persisted with { Ui = value with { Window = value.Window ?? persisted.Ui.Window } }); return new(persisted.Ui, warning); }
     }
     public void SaveInterval(int value) { lock (gate) { if (persisted.IntervalMs != value) Write(persisted with { IntervalMs = value }); } }
+    public void SaveTheme(string value)
+    {
+        if (value is not ("light" or "dark" or "system")) throw new ApiException(400, "invalidTheme", "主题只允许 light、dark 或 system。");
+        lock (gate)
+        {
+            if (persisted.Ui.Theme == value) return;
+            var next = persisted.Ui with { Theme = value };
+            Validate(next);
+            Write(persisted with { Ui = next });
+        }
+    }
     public void SaveWindow(WindowPreference value) { lock (gate) { var next = persisted.Ui with { Window = value }; Validate(next); Write(persisted with { Ui = next }); } }
     private void Write(Persisted value)
     {
@@ -71,7 +83,7 @@ public sealed class PreferencesService
     }
     private static void Validate(UiPreferences ui)
     {
-        if (ui is null || ui.Version != 1 || ui.Density is not ("compact" or "standard") || ui.ProcessView is not ("flat" or "tree") || ui.Pages?.Count > 9) Invalid();
+        if (ui is null || ui.Version != 1 || ui.Density is not ("compact" or "standard") || ui.ProcessView is not ("flat" or "tree") || ui.Theme is not ("light" or "dark" or "system") || ui.Pages?.Count > 9) Invalid();
         if (ui!.SearchQuery?.Length > 256 || ui.SearchQuery?.Contains('\0') == true) Invalid();
         foreach (var pair in ui!.Pages ?? new Dictionary<string, PagePreference>())
         {

@@ -2,6 +2,7 @@ using Aprillz.MewUI;
 using Aprillz.MewUI.Controls;
 using System.Globalization;
 using Takao.Host.Models;
+using Takao.Host.Native;
 using Takao.Host.Services;
 
 namespace Takao.Host.MewUI;
@@ -15,17 +16,37 @@ internal sealed class TaskManagerWindow : Window
         view = new TaskManagerView(snapshots, preferences, actions, systemInformation);
         Title = "Takao";
         this.Resizable(1100, 720, minWidth: 960, minHeight: 640)
+            .ExtendClientAreaTitleBarHeight(48)
+            .AllowsTransparency(true)
             .StartCenterScreen()
             .Content(view)
-            .OnLoaded(view.Start)
+            .OnLoaded(() =>
+            {
+                view.Start();
+                WindowChromeService.Apply(this);
+            })
             .OnClosed(view.Stop);
     }
 }
 
 internal sealed class TaskManagerView : UserControl
 {
+    private sealed record NavigationEntry(string Key, string Title, string Glyph);
+
     private static readonly string[] PageKeys = ["processes", "performance", "history", "startup", "users", "details", "services", "settings", "systemInformation"];
     private static readonly string[] PageTitles = ["进程", "性能", "应用历史记录", "启动应用", "用户", "详细信息", "服务", "设置", "系统信息"];
+    private static readonly IReadOnlyList<NavigationEntry> NavigationEntries =
+    [
+        new("processes", "进程", "\uE7F4"),
+        new("performance", "性能", "\uE9D9"),
+        new("history", "应用历史记录", "\uE81C"),
+        new("startup", "启动应用", "\uE713"),
+        new("users", "用户", "\uE716"),
+        new("details", "详细信息", "\uE8A5"),
+        new("services", "服务", "\uE77B"),
+        new("settings", "设置", "\uE713"),
+        new("systemInformation", "系统信息", "\uE950")
+    ];
     private readonly SnapshotService snapshots;
     private readonly PreferencesService preferences;
     private readonly ProcessActionService actions;
@@ -43,7 +64,7 @@ internal sealed class TaskManagerView : UserControl
     private readonly ItemsView<ServiceDto> serviceItems;
     private readonly ItemsView<ProcessDto> detailItems;
     private GridView? processGrid;
-    private ListBox? navigation;
+    private NavigationList? navigation;
     private TextBox? searchBox;
     private TextBlock? cpuSummary;
     private TextBlock? memorySummary;
@@ -109,14 +130,16 @@ internal sealed class TaskManagerView : UserControl
         statusText = new TextBlock().Text("正在连接 Windows 数据源…").CenterVertical();
         pageTitle = new TextBlock().Text(PageTitles[0]).FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical();
 
-        var brand = new TextBlock().Text("Takao").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical().Width(204);
+        var brand = new StackPanel().Horizontal().Spacing(8).Width(204).Children(
+            new TextBlock().Text("▣").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical(),
+            new TextBlock().Text("Takao").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical());
         var summary = new StackPanel().Horizontal().Spacing(18).Children(cpuSummary, memorySummary, processSummary, statusText);
         return new Border()
             .Padding(16, 0)
             .BorderThickness(new Thickness(0, 0, 0, 1))
             .WithTheme((theme, border) =>
             {
-                border.Background(theme.Palette.WindowBackground);
+                border.Background(Glass(theme.Palette.WindowBackground, theme.IsDark));
                 border.BorderBrush(theme.Palette.ControlBorder);
             })
             .Child(new Grid().Columns("204, Auto, *, Auto").Children(
@@ -128,27 +151,33 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildSidebar()
     {
-        navigation = new ListBox()
-            .Items(PageTitles)
-            .ItemHeight(40)
-            .SelectedIndex(0)
+        navigation = new NavigationList
+        {
+            ItemHeight = 44,
+            ItemPadding = new Thickness(12, 0),
+            SelectedIndex = 0,
+        }
+            .Items(
+                NavigationEntries,
+                item => $"{item.Glyph}  {item.Title}",
+                _ => NavigationItemKind.Item,
+                item => item.Key)
             .OnSelectionChanged(value =>
             {
-                if (value is not string title) return;
-                var index = Array.IndexOf(PageTitles, title);
+                if (value is not NavigationEntry entry) return;
+                var index = Array.IndexOf(PageKeys, entry.Key);
                 if (index >= 0) SelectPage(index);
             });
-        var settingsHint = new TextBlock().Text("设置").FontSize(ThemeFontSize.Small).SemiBold();
         var sidebar = new Border()
             .Padding(8)
             .BorderThickness(new Thickness(0, 0, 1, 0))
             .WithTheme((theme, border) =>
             {
-                border.Background(theme.Palette.WindowBackground);
+                border.Background(Glass(theme.Palette.WindowBackground, theme.IsDark));
                 border.BorderBrush(theme.Palette.ControlBorder);
             })
             .Child(new DockPanel().Spacing(8).Children(
-                new StackPanel().DockBottom().Spacing(4).Children(settingsHint, new TextBlock().Text("MewUI / Windows").FontSize(ThemeFontSize.Small)),
+                new StackPanel().DockBottom().Spacing(4).Children(new TextBlock().Text("Takao").FontSize(ThemeFontSize.Small).SemiBold(), new TextBlock().Text("Windows 监控").FontSize(ThemeFontSize.Small)),
                 navigation));
         return sidebar;
     }
@@ -272,12 +301,27 @@ internal sealed class TaskManagerView : UserControl
         {
             if (value is string text) _ = snapshots.ApplySettings(new SettingsRequest(text.StartsWith("5") ? 5000 : text.StartsWith("2") ? 2000 : 1000, snapshots.Settings.Paused));
         });
+        var theme = new ComboBox().Items(["跟随系统", "浅色", "深色"]).SelectedIndex(preferences.Theme switch { "light" => 1, "dark" => 2, _ => 0 }).OnSelectionChanged(value =>
+        {
+            if (value is not string text) return;
+            var mode = text switch { "浅色" => "light", "深色" => "dark", _ => "system" };
+            try
+            {
+                preferences.SaveTheme(mode);
+                Application.Current.SetTheme(mode switch { "light" => ThemeVariant.Light, "dark" => ThemeVariant.Dark, _ => ThemeVariant.System });
+            }
+            catch (ApiException error)
+            {
+                if (statusText is not null) statusText.Text = error.Message;
+            }
+        });
         var pausedState = new ObservableValue<bool>(snapshots.Settings.Paused);
         var paused = new CheckBox().Content("暂停自动刷新").BindIsChecked(pausedState).OnCheckedChanged(value => _ = snapshots.ApplySettings(new SettingsRequest(snapshots.Settings.IntervalMs, value)));
         return PageStack(new TextBlock().Text("设置").FontSize(ThemeFontSize.Medium).SemiBold(),
             SettingRow("采样间隔", "控制真实 Windows 采样频率。", interval),
+            SettingRow("主题", "选择浅色、深色或跟随 Windows 系统设置。", theme),
             SettingRow("刷新状态", "暂停时保留最后成功快照并标注状态。", paused),
-            new TextBlock().Text("界面由 MewUI Win32 + Direct2D 在当前 Host 进程内绘制。").FontSize(ThemeFontSize.Small));
+            new TextBlock().Text("标题栏与侧栏使用低透明度玻璃材质；系统关闭透明效果或 DWM 不可用时自动回退为不透明表面。").FontSize(ThemeFontSize.Small));
     }
 
     private FrameworkElement BuildSystemInformationPage()
@@ -441,5 +485,11 @@ internal sealed class TaskManagerView : UserControl
         var index = 0;
         while (bytes >= 1024 && index < units.Length - 1) { bytes /= 1024; index++; }
         return $"{bytes:0.0} {units[index]}";
+    }
+
+    private static Color Glass(Color baseColor, bool dark)
+    {
+        var alpha = (byte)(dark ? 222 : 232);
+        return Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
     }
 }

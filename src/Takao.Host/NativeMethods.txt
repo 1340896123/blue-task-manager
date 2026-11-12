@@ -104,6 +104,10 @@ GetFileVersionInfoW
 VerQueryValueW
 GetUserNameExW
 
+DwmSetWindowAttribute
+DWMWINDOWATTRIBUTE
+DWM_SYSTEMBACKDROP_TYPE
+
 
 IsWindow
 GetWindowLongPtrW

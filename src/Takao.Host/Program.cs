@@ -88,10 +88,16 @@ try
             desktop.Detach(window);
             app.Lifetime.StopApplication();
         });
-        // Keep the Windows 11-style neutral light surface used by the existing
-        // shell while still letting MewUI own native focus, hit testing and
-        // accessibility semantics.
-        Application.Run(window, () => Application.Current.SetTheme(ThemeVariant.Light));
+        // Resolve the persisted theme before the first frame. MewUI owns the
+        // palette and native focus semantics; the shell applies the same mode
+        // again when the user changes it from Settings.
+        var theme = preferences.Theme switch
+        {
+            "light" => ThemeVariant.Light,
+            "dark" => ThemeVariant.Dark,
+            _ => ThemeVariant.System,
+        };
+        Application.Run(window, () => Application.Current.SetTheme(theme));
         if (!app.Lifetime.ApplicationStopping.IsCancellationRequested)
             app.Lifetime.StopApplication();
         await app.StopAsync();
