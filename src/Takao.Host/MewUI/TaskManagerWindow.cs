@@ -11,9 +11,9 @@ internal sealed class TaskManagerWindow : Window
 {
     private readonly TaskManagerView view;
 
-    public TaskManagerWindow(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions)
+    public TaskManagerWindow(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions, DesktopWindowService desktop, TaskManagerIntegrationService integration)
     {
-        view = new TaskManagerView(snapshots, preferences, actions, systemInformation, shell, serviceActions);
+        view = new TaskManagerView(snapshots, preferences, actions, systemInformation, shell, serviceActions, desktop, integration);
         Title = "Takao";
         this.Resizable(1100, 720, minWidth: 960, minHeight: 640)
             .ExtendClientAreaTitleBarHeight(48)
@@ -53,6 +53,8 @@ internal sealed class TaskManagerView : UserControl
     private readonly SystemInformationService systemInformation;
     private readonly ShellActionService shell;
     private readonly ServiceActionService serviceActions;
+    private readonly DesktopWindowService desktop;
+    private readonly TaskManagerIntegrationService integration;
     private readonly List<FrameworkElement> pages = [];
     private readonly List<ProcessDto> processRows = [];
     private readonly ItemsView<ProcessDto> processItems;
@@ -82,6 +84,11 @@ internal sealed class TaskManagerView : UserControl
     private TextBlock? statusText;
     private TextBlock? pageTitle;
     private TextBlock? systemInfoSummary;
+    private Button? systemInfoCopyButton;
+    private string systemInformationClipboard = string.Empty;
+    private TextBlock? integrationSummary;
+    private Button? integrationEnableButton;
+    private Button? integrationDisableButton;
     private DispatcherTimer? timer;
     private int currentPage;
     private string query = string.Empty;
@@ -89,7 +96,7 @@ internal sealed class TaskManagerView : UserControl
     private readonly ObservableValue<string> search = new(string.Empty);
     private readonly List<(TextBlock Block, Func<string> Get)> liveText = [];
 
-    public TaskManagerView(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions)
+    public TaskManagerView(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions, DesktopWindowService desktop, TaskManagerIntegrationService integration)
     {
         this.snapshots = snapshots;
         this.preferences = preferences;
@@ -97,6 +104,8 @@ internal sealed class TaskManagerView : UserControl
         this.systemInformation = systemInformation;
         this.shell = shell;
         this.serviceActions = serviceActions;
+        this.desktop = desktop;
+        this.integration = integration;
         processItems = ItemsView.Create(processRows, row => row.Name, row => row.Identity);
         historyItems = ItemsView.Create(historyRows, row => row.Name, row => row.Identity);
         startupItems = ItemsView.Create(startupRows, row => row.Name, row => row.Id);
@@ -421,20 +430,46 @@ internal sealed class TaskManagerView : UserControl
         });
         var pausedState = new ObservableValue<bool>(snapshots.Settings.Paused);
         var paused = new CheckBox().Content("暂停自动刷新").BindIsChecked(pausedState).OnCheckedChanged(value => _ = snapshots.ApplySettings(new SettingsRequest(snapshots.Settings.IntervalMs, value)));
+        var density = new ComboBox().Items(["紧凑", "标准"]).SelectedIndex(preferences.Current.Preferences.Density == "standard" ? 1 : 0).OnSelectionChanged(value =>
+        {
+            if (value is string text) SaveUiPreferences(ui => ui with { Density = text == "标准" ? "standard" : "compact" });
+        });
+        var sidebarCollapsed = new CheckBox().Content("使用紧凑侧栏").BindIsChecked(new ObservableValue<bool>(preferences.Current.Preferences.SidebarCollapsed)).OnCheckedChanged(ApplySidebarCollapsed);
+        var alwaysOnTop = new CheckBox().Content("始终置顶").BindIsChecked(new ObservableValue<bool>(preferences.Current.Preferences.Window?.AlwaysOnTop == true)).OnCheckedChanged(_value => { _ = ToggleAlwaysOnTop(); });
+        var integrationState = integration.Read();
+        integrationSummary = new TextBlock().Text(FormatIntegration(integrationState)).FontSize(ThemeFontSize.Small);
+        integrationEnableButton = new Button().Content(integrationState.CanTakeOver ? "接管现有入口" : "启用入口").IsEnabled(integrationState.CanEnable || integrationState.CanTakeOver).OnClick(() => _ = ApplyIntegration(true));
+        integrationDisableButton = new Button().Content("恢复标准入口").IsEnabled(integrationState.CanDisable).OnClick(() => _ = ApplyIntegration(false));
+        var integrationControls = new StackPanel().Horizontal().Spacing(8).Children(
+            integrationEnableButton,
+            integrationDisableButton,
+            new Button().Content("刷新状态").OnClick(RefreshIntegration));
+        var integrationRow = new Border().Padding(16).BorderThickness(1).CornerRadius(8)
+            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground; border.BorderBrush = theme.Palette.ControlBorder; })
+            .Child(new StackPanel().Spacing(8).Children(
+                new TextBlock().Text("任务管理器入口").SemiBold(),
+                new TextBlock().Text("只读显示真实IFEO状态；写入需要管理员权限并在执行前重新确认版本。").FontSize(ThemeFontSize.Small),
+                integrationSummary,
+                integrationControls));
         return PageStack(new TextBlock().Text("设置").FontSize(ThemeFontSize.Medium).SemiBold(),
             SettingRow("采样间隔", "控制真实 Windows 采样频率。", interval),
+            SettingRow("密度", "保存紧凑或标准数据行密度。", density),
             SettingRow("主题", "选择浅色、深色或跟随 Windows 系统设置。", theme),
             SettingRow("刷新状态", "暂停时保留最后成功快照并标注状态。", paused),
-            new TextBlock().Text("标题栏与侧栏使用低透明度玻璃材质；系统关闭透明效果或 DWM 不可用时自动回退为不透明表面。").FontSize(ThemeFontSize.Small));
+            SettingRow("侧栏", "折叠后保留导航图标和键盘语义。", sidebarCollapsed),
+            SettingRow("窗口", "通过 Windows 读回当前置顶状态。", alwaysOnTop),
+            integrationRow,
+            new TextBlock().Text("Takao 1.1.1 · MewUI Win32 + Direct2D · 真实 Windows 采样、SCM、启动项与硬件来源。未知值保留原因，不以0填充。").FontSize(ThemeFontSize.Small));
     }
 
     private FrameworkElement BuildSystemInformationPage()
     {
         systemInfoSummary = new TextBlock().Text("正在读取 Windows 硬件概览…");
         var refresh = new Button().Content("刷新硬件信息").OnClick(() => _ = RefreshSystemInformation(true));
+        systemInfoCopyButton = new Button().Content("复制").IsEnabled(false).OnClick(CopySystemInformation);
         return PageStack(new TextBlock().Text("系统信息").FontSize(ThemeFontSize.Medium).SemiBold(),
             new TextBlock().Text("硬件概览由 Windows 原生接口按需读取，不参与实时采样。"),
-            refresh,
+            new StackPanel().Horizontal().Spacing(8).Children(refresh, systemInfoCopyButton),
             systemInfoSummary,
             LiveText(() => snapshots.Current is { } current ? $"当前采样时间：{current.CapturedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}" : "当前采样时间：—"));
     }
@@ -445,17 +480,163 @@ internal sealed class TaskManagerView : UserControl
         {
             var info = await systemInformation.ReadAsync(refresh, CancellationToken.None);
             if (systemInfoSummary is null) return;
-            var cpu = info.Processors.FirstOrDefault()?.Name ?? "不可用";
-            var gpu = info.GraphicsAdapters.FirstOrDefault()?.Name ?? "不可用";
-            var os = info.OperatingSystem.Caption ?? "不可用";
-            var memory = info.Memory.InstalledBytes ?? "不可用";
-            systemInfoSummary.Text = $"状态：{info.Status}\nCPU：{cpu}\n显卡：{gpu}\n内存：{memory}\n主板：{info.Motherboard.Manufacturer ?? "不可用"} {info.Motherboard.Product ?? string.Empty}\nWindows：{os} {info.OperatingSystem.DisplayVersion ?? string.Empty} {info.OperatingSystem.Build ?? string.Empty}";
+            systemInformationClipboard = FormatSystemInformation(info);
+            systemInfoSummary.Text = systemInformationClipboard;
+            if (systemInfoCopyButton is not null) systemInfoCopyButton.IsEnabled = info.Status is not "loading";
         }
         catch (Exception error) when (error is not OutOfMemoryException)
         {
             if (systemInfoSummary is not null) systemInfoSummary.Text = $"硬件信息暂不可用：{error.Message}";
+            if (systemInfoCopyButton is not null) systemInfoCopyButton.IsEnabled = false;
         }
     }
+
+    private void SaveUiPreferences(Func<UiPreferences, UiPreferences> update)
+    {
+        try
+        {
+            preferences.Save(update(preferences.Current.Preferences));
+            statusText!.Text = "界面偏好已保存。";
+        }
+        catch (ApiException error)
+        {
+            statusText!.Text = error.Message;
+        }
+    }
+
+    private void ApplySidebarCollapsed(bool collapsed)
+    {
+        SaveUiPreferences(ui => ui with { SidebarCollapsed = collapsed });
+        if (navigation is not null)
+        {
+            navigation.Width = collapsed ? 64 : 188;
+            navigation.ItemPadding = collapsed ? new Thickness(8, 0) : new Thickness(12, 0);
+        }
+    }
+
+    private async Task ToggleAlwaysOnTop()
+    {
+        try
+        {
+            await desktop.ExecuteAsync("always-on-top");
+            statusText!.Text = preferences.Current.Preferences.Window?.AlwaysOnTop == true ? "窗口已置顶。" : "窗口已取消置顶。";
+        }
+        catch (ApiException error)
+        {
+            statusText!.Text = error.Message;
+        }
+    }
+
+    private void RefreshIntegration()
+    {
+        try
+        {
+            var state = integration.Read();
+            if (integrationSummary is not null) integrationSummary.Text = FormatIntegration(state);
+            if (integrationEnableButton is not null)
+            {
+                integrationEnableButton.Content = new TextBlock().Text(state.CanTakeOver ? "接管现有入口" : "启用入口");
+                integrationEnableButton.IsEnabled = state.CanEnable || state.CanTakeOver || state.CanRepair;
+            }
+            if (integrationDisableButton is not null) integrationDisableButton.IsEnabled = state.CanDisable;
+        }
+        catch (ApiException error)
+        {
+            if (integrationSummary is not null) integrationSummary.Text = $"入口状态暂不可用：{error.Message}";
+        }
+    }
+
+    private async Task ApplyIntegration(bool enabled)
+    {
+        TaskManagerIntegrationState state;
+        try { state = integration.Read(); }
+        catch (ApiException error) { statusText!.Text = error.Message; return; }
+        TaskManagerIntegrationRequest request;
+        if (enabled)
+        {
+            if (state.CanTakeOver) request = new(true, state.Revision, TakeOver: true);
+            else if (state.CanRepair) request = new(true, state.Revision, Repair: true);
+            else if (state.CanEnable) request = new(true, state.Revision);
+            else { statusText!.Text = state.ConflictReason ?? "当前入口状态不允许启用。"; return; }
+        }
+        else
+        {
+            if (!state.CanDisable) { statusText!.Text = state.ConflictReason ?? "当前入口不属于本目录程序，未修改Windows配置。"; return; }
+            request = new(false, state.Revision);
+        }
+        var owner = FindVisualRoot() as Window;
+        if (owner is null || !await MessageBox.ConfirmAsync(
+                enabled ? "确认修改任务管理器入口？" : "确认恢复Windows标准任务管理器入口？",
+                icon: PromptIconKind.Warning,
+                detail: "该操作修改计算机范围的IFEO配置，并会在写入前重新验证实际状态。",
+                owner: owner)) return;
+        try
+        {
+            var result = await Task.Run(() => integration.Apply(request));
+            statusText!.Text = result.Message;
+            RefreshIntegration();
+        }
+        catch (ApiException error)
+        {
+            statusText!.Text = error.Message;
+            RefreshIntegration();
+        }
+    }
+
+    private void CopySystemInformation()
+    {
+        if (string.IsNullOrWhiteSpace(systemInformationClipboard)) return;
+        try
+        {
+            if (statusText is null) return;
+            var clipboard = Application.Current?.PlatformServices?.Clipboard;
+            statusText.Text = clipboard is not null && clipboard.TrySetText(systemInformationClipboard)
+                ? "系统信息已复制。"
+                : "系统剪贴板当前不可用。";
+        }
+        catch (Exception error) when (error is not OutOfMemoryException)
+        {
+            statusText!.Text = $"复制失败：{error.Message}";
+        }
+    }
+
+    private static string FormatIntegration(TaskManagerIntegrationState state)
+        => $"状态：{state.Status} · 范围：{state.Scope} · 可读：{(state.CanRead ? "是" : "否")} · 可写：{(state.CanWrite is true ? "是" : state.CanWrite is false ? "否" : "未知")}\n{state.ConflictReason ?? state.ReadError?.Message ?? "当前未接管Windows任务管理器入口。"}";
+
+    private static string FormatSystemInformation(SystemInformationDto info)
+    {
+        var lines = new List<string>
+        {
+            $"状态：{info.Status}",
+            $"采集时间：{(info.CapturedAtUtc is { } captured ? captured.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : "—")}",
+            "",
+            "处理器",
+        };
+        if (info.Processors.Count == 0) lines.Add("  —");
+        foreach (var cpu in info.Processors)
+            lines.Add($"  {Text(cpu.Name)} · {Text(cpu.Manufacturer)} · 核心 {Text(cpu.CoreCount)} · 逻辑处理器 {Text(cpu.LogicalProcessorCount)}");
+        lines.Add("显卡");
+        if (info.GraphicsAdapters.Count == 0) lines.Add("  —");
+        foreach (var gpu in info.GraphicsAdapters)
+            lines.Add($"  {Text(gpu.Name)} · 显存 {Text(gpu.DedicatedMemoryBytes)} · {(gpu.IsSoftware ? "软件适配器" : "硬件适配器")}");
+        lines.Add($"主板\n  {Text(info.Motherboard.Manufacturer)} {Text(info.Motherboard.Product)} · 版本 {Text(info.Motherboard.Version)}");
+        lines.Add($"内存\n  已安装：{Text(info.Memory.InstalledBytes)} · 模块：{Text(info.Memory.ModuleCount)}");
+        foreach (var module in info.Memory.Modules)
+            lines.Add($"  {Text(module.DeviceLocator)} · {Text(module.Manufacturer)} · {Text(module.CapacityBytes)} · {Text(module.SpeedMtPerSecond)} MT/s");
+        lines.Add("磁盘");
+        if (info.Disks.Count == 0) lines.Add("  —");
+        foreach (var disk in info.Disks)
+            lines.Add($"  {Text(disk.Model)} · {Text(disk.MediaType)} · 总线 {Text(disk.BusType)} · 容量 {Text(disk.CapacityBytes)}");
+        lines.Add("显示器");
+        if (info.Displays.Count == 0) lines.Add("  —");
+        foreach (var display in info.Displays)
+            lines.Add($"  {Text(display.Name)} · {Text(display.WidthPixels)}×{Text(display.HeightPixels)} · {Text(display.RefreshRateHz)} Hz");
+        lines.Add($"Windows\n  {Text(info.OperatingSystem.Caption)} · {Text(info.OperatingSystem.DisplayVersion)} · Build {Text(info.OperatingSystem.Build)} · {Text(info.OperatingSystem.Architecture)}");
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string Text<T>(T? value) where T : struct => value?.ToString() ?? "—";
+    private static string Text(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
 
     private static FrameworkElement PageStack(params FrameworkElement[] children) => new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(16).Children(children));
 
