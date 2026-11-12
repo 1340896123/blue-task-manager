@@ -15,6 +15,11 @@ internal sealed class TaskManagerWindow : Window
     {
         view = new TaskManagerView(snapshots, preferences, actions, systemInformation, shell, serviceActions, desktop, integration);
         Title = "Takao";
+        // MewUI's default Window style supplies an opaque theme background.
+        // Keep the native surface transparent so the shell's acrylic layers
+        // and the DWM backdrop remain visible on every page.
+        Background = Color.Transparent;
+        Padding = Thickness.Zero;
         this.Resizable(1100, 720, minWidth: 960, minHeight: 640)
             .ExtendClientAreaTitleBarHeight(48)
             .Borderless(true)
@@ -149,8 +154,12 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildTopBar()
     {
-        searchBox = new TextBox()
-            .Width(300)
+        searchBox = new TextBox
+        {
+            MinWidth = 240,
+            MaxWidth = 480,
+            Height = 36,
+        }
             .Placeholder("搜索名称、PID 或发布者")
             .BindText(search)
             .OnTextChanged(value =>
@@ -168,26 +177,45 @@ internal sealed class TaskManagerView : UserControl
         var brand = new StackPanel().Horizontal().Spacing(8).Width(204).Children(
             new TextBlock().Text("▣").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical(),
             new TextBlock().Text("Takao").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical());
-        var summary = new StackPanel().Horizontal().Spacing(18).Children(cpuSummary, memorySummary, processSummary, statusText);
+        statusText.MaxWidth = 144;
+        var summary = new StackPanel().Horizontal().Spacing(12).Children(cpuSummary, memorySummary, processSummary, statusText);
+        // These are title-bar content, not interactive controls. Let the
+        // transparent drag surface receive their mouse-down events.
+        brand.IsHitTestVisible = false;
+        summary.IsHitTestVisible = false;
         var minimize = WindowButton("\uE921", "最小化窗口", owner => owner.Minimize());
         maximizeButton = WindowButton("\uE922", "最大化窗口", _ => ToggleMaximize());
         var close = WindowButton("\uE8BB", "关闭窗口", owner => owner.Close());
-        var windowButtons = ShellComponents.CommandBar(minimize, maximizeButton, close);
+        var windowButtons = new StackPanel().Horizontal().Spacing(0).Children(minimize, maximizeButton, close);
         return ShellComponents.TitleBar(
             brand,
             searchBox.Margin(0, 0, 16, 0),
             summary,
-            new Border().OnMouseDown(_ => BeginDragMove()).OnMouseDoubleClick(_ => ToggleMaximize()),
+            new Border { Background = Color.Transparent }
+                .OnMouseDown(args =>
+                {
+                    if (args.Button != MouseButton.Left) return;
+                    BeginDragMove();
+                    args.Handled = true;
+                })
+                .OnMouseDoubleClick(args =>
+                {
+                    if (args.Button != MouseButton.Left) return;
+                    ToggleMaximize();
+                    args.Handled = true;
+                }),
             windowButtons);
     }
 
     private Button WindowButton(string glyph, string label, Action<Window> action)
     {
-        var button = new Button().Content(glyph).Width(46).Height(48).ToolTip(label).OnClick(() =>
+        var button = new Button().Content(WindowGlyph(glyph)).Width(46).Height(48).ToolTip(label).OnClick(() =>
         {
             if (FindVisualRoot() is Window owner) action(owner);
         });
-        button.FontFamily = "Segoe Fluent Icons";
+        button.Padding = Thickness.Zero;
+        button.HorizontalAlignment = HorizontalAlignment.Center;
+        button.VerticalAlignment = VerticalAlignment.Center;
         return button;
     }
 
@@ -201,8 +229,10 @@ internal sealed class TaskManagerView : UserControl
 
     private static TextBlock WindowGlyph(string glyph)
     {
-        var text = new TextBlock().Text(glyph).CenterVertical();
+        var text = new TextBlock().Text(glyph).FontSize(16).CenterVertical();
         text.FontFamily = "Segoe Fluent Icons";
+        text.HorizontalAlignment = HorizontalAlignment.Center;
+        text.VerticalAlignment = VerticalAlignment.Center;
         return text;
     }
 
@@ -221,10 +251,13 @@ internal sealed class TaskManagerView : UserControl
     private void HandleWindowMouseDown(MouseEventArgs args)
     {
         if (FindVisualRoot() is not Window owner || owner.WindowState == WindowState.Maximized) return;
-        var position = owner.Position;
         var size = owner.ClientSize;
-        var x = args.ScreenPosition.X - position.X;
-        var y = args.ScreenPosition.Y - position.Y;
+        // MouseEventArgs.ScreenPosition is in device pixels while the window
+        // geometry is expressed in DIPs. Convert through the window backend so
+        // resize hit testing remains correct at 125%/150% display scaling.
+        var clientPoint = owner.ScreenToClient(args.ScreenPosition);
+        var x = clientPoint.X;
+        var y = clientPoint.Y;
         const double edge = 8;
         var left = x <= edge;
         var right = x >= size.Width - edge;
@@ -250,13 +283,25 @@ internal sealed class TaskManagerView : UserControl
     {
         navigation = new NavigationList
         {
+            Background = Color.Transparent,
             ItemHeight = 44,
             ItemPadding = new Thickness(12, 0),
             SelectedIndex = 0,
         }
             .Items(
                 NavigationEntries,
-                item => $"{item.Glyph}  {item.Title}",
+                _ => new StackPanel().Horizontal().Spacing(12).CenterVertical().Children(
+                    new TextBlock().FontSize(ThemeFontSize.Medium).CenterVertical(),
+                    new TextBlock().CenterVertical()),
+                (element, item, _, _) =>
+                {
+                    var row = (StackPanel)element;
+                    var icon = (TextBlock)row.Children[0];
+                    var title = (TextBlock)row.Children[1];
+                    icon.Text = item.Glyph;
+                    icon.FontFamily = "Segoe Fluent Icons";
+                    title.Text = item.Title;
+                },
                 _ => NavigationItemKind.Item,
                 item => item.Key)
             .OnSelectionChanged(value =>
@@ -305,14 +350,14 @@ internal sealed class TaskManagerView : UserControl
             OverviewMetric("磁盘", () => Percent(snapshots.Current?.System.DiskActivePercent)),
             OverviewMetric("网络", () => Rate(snapshots.Current?.System.NetworkReceiveBytesPerSecond, snapshots.Current?.System.NetworkSendBytesPerSecond)));
 
-        overviewRecentGrid = new GridView { ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        overviewRecentGrid = new GridView { Background = Color.Transparent, ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         overviewRecentGrid.Columns(
             new GridViewColumn<ProcessHistoryDto>().Header("时间").Width(120).Text(row => row.LastObservedAtUtc.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)),
             new GridViewColumn<ProcessHistoryDto>().Header("事件").Width(150).Text(_ => "进程观测"),
             new GridViewColumn<ProcessHistoryDto>().Header("对象").StarWidth(2, minWidth: 220).Text(row => row.Name),
             new GridViewColumn<ProcessHistoryDto>().Header("详细信息").StarWidth(2, minWidth: 240).Text(row => row.IsRunning ? "运行中" : "已退出"));
 
-        overviewPerformanceGrid = new GridView { ItemsSource = performanceHistoryItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        overviewPerformanceGrid = new GridView { Background = Color.Transparent, ItemsSource = performanceHistoryItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         overviewPerformanceGrid.Columns(
             new GridViewColumn<HistoryPoint>().Header("时间").Width(120).Text(row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)),
             new GridViewColumn<HistoryPoint>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
@@ -324,7 +369,7 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
@@ -336,7 +381,7 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
@@ -348,7 +393,7 @@ internal sealed class TaskManagerView : UserControl
                     })),
                 ShellComponents.DataSurface(overviewRecentGrid)));
 
-        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(
+        return new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(
             new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(metrics, graph, recent));
     }
 
@@ -358,7 +403,7 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
@@ -372,7 +417,7 @@ internal sealed class TaskManagerView : UserControl
         var end = new Button().Content("结束任务").IsEnabled(false).OnClick(() => EndSelected());
         var details = new Button().Content("查看详情").IsEnabled(false);
         var refresh = new Button().Content("刷新").OnClick(Poll);
-        processGrid = new GridView { ItemsSource = processItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 40 };
+        processGrid = new GridView { Background = Color.Transparent, ItemsSource = processItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 40 };
         processGrid.Columns(
             new GridViewColumn<ProcessDto>().Header("名称").StarWidth(3, minWidth: 260).SortBy(row => row.Name, StringComparer.OrdinalIgnoreCase).Text(row => row.Name),
             new GridViewColumn<ProcessDto>().Header("状态").Width(100).Text(row => row.State == "running" ? "运行中" : row.State),
@@ -407,7 +452,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildPerformancePage()
     {
-        performanceGrid = new GridView { ItemsSource = performanceHistoryItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 40 };
+        performanceGrid = new GridView { Background = Color.Transparent, ItemsSource = performanceHistoryItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 40 };
         performanceGrid.Columns(
             new GridViewColumn<HistoryPoint>().Header("采样时间").Width(170).Text(row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss")),
             new GridViewColumn<HistoryPoint>().Header("CPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
@@ -431,7 +476,7 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new Grid().Columns("*, Auto").Children(
@@ -443,13 +488,13 @@ internal sealed class TaskManagerView : UserControl
                     LiveText(() => snapshots.Current is { } point ? point.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss") : "—").FontSize(ThemeFontSize.Small)).Column(1).CenterVertical()));
 
         var history = new Border().BorderThickness(1).CornerRadius(8)
-            .WithTheme((theme, border) => { border.Background(theme.Palette.ControlBackground); border.BorderBrush(theme.Palette.ControlBorder); })
+            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new TextBlock().Text("真实采样历史").FontSize(ThemeFontSize.Medium).SemiBold(),
                 new TextBlock().Text("空表表示尚未取得成功采样；未知指标保留为 —，不会以 0 填充。").FontSize(ThemeFontSize.Small),
                 performanceGrid));
         var right = new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(current, history);
-        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
+        return new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
             new DockPanel().Children(
                 new StackPanel().Vertical().Spacing(4).Children(
                     new TextBlock().Text("性能").FontSize(ThemeFontSize.Medium).SemiBold(),
@@ -464,7 +509,7 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                var alpha = selected ? (byte)250 : (byte)236;
+                var alpha = selected ? ShellTokens.SelectedSurfaceAlpha : ShellTokens.SurfaceAlpha;
                 border.Background = Color.FromArgb(alpha, surface.R, surface.G, surface.B);
                 border.BorderBrush = selected ? theme.Palette.Accent : theme.Palette.ControlBorder;
             })
@@ -478,7 +523,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildHistoryPage()
     {
-        historyGrid = new GridView { ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        historyGrid = new GridView { Background = Color.Transparent, ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         historyGrid.Columns(
             new GridViewColumn<ProcessHistoryDto>().Header("名称").StarWidth(3, minWidth: 260).Text(row => row.Name),
             new GridViewColumn<ProcessHistoryDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
@@ -513,7 +558,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildStartupPage()
     {
-        startupGrid = new GridView { ItemsSource = startupItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        startupGrid = new GridView { Background = Color.Transparent, ItemsSource = startupItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         startupGrid.Columns(
             new GridViewColumn<StartupDto>().Header("名称").StarWidth(2, minWidth: 220).Text(row => row.Name),
             new GridViewColumn<StartupDto>().Header("来源").Width(160).Text(row => row.Source),
@@ -558,7 +603,7 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new StackPanel().Vertical().Spacing(10).Children(
@@ -577,7 +622,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildUsersPage()
     {
-        usersGrid = new GridView { ItemsSource = userItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        usersGrid = new GridView { Background = Color.Transparent, ItemsSource = userItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         usersGrid.Columns(
             new GridViewColumn<UserDto>().Header("用户").StarWidth(2, minWidth: 220).Text(row => row.UserName ?? "未知用户"),
             new GridViewColumn<UserDto>().Header("会话").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.SessionId.ToString(CultureInfo.InvariantCulture)),
@@ -613,7 +658,7 @@ internal sealed class TaskManagerView : UserControl
         var body = new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
             summary,
             ShellComponents.DataSurface(usersGrid));
-        return new Grid().Rows("Auto, *").Children(command, new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(body).Row(1));
+        return new Grid().Rows("Auto, *").Children(command, new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(body).Row(1));
     }
 
     private FrameworkElement UserMetricCard(string title, Func<string> value, string description)
@@ -622,7 +667,7 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new StackPanel().Vertical().Spacing(4).Children(
@@ -634,7 +679,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildDetailsPage()
     {
-        detailGrid = new GridView { ItemsSource = detailItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        detailGrid = new GridView { Background = Color.Transparent, ItemsSource = detailItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         detailGrid.Columns(
             new GridViewColumn<ProcessDto>().Header("名称").StarWidth(2, minWidth: 260).Text(row => row.Name),
             new GridViewColumn<ProcessDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
@@ -664,7 +709,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildServicesPage()
     {
-        serviceGrid = new GridView { ItemsSource = serviceItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        serviceGrid = new GridView { Background = Color.Transparent, ItemsSource = serviceItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         serviceGrid.Columns(
             new GridViewColumn<ServiceDto>().Header("显示名称").StarWidth(2, minWidth: 280).Text(row => row.DisplayName),
             new GridViewColumn<ServiceDto>().Header("服务名").StarWidth(2, minWidth: 240).Text(row => row.Name),
@@ -711,7 +756,7 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new StackPanel().Vertical().Spacing(10).Children(
@@ -768,7 +813,7 @@ internal sealed class TaskManagerView : UserControl
             integrationDisableButton,
             new Button().Content("刷新状态").OnClick(RefreshIntegration));
         var integrationCard = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
-            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground; border.BorderBrush = theme.Palette.ControlBorder; })
+            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new Grid().Columns("*, Auto").Children(
                     new StackPanel().Vertical().Spacing(4).Children(
@@ -791,7 +836,7 @@ internal sealed class TaskManagerView : UserControl
             new Button().Content("打开启动应用").OnClick(() => SelectPage(Array.IndexOf(PageKeys, "startup"))),
             new Button().Content("打开服务").OnClick(() => SelectPage(Array.IndexOf(PageKeys, "services"))));
         var sourceCard = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
-            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground; border.BorderBrush = theme.Palette.ControlBorder; })
+            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new TextBlock().Text("来源与能力").SemiBold(),
                 new TextBlock().Text("数据来自 Windows 原生进程、性能、启动项、SCM 和硬件接口；页面只显示实际可用能力。").FontSize(ThemeFontSize.Small),
@@ -811,7 +856,7 @@ internal sealed class TaskManagerView : UserControl
             SettingGroup("任务管理器入口", "安全读取或恢复本机任务管理器入口，动作按实际权限启用。", integrationCard),
             SettingGroup("版本与更新", "安装版本与更新状态由正式桌面后台服务提供。", updateInfo),
             SettingGroup("来源与能力", "查看真实 Windows 来源和当前采样状态。", sourceCard));
-        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(content);
+        return new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(content);
     }
 
     private FrameworkElement BuildSystemInformationPage()
@@ -844,12 +889,12 @@ internal sealed class TaskManagerView : UserControl
             new Border().Padding(12, 10).BorderThickness(1).CornerRadius(ShellTokens.ControlRadius)
                 .WithTheme((theme, border) =>
                 {
-                    border.Background = theme.Palette.ControlBackground;
+                    border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha);
                     border.BorderBrush = theme.Palette.ControlBorder;
                 })
                 .Child(systemInfoSummary),
             cards);
-        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(
+        return new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(
             new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(command, content));
     }
 
@@ -859,7 +904,7 @@ internal sealed class TaskManagerView : UserControl
             .BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
-                border.Background = theme.Palette.ControlBackground;
+                border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
@@ -1103,7 +1148,7 @@ internal sealed class TaskManagerView : UserControl
     private static string Text<T>(T? value) where T : struct => value?.ToString() ?? "—";
     private static string Text(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
 
-    private static FrameworkElement PageStack(params FrameworkElement[] children) => new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(16).Children(children));
+    private static FrameworkElement PageStack(params FrameworkElement[] children) => new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(16).Children(children));
 
     private static FrameworkElement SettingGroup(string title, string description, params FrameworkElement[] cards)
     {
@@ -1119,7 +1164,7 @@ internal sealed class TaskManagerView : UserControl
         return new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
-                border.Background = theme.Palette.ControlBackground;
+                border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new Grid().Columns("*, Auto").Children(
@@ -1134,7 +1179,7 @@ internal sealed class TaskManagerView : UserControl
     private FrameworkElement MetricRow(string label, Func<string> value)
     {
         return new Border().Padding(16).BorderThickness(1).CornerRadius(8)
-            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground; border.BorderBrush = theme.Palette.ControlBorder; })
+            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
             .Child(new Grid().Columns("*, Auto").Children(new TextBlock().Text(label), LiveText(value).Column(1).SemiBold()));
     }
 

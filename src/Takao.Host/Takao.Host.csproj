@@ -38,7 +38,6 @@
     <AssemblyMetadata Include="SourceCommit" Value="$(TASKMANAGER_SOURCE_COMMIT)" Condition="'$(TASKMANAGER_SOURCE_COMMIT)' != ''" />
     <ProjectReference Include="../Takao.Launcher/Takao.Launcher.csproj" ReferenceOutputAssembly="false" />
     <!-- The native MewUI window is part of this Host process. -->
-    <Content Remove="wwwroot\**\*" />
   </ItemGroup>
   <Target Name="CopyTakaoLauncher" AfterTargets="Build">
     <MSBuild Projects="$(MSBuildThisFileDirectory)..\Takao.Launcher\Takao.Launcher.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework);RuntimeIdentifier=$(RuntimeIdentifier)">

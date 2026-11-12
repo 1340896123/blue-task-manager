@@ -21,7 +21,8 @@ internal static class ShellTokens
     public const double PagePadding = 16;
     public const double ContentGap = 16;
     public const double CardGap = 12;
-    public const double GlassTitleAlpha = 226;
-    public const double GlassSidebarAlpha = 214;
-    public const double SurfaceAlpha = 248;
+    public const byte GlassTitleAlpha = 226;
+    public const byte GlassSidebarAlpha = 214;
+    public const byte SurfaceAlpha = 218;
+    public const byte SelectedSurfaceAlpha = 232;
 }

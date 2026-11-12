@@ -1,25 +1,13 @@
-# Development caches and historical build output
-node_modules/
-dist/
-.vite/
-.electron/
-artifacts/
-coverage/
-test-results/
-playwright-report/
-output/
-src/Takao.Host/wwwroot/
-# Generated files left by a checkout built before the Takao rename.
-src/TaskManager.Host/wwwroot/
-
-# .NET
+# .NET build output and local IDE state
 bin/
 obj/
 .vs/
 *.user
 *.suo
-__pycache__/
-*.pyc
+
+# Local build and release output
+artifacts/
+output/
 
 # Local state and secrets
 .env
@@ -29,5 +17,3 @@ __pycache__/
 *.pid
 .DS_Store
 Thumbs.db
-
-# Keep reviewed acceptance evidence intentionally checked in under docs/evidence.
