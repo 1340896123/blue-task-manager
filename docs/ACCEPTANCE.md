@@ -4,6 +4,18 @@
 
 # Takao 真实链路验收矩阵
 
+## 2026-11-12 MewUI 单进程迁移定向验收
+
+本轮 diff 只影响桌面渲染入口、窗口生命周期、发布脚本和直接受影响的页面接线。按变更范围执行以下检查，不把历史 Qt/Electron 结果挪作当前证据：
+
+| 检查 | 命令 | 结果 |
+|---|---|---|
+| 包锁定与解决方案 Release 构建 | `dotnet restore Takao.sln --locked-mode`；`dotnet build Takao.sln -c Release --no-restore` | PASS，所有项目 0 警告 / 0 错误 |
+| 开发发布目录 | `./scripts/build.ps1 -SkipRestore` | PASS，输出目录包含 `Takao.Host.exe` 与 `Aprillz.MewUI.*.dll` |
+| 单进程入口审查 | `rg "Takao\\.Qt|Qt 6 Widgets|CreateJobObject|StartChild" src/Takao.Host scripts/build.ps1 scripts/publish-desktop.ps1` | PASS，Host 不再创建或等待 UI 子进程 |
+
+当前环境未执行提升后的 1920×1080 物理显示、UAC 安装生命周期和测试专用进程结束链路；没有截图路径可记录。下一次桌面验收应覆盖 MewUI 窗口显示、键盘焦点、真实快照刷新及关闭后端口/进程清理。
+
 本机快照持续流量修复只执行 [LOCAL-SNAPSHOT-TRAFFIC.md](LOCAL-SNAPSHOT-TRAFFIC.md) LT01～LT06：真实投影/压缩/ETag、Qt切页、采样周期与暂停、完整冻结及实际流量对照；不默认执行历史完整N系列或全页回归。结果记 `LOCAL-SNAPSHOT-TRAFFIC-RESULTS.md`。
 
 本轮导航/命令按钮的实际结果见 [统一按钮定向验收](SHELL-BUTTONS-RESULTS.md)：33项原生组件、17项物理检查、六组对比度与三个代表页1080P截图通过；其它尺寸/字号和未触发状态仅审查，不计实测。
