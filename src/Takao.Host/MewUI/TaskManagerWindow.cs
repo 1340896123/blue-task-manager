@@ -71,6 +71,7 @@ internal sealed class TaskManagerView : UserControl
     private GridView? historyGrid;
     private GridView? startupGrid;
     private GridView? usersGrid;
+    private GridView? detailGrid;
     private NavigationList? navigation;
     private TextBox? searchBox;
     private TextBlock? cpuSummary;
@@ -344,15 +345,28 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildDetailsPage()
     {
-        var grid = new GridView { ItemsSource = detailItems, ShowGridLines = false, ZebraStriping = false };
-        grid.Columns(
+        detailGrid = new GridView { ItemsSource = detailItems, ShowGridLines = false, ZebraStriping = false };
+        detailGrid.Columns(
             new GridViewColumn<ProcessDto>().Header("名称").StarWidth(2, minWidth: 260).Text(row => row.Name),
             new GridViewColumn<ProcessDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
+            new GridViewColumn<ProcessDto>().Header("状态").Width(100).Text(row => row.State == "running" ? "运行中" : row.State),
+            new GridViewColumn<ProcessDto>().Header("用户").StarWidth(1, minWidth: 160).Text(row => row.UserName ?? "未知用户"),
+            new GridViewColumn<ProcessDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
+            new GridViewColumn<ProcessDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => Bytes(row.WorkingSetBytes)),
             new GridViewColumn<ProcessDto>().Header("父 PID").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ParentPid.ToString(CultureInfo.InvariantCulture)),
             new GridViewColumn<ProcessDto>().Header("会话").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.SessionId?.ToString(CultureInfo.InvariantCulture) ?? "—"),
             new GridViewColumn<ProcessDto>().Header("优先级").Width(120).Text(row => row.Priority ?? "—"),
+            new GridViewColumn<ProcessDto>().Header("线程").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ThreadCount.ToString(CultureInfo.InvariantCulture)),
+            new GridViewColumn<ProcessDto>().Header("句柄").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.HandleCount?.ToString(CultureInfo.InvariantCulture) ?? "—"),
+            new GridViewColumn<ProcessDto>().Header("网络").Width(130).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
             new GridViewColumn<ProcessDto>().Header("路径").StarWidth(3, minWidth: 360).Text(row => row.Path ?? "不可用"));
-        return PageStack(new TextBlock().Text("详细信息").FontSize(ThemeFontSize.Medium).SemiBold(), LiveText(() => $"真实进程身份：{snapshots.Current?.Processes.Count ?? 0} 条。"), grid);
+        var run = new Button().Content("运行新任务").OnClick(RunTask);
+        var end = new Button().Content("结束任务").IsEnabled(false).OnClick(EndSelected);
+        detailGrid.OnSelectionChanged(value => end.IsEnabled = value is ProcessDto row && row.CanTerminate);
+        var command = new DockPanel().Spacing(8).Children(
+            LiveText(() => $"真实进程身份：{snapshots.Current?.Processes.Count ?? 0} 条。"),
+            new StackPanel().DockRight().Horizontal().Spacing(8).Children(run, end));
+        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(detailGrid));
     }
 
     private FrameworkElement BuildServicesPage()
@@ -600,7 +614,8 @@ internal sealed class TaskManagerView : UserControl
 
     private async void EndSelected()
     {
-        if (processGrid?.SelectedItem is not ProcessDto row || !row.CanTerminate || row.CreationTimeFileTime is not { } creation)
+        var row = processGrid?.SelectedItem as ProcessDto ?? detailGrid?.SelectedItem as ProcessDto;
+        if (row is null || !row.CanTerminate || row.CreationTimeFileTime is not { } creation)
             return;
         var owner = FindVisualRoot() as Window;
         if (owner is null || !await MessageBox.ConfirmAsync(
