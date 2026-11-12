@@ -306,12 +306,7 @@ internal sealed class TaskManagerView : UserControl
         navigation = BuildNavigation(MainNavigationEntries, selectedIndex: 0);
         footerNavigation = BuildNavigation(FooterNavigationEntries, selectedIndex: -1);
 
-        var footer = new StackPanel().Spacing(8).Children(
-            footerNavigation,
-            new StackPanel().Spacing(4).Children(
-                new TextBlock().Text("Takao").FontSize(ThemeFontSize.Small).SemiBold(),
-                new TextBlock().Text("Windows 监控").FontSize(ThemeFontSize.Small)));
-        return ShellComponents.Sidebar(navigation, footer);
+        return ShellComponents.Sidebar(navigation, footerNavigation);
     }
 
     private NavigationList BuildNavigation(IReadOnlyList<NavigationEntry> entries, int selectedIndex)
