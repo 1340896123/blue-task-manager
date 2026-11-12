@@ -11,9 +11,9 @@ internal sealed class TaskManagerWindow : Window
 {
     private readonly TaskManagerView view;
 
-    public TaskManagerWindow(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation)
+    public TaskManagerWindow(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell)
     {
-        view = new TaskManagerView(snapshots, preferences, actions, systemInformation);
+        view = new TaskManagerView(snapshots, preferences, actions, systemInformation, shell);
         Title = "Takao";
         this.Resizable(1100, 720, minWidth: 960, minHeight: 640)
             .ExtendClientAreaTitleBarHeight(48)
@@ -51,6 +51,7 @@ internal sealed class TaskManagerView : UserControl
     private readonly PreferencesService preferences;
     private readonly ProcessActionService actions;
     private readonly SystemInformationService systemInformation;
+    private readonly ShellActionService shell;
     private readonly List<FrameworkElement> pages = [];
     private readonly List<ProcessDto> processRows = [];
     private readonly ItemsView<ProcessDto> processItems;
@@ -67,6 +68,9 @@ internal sealed class TaskManagerView : UserControl
     private readonly ItemsView<ProcessDto> detailItems;
     private GridView? processGrid;
     private GridView? performanceGrid;
+    private GridView? historyGrid;
+    private GridView? startupGrid;
+    private GridView? usersGrid;
     private NavigationList? navigation;
     private TextBox? searchBox;
     private TextBlock? cpuSummary;
@@ -78,15 +82,17 @@ internal sealed class TaskManagerView : UserControl
     private DispatcherTimer? timer;
     private int currentPage;
     private string query = string.Empty;
+    private uint? processSessionFilter;
     private readonly ObservableValue<string> search = new(string.Empty);
     private readonly List<(TextBlock Block, Func<string> Get)> liveText = [];
 
-    public TaskManagerView(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation)
+    public TaskManagerView(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell)
     {
         this.snapshots = snapshots;
         this.preferences = preferences;
         this.actions = actions;
         this.systemInformation = systemInformation;
+        this.shell = shell;
         processItems = ItemsView.Create(processRows, row => row.Name, row => row.Identity);
         historyItems = ItemsView.Create(historyRows, row => row.Name, row => row.Identity);
         startupItems = ItemsView.Create(startupRows, row => row.Name, row => row.Id);
@@ -126,6 +132,7 @@ internal sealed class TaskManagerView : UserControl
             .OnTextChanged(value =>
             {
                 query = value.Trim();
+                processSessionFilter = null;
                 UpdateProcessRows();
             });
         cpuSummary = new TextBlock().Text("CPU —").CenterVertical();
@@ -266,38 +273,73 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildHistoryPage()
     {
-        var grid = new GridView { ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false };
-        grid.Columns(
+        historyGrid = new GridView { ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false };
+        historyGrid.Columns(
             new GridViewColumn<ProcessHistoryDto>().Header("名称").StarWidth(3, minWidth: 260).Text(row => row.Name),
             new GridViewColumn<ProcessHistoryDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
             new GridViewColumn<ProcessHistoryDto>().Header("状态").Width(100).Text(row => row.IsRunning ? "运行中" : "已退出"),
             new GridViewColumn<ProcessHistoryDto>().Header("首次观测").Width(180).Text(row => row.FirstObservedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")),
-            new GridViewColumn<ProcessHistoryDto>().Header("CPU 时间").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ObservedCpuTime100ns ?? "—"));
-        return PageStack(new TextBlock().Text("本次会话应用历史记录").FontSize(ThemeFontSize.Medium).SemiBold(), LiveText(() => $"已观测 {snapshots.Current?.History.Count ?? 0} 个进程身份。"), grid);
+            new GridViewColumn<ProcessHistoryDto>().Header("最后观测").Width(180).Text(row => row.LastObservedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")),
+            new GridViewColumn<ProcessHistoryDto>().Header("CPU 时间").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ObservedCpuTime100ns ?? "—"),
+            new GridViewColumn<ProcessHistoryDto>().Header("I/O 读取").Width(130).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ObservedIoReadBytes ?? "—"),
+            new GridViewColumn<ProcessHistoryDto>().Header("I/O 写入").Width(130).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ObservedIoWriteBytes ?? "—"));
+        var locate = new Button().Content("定位运行进程").IsEnabled(false).OnClick(LocateHistoryProcess);
+        historyGrid.OnSelectionChanged(value => locate.IsEnabled = value is ProcessHistoryDto row && row.IsRunning && FindProcess(row.Identity) is not null);
+        var reset = new Button().Content("清除统计").OnClick(() =>
+        {
+            snapshots.ResetHistory();
+            UpdateOtherRows();
+            statusText!.Text = "本次会话历史已清除。";
+        });
+        var command = new DockPanel().Spacing(8).Children(
+            new StackPanel().Horizontal().Spacing(8).Children(
+                LiveText(() => snapshots.Current is { } current
+                    ? $"会话开始：{current.SessionStartedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss} · 已观测 {current.History.Count.ToString(CultureInfo.InvariantCulture)} 个进程身份"
+                    : "等待 Windows 首次成功采样")),
+            new StackPanel().DockRight().Horizontal().Spacing(8).Children(locate, reset));
+        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(historyGrid));
     }
 
     private FrameworkElement BuildStartupPage()
     {
-        var grid = new GridView { ItemsSource = startupItems, ShowGridLines = false, ZebraStriping = false };
-        grid.Columns(
+        startupGrid = new GridView { ItemsSource = startupItems, ShowGridLines = false, ZebraStriping = false };
+        startupGrid.Columns(
             new GridViewColumn<StartupDto>().Header("名称").StarWidth(2, minWidth: 220).Text(row => row.Name),
             new GridViewColumn<StartupDto>().Header("来源").Width(160).Text(row => row.Source),
             new GridViewColumn<StartupDto>().Header("状态").Width(120).Text(row => row.Enabled is true ? "已启用" : row.Enabled is false ? "已禁用" : "未知"),
-            new GridViewColumn<StartupDto>().Header("命令").StarWidth(3, minWidth: 320).Text(row => row.Command));
-        return PageStack(new TextBlock().Text("启动应用").FontSize(ThemeFontSize.Medium).SemiBold(), LiveText(() => $"Windows Run / RunOnce 与 Startup 文件夹：{snapshots.Current?.StartupItems.Count ?? 0} 项。"), grid);
+            new GridViewColumn<StartupDto>().Header("状态原因").StarWidth(2, minWidth: 220).Text(row => row.EnabledReason),
+            new GridViewColumn<StartupDto>().Header("命令").StarWidth(3, minWidth: 320).Text(row => row.Command),
+            new GridViewColumn<StartupDto>().Header("来源位置").StarWidth(2, minWidth: 240).Text(row => row.LocationPath ?? row.LocationReason ?? "不可用"));
+        var openSource = new Button().Content("打开来源").IsEnabled(false).OnClick(OpenSelectedStartupLocation);
+        startupGrid.OnSelectionChanged(value => openSource.IsEnabled = value is StartupDto row && row.CanOpenLocation);
+        var startupSettings = new Button().Content("启动设置").OnClick(() => OpenSystemLocation("startupSettings"));
+        var userStartup = new Button().Content("用户 Startup").OnClick(() => OpenSystemLocation("userStartup"));
+        var commonStartup = new Button().Content("公共 Startup").OnClick(() => OpenSystemLocation("commonStartup"));
+        var command = new DockPanel().Spacing(8).Children(
+            LiveText(() => $"Windows Run / RunOnce 与 Startup 文件夹：{snapshots.Current?.StartupItems.Count ?? 0} 项。"),
+            new StackPanel().DockRight().Horizontal().Spacing(8).Children(openSource, startupSettings, userStartup, commonStartup));
+        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(startupGrid));
     }
 
     private FrameworkElement BuildUsersPage()
     {
-        var grid = new GridView { ItemsSource = userItems, ShowGridLines = false, ZebraStriping = false };
-        grid.Columns(
+        usersGrid = new GridView { ItemsSource = userItems, ShowGridLines = false, ZebraStriping = false };
+        usersGrid.Columns(
             new GridViewColumn<UserDto>().Header("用户").StarWidth(2, minWidth: 220).Text(row => row.UserName ?? "未知用户"),
             new GridViewColumn<UserDto>().Header("会话").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.SessionId.ToString(CultureInfo.InvariantCulture)),
             new GridViewColumn<UserDto>().Header("状态").Width(140).Text(row => row.State),
             new GridViewColumn<UserDto>().Header("进程").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ProcessCount.ToString(CultureInfo.InvariantCulture)),
             new GridViewColumn<UserDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
-            new GridViewColumn<UserDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => Bytes(row.WorkingSetBytes)));
-        return PageStack(new TextBlock().Text("用户").FontSize(ThemeFontSize.Medium).SemiBold(), LiveText(() => $"当前会话用户：{snapshots.Current?.Users.Count ?? 0} 个。"), grid);
+            new GridViewColumn<UserDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => Bytes(row.WorkingSetBytes)),
+            new GridViewColumn<UserDto>().Header("不可读进程").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => row.UnreadableProcessCount.ToString(CultureInfo.InvariantCulture)));
+        var locate = new Button().Content("查看此会话进程").IsEnabled(false).OnClick(LocateUserProcesses);
+        usersGrid.OnSelectionChanged(value => locate.IsEnabled = value is UserDto);
+        var command = new DockPanel().Spacing(8).Children(
+            LiveText(() => snapshots.Current is { } current
+                ? $"当前会话用户：{current.Users.Count.ToString(CultureInfo.InvariantCulture)} 个 · 采样：{current.CapturedAtUtc.ToLocalTime():HH:mm:ss}"
+                : "等待 Windows 首次成功采样"),
+            new StackPanel().DockRight().Horizontal().Spacing(8).Children(locate));
+        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(usersGrid));
     }
 
     private FrameworkElement BuildDetailsPage()
@@ -430,9 +472,81 @@ internal sealed class TaskManagerView : UserControl
         var current = snapshots.Current;
         if (current is null) return;
         processRows.Clear();
-        processRows.AddRange(string.IsNullOrWhiteSpace(query) ? current.Processes : current.Processes.Where(row => row.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || row.Pid.ToString(CultureInfo.InvariantCulture).Contains(query, StringComparison.OrdinalIgnoreCase) || (row.Publisher?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)));
+        var rows = current.Processes.AsEnumerable();
+        if (processSessionFilter is { } session)
+            rows = rows.Where(row => row.SessionId == session);
+        if (!string.IsNullOrWhiteSpace(query))
+            rows = rows.Where(row => row.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || row.Pid.ToString(CultureInfo.InvariantCulture).Contains(query, StringComparison.OrdinalIgnoreCase) || (row.Publisher?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) || (row.UserName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false));
+        processRows.AddRange(rows);
         processItems.Invalidate();
         detailItems.Invalidate();
+    }
+
+    private ProcessDto? FindProcess(string identity) => snapshots.Current?.Processes.FirstOrDefault(row => row.Identity == identity);
+
+    private void LocateHistoryProcess()
+    {
+        if (historyGrid?.SelectedItem is not ProcessHistoryDto history || !history.IsRunning) return;
+        var process = FindProcess(history.Identity);
+        if (process is null)
+        {
+            statusText!.Text = "该进程已退出或身份已变化，未执行定位。";
+            return;
+        }
+        processSessionFilter = null;
+        query = process.Pid.ToString(CultureInfo.InvariantCulture);
+        if (searchBox is not null) searchBox.Text = query;
+        UpdateProcessRows();
+        SelectPage(0);
+        processGrid!.SelectedItem = processRows.FirstOrDefault(row => row.Identity == process.Identity);
+        if (processGrid.SelectedIndex >= 0) processGrid.ScrollIntoView(processGrid.SelectedIndex);
+        statusText!.Text = $"已定位进程 {process.Name}（PID {process.Pid.ToString(CultureInfo.InvariantCulture)}）。";
+    }
+
+    private async void OpenSelectedStartupLocation()
+    {
+        if (startupGrid?.SelectedItem is not StartupDto row || !row.CanOpenLocation) return;
+        try
+        {
+            statusText!.Text = await shell.StartupLocationAsync(row.Id);
+        }
+        catch (ApiException error)
+        {
+            statusText!.Text = error.Message;
+        }
+    }
+
+    private async void OpenSystemLocation(string location)
+    {
+        try
+        {
+            statusText!.Text = await shell.OpenSystemLocationAsync(location);
+        }
+        catch (ApiException error)
+        {
+            statusText!.Text = error.Message;
+        }
+    }
+
+    private void LocateUserProcesses()
+    {
+        if (usersGrid?.SelectedItem is not UserDto user) return;
+        processSessionFilter = user.SessionId;
+        query = string.Empty;
+        if (searchBox is not null) searchBox.Text = string.Empty;
+        UpdateProcessRows();
+        SelectPage(0);
+        var first = processRows.FirstOrDefault();
+        if (first is not null)
+        {
+            processGrid!.SelectedItem = first;
+            if (processGrid.SelectedIndex >= 0) processGrid.ScrollIntoView(processGrid.SelectedIndex);
+            statusText!.Text = $"已定位会话 {user.SessionId.ToString(CultureInfo.InvariantCulture)} 的进程（{processRows.Count.ToString(CultureInfo.InvariantCulture)} 个）。";
+        }
+        else
+        {
+            statusText!.Text = $"会话 {user.SessionId.ToString(CultureInfo.InvariantCulture)} 当前没有可读进程。";
+        }
     }
 
     private void UpdateOtherRows()
