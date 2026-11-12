@@ -32,8 +32,6 @@ public sealed class DesktopWindowService(PreferencesService preferences) : IAsyn
         }
     }
 
-    public Task OpenAsync(string origin, IHostApplicationLifetime lifetime) => Task.CompletedTask;
-
     public Task ExecuteAsync(string action)
     {
         var current = CurrentWindow();
