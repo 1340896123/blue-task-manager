@@ -719,11 +719,15 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildSettingsPage()
     {
-        var interval = new ComboBox().Items(["1 秒", "2 秒", "5 秒"]).SelectedIndex(preferences.IntervalMs switch { 2000 => 1, 5000 => 2, _ => 0 }).OnSelectionChanged(value =>
+        // Settings follows the WinUI SettingsCard rhythm from the reference:
+        // one readable column, 16px card padding and a constrained control
+        // rail.  Every value is still wired to the existing persisted
+        // preference or real Windows action below.
+        var interval = new ComboBox().Width(240).Items(["1 秒", "2 秒", "5 秒"]).SelectedIndex(preferences.IntervalMs switch { 2000 => 1, 5000 => 2, _ => 0 }).OnSelectionChanged(value =>
         {
             if (value is string text) _ = snapshots.ApplySettings(new SettingsRequest(text.StartsWith("5") ? 5000 : text.StartsWith("2") ? 2000 : 1000, snapshots.Settings.Paused));
         });
-        var theme = new ComboBox().Items(["跟随系统", "浅色", "深色"]).SelectedIndex(preferences.Theme switch { "light" => 1, "dark" => 2, _ => 0 }).OnSelectionChanged(value =>
+        var theme = new ComboBox().Width(240).Items(["跟随系统", "浅色", "深色"]).SelectedIndex(preferences.Theme switch { "light" => 1, "dark" => 2, _ => 0 }).OnSelectionChanged(value =>
         {
             if (value is not string text) return;
             var mode = text switch { "浅色" => "light", "深色" => "dark", _ => "system" };
@@ -739,7 +743,7 @@ internal sealed class TaskManagerView : UserControl
         });
         var pausedState = new ObservableValue<bool>(snapshots.Settings.Paused);
         var paused = new CheckBox().Content("暂停自动刷新").BindIsChecked(pausedState).OnCheckedChanged(value => _ = snapshots.ApplySettings(new SettingsRequest(snapshots.Settings.IntervalMs, value)));
-        var density = new ComboBox().Items(["紧凑", "标准"]).SelectedIndex(preferences.Current.Preferences.Density == "standard" ? 1 : 0).OnSelectionChanged(value =>
+        var density = new ComboBox().Width(240).Items(["紧凑", "标准"]).SelectedIndex(preferences.Current.Preferences.Density == "standard" ? 1 : 0).OnSelectionChanged(value =>
         {
             if (value is string text) SaveUiPreferences(ui => ui with { Density = text == "标准" ? "standard" : "compact" });
         });
@@ -753,22 +757,51 @@ internal sealed class TaskManagerView : UserControl
             integrationEnableButton,
             integrationDisableButton,
             new Button().Content("刷新状态").OnClick(RefreshIntegration));
-        var integrationRow = new Border().Padding(16).BorderThickness(1).CornerRadius(8)
+        var integrationCard = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground; border.BorderBrush = theme.Palette.ControlBorder; })
-            .Child(new StackPanel().Spacing(8).Children(
-                new TextBlock().Text("任务管理器入口").SemiBold(),
-                new TextBlock().Text("只读显示真实IFEO状态；写入需要管理员权限并在执行前重新确认版本。").FontSize(ThemeFontSize.Small),
-                integrationSummary,
-                integrationControls));
-        return PageStack(new TextBlock().Text("设置").FontSize(ThemeFontSize.Medium).SemiBold(),
-            SettingRow("采样间隔", "控制真实 Windows 采样频率。", interval),
-            SettingRow("密度", "保存紧凑或标准数据行密度。", density),
-            SettingRow("主题", "选择浅色、深色或跟随 Windows 系统设置。", theme),
-            SettingRow("刷新状态", "暂停时保留最后成功快照并标注状态。", paused),
-            SettingRow("侧栏", "折叠后保留导航图标和键盘语义。", sidebarCollapsed),
-            SettingRow("窗口", "通过 Windows 读回当前置顶状态。", alwaysOnTop),
-            integrationRow,
-            new TextBlock().Text("Takao 1.1.1 · MewUI Win32 + Direct2D · 真实 Windows 采样、SCM、启动项与硬件来源。未知值保留原因，不以0填充。").FontSize(ThemeFontSize.Small));
+            .Child(new StackPanel().Vertical().Spacing(8).Children(
+                new Grid().Columns("*, Auto").Children(
+                    new StackPanel().Vertical().Spacing(4).Children(
+                        new TextBlock().Text("任务管理器入口").SemiBold(),
+                        new TextBlock().Text("只读显示真实 IFEO 状态；写入需要管理员权限并在执行前重新确认版本。").FontSize(ThemeFontSize.Small)),
+                    integrationControls.Column(1).CenterVertical()),
+                integrationSummary));
+
+        var version = typeof(TaskManagerWindow).Assembly.GetName().Version?.ToString() ?? "版本信息不可用";
+        var updateInfo = SettingCard("当前版本", $"Takao {version} · MewUI Win32 + Direct2D。正式桌面后台服务负责检查、下载和安装。", new TextBlock().Text("已安装").FontSize(ThemeFontSize.Small));
+
+        var sourceStatus = LiveText(() => snapshots.Current is null
+            ? "正在预热 Windows 原生采样；尚未取得可展示的快照。"
+            : snapshots.Settings.Paused
+                ? $"已暂停，保留最后成功快照（{snapshots.Current.CapturedAtUtc.ToLocalTime():HH:mm:ss}）。"
+                : $"最近成功采样 {snapshots.Current.CapturedAtUtc.ToLocalTime():HH:mm:ss}；未知字段保留原因。")
+            .FontSize(ThemeFontSize.Small);
+        var sourceLinks = new StackPanel().Horizontal().Spacing(8).Children(
+            new Button().Content("打开系统信息").OnClick(() => SelectPage(Array.IndexOf(PageKeys, "systemInformation"))),
+            new Button().Content("打开启动应用").OnClick(() => SelectPage(Array.IndexOf(PageKeys, "startup"))),
+            new Button().Content("打开服务").OnClick(() => SelectPage(Array.IndexOf(PageKeys, "services"))));
+        var sourceCard = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground; border.BorderBrush = theme.Palette.ControlBorder; })
+            .Child(new StackPanel().Vertical().Spacing(8).Children(
+                new TextBlock().Text("来源与能力").SemiBold(),
+                new TextBlock().Text("数据来自 Windows 原生进程、性能、启动项、SCM 和硬件接口；页面只显示实际可用能力。").FontSize(ThemeFontSize.Small),
+                sourceStatus,
+                sourceLinks));
+
+        var content = new StackPanel().Vertical().Spacing(24).Children(
+            new TextBlock().Text("设置").FontSize(ThemeFontSize.Large).SemiBold(),
+            SettingGroup("采样与显示", "控制实时采样和数据行的阅读密度。",
+                SettingCard("采样间隔", "控制真实 Windows 采样频率。", interval),
+                SettingCard("暂停采样", "暂停时保留最后成功快照，并在页头标注暂停状态。", paused)),
+            SettingGroup("外观与窗口", "调整界面层级和窗口行为；保存后立即生效。",
+                SettingCard("密度", "保存紧凑或标准数据行密度。", density),
+                SettingCard("主题", "选择浅色、深色或跟随 Windows 系统设置。", theme),
+                SettingCard("侧栏", "折叠后保留导航图标和键盘语义。", sidebarCollapsed),
+                SettingCard("窗口", "通过 Windows 读回当前置顶状态。", alwaysOnTop)),
+            SettingGroup("任务管理器入口", "安全读取或恢复本机任务管理器入口，动作按实际权限启用。", integrationCard),
+            SettingGroup("版本与更新", "安装版本与更新状态由正式桌面后台服务提供。", updateInfo),
+            SettingGroup("来源与能力", "查看真实 Windows 来源和当前采样状态。", sourceCard));
+        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(content);
     }
 
     private FrameworkElement BuildSystemInformationPage()
@@ -949,7 +982,31 @@ internal sealed class TaskManagerView : UserControl
 
     private static FrameworkElement PageStack(params FrameworkElement[] children) => new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(16).Children(children));
 
-    private static FrameworkElement SettingRow(string title, string description, FrameworkElement control) => new Border().Padding(16).BorderThickness(1).CornerRadius(8).WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground; border.BorderBrush = theme.Palette.ControlBorder; }).Child(new Grid().Columns("*, Auto").Children(new StackPanel().Spacing(4).Children(new TextBlock().Text(title).SemiBold(), new TextBlock().Text(description).FontSize(ThemeFontSize.Small)), control.Column(1).CenterVertical()));
+    private static FrameworkElement SettingGroup(string title, string description, params FrameworkElement[] cards)
+    {
+        return new StackPanel().Vertical().Spacing(8).Children(
+            new StackPanel().Vertical().Spacing(2).Children(
+                new TextBlock().Text(title).FontSize(ThemeFontSize.Medium).SemiBold(),
+                new TextBlock().Text(description).FontSize(ThemeFontSize.Small)),
+            new StackPanel().Vertical().Spacing(4).Children(cards));
+    }
+
+    private static FrameworkElement SettingCard(string title, string description, FrameworkElement control)
+    {
+        return new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                border.Background = theme.Palette.ControlBackground;
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new Grid().Columns("*, Auto").Children(
+                new StackPanel().Vertical().Spacing(4).Children(
+                    new TextBlock().Text(title).SemiBold(),
+                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small)),
+                control.Column(1).CenterVertical()));
+    }
+
+    private static FrameworkElement SettingRow(string title, string description, FrameworkElement control) => SettingCard(title, description, control);
 
     private FrameworkElement MetricRow(string label, Func<string> value)
     {
