@@ -397,7 +397,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildPerformancePage()
     {
-        performanceGrid = new GridView { ItemsSource = performanceHistoryItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 36 };
+        performanceGrid = new GridView { ItemsSource = performanceHistoryItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 40 };
         performanceGrid.Columns(
             new GridViewColumn<HistoryPoint>().Header("采样时间").Width(170).Text(row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss")),
             new GridViewColumn<HistoryPoint>().Header("CPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
@@ -406,15 +406,31 @@ internal sealed class TaskManagerView : UserControl
             new GridViewColumn<HistoryPoint>().Header("磁盘读 / 写").Width(150).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(SumKnown(row.PhysicalDisks.Select(item => item.ReadBytesPerSecond)), SumKnown(row.PhysicalDisks.Select(item => item.WriteBytesPerSecond)))),
             new GridViewColumn<HistoryPoint>().Header("GPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.GpuPercent)));
 
-        var resources = new StackPanel().Vertical().Spacing(8).Children(
-            MetricRow("CPU 使用率", () => snapshots.Current?.System.CpuPercent is { } cpu ? Percent(cpu) : "预热中 / 不可用"),
-            MetricRow("物理内存", MemorySummary),
-            MetricRow("网络适配器", NetworkSummary),
-            MetricRow("物理磁盘", DiskSummary),
-            MetricRow("GPU", GpuSummary),
-            MetricRow("逻辑处理器 / 进程", ProcessSummary),
-            MetricRow("采样时间", () => snapshots.Current is { } current ? current.CapturedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") : "等待 Windows 首次成功采样"),
-            LiveText(() => snapshots.Current is null ? "Windows 采样正在预热；不会补写历史点。" : snapshots.Settings.Paused ? "已暂停：保留最后成功快照，恢复后继续追加真实采样点。" : $"历史点 {snapshots.Current.PerformanceHistory.Count.ToString(CultureInfo.InvariantCulture)} / 120，来自本次成功采样。"));
+        // The reference keeps a narrow resource rail and one selected resource
+        // surface.  Each card is populated from the current Windows snapshot;
+        // absent values stay unknown instead of being replaced with demo data.
+        var resources = new StackPanel().Vertical().Spacing(ShellTokens.CardGap).Children(
+            PerformanceResourceCard("CPU", "总体使用率", () => snapshots.Current?.System.CpuPercent is { } cpu ? Percent(cpu) : "预热中 / 不可用", true),
+            PerformanceResourceCard("内存", "物理内存", MemorySummary, false),
+            PerformanceResourceCard("网络", "网络适配器", NetworkSummary, false),
+            PerformanceResourceCard("磁盘", "物理磁盘", DiskSummary, false),
+            PerformanceResourceCard("GPU", "图形处理器", GpuSummary, false),
+            PerformanceResourceCard("进程", "逻辑处理器 / 进程", ProcessSummary, false));
+
+        var current = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                var surface = theme.Palette.ControlBackground;
+                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new Grid().Columns("*, Auto").Children(
+                new StackPanel().Vertical().Spacing(4).Children(
+                    new TextBlock().Text("CPU").FontSize(ThemeFontSize.Large).SemiBold(),
+                    new TextBlock().Text("总体使用率 · 来自最近一次成功采样").FontSize(ThemeFontSize.Small)),
+                new StackPanel().Vertical().Spacing(2).Children(
+                    LiveText(() => Percent(snapshots.Current?.System.CpuPercent)).FontSize(ThemeFontSize.Large).SemiBold(),
+                    LiveText(() => snapshots.Current is { } point ? point.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss") : "—").FontSize(ThemeFontSize.Small)).Column(1).CenterVertical()));
 
         var history = new Border().BorderThickness(1).CornerRadius(8)
             .WithTheme((theme, border) => { border.Background(theme.Palette.ControlBackground); border.BorderBrush(theme.Palette.ControlBorder); })
@@ -422,9 +438,32 @@ internal sealed class TaskManagerView : UserControl
                 new TextBlock().Text("真实采样历史").FontSize(ThemeFontSize.Medium).SemiBold(),
                 new TextBlock().Text("空表表示尚未取得成功采样；未知指标保留为 —，不会以 0 填充。").FontSize(ThemeFontSize.Small),
                 performanceGrid));
-        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(16).Children(
-            new TextBlock().Text("系统资源").FontSize(ThemeFontSize.Medium).SemiBold(),
-            new Grid().Columns("300, *").Children(resources, history.Column(1))));
+        var right = new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(current, history);
+        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
+            new DockPanel().Children(
+                new StackPanel().Vertical().Spacing(4).Children(
+                    new TextBlock().Text("性能").FontSize(ThemeFontSize.Medium).SemiBold(),
+                    new TextBlock().Text("选择资源查看真实 Windows 采样历史和设备事实").FontSize(ThemeFontSize.Small)),
+                LiveText(() => snapshots.Current is null ? "预热中" : snapshots.Settings.Paused ? "已暂停" : "实时").DockRight().CenterVertical()),
+            new Grid().Columns("240, *").Children(resources, right.Column(1).Margin(ShellTokens.ContentGap, 0, 0, 0))));
+    }
+
+    private FrameworkElement PerformanceResourceCard(string glyph, string title, Func<string> value, bool selected)
+    {
+        var card = new Border().Padding(12).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                var surface = theme.Palette.ControlBackground;
+                var alpha = selected ? (byte)250 : (byte)236;
+                border.Background = Color.FromArgb(alpha, surface.R, surface.G, surface.B);
+                border.BorderBrush = selected ? theme.Palette.Accent : theme.Palette.ControlBorder;
+            })
+            .Child(new Grid().Columns("28, *").Children(
+                new TextBlock().Text(glyph).FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical(),
+                new StackPanel().Vertical().Spacing(2).Children(
+                    new TextBlock().Text(title).SemiBold(),
+                    LiveText(value).FontSize(ThemeFontSize.Small)) .Column(1).Margin(8, 0, 0, 0)));
+        return card;
     }
 
     private FrameworkElement BuildHistoryPage()
