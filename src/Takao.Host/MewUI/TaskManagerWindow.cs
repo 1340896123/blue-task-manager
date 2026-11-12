@@ -90,6 +90,13 @@ internal sealed class TaskManagerView : UserControl
     private TextBlock? statusText;
     private TextBlock? pageTitle;
     private TextBlock? systemInfoSummary;
+    private TextBlock? systemInfoProcessors;
+    private TextBlock? systemInfoGraphics;
+    private TextBlock? systemInfoMotherboard;
+    private TextBlock? systemInfoMemory;
+    private TextBlock? systemInfoDisks;
+    private TextBlock? systemInfoDisplays;
+    private TextBlock? systemInfoWindows;
     private Button? systemInfoCopyButton;
     private string systemInformationClipboard = string.Empty;
     private TextBlock? integrationSummary;
@@ -806,14 +813,57 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildSystemInformationPage()
     {
-        systemInfoSummary = new TextBlock().Text("正在读取 Windows 硬件概览…");
+        systemInfoSummary = new TextBlock().Text("正在读取 Windows 硬件概览…").FontSize(ThemeFontSize.Small);
+        systemInfoProcessors = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
+        systemInfoGraphics = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
+        systemInfoMotherboard = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
+        systemInfoMemory = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
+        systemInfoDisks = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
+        systemInfoDisplays = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
+        systemInfoWindows = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
         var refresh = new Button().Content("刷新硬件信息").OnClick(() => _ = RefreshSystemInformation(true));
         systemInfoCopyButton = new Button().Content("复制").IsEnabled(false).OnClick(CopySystemInformation);
-        return PageStack(new TextBlock().Text("系统信息").FontSize(ThemeFontSize.Medium).SemiBold(),
-            new TextBlock().Text("硬件概览由 Windows 原生接口按需读取，不参与实时采样。"),
-            new StackPanel().Horizontal().Spacing(8).Children(refresh, systemInfoCopyButton),
-            systemInfoSummary,
-            LiveText(() => snapshots.Current is { } current ? $"当前采样时间：{current.CapturedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}" : "当前采样时间：—"));
+        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+            new StackPanel().Vertical().Spacing(4).Children(
+                new TextBlock().Text("系统信息").SemiBold(),
+                new TextBlock().Text("硬件概览由 Windows 原生接口按需读取，不参与实时采样。").FontSize(ThemeFontSize.Small)),
+            ShellComponents.CommandBar(refresh, systemInfoCopyButton).DockRight());
+
+        var cards = new Grid().Columns("*, *").Rows("Auto, Auto, Auto, Auto").Children(
+            SystemInfoCard("处理器", "CPU、核心和逻辑处理器", systemInfoProcessors!).Row(0).Column(0),
+            SystemInfoCard("显卡", "真实图形适配器与显存", systemInfoGraphics!).Row(0).Column(1),
+            SystemInfoCard("主板", "主板制造商、产品与版本", systemInfoMotherboard!).Row(1).Column(0),
+            SystemInfoCard("内存", "容量、模块与配置速度", systemInfoMemory!).Row(1).Column(1),
+            SystemInfoCard("磁盘", "型号、介质、总线与容量", systemInfoDisks!).Row(2).Column(0),
+            SystemInfoCard("显示器", "分辨率、刷新率与物理尺寸", systemInfoDisplays!).Row(2).Column(1),
+            SystemInfoCard("Windows", "系统版本与架构", systemInfoWindows!).Row(3).ColumnSpan(2));
+        var content = new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
+            new Border().Padding(12, 10).BorderThickness(1).CornerRadius(ShellTokens.ControlRadius)
+                .WithTheme((theme, border) =>
+                {
+                    border.Background = theme.Palette.ControlBackground;
+                    border.BorderBrush = theme.Palette.ControlBorder;
+                })
+                .Child(systemInfoSummary),
+            cards);
+        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(
+            new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(command, content));
+    }
+
+    private static FrameworkElement SystemInfoCard(string title, string description, TextBlock details)
+    {
+        return new Border().Padding(16).Margin(0, 0, ShellTokens.CardGap, ShellTokens.CardGap)
+            .BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                border.Background = theme.Palette.ControlBackground;
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new StackPanel().Vertical().Spacing(8).Children(
+                new StackPanel().Vertical().Spacing(2).Children(
+                    new TextBlock().Text(title).FontSize(ThemeFontSize.Medium).SemiBold(),
+                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small)),
+                details));
     }
 
     private async Task RefreshSystemInformation(bool refresh)
@@ -823,7 +873,14 @@ internal sealed class TaskManagerView : UserControl
             var info = await systemInformation.ReadAsync(refresh, CancellationToken.None);
             if (systemInfoSummary is null) return;
             systemInformationClipboard = FormatSystemInformation(info);
-            systemInfoSummary.Text = systemInformationClipboard;
+            systemInfoSummary.Text = $"状态：{SystemInformationStatus(info.Status)} · 采集时间：{FormatCaptureTime(info.CapturedAtUtc)}";
+            if (systemInfoProcessors is not null) systemInfoProcessors.Text = FormatProcessors(info);
+            if (systemInfoGraphics is not null) systemInfoGraphics.Text = FormatGraphics(info);
+            if (systemInfoMotherboard is not null) systemInfoMotherboard.Text = FormatMotherboard(info);
+            if (systemInfoMemory is not null) systemInfoMemory.Text = FormatMemory(info);
+            if (systemInfoDisks is not null) systemInfoDisks.Text = FormatDisks(info);
+            if (systemInfoDisplays is not null) systemInfoDisplays.Text = FormatDisplays(info);
+            if (systemInfoWindows is not null) systemInfoWindows.Text = FormatWindows(info);
             if (systemInfoCopyButton is not null) systemInfoCopyButton.IsEnabled = info.Status is not "loading";
         }
         catch (Exception error) when (error is not OutOfMemoryException)
@@ -975,6 +1032,69 @@ internal sealed class TaskManagerView : UserControl
             lines.Add($"  {Text(display.Name)} · {Text(display.WidthPixels)}×{Text(display.HeightPixels)} · {Text(display.RefreshRateHz)} Hz");
         lines.Add($"Windows\n  {Text(info.OperatingSystem.Caption)} · {Text(info.OperatingSystem.DisplayVersion)} · Build {Text(info.OperatingSystem.Build)} · {Text(info.OperatingSystem.Architecture)}");
         return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string SystemInformationStatus(string status) => status switch
+    {
+        "ok" => "已读取",
+        "loading" => "正在预热",
+        "unavailable" => "不可用",
+        _ => status,
+    };
+
+    private static string FormatCaptureTime(DateTime? capturedAtUtc)
+        => capturedAtUtc is { } captured
+            ? captured.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+            : "—（尚未取得成功读取）";
+
+    private static string FormatProcessors(SystemInformationDto info)
+    {
+        if (info.Processors.Count == 0) return UnavailableSummary(info.Unavailable, "处理器");
+        return string.Join(Environment.NewLine, info.Processors.Select(cpu =>
+            $"{Text(cpu.Name)}\n制造商：{Text(cpu.Manufacturer)} · 核心：{Text(cpu.CoreCount)} · 逻辑处理器：{Text(cpu.LogicalProcessorCount)}"));
+    }
+
+    private static string FormatGraphics(SystemInformationDto info)
+    {
+        if (info.GraphicsAdapters.Count == 0) return UnavailableSummary(info.Unavailable, "显卡");
+        return string.Join(Environment.NewLine, info.GraphicsAdapters.Select(gpu =>
+            $"{Text(gpu.Name)}\n显存：{Text(gpu.DedicatedMemoryBytes)} · {(gpu.IsSoftware ? "软件适配器" : "硬件适配器")}"));
+    }
+
+    private static string FormatMotherboard(SystemInformationDto info)
+        => $"制造商：{Text(info.Motherboard.Manufacturer)}\n产品：{Text(info.Motherboard.Product)}\n版本：{Text(info.Motherboard.Version)}";
+
+    private static string FormatMemory(SystemInformationDto info)
+    {
+        var header = $"已安装：{Text(info.Memory.InstalledBytes)} · 模块：{Text(info.Memory.ModuleCount)}";
+        if (info.Memory.Modules.Count == 0) return header;
+        var modules = info.Memory.Modules.Select(module =>
+            $"{Text(module.DeviceLocator)} · {Text(module.Manufacturer)} · {Text(module.CapacityBytes)} · {Text(module.ConfiguredSpeedMtPerSecond ?? module.SpeedMtPerSecond)} MT/s");
+        return header + Environment.NewLine + string.Join(Environment.NewLine, modules);
+    }
+
+    private static string FormatDisks(SystemInformationDto info)
+    {
+        if (info.Disks.Count == 0) return UnavailableSummary(info.Unavailable, "磁盘");
+        return string.Join(Environment.NewLine, info.Disks.Select(disk =>
+            $"{Text(disk.Model)} · {Text(disk.MediaType)} · {Text(disk.BusType)}\n容量：{Text(disk.CapacityBytes)} · 设备号：{Text(disk.DeviceNumber)}"));
+    }
+
+    private static string FormatDisplays(SystemInformationDto info)
+    {
+        if (info.Displays.Count == 0) return UnavailableSummary(info.Unavailable, "显示器");
+        return string.Join(Environment.NewLine, info.Displays.Select(display =>
+            $"{Text(display.Name)}\n{Text(display.WidthPixels)} × {Text(display.HeightPixels)} · {Text(display.RefreshRateHz)} Hz · {Text(display.WidthMillimeters)} × {Text(display.HeightMillimeters)} mm"));
+    }
+
+    private static string FormatWindows(SystemInformationDto info)
+        => $"{Text(info.OperatingSystem.Caption)} · {Text(info.OperatingSystem.DisplayVersion)}\nBuild：{Text(info.OperatingSystem.Build)} · 架构：{Text(info.OperatingSystem.Architecture)}";
+
+    private static string UnavailableSummary(IReadOnlyDictionary<string, Unavailable> reasons, string label)
+    {
+        if (reasons.Count == 0) return $"{label}：—（尚未取得成功读取）";
+        var reason = reasons.Values.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Message));
+        return $"{label}：—\n{reason?.Message ?? "Windows 未提供该字段。"}";
     }
 
     private static string Text<T>(T? value) where T : struct => value?.ToString() ?? "—";
@@ -1354,3 +1474,4 @@ internal sealed class TaskManagerView : UserControl
         return Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
     }
 }
+
