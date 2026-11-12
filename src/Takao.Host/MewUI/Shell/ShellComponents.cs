@@ -31,9 +31,9 @@ internal static class ShellComponents
             .WithTheme((theme, border) =>
             {
                 border.Background = Color.FromArgb(theme.IsDark ? (byte)222 : (byte)232,
-                    theme.Palette.WindowBackground.R,
-                    theme.Palette.WindowBackground.G,
-                    theme.Palette.WindowBackground.B);
+                    theme.IsDark ? (byte)30 : (byte)224,
+                    theme.IsDark ? (byte)34 : (byte)241,
+                    theme.IsDark ? (byte)42 : (byte)252);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new Grid().Columns("204, Auto, Auto, *, Auto").Children(
@@ -52,9 +52,9 @@ internal static class ShellComponents
             .WithTheme((theme, border) =>
             {
                 border.Background = Color.FromArgb(theme.IsDark ? (byte)222 : (byte)232,
-                    theme.Palette.WindowBackground.R,
-                    theme.Palette.WindowBackground.G,
-                    theme.Palette.WindowBackground.B);
+                    theme.IsDark ? (byte)30 : (byte)219,
+                    theme.IsDark ? (byte)34 : (byte)237,
+                    theme.IsDark ? (byte)42 : (byte)250);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(new DockPanel().Spacing(8).Children(footer.DockBottom(), navigation));
@@ -76,7 +76,10 @@ internal static class ShellComponents
             .CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
-                border.Background = theme.Palette.ControlBackground;
+                // Data remains opaque enough for reliable contrast while the
+                // outer shell carries the acrylic tint from the reference.
+                var surface = theme.Palette.ControlBackground;
+                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
                 border.BorderBrush = theme.Palette.ControlBorder;
             })
             .Child(content);

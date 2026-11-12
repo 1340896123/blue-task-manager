@@ -15,4 +15,13 @@ internal static class ShellTokens
     public const double PageHeaderHeight = 56;
     public const double PanelRadius = 8;
     public const double ControlRadius = 4;
+
+    // Shared Fluent glass geometry.  Keep all pages on the same rhythm so
+    // reference screenshots do not drift as page-specific content changes.
+    public const double PagePadding = 16;
+    public const double ContentGap = 16;
+    public const double CardGap = 12;
+    public const double GlassTitleAlpha = 226;
+    public const double GlassSidebarAlpha = 214;
+    public const double SurfaceAlpha = 248;
 }

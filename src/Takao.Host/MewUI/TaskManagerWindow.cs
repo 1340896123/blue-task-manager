@@ -36,10 +36,11 @@ internal sealed class TaskManagerView : UserControl
 {
     private sealed record NavigationEntry(string Key, string Title, string Glyph);
 
-    private static readonly string[] PageKeys = ["processes", "performance", "history", "startup", "users", "details", "services", "settings", "systemInformation"];
-    private static readonly string[] PageTitles = ["进程", "性能", "应用历史记录", "启动应用", "用户", "详细信息", "服务", "设置", "系统信息"];
+    private static readonly string[] PageKeys = ["overview", "processes", "performance", "history", "startup", "users", "details", "services", "settings", "systemInformation"];
+    private static readonly string[] PageTitles = ["总览", "进程", "性能", "应用历史记录", "启动应用", "用户", "详细信息", "服务", "设置", "系统信息"];
     private static readonly IReadOnlyList<NavigationEntry> NavigationEntries =
     [
+        new("overview", "总览", "\uE80F"),
         new("processes", "进程", "\uE7F4"),
         new("performance", "性能", "\uE9D9"),
         new("history", "应用历史记录", "\uE81C"),
@@ -79,6 +80,8 @@ internal sealed class TaskManagerView : UserControl
     private GridView? usersGrid;
     private GridView? detailGrid;
     private GridView? serviceGrid;
+    private GridView? overviewRecentGrid;
+    private GridView? overviewPerformanceGrid;
     private NavigationList? navigation;
     private TextBox? searchBox;
     private TextBlock? cpuSummary;
@@ -264,6 +267,7 @@ internal sealed class TaskManagerView : UserControl
     private FrameworkElement BuildContent()
     {
         pages.Clear();
+        pages.Add(BuildOverviewPage());
         pages.Add(BuildProcessesPage());
         pages.Add(BuildPerformancePage());
         pages.Add(BuildHistoryPage());
@@ -280,6 +284,76 @@ internal sealed class TaskManagerView : UserControl
             ShellComponents.PageHeader(pageTitle!).Row(0),
             new Border().Row(1).Padding(16).Child(new Grid().Children(pages.ToArray())));
         return body;
+    }
+
+    private FrameworkElement BuildOverviewPage()
+    {
+        // The overview uses only values from the current Windows snapshot.  It
+        // deliberately keeps the compact card/graph/activity hierarchy from
+        // the reference while avoiding demo values when the collector warms up.
+        var metrics = new Grid().Columns("*, *, *, *, *").Children(
+            OverviewMetric("CPU", () => Percent(snapshots.Current?.System.CpuPercent)),
+            OverviewMetric("内存", () => Percent(snapshots.Current?.System.MemoryPercent)),
+            OverviewMetric("进程", () => snapshots.Current?.System.ProcessCount.ToString(CultureInfo.InvariantCulture) ?? "—"),
+            OverviewMetric("磁盘", () => Percent(snapshots.Current?.System.DiskActivePercent)),
+            OverviewMetric("网络", () => Rate(snapshots.Current?.System.NetworkReceiveBytesPerSecond, snapshots.Current?.System.NetworkSendBytesPerSecond)));
+
+        overviewRecentGrid = new GridView { ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        overviewRecentGrid.Columns(
+            new GridViewColumn<ProcessHistoryDto>().Header("时间").Width(120).Text(row => row.LastObservedAtUtc.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)),
+            new GridViewColumn<ProcessHistoryDto>().Header("事件").Width(150).Text(_ => "进程观测"),
+            new GridViewColumn<ProcessHistoryDto>().Header("对象").StarWidth(2, minWidth: 220).Text(row => row.Name),
+            new GridViewColumn<ProcessHistoryDto>().Header("详细信息").StarWidth(2, minWidth: 240).Text(row => row.IsRunning ? "运行中" : "已退出"));
+
+        overviewPerformanceGrid = new GridView { ItemsSource = performanceHistoryItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        overviewPerformanceGrid.Columns(
+            new GridViewColumn<HistoryPoint>().Header("时间").Width(120).Text(row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)),
+            new GridViewColumn<HistoryPoint>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
+            new GridViewColumn<HistoryPoint>().Header("内存").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.MemoryPercent)),
+            new GridViewColumn<HistoryPoint>().Header("网络").StarWidth(1, minWidth: 160).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
+            new GridViewColumn<HistoryPoint>().Header("磁盘").StarWidth(1, minWidth: 160).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(SumKnown(row.PhysicalDisks.Select(item => item.ReadBytesPerSecond)), SumKnown(row.PhysicalDisks.Select(item => item.WriteBytesPerSecond)))));
+
+        var graph = new Border().BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                var surface = theme.Palette.ControlBackground;
+                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new StackPanel().Vertical().Spacing(8).Children(
+                new TextBlock().Text("系统资源使用情况（最近 60 秒）").FontSize(ThemeFontSize.Medium).SemiBold(),
+                new TextBlock().Text("蓝色数值与历史表均来自真实 Windows 采样；预热或不可用指标显示为 —。" ).FontSize(ThemeFontSize.Small),
+                ShellComponents.DataSurface(overviewPerformanceGrid)));
+
+        var recent = new Border().BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                var surface = theme.Palette.ControlBackground;
+                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new StackPanel().Vertical().Spacing(8).Children(
+                new DockPanel().Children(
+                    new TextBlock().Text("最近活动").FontSize(ThemeFontSize.Medium).SemiBold(),
+                    new TextBlock().Text("查看全部 →").DockRight().FontSize(ThemeFontSize.Small)),
+                ShellComponents.DataSurface(overviewRecentGrid)));
+
+        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(
+            new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(metrics, graph, recent));
+    }
+
+    private FrameworkElement OverviewMetric(string label, Func<string> value)
+    {
+        return new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                var surface = theme.Palette.ControlBackground;
+                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new StackPanel().Vertical().Spacing(8).Children(
+                new TextBlock().Text(label).FontSize(ThemeFontSize.Small),
+                LiveText(value).FontSize(ThemeFontSize.Medium).SemiBold()));
     }
 
     private FrameworkElement BuildProcessesPage()
@@ -764,7 +838,7 @@ internal sealed class TaskManagerView : UserControl
         query = process.Pid.ToString(CultureInfo.InvariantCulture);
         if (searchBox is not null) searchBox.Text = query;
         UpdateProcessRows();
-        SelectPage(0);
+        SelectPage(Array.IndexOf(PageKeys, "processes"));
         processGrid!.SelectedItem = processRows.FirstOrDefault(row => row.Identity == process.Identity);
         if (processGrid.SelectedIndex >= 0) processGrid.ScrollIntoView(processGrid.SelectedIndex);
         statusText!.Text = $"已定位进程 {process.Name}（PID {process.Pid.ToString(CultureInfo.InvariantCulture)}）。";
@@ -868,7 +942,7 @@ internal sealed class TaskManagerView : UserControl
         query = string.Empty;
         if (searchBox is not null) searchBox.Text = string.Empty;
         UpdateProcessRows();
-        SelectPage(0);
+        SelectPage(Array.IndexOf(PageKeys, "processes"));
         var first = processRows.FirstOrDefault();
         if (first is not null)
         {
