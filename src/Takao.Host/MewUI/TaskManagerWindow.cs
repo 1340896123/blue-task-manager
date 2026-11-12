@@ -567,7 +567,7 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildUsersPage()
     {
-        usersGrid = new GridView { ItemsSource = userItems, ShowGridLines = false, ZebraStriping = false };
+        usersGrid = new GridView { ItemsSource = userItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         usersGrid.Columns(
             new GridViewColumn<UserDto>().Header("用户").StarWidth(2, minWidth: 220).Text(row => row.UserName ?? "未知用户"),
             new GridViewColumn<UserDto>().Header("会话").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.SessionId.ToString(CultureInfo.InvariantCulture)),
@@ -578,12 +578,48 @@ internal sealed class TaskManagerView : UserControl
             new GridViewColumn<UserDto>().Header("不可读进程").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => row.UnreadableProcessCount.ToString(CultureInfo.InvariantCulture)));
         var locate = new Button().Content("查看此会话进程").IsEnabled(false).OnClick(LocateUserProcesses);
         usersGrid.OnSelectionChanged(value => locate.IsEnabled = value is UserDto);
-        var command = new DockPanel().Spacing(8).Children(
-            LiveText(() => snapshots.Current is { } current
-                ? $"当前会话用户：{current.Users.Count.ToString(CultureInfo.InvariantCulture)} 个 · 采样：{current.CapturedAtUtc.ToLocalTime():HH:mm:ss}"
-                : "等待 Windows 首次成功采样"),
-            new StackPanel().DockRight().Horizontal().Spacing(8).Children(locate));
-        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(usersGrid).Row(1));
+        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+            new StackPanel().Vertical().Spacing(4).Children(
+                new TextBlock().Text("用户").SemiBold(),
+                LiveText(() => snapshots.Current is { } current
+                    ? $"Windows 登录会话 · {current.CapturedAtUtc.ToLocalTime():HH:mm:ss}"
+                    : "等待 Windows 首次成功采样").FontSize(ThemeFontSize.Small)),
+            ShellComponents.CommandBar(locate).DockRight());
+
+        // The reference uses two quiet summary cards above the table. Keep their values
+        // tied to the same user aggregation that feeds the grid so the summary cannot
+        // drift from the rows, and preserve an explicit unknown state before sampling.
+        var summary = new StackPanel().Horizontal().Spacing(ShellTokens.ContentGap).Children(
+            UserMetricCard("登录会话", () => snapshots.Current is { } current
+                ? current.Users.Count.ToString(CultureInfo.InvariantCulture)
+                : "—", "来自当前 Windows 快照"),
+            UserMetricCard("进程", () => snapshots.Current is { } current
+                ? current.Users.Sum(user => user.ProcessCount).ToString(CultureInfo.InvariantCulture)
+                : "—", "按可确定归属聚合"),
+            UserMetricCard("不可读归属", () => snapshots.Current is { } current
+                ? current.Users.Sum(user => user.UnreadableProcessCount).ToString(CultureInfo.InvariantCulture)
+                : "—", "保留原因，不分配给用户"));
+
+        var body = new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
+            summary,
+            ShellComponents.DataSurface(usersGrid));
+        return new Grid().Rows("Auto, *").Children(command, new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(body).Row(1));
+    }
+
+    private FrameworkElement UserMetricCard(string title, Func<string> value, string description)
+    {
+        var card = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                var surface = theme.Palette.ControlBackground;
+                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new StackPanel().Vertical().Spacing(4).Children(
+                new TextBlock().Text(title).FontSize(ThemeFontSize.Small),
+                LiveText(value).FontSize(ThemeFontSize.Large).SemiBold(),
+                new TextBlock().Text(description).FontSize(ThemeFontSize.Small)));
+        return card.Width(220);
     }
 
     private FrameworkElement BuildDetailsPage()
