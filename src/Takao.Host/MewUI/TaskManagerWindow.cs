@@ -62,8 +62,11 @@ internal sealed class TaskManagerView : UserControl
     private readonly ItemsView<UserDto> userItems;
     private readonly List<ServiceDto> serviceRows = [];
     private readonly ItemsView<ServiceDto> serviceItems;
+    private readonly List<HistoryPoint> performanceHistoryRows = [];
+    private readonly ItemsView<HistoryPoint> performanceHistoryItems;
     private readonly ItemsView<ProcessDto> detailItems;
     private GridView? processGrid;
+    private GridView? performanceGrid;
     private NavigationList? navigation;
     private TextBox? searchBox;
     private TextBlock? cpuSummary;
@@ -89,6 +92,7 @@ internal sealed class TaskManagerView : UserControl
         startupItems = ItemsView.Create(startupRows, row => row.Name, row => row.Id);
         userItems = ItemsView.Create(userRows, row => row.UserName ?? row.StationName, row => row.SessionId);
         serviceItems = ItemsView.Create(serviceRows, row => row.DisplayName, row => row.Name);
+        performanceHistoryItems = ItemsView.Create(performanceHistoryRows, row => row.CapturedAtUtc.ToString("O", CultureInfo.InvariantCulture), row => row.CapturedAtUtc);
         detailItems = ItemsView.Create(processRows, row => row.Name, row => row.Identity);
         Build();
     }
@@ -230,13 +234,34 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildPerformancePage()
     {
-        return PageStack(
+        performanceGrid = new GridView { ItemsSource = performanceHistoryItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 36 };
+        performanceGrid.Columns(
+            new GridViewColumn<HistoryPoint>().Header("采样时间").Width(170).Text(row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss")),
+            new GridViewColumn<HistoryPoint>().Header("CPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
+            new GridViewColumn<HistoryPoint>().Header("内存").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.MemoryPercent)),
+            new GridViewColumn<HistoryPoint>().Header("网络收 / 发").Width(150).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
+            new GridViewColumn<HistoryPoint>().Header("磁盘读 / 写").Width(150).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(SumKnown(row.PhysicalDisks.Select(item => item.ReadBytesPerSecond)), SumKnown(row.PhysicalDisks.Select(item => item.WriteBytesPerSecond)))),
+            new GridViewColumn<HistoryPoint>().Header("GPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.GpuPercent)));
+
+        var resources = new StackPanel().Vertical().Spacing(8).Children(
+            MetricRow("CPU 使用率", () => snapshots.Current?.System.CpuPercent is { } cpu ? Percent(cpu) : "预热中 / 不可用"),
+            MetricRow("物理内存", MemorySummary),
+            MetricRow("网络适配器", NetworkSummary),
+            MetricRow("物理磁盘", DiskSummary),
+            MetricRow("GPU", GpuSummary),
+            MetricRow("逻辑处理器 / 进程", ProcessSummary),
+            MetricRow("采样时间", () => snapshots.Current is { } current ? current.CapturedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") : "等待 Windows 首次成功采样"),
+            LiveText(() => snapshots.Current is null ? "Windows 采样正在预热；不会补写历史点。" : snapshots.Settings.Paused ? "已暂停：保留最后成功快照，恢复后继续追加真实采样点。" : $"历史点 {snapshots.Current.PerformanceHistory.Count.ToString(CultureInfo.InvariantCulture)} / 120，来自本次成功采样。"));
+
+        var history = new Border().BorderThickness(1).CornerRadius(8)
+            .WithTheme((theme, border) => { border.Background(theme.Palette.ControlBackground); border.BorderBrush(theme.Palette.ControlBorder); })
+            .Child(new StackPanel().Vertical().Spacing(8).Children(
+                new TextBlock().Text("真实采样历史").FontSize(ThemeFontSize.Medium).SemiBold(),
+                new TextBlock().Text("空表表示尚未取得成功采样；未知指标保留为 —，不会以 0 填充。").FontSize(ThemeFontSize.Small),
+                performanceGrid));
+        return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(16).Children(
             new TextBlock().Text("系统资源").FontSize(ThemeFontSize.Medium).SemiBold(),
-            MetricRow("CPU 使用率", () => snapshots.Current?.System.CpuPercent is { } cpu ? Percent(cpu) : "—"),
-            MetricRow("物理内存", () => snapshots.Current?.System.MemoryPercent is { } memory ? Percent(memory) : "—"),
-            MetricRow("网络接收 / 发送", () => Rate(snapshots.Current?.System.NetworkReceiveBytesPerSecond, snapshots.Current?.System.NetworkSendBytesPerSecond)),
-            MetricRow("磁盘读取 / 写入", () => Rate(snapshots.Current?.System.DiskReadBytesPerSecond, snapshots.Current?.System.DiskWriteBytesPerSecond)),
-            new TextBlock().Text("曲线使用 Windows 真实成功采样点；首次采样或来源不可用时保留‘—’。").FontSize(ThemeFontSize.Small));
+            new Grid().Columns("300, *").Children(resources, history.Column(1))));
     }
 
     private FrameworkElement BuildHistoryPage()
@@ -418,6 +443,7 @@ internal sealed class TaskManagerView : UserControl
         startupRows.Clear(); startupRows.AddRange(current.StartupItems); startupItems.Invalidate();
         userRows.Clear(); userRows.AddRange(current.Users); userItems.Invalidate();
         serviceRows.Clear(); serviceRows.AddRange(current.Services); serviceItems.Invalidate();
+        performanceHistoryRows.Clear(); performanceHistoryRows.AddRange(current.PerformanceHistory); performanceHistoryItems.Invalidate();
     }
 
     private async void RunTask()
@@ -488,6 +514,44 @@ internal sealed class TaskManagerView : UserControl
         return current is null
             ? "进程表：等待 Windows 首次成功采样"
             : $"进程 {current.System.ProcessCount.ToString(CultureInfo.InvariantCulture)} · CPU {Percent(current.System.CpuPercent)} · 内存 {Percent(current.System.MemoryPercent)} · 网络 {Rate(current.System.NetworkReceiveBytesPerSecond, current.System.NetworkSendBytesPerSecond)}";
+    }
+
+    private string MemorySummary()
+    {
+        var system = snapshots.Current?.System;
+        if (system is null) return "等待 Windows 首次成功采样";
+        var used = Bytes(system.UsedPhysicalBytes);
+        var total = Bytes(system.TotalPhysicalBytes);
+        return $"{used} / {total}（{Percent(system.MemoryPercent)}）";
+    }
+
+    private string NetworkSummary()
+    {
+        var current = snapshots.Current;
+        if (current is null) return "等待 Windows 首次成功采样";
+        return $"{current.System.NetworkInterfaceCount.ToString(CultureInfo.InvariantCulture)} 个 · {Rate(current.System.NetworkReceiveBytesPerSecond, current.System.NetworkSendBytesPerSecond)}";
+    }
+
+    private string DiskSummary()
+    {
+        var current = snapshots.Current;
+        if (current is null) return "等待 Windows 首次成功采样";
+        var identity = current.PhysicalDisks.Count == 0 ? "不可用" : string.Join("、", current.PhysicalDisks.Take(3).Select(row => row.Name));
+        return $"{current.PhysicalDisks.Count.ToString(CultureInfo.InvariantCulture)} 个 · {Rate(current.System.DiskReadBytesPerSecond, current.System.DiskWriteBytesPerSecond)}\n{identity}";
+    }
+
+    private string GpuSummary()
+    {
+        var current = snapshots.Current;
+        if (current is null) return "等待 Windows 首次成功采样";
+        var names = current.GpuAdapters.Count == 0 ? "不可用" : string.Join("、", current.GpuAdapters.Take(3).Select(row => row.Description ?? row.Id));
+        return $"{current.GpuAdapters.Count.ToString(CultureInfo.InvariantCulture)} 个 · {Percent(current.System.GpuPercent)}\n{names}";
+    }
+
+    private static double? SumKnown(IEnumerable<double?> values)
+    {
+        var known = values.Where(value => value is { } number && double.IsFinite(number)).Select(value => value!.Value).ToArray();
+        return known.Length == 0 ? null : known.Sum();
     }
 
     private static string FormatBytes(double bytes)
