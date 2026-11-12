@@ -39,6 +39,21 @@
     <ProjectReference Include="../Takao.Launcher/Takao.Launcher.csproj" ReferenceOutputAssembly="false" />
     <!-- The native MewUI window is part of this Host process. -->
   </ItemGroup>
+  <ItemGroup>
+    <!-- Keep the UI font beside the published app so installation does not depend on a system font. -->
+    <Content Include="../../assets/fonts/HarmonyOS_Sans_SC_Regular.ttf">
+      <Link>fonts/HarmonyOS_Sans_SC_Regular.ttf</Link>
+      <TargetPath>fonts/HarmonyOS_Sans_SC_Regular.ttf</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+    <Content Include="../../assets/fonts/HarmonyOS-Sans-LICENSE.txt">
+      <Link>licenses/HarmonyOS-Sans-LICENSE.txt</Link>
+      <TargetPath>licenses/HarmonyOS-Sans-LICENSE.txt</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
   <Target Name="CopyTakaoLauncher" AfterTargets="Build">
     <MSBuild Projects="$(MSBuildThisFileDirectory)..\Takao.Launcher\Takao.Launcher.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework);RuntimeIdentifier=$(RuntimeIdentifier)">
       <Output TaskParameter="TargetOutputs" ItemName="_TakaoLauncherTargetPath" />

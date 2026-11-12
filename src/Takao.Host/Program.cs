@@ -71,6 +71,7 @@ app.UseMiddleware<LocalAccessMiddleware>();
 app.UseResponseCompression();
 app.MapControllers();
 var shutdownCompleted = false;
+FontResource? appFont = null;
 try
 {
     // Start listening before the native MewUI window is shown. Headless callers
@@ -80,6 +81,8 @@ try
     {
         Win32Platform.Register();
         Direct2DBackend.Register();
+        appFont = AppTypography.Load();
+        AppTypography.Apply(appFont);
         var window = new TaskManagerWindow(app.Services.GetRequiredService<SnapshotService>(), preferences,
             app.Services.GetRequiredService<ProcessActionService>(), app.Services.GetRequiredService<SystemInformationService>(),
             app.Services.GetRequiredService<ShellActionService>(), app.Services.GetRequiredService<ServiceActionService>(),
@@ -127,6 +130,7 @@ catch (Exception error)
 }
 finally
 {
+    appFont?.Dispose();
     await desktop.DisposeAsync();
     if (!shutdownCompleted) await app.StopAsync();
     await app.DisposeAsync();

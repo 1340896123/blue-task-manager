@@ -40,15 +40,14 @@ internal static class ShellComponents
             })
             .Child(new Grid().Columns("204, *, Auto, Auto").Children(
                 brand,
-                search.Column(1),
+                // Keep the drag target beside the input instead of spanning
+                // over it. TextBox hit testing and keyboard focus then remain
+                // completely independent from window dragging.
+                new Grid().Columns("Auto, *").Children(
+                    search,
+                    dragRegion.Column(1)).Column(1),
                 summary.Column(2),
-                windowButtons.Column(3),
-                // The hit-test pass visits children in declaration order, so
-                // keep the drag surface last to leave controls clickable.
-                // It spans the title area so blank space, the brand and the
-                // summary can all start a native drag; the star column then
-                // shrinks the search field cleanly at the minimum width.
-                dragRegion.Column(0).ColumnSpan(4)));
+                windowButtons.Column(3)));
     }
 
     public static FrameworkElement Sidebar(FrameworkElement navigation, FrameworkElement footer)

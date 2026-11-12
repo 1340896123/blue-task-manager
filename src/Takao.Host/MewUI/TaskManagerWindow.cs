@@ -56,6 +56,10 @@ internal sealed class TaskManagerView : UserControl
         new("settings", "设置", "\uE713"),
         new("systemInformation", "系统信息", "\uE950")
     ];
+    private static readonly NavigationEntry[] MainNavigationEntries =
+        NavigationEntries.Where(item => item.Key != "settings").ToArray();
+    private static readonly NavigationEntry[] FooterNavigationEntries =
+        NavigationEntries.Where(item => item.Key == "settings").ToArray();
     private readonly SnapshotService snapshots;
     private readonly PreferencesService preferences;
     private readonly ProcessActionService actions;
@@ -88,6 +92,7 @@ internal sealed class TaskManagerView : UserControl
     private GridView? overviewRecentGrid;
     private GridView? overviewPerformanceGrid;
     private NavigationList? navigation;
+    private NavigationList? footerNavigation;
     private TextBox? searchBox;
     private TextBlock? cpuSummary;
     private TextBlock? memorySummary;
@@ -156,9 +161,11 @@ internal sealed class TaskManagerView : UserControl
     {
         searchBox = new TextBox
         {
+            Width = 300,
             MinWidth = 240,
             MaxWidth = 480,
             Height = 36,
+            VerticalAlignment = VerticalAlignment.Center,
         }
             .Placeholder("搜索名称、PID 或发布者")
             .BindText(search)
@@ -176,13 +183,12 @@ internal sealed class TaskManagerView : UserControl
 
         var brand = new StackPanel().Horizontal().Spacing(8).Width(204).Children(
             new TextBlock().Text("▣").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical(),
-            new TextBlock().Text("Takao").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical());
-        statusText.MaxWidth = 144;
-        var summary = new StackPanel().Horizontal().Spacing(12).Children(cpuSummary, memorySummary, processSummary, statusText);
-        // These are title-bar content, not interactive controls. Let the
-        // transparent drag surface receive their mouse-down events.
-        brand.IsHitTestVisible = false;
-        summary.IsHitTestVisible = false;
+            new TextBlock().Text("Takao").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical())
+            .OnMouseDown(HandleTitleBarMouseDown)
+            .OnMouseDoubleClick(HandleTitleBarDoubleClick);
+        var summary = new StackPanel().Horizontal().Spacing(12).Children(cpuSummary, memorySummary, processSummary)
+            .OnMouseDown(HandleTitleBarMouseDown)
+            .OnMouseDoubleClick(HandleTitleBarDoubleClick);
         var minimize = WindowButton("\uE921", "最小化窗口", owner => owner.Minimize());
         maximizeButton = WindowButton("\uE922", "最大化窗口", _ => ToggleMaximize());
         var close = WindowButton("\uE8BB", "关闭窗口", owner => owner.Close());
@@ -213,7 +219,9 @@ internal sealed class TaskManagerView : UserControl
         {
             if (FindVisualRoot() is Window owner) action(owner);
         });
+        button.StyleName = BuiltInStyles.FlatButton;
         button.Padding = Thickness.Zero;
+        button.CornerRadius = 0;
         button.HorizontalAlignment = HorizontalAlignment.Center;
         button.VerticalAlignment = VerticalAlignment.Center;
         return button;
@@ -239,6 +247,20 @@ internal sealed class TaskManagerView : UserControl
     private void BeginDragMove()
     {
         if (FindVisualRoot() is Window owner) owner.DragMove();
+    }
+
+    private void HandleTitleBarMouseDown(MouseEventArgs args)
+    {
+        if (args.Button != MouseButton.Left) return;
+        BeginDragMove();
+        args.Handled = true;
+    }
+
+    private void HandleTitleBarDoubleClick(MouseEventArgs args)
+    {
+        if (args.Button != MouseButton.Left) return;
+        ToggleMaximize();
+        args.Handled = true;
     }
 
     private void ToggleMaximize()
@@ -281,15 +303,29 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildSidebar()
     {
-        navigation = new NavigationList
+        navigation = BuildNavigation(MainNavigationEntries, selectedIndex: 0);
+        footerNavigation = BuildNavigation(FooterNavigationEntries, selectedIndex: -1);
+
+        var footer = new StackPanel().Spacing(8).Children(
+            footerNavigation,
+            new StackPanel().Spacing(4).Children(
+                new TextBlock().Text("Takao").FontSize(ThemeFontSize.Small).SemiBold(),
+                new TextBlock().Text("Windows 监控").FontSize(ThemeFontSize.Small)));
+        return ShellComponents.Sidebar(navigation, footer);
+    }
+
+    private NavigationList BuildNavigation(IReadOnlyList<NavigationEntry> entries, int selectedIndex)
+    {
+        return new NavigationList
         {
             Background = Color.Transparent,
-            ItemHeight = 44,
+            ItemHeight = ShellTokens.NavigationItemHeight,
             ItemPadding = new Thickness(12, 0),
-            SelectedIndex = 0,
+            SelectedIndex = selectedIndex,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
         }
             .Items(
-                NavigationEntries,
+                entries,
                 _ => new StackPanel().Horizontal().Spacing(12).CenterVertical().Children(
                     new TextBlock().FontSize(ThemeFontSize.Medium).CenterVertical(),
                     new TextBlock().CenterVertical()),
@@ -310,10 +346,6 @@ internal sealed class TaskManagerView : UserControl
                 var index = Array.IndexOf(PageKeys, entry.Key);
                 if (index >= 0) SelectPage(index);
             });
-        var footer = new StackPanel().Spacing(4).Children(
-            new TextBlock().Text("Takao").FontSize(ThemeFontSize.Small).SemiBold(),
-            new TextBlock().Text("Windows 监控").FontSize(ThemeFontSize.Small));
-        return ShellComponents.Sidebar(navigation, footer);
     }
 
     private FrameworkElement BuildContent()
@@ -350,14 +382,32 @@ internal sealed class TaskManagerView : UserControl
             OverviewMetric("磁盘", () => Percent(snapshots.Current?.System.DiskActivePercent)),
             OverviewMetric("网络", () => Rate(snapshots.Current?.System.NetworkReceiveBytesPerSecond, snapshots.Current?.System.NetworkSendBytesPerSecond)));
 
-        overviewRecentGrid = new GridView { Background = Color.Transparent, ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        overviewRecentGrid = new GridView
+        {
+            Background = Color.Transparent,
+            ItemsSource = historyItems,
+            ShowGridLines = false,
+            ZebraStriping = false,
+            HeaderHeight = 40,
+            RowHeight = 40,
+            CellPadding = new Thickness(8, 4),
+        };
         overviewRecentGrid.Columns(
             new GridViewColumn<ProcessHistoryDto>().Header("时间").Width(120).Text(row => row.LastObservedAtUtc.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)),
             new GridViewColumn<ProcessHistoryDto>().Header("事件").Width(150).Text(_ => "进程观测"),
             new GridViewColumn<ProcessHistoryDto>().Header("对象").StarWidth(2, minWidth: 220).Text(row => row.Name),
             new GridViewColumn<ProcessHistoryDto>().Header("详细信息").StarWidth(2, minWidth: 240).Text(row => row.IsRunning ? "运行中" : "已退出"));
 
-        overviewPerformanceGrid = new GridView { Background = Color.Transparent, ItemsSource = performanceHistoryItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        overviewPerformanceGrid = new GridView
+        {
+            Background = Color.Transparent,
+            ItemsSource = performanceHistoryItems,
+            ShowGridLines = false,
+            ZebraStriping = false,
+            HeaderHeight = 40,
+            RowHeight = 40,
+            CellPadding = new Thickness(8, 4),
+        };
         overviewPerformanceGrid.Columns(
             new GridViewColumn<HistoryPoint>().Header("时间").Width(120).Text(row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)),
             new GridViewColumn<HistoryPoint>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
@@ -365,7 +415,7 @@ internal sealed class TaskManagerView : UserControl
             new GridViewColumn<HistoryPoint>().Header("网络").StarWidth(1, minWidth: 160).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
             new GridViewColumn<HistoryPoint>().Header("磁盘").StarWidth(1, minWidth: 160).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(SumKnown(row.PhysicalDisks.Select(item => item.ReadBytesPerSecond)), SumKnown(row.PhysicalDisks.Select(item => item.WriteBytesPerSecond)))));
 
-        var graph = new Border().BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        var graph = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
@@ -374,10 +424,10 @@ internal sealed class TaskManagerView : UserControl
             })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new TextBlock().Text("系统资源使用情况（最近 60 秒）").FontSize(ThemeFontSize.Medium).SemiBold(),
-                new TextBlock().Text("蓝色数值与历史表均来自真实 Windows 采样；预热或不可用指标显示为 —。" ).FontSize(ThemeFontSize.Small),
+                new TextBlock().Text("蓝色数值与历史表均来自真实 Windows 采样；预热或不可用指标显示为 —。" ).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap),
                 ShellComponents.DataSurface(overviewPerformanceGrid)));
 
-        var recent = new Border().BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        var recent = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
@@ -417,7 +467,16 @@ internal sealed class TaskManagerView : UserControl
         var end = new Button().Content("结束任务").IsEnabled(false).OnClick(() => EndSelected());
         var details = new Button().Content("查看详情").IsEnabled(false);
         var refresh = new Button().Content("刷新").OnClick(Poll);
-        processGrid = new GridView { Background = Color.Transparent, ItemsSource = processItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 40 };
+        processGrid = new GridView
+        {
+            Background = Color.Transparent,
+            ItemsSource = processItems,
+            ZebraStriping = false,
+            ShowGridLines = false,
+            HeaderHeight = 40,
+            RowHeight = 40,
+            CellPadding = new Thickness(8, 4),
+        };
         processGrid.Columns(
             new GridViewColumn<ProcessDto>().Header("名称").StarWidth(3, minWidth: 260).SortBy(row => row.Name, StringComparer.OrdinalIgnoreCase).Text(row => row.Name),
             new GridViewColumn<ProcessDto>().Header("状态").Width(100).Text(row => row.State == "running" ? "运行中" : row.State),
@@ -443,7 +502,7 @@ internal sealed class TaskManagerView : UserControl
         // The global search box lives in the title bar. Keep the page command
         // row limited to actions so a MewUI element never has two parents.
         var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
-            new StackPanel().Horizontal().Spacing(8).Children(
+            new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text("运行中的进程").SemiBold(),
                 LiveText(ProcessSummary).FontSize(ThemeFontSize.Small)),
             ShellComponents.CommandBar(run, details, end, refresh).DockRight());
@@ -452,7 +511,16 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildPerformancePage()
     {
-        performanceGrid = new GridView { Background = Color.Transparent, ItemsSource = performanceHistoryItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 40 };
+        performanceGrid = new GridView
+        {
+            Background = Color.Transparent,
+            ItemsSource = performanceHistoryItems,
+            ZebraStriping = false,
+            ShowGridLines = false,
+            HeaderHeight = 40,
+            RowHeight = 40,
+            CellPadding = new Thickness(8, 4),
+        };
         performanceGrid.Columns(
             new GridViewColumn<HistoryPoint>().Header("采样时间").Width(170).Text(row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss")),
             new GridViewColumn<HistoryPoint>().Header("CPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
@@ -523,7 +591,19 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildHistoryPage()
     {
-        historyGrid = new GridView { Background = Color.Transparent, ItemsSource = historyItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        historyGrid = new GridView
+        {
+            Background = Color.Transparent,
+            ItemsSource = historyItems,
+            ShowGridLines = false,
+            ZebraStriping = false,
+            HeaderHeight = 40,
+            // Keep the fixed row viewport tall enough for the platform font's
+            // full ascent/descent at non-100% display scaling.  The default
+            // 28 DIP row clips the lower portions of CJK glyphs and bold text.
+            RowHeight = 40,
+            CellPadding = new Thickness(8, 4),
+        };
         historyGrid.Columns(
             new GridViewColumn<ProcessHistoryDto>().Header("名称").StarWidth(3, minWidth: 260).Text(row => row.Name),
             new GridViewColumn<ProcessHistoryDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
@@ -552,13 +632,22 @@ internal sealed class TaskManagerView : UserControl
             ? "正在等待 Windows 首次成功采样；历史记录会在成功采样后出现。"
             : historyRows.Count == 0
                 ? "本次会话尚无历史记录。清除统计后会保留新的真实采样。"
-                : "历史数据来自本次会话的真实 Windows 采样。未知字段保留原因，不以 0 填充.").FontSize(ThemeFontSize.Small);
+                : "历史数据来自本次会话的真实 Windows 采样。未知字段保留原因，不以 0 填充.").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
         return new Grid().Rows("Auto, Auto, *").Children(command, emptyHint.Row(1), ShellComponents.DataSurface(historyGrid).Row(2));
     }
 
     private FrameworkElement BuildStartupPage()
     {
-        startupGrid = new GridView { Background = Color.Transparent, ItemsSource = startupItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        startupGrid = new GridView
+        {
+            Background = Color.Transparent,
+            ItemsSource = startupItems,
+            ShowGridLines = false,
+            ZebraStriping = false,
+            HeaderHeight = 40,
+            RowHeight = 40,
+            CellPadding = new Thickness(8, 4),
+        };
         startupGrid.Columns(
             new GridViewColumn<StartupDto>().Header("名称").StarWidth(2, minWidth: 220).Text(row => row.Name),
             new GridViewColumn<StartupDto>().Header("来源").Width(160).Text(row => row.Source),
@@ -568,10 +657,10 @@ internal sealed class TaskManagerView : UserControl
             new GridViewColumn<StartupDto>().Header("来源位置").StarWidth(2, minWidth: 240).Text(row => row.LocationPath ?? row.LocationReason ?? "不可用"));
         var openSource = new Button().Content("打开来源").IsEnabled(false).OnClick(OpenSelectedStartupLocation);
         var detailsTitle = new TextBlock().Text("选择启动项").FontSize(ThemeFontSize.Medium).SemiBold();
-        var detailsStatus = new TextBlock().Text("从列表选择一个真实 Windows 启动项。").FontSize(ThemeFontSize.Small);
-        var detailsSource = new TextBlock().Text("来源：—").FontSize(ThemeFontSize.Small);
-        var detailsCommand = new TextBlock().Text("命令：—").FontSize(ThemeFontSize.Small);
-        var detailsLocation = new TextBlock().Text("位置：—").FontSize(ThemeFontSize.Small);
+        var detailsStatus = new TextBlock().Text("从列表选择一个真实 Windows 启动项。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
+        var detailsSource = new TextBlock().Text("来源：—").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
+        var detailsCommand = new TextBlock().Text("命令：—").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
+        var detailsLocation = new TextBlock().Text("位置：—").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
         startupGrid.OnSelectionChanged(value =>
         {
             openSource.IsEnabled = value is StartupDto row && row.CanOpenLocation;
@@ -622,7 +711,16 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildUsersPage()
     {
-        usersGrid = new GridView { Background = Color.Transparent, ItemsSource = userItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        usersGrid = new GridView
+        {
+            Background = Color.Transparent,
+            ItemsSource = userItems,
+            ShowGridLines = false,
+            ZebraStriping = false,
+            HeaderHeight = 40,
+            RowHeight = 40,
+            CellPadding = new Thickness(8, 4),
+        };
         usersGrid.Columns(
             new GridViewColumn<UserDto>().Header("用户").StarWidth(2, minWidth: 220).Text(row => row.UserName ?? "未知用户"),
             new GridViewColumn<UserDto>().Header("会话").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.SessionId.ToString(CultureInfo.InvariantCulture)),
@@ -679,7 +777,16 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildDetailsPage()
     {
-        detailGrid = new GridView { Background = Color.Transparent, ItemsSource = detailItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        detailGrid = new GridView
+        {
+            Background = Color.Transparent,
+            ItemsSource = detailItems,
+            ShowGridLines = false,
+            ZebraStriping = false,
+            HeaderHeight = 40,
+            RowHeight = 40,
+            CellPadding = new Thickness(8, 4),
+        };
         detailGrid.Columns(
             new GridViewColumn<ProcessDto>().Header("名称").StarWidth(2, minWidth: 260).Text(row => row.Name),
             new GridViewColumn<ProcessDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
@@ -709,7 +816,16 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildServicesPage()
     {
-        serviceGrid = new GridView { Background = Color.Transparent, ItemsSource = serviceItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
+        serviceGrid = new GridView
+        {
+            Background = Color.Transparent,
+            ItemsSource = serviceItems,
+            ShowGridLines = false,
+            ZebraStriping = false,
+            HeaderHeight = 40,
+            RowHeight = 40,
+            CellPadding = new Thickness(8, 4),
+        };
         serviceGrid.Columns(
             new GridViewColumn<ServiceDto>().Header("显示名称").StarWidth(2, minWidth: 280).Text(row => row.DisplayName),
             new GridViewColumn<ServiceDto>().Header("服务名").StarWidth(2, minWidth: 240).Text(row => row.Name),
@@ -721,9 +837,9 @@ internal sealed class TaskManagerView : UserControl
         var details = new Button().Content("服务详情").IsEnabled(false).OnClick(ShowServiceDetails);
         var manager = new Button().Content("服务管理器").OnClick(() => _ = OpenServiceManager());
         var detailsTitle = new TextBlock().Text("选择服务").FontSize(ThemeFontSize.Medium).SemiBold();
-        var detailsStatus = new TextBlock().Text("从列表选择一个真实 Windows 服务。").FontSize(ThemeFontSize.Small);
-        var detailsName = new TextBlock().Text("服务名：—").FontSize(ThemeFontSize.Small);
-        var detailsPid = new TextBlock().Text("PID：—").FontSize(ThemeFontSize.Small);
+        var detailsStatus = new TextBlock().Text("从列表选择一个真实 Windows 服务。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
+        var detailsName = new TextBlock().Text("服务名：—").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
+        var detailsPid = new TextBlock().Text("PID：—").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
         serviceGrid.OnSelectionChanged(value =>
         {
             var row = value as ServiceDto;
@@ -765,7 +881,7 @@ internal sealed class TaskManagerView : UserControl
                 new Border().BorderThickness(new Thickness(0, 0, 0, 1)).WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder),
                 detailsName,
                 detailsPid,
-                new TextBlock().Text("动作只通过 Windows SCM 执行；权限或 pending 状态会保留具体原因。").FontSize(ThemeFontSize.Small)));
+                new TextBlock().Text("动作只通过 Windows SCM 执行；权限或 pending 状态会保留具体原因。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)));
         var body = new Grid().Columns("*, 320").Children(
             ShellComponents.DataSurface(serviceGrid),
             detailCard.Column(1).Margin(ShellTokens.ContentGap, 0, 0, 0));
@@ -805,7 +921,7 @@ internal sealed class TaskManagerView : UserControl
         var sidebarCollapsed = new CheckBox().Content("使用紧凑侧栏").BindIsChecked(new ObservableValue<bool>(preferences.Current.Preferences.SidebarCollapsed)).OnCheckedChanged(ApplySidebarCollapsed);
         var alwaysOnTop = new CheckBox().Content("始终置顶").BindIsChecked(new ObservableValue<bool>(preferences.Current.Preferences.Window?.AlwaysOnTop == true)).OnCheckedChanged(_value => { _ = ToggleAlwaysOnTop(); });
         var integrationState = integration.Read();
-        integrationSummary = new TextBlock().Text(FormatIntegration(integrationState)).FontSize(ThemeFontSize.Small);
+        integrationSummary = new TextBlock().Text(FormatIntegration(integrationState)).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
         integrationEnableButton = new Button().Content(integrationState.CanTakeOver ? "接管现有入口" : "启用入口").IsEnabled(integrationState.CanEnable || integrationState.CanTakeOver).OnClick(() => _ = ApplyIntegration(true));
         integrationDisableButton = new Button().Content("恢复标准入口").IsEnabled(integrationState.CanDisable).OnClick(() => _ = ApplyIntegration(false));
         var integrationControls = new StackPanel().Horizontal().Spacing(8).Children(
@@ -818,12 +934,13 @@ internal sealed class TaskManagerView : UserControl
                 new Grid().Columns("*, Auto").Children(
                     new StackPanel().Vertical().Spacing(4).Children(
                         new TextBlock().Text("任务管理器入口").SemiBold(),
-                        new TextBlock().Text("只读显示真实 IFEO 状态；写入需要管理员权限并在执行前重新确认版本。").FontSize(ThemeFontSize.Small)),
+                        new TextBlock().Text("只读显示真实 IFEO 状态；写入需要管理员权限并在执行前重新确认版本。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)),
                     integrationControls.Column(1).CenterVertical()),
                 integrationSummary));
 
         var version = typeof(TaskManagerWindow).Assembly.GetName().Version?.ToString() ?? "版本信息不可用";
         var updateInfo = SettingCard("当前版本", $"Takao {version} · MewUI Win32 + Direct2D。正式桌面后台服务负责检查、下载和安装。", new TextBlock().Text("已安装").FontSize(ThemeFontSize.Small));
+        var fontInfo = SettingCard("界面字体", "HarmonyOS Sans SC 随应用发布并在进程内加载，不会安装到 Windows 系统字体目录。", new TextBlock().Text("HarmonyOS Sans SC").FontSize(ThemeFontSize.Small));
 
         var sourceStatus = LiveText(() => snapshots.Current is null
             ? "正在预热 Windows 原生采样；尚未取得可展示的快照。"
@@ -839,7 +956,7 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new TextBlock().Text("来源与能力").SemiBold(),
-                new TextBlock().Text("数据来自 Windows 原生进程、性能、启动项、SCM 和硬件接口；页面只显示实际可用能力。").FontSize(ThemeFontSize.Small),
+                new TextBlock().Text("数据来自 Windows 原生进程、性能、启动项、SCM 和硬件接口；页面只显示实际可用能力。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap),
                 sourceStatus,
                 sourceLinks));
 
@@ -851,6 +968,7 @@ internal sealed class TaskManagerView : UserControl
             SettingGroup("外观与窗口", "调整界面层级和窗口行为；保存后立即生效。",
                 SettingCard("密度", "保存紧凑或标准数据行密度。", density),
                 SettingCard("主题", "选择浅色、深色或跟随 Windows 系统设置。", theme),
+                fontInfo,
                 SettingCard("侧栏", "折叠后保留导航图标和键盘语义。", sidebarCollapsed),
                 SettingCard("窗口", "通过 Windows 读回当前置顶状态。", alwaysOnTop)),
             SettingGroup("任务管理器入口", "安全读取或恢复本机任务管理器入口，动作按实际权限启用。", integrationCard),
@@ -874,7 +992,7 @@ internal sealed class TaskManagerView : UserControl
         var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
             new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text("系统信息").SemiBold(),
-                new TextBlock().Text("硬件概览由 Windows 原生接口按需读取，不参与实时采样。").FontSize(ThemeFontSize.Small)),
+                new TextBlock().Text("硬件概览由 Windows 原生接口按需读取，不参与实时采样。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)),
             ShellComponents.CommandBar(refresh, systemInfoCopyButton).DockRight());
 
         var cards = new Grid().Columns("*, *").Rows("Auto, Auto, Auto, Auto").Children(
@@ -910,8 +1028,8 @@ internal sealed class TaskManagerView : UserControl
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new StackPanel().Vertical().Spacing(2).Children(
                     new TextBlock().Text(title).FontSize(ThemeFontSize.Medium).SemiBold(),
-                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small)),
-                details));
+                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)),
+                details.TextWrapping(TextWrapping.Wrap).LineSpacing(2)));
     }
 
     private async Task RefreshSystemInformation(bool refresh)
@@ -954,10 +1072,11 @@ internal sealed class TaskManagerView : UserControl
     private void ApplySidebarCollapsed(bool collapsed)
     {
         SaveUiPreferences(ui => ui with { SidebarCollapsed = collapsed });
-        if (navigation is not null)
+        foreach (var item in new[] { navigation, footerNavigation })
         {
-            navigation.Width = collapsed ? 64 : 188;
-            navigation.ItemPadding = collapsed ? new Thickness(8, 0) : new Thickness(12, 0);
+            if (item is null) continue;
+            item.Width = collapsed ? ShellTokens.SidebarCompactWidth : ShellTokens.SidebarWidth - 16;
+            item.ItemPadding = collapsed ? new Thickness(8, 0) : new Thickness(12, 0);
         }
     }
 
@@ -1155,7 +1274,7 @@ internal sealed class TaskManagerView : UserControl
         return new StackPanel().Vertical().Spacing(8).Children(
             new StackPanel().Vertical().Spacing(2).Children(
                 new TextBlock().Text(title).FontSize(ThemeFontSize.Medium).SemiBold(),
-                new TextBlock().Text(description).FontSize(ThemeFontSize.Small)),
+                new TextBlock().Text(description).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)),
             new StackPanel().Vertical().Spacing(4).Children(cards));
     }
 
@@ -1170,7 +1289,7 @@ internal sealed class TaskManagerView : UserControl
             .Child(new Grid().Columns("*, Auto").Children(
                 new StackPanel().Vertical().Spacing(4).Children(
                     new TextBlock().Text(title).SemiBold(),
-                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small)),
+                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)),
                 control.Column(1).CenterVertical()));
     }
 
@@ -1195,6 +1314,15 @@ internal sealed class TaskManagerView : UserControl
         currentPage = Math.Clamp(index, 0, pages.Count - 1);
         for (var i = 0; i < pages.Count; i++) pages[i].IsVisible = i == currentPage;
         if (pageTitle is not null) pageTitle.Text = PageTitles[currentPage];
+
+        var pageKey = PageKeys[currentPage];
+        var mainIndex = Array.FindIndex(MainNavigationEntries, item => item.Key == pageKey);
+        if (navigation is not null && navigation.SelectedIndex != mainIndex)
+            navigation.SelectedIndex = mainIndex;
+
+        var footerIndex = pageKey == "settings" ? 0 : -1;
+        if (footerNavigation is not null && footerNavigation.SelectedIndex != footerIndex)
+            footerNavigation.SelectedIndex = footerIndex;
     }
 
     private void Poll()
