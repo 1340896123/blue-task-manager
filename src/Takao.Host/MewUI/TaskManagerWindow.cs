@@ -342,7 +342,10 @@ internal sealed class TaskManagerView : UserControl
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new DockPanel().Children(
                     new TextBlock().Text("最近活动").FontSize(ThemeFontSize.Medium).SemiBold(),
-                    new TextBlock().Text("查看全部 →").DockRight().FontSize(ThemeFontSize.Small)),
+                    new Button().Content("查看全部").DockRight().OnClick(() =>
+                    {
+                        SelectPage(Array.IndexOf(PageKeys, "history"));
+                    })),
                 ShellComponents.DataSurface(overviewRecentGrid)));
 
         return new ScrollViewer().AutoVerticalScroll().NoHorizontalScroll().Content(
