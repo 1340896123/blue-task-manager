@@ -654,29 +654,67 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildServicesPage()
     {
-        serviceGrid = new GridView { ItemsSource = serviceItems, ShowGridLines = false, ZebraStriping = false };
+        serviceGrid = new GridView { ItemsSource = serviceItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         serviceGrid.Columns(
             new GridViewColumn<ServiceDto>().Header("显示名称").StarWidth(2, minWidth: 280).Text(row => row.DisplayName),
             new GridViewColumn<ServiceDto>().Header("服务名").StarWidth(2, minWidth: 240).Text(row => row.Name),
-            new GridViewColumn<ServiceDto>().Header("状态").Width(140).Text(row => row.State),
+            new GridViewColumn<ServiceDto>().Header("状态").Width(140).Text(ServiceStatus),
             new GridViewColumn<ServiceDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid == 0 ? "—" : row.Pid.ToString(CultureInfo.InvariantCulture)));
         var start = new Button().Content("启动").IsEnabled(false).OnClick(() => ControlService("start"));
         var stop = new Button().Content("停止").IsEnabled(false).OnClick(() => ControlService("stop"));
         var restart = new Button().Content("重启").IsEnabled(false).OnClick(() => ControlService("restart"));
         var details = new Button().Content("服务详情").IsEnabled(false).OnClick(ShowServiceDetails);
         var manager = new Button().Content("服务管理器").OnClick(() => _ = OpenServiceManager());
+        var detailsTitle = new TextBlock().Text("选择服务").FontSize(ThemeFontSize.Medium).SemiBold();
+        var detailsStatus = new TextBlock().Text("从列表选择一个真实 Windows 服务。").FontSize(ThemeFontSize.Small);
+        var detailsName = new TextBlock().Text("服务名：—").FontSize(ThemeFontSize.Small);
+        var detailsPid = new TextBlock().Text("PID：—").FontSize(ThemeFontSize.Small);
         serviceGrid.OnSelectionChanged(value =>
         {
             var row = value as ServiceDto;
             details.IsEnabled = row is not null;
-            start.IsEnabled = row is not null && row.State.Contains("STOPPED", StringComparison.OrdinalIgnoreCase);
-            stop.IsEnabled = row is not null && row.State.Contains("RUNNING", StringComparison.OrdinalIgnoreCase);
-            restart.IsEnabled = row is not null && row.State.Contains("RUNNING", StringComparison.OrdinalIgnoreCase);
+            start.IsEnabled = row is not null && IsServiceStopped(row.State);
+            stop.IsEnabled = row is not null && IsServiceRunning(row.State);
+            restart.IsEnabled = row is not null && IsServiceRunning(row.State);
+            if (row is null)
+            {
+                detailsTitle.Text = "选择服务";
+                detailsStatus.Text = "从列表选择一个真实 Windows 服务。";
+                detailsName.Text = "服务名：—";
+                detailsPid.Text = "PID：—";
+                return;
+            }
+
+            detailsTitle.Text = row.DisplayName;
+            detailsStatus.Text = $"状态：{ServiceStatus(row)}";
+            detailsName.Text = $"服务名：{row.Name}";
+            detailsPid.Text = $"PID：{(row.Pid == 0 ? "—" : row.Pid.ToString(CultureInfo.InvariantCulture))}";
         });
-        var command = new DockPanel().Spacing(8).Children(
-            LiveText(() => $"SCM 服务：{snapshots.Current?.Services.Count ?? 0} 项。"),
-            new StackPanel().DockRight().Horizontal().Spacing(8).Children(start, stop, restart, details, manager));
-        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(serviceGrid).Row(1));
+        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+            new StackPanel().Vertical().Spacing(4).Children(
+                new TextBlock().Text("服务").SemiBold(),
+                LiveText(() => snapshots.Current is { } current
+                    ? $"Windows Service Control Manager · {current.Services.Count.ToString(CultureInfo.InvariantCulture)} 项"
+                    : "等待 Windows 首次成功采样").FontSize(ThemeFontSize.Small)),
+            ShellComponents.CommandBar(start, stop, restart, details, manager).DockRight());
+        var detailCard = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                var surface = theme.Palette.ControlBackground;
+                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new StackPanel().Vertical().Spacing(10).Children(
+                detailsTitle,
+                detailsStatus,
+                new Border().BorderThickness(new Thickness(0, 0, 0, 1)).WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder),
+                detailsName,
+                detailsPid,
+                new TextBlock().Text("动作只通过 Windows SCM 执行；权限或 pending 状态会保留具体原因。").FontSize(ThemeFontSize.Small)));
+        var body = new Grid().Columns("*, 320").Children(
+            ShellComponents.DataSurface(serviceGrid),
+            detailCard.Column(1).Margin(ShellTokens.ContentGap, 0, 0, 0));
+        return new Grid().Rows("Auto, *").Children(command, body.Row(1));
     }
 
     private FrameworkElement BuildSettingsPage()
@@ -1179,6 +1217,23 @@ internal sealed class TaskManagerView : UserControl
         false => "● 已禁用",
         _ => "? 无法确定",
     };
+
+    private static string ServiceStatus(ServiceDto service)
+    {
+        var state = service.State?.Trim();
+        if (string.IsNullOrWhiteSpace(state)) return "? 无法确定";
+        if (state.Contains("RUNNING", StringComparison.OrdinalIgnoreCase)) return "● 运行中";
+        if (state.Contains("STOPPED", StringComparison.OrdinalIgnoreCase)) return "○ 已停止";
+        if (state.Contains("PENDING", StringComparison.OrdinalIgnoreCase)) return $"◌ {state}";
+        return $"? {state}";
+    }
+
+    private static bool IsServiceRunning(string? state)
+        => state?.Contains("RUNNING", StringComparison.OrdinalIgnoreCase) == true;
+
+    private static bool IsServiceStopped(string? state)
+        => state?.Contains("STOPPED", StringComparison.OrdinalIgnoreCase) == true;
+
     private static string Bytes(long? value) => value is { } bytes && bytes >= 0 ? FormatBytes(bytes) : "—";
     private static string Rate(double? read, double? write) => read is { } r && write is { } w ? $"{FormatBytes(r)}/s · {FormatBytes(w)}/s" : "—";
     private string ProcessSummary()
