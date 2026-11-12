@@ -419,7 +419,6 @@ Section "Takao（必需）" MainSection
     !insertmacro CheckImageLock "Takao.Launcher.exe"
     !insertmacro CheckImageLock "TaskManager.Host.exe"
     !insertmacro CheckImageLock "TaskManager.Launcher.exe"
-    !insertmacro CheckImageLock "Takao.Qt.exe"
     SetOverwrite on
     ClearErrors
     !include "${GENERATED_DIR}\install-files.nsh"
@@ -567,7 +566,6 @@ Section "Uninstall"
     !insertmacro CheckImageLock "Takao.Launcher.exe"
     !insertmacro CheckImageLock "TaskManager.Host.exe"
     !insertmacro CheckImageLock "TaskManager.Launcher.exe"
-    !insertmacro CheckImageLock "Takao.Qt.exe"
     !include "${GENERATED_DIR}\verify-maintenance.nsh"
     ClearErrors
     ExecWait '"$INSTDIR\Takao.Host.exe" --uninstall-task-manager-integration' $0

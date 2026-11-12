@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Newtonsoft.Json.Serialization;
+using Aprillz.MewUI;
+using Aprillz.MewUI.Controls;
+using Takao.Host.MewUI;
 using Takao.Host.Api;
 using Takao.Host.Services;
 using Takao.Host.Native;
@@ -70,11 +73,33 @@ app.MapControllers();
 var shutdownCompleted = false;
 try
 {
-    // Start listening before Qt requests /api/bootstrap. Headless callers use
-    // the same real services and middleware without a rendering fallback.
+    // Start listening before the native MewUI window is shown. Headless callers
+    // use the same real services without a rendering fallback.
     await app.StartAsync();
-    if (desktopMode) await desktop.OpenAsync($"http://127.0.0.1:{port}", app.Lifetime);
-    await app.WaitForShutdownAsync();
+    if (desktopMode)
+    {
+        Win32Platform.Register();
+        Direct2DBackend.Register();
+        var window = new TaskManagerWindow(app.Services.GetRequiredService<SnapshotService>(), preferences,
+            app.Services.GetRequiredService<ProcessActionService>(), app.Services.GetRequiredService<SystemInformationService>());
+        desktop.Attach(window);
+        window.OnClosed(() =>
+        {
+            desktop.Detach(window);
+            app.Lifetime.StopApplication();
+        });
+        // Keep the Windows 11-style neutral light surface used by the existing
+        // shell while still letting MewUI own native focus, hit testing and
+        // accessibility semantics.
+        Application.Run(window, () => Application.Current.SetTheme(ThemeVariant.Light));
+        if (!app.Lifetime.ApplicationStopping.IsCancellationRequested)
+            app.Lifetime.StopApplication();
+        await app.StopAsync();
+    }
+    else
+    {
+        await app.WaitForShutdownAsync();
+    }
     // WaitForShutdownAsync already stops hosted services. Native collectors
     // release their cancellation sources during that stop.
     shutdownCompleted = true;
@@ -83,7 +108,7 @@ catch (Exception error)
 {
     Environment.ExitCode = 1;
     var code = error is ApiException api ? api.Code : "desktopStartupFailed";
-    app.Logger.LogError(error, "{Code}: Qt/.NET desktop startup failed", code);
+    app.Logger.LogError(error, "{Code}: MewUI/.NET desktop startup failed", code);
     try
     {
         var directory = Environment.GetEnvironmentVariable("TASKMANAGER_DATA_DIR") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlueDomainTaskManager");

@@ -2,6 +2,73 @@
   "version": 1,
   "dependencies": {
     "net10.0-windows10.0.19041": {
+      "Aprillz.MewUI.Backend.Direct2D": {
+        "type": "Transitive",
+        "resolved": "0.21.1",
+        "contentHash": "8yl7kmIQd7JgHpbC0z1LdWm7EvpihR2TcV0AnYyuTZRvzCHhpr8rqsffMTtK+X7azw5gBxKTG3PW1l96BFPBfQ==",
+        "dependencies": {
+          "Aprillz.MewUI.Core": "0.21.1",
+          "Aprillz.MewUI.Platform.Win32": "0.21.1"
+        }
+      },
+      "Aprillz.MewUI.Backend.Gdi": {
+        "type": "Transitive",
+        "resolved": "0.21.1",
+        "contentHash": "ihx511BtYU18NKzmw02lOw6kLhcH39Q1ebJpePh2ExFTmO5dU98o3ZgYuMuPq1/bq8FqfJhZymqelK8Ltt4eZA==",
+        "dependencies": {
+          "Aprillz.MewUI.Core": "0.21.1",
+          "Aprillz.MewUI.Platform.Win32": "0.21.1"
+        }
+      },
+      "Aprillz.MewUI.Backend.MewVG.Win32": {
+        "type": "Transitive",
+        "resolved": "0.21.1",
+        "contentHash": "VgquTHeLUjUW/QY8tcLhq0QUj0MpmWiQjLk3OsWSgsUsTd1SVoU1UZqRNFpfSZrefajCyQfNuR3w2IGMm0QSaQ==",
+        "dependencies": {
+          "Aprillz.MewUI.Core": "0.21.1",
+          "Aprillz.MewUI.Platform.Win32": "0.21.1",
+          "Aprillz.MewVG.Core": "0.9.0",
+          "Aprillz.MewVG.GL": "0.9.0"
+        }
+      },
+      "Aprillz.MewUI.Core": {
+        "type": "Transitive",
+        "resolved": "0.21.1",
+        "contentHash": "ryZ/WbAJZQRN39Yyyti6cQpwlmr8utOKnVAWpyO7KXvFOOXHAM+I0MGGbbyTe4HMA/XqzbAeVpExLplaF94VeQ=="
+      },
+      "Aprillz.MewUI.Platform.Win32": {
+        "type": "Transitive",
+        "resolved": "0.21.1",
+        "contentHash": "oBRKECsHElYgwKmKU7EhaSFfCFxYsENn/gj+E3FoRJGMAaPqGfoRkm7FSl1bpHOeKr/GpEcv+blpcZ9F4XVOnA==",
+        "dependencies": {
+          "Aprillz.MewUI.Core": "0.21.1"
+        }
+      },
+      "Aprillz.MewUI.Windows": {
+        "type": "Transitive",
+        "resolved": "0.21.1",
+        "contentHash": "HmCu7eugL7GkMhLPl/Ts8qsGxWj0Cemjg0nb3qIaC6TO3kiVXPVTve3SalW3hr+shQwH+8Esn9WrJASi3trYlQ==",
+        "dependencies": {
+          "Aprillz.MewUI.Backend.Direct2D": "0.21.1",
+          "Aprillz.MewUI.Backend.Gdi": "0.21.1",
+          "Aprillz.MewUI.Backend.MewVG.Win32": "0.21.1",
+          "Aprillz.MewUI.Core": "0.21.1",
+          "Aprillz.MewUI.Platform.Win32": "0.21.1"
+        }
+      },
+      "Aprillz.MewVG.Core": {
+        "type": "Transitive",
+        "resolved": "0.9.0",
+        "contentHash": "r62gdWdnkvXinBeFz3xnras/IPobK2o9r0OGXw2LIjYs6cA18XKkwsH7IU3q5IdpoKzoWNjVfXgmJ6fMyl/PWg=="
+      },
+      "Aprillz.MewVG.GL": {
+        "type": "Transitive",
+        "resolved": "0.9.0",
+        "contentHash": "85Spupr/1yJuKtEcn7pRw5SJpjqv4ciJozq5IDkytiyrfk3Tpz7yv+cOuQcHGH0iFGxaDj2mUMDj85slszRGiQ==",
+        "dependencies": {
+          "Aprillz.MewVG.Core": "0.9.0"
+        }
+      },
       "Microsoft.AspNetCore.JsonPatch": {
         "type": "Transitive",
         "resolved": "10.0.10",
@@ -54,6 +121,7 @@
       "takao.host": {
         "type": "Project",
         "dependencies": {
+          "Aprillz.MewUI.Windows": "[0.21.1, )",
           "Microsoft.AspNetCore.Mvc.NewtonsoftJson": "[10.0.10, )",
           "Newtonsoft.Json": "[13.0.4, )",
           "NuGet.Versioning": "[6.14.0, )",

@@ -34,17 +34,17 @@ internal static class TaskManagerEntry
         using var current = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, (uint)Environment.ProcessId);
         var owner = current.IsInvalid ? null : ReadSid(current);
         if (currentSession is null || owner is null) return new(cleaned, false, null);
-        var expectedQt = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Takao.Qt.exe"));
+        var expectedHost = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Takao.Host.exe"));
         var processes = Win32Collector.EnumerateBaseProcesses().ToDictionary(p => p.Pid);
         HWND existing = default; var foreground = false;
         PInvoke.EnumWindows((window, unused) =>
         {
-            if (!PInvoke.IsWindowVisible(window) || !ClassName(window).StartsWith("Qt", StringComparison.Ordinal) || Title(window) != "Takao") return true;
+            if (!PInvoke.IsWindowVisible(window) || Title(window) != "Takao") return true;
             PInvoke.GetWindowThreadProcessId(window, out var pid);
             if (!PInvoke.ProcessIdToSessionId(pid, out var candidateSession) || candidateSession != currentSession) return true;
             using var process = PInvoke.OpenProcess_SafeHandle(PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
             if (process.IsInvalid || !PInvoke.GetProcessTimes(process, out var created, out var exited, out _, out _) || NativeSupport.FileTime(exited) != 0) return true;
-            if (!string.Equals(ReadPath(process), expectedQt, StringComparison.OrdinalIgnoreCase) || ReadSid(process) != owner) return true;
+            if (!string.Equals(ReadPath(process), expectedHost, StringComparison.OrdinalIgnoreCase) || ReadSid(process) != owner) return true;
             var childTime = NativeSupport.FileTime(created); var childPid = pid; var seen = new HashSet<uint>(); var verifiedHost = false;
             for (var depth = 0; depth < 16 && processes.TryGetValue(childPid, out var child) && seen.Add(childPid); depth++)
             {

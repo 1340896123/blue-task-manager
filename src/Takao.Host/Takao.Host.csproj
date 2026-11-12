@@ -26,6 +26,7 @@
   <ItemGroup>
     <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="$(DesktopRuntimeVersion)" />
     <FrameworkReference Update="Microsoft.AspNetCore.App" RuntimeFrameworkVersion="$(DesktopRuntimeVersion)" />
+    <PackageReference Include="Aprillz.MewUI.Windows" Version="0.21.1" />
     <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.367" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.10" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
@@ -36,13 +37,11 @@
     <AssemblyMetadata Include="ReleaseTag" Value="$(TASKMANAGER_RELEASE_TAG)" Condition="'$(TASKMANAGER_RELEASE_TAG)' != ''" />
     <AssemblyMetadata Include="SourceCommit" Value="$(TASKMANAGER_SOURCE_COMMIT)" Condition="'$(TASKMANAGER_SOURCE_COMMIT)' != ''" />
     <ProjectReference Include="../Takao.Launcher/Takao.Launcher.csproj" ReferenceOutputAssembly="false" />
-    <!-- Qt is deployed by the native build; never serve a stale web renderer. -->
+    <!-- The native MewUI window is part of this Host process. -->
     <Content Remove="wwwroot\**\*" />
   </ItemGroup>
   <Target Name="CopyTakaoLauncher" AfterTargets="Build">
-    <MSBuild Projects="$(MSBuildThisFileDirectory)..\Takao.Launcher\Takao.Launcher.csproj"
-             Targets="GetTargetPath"
-             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework);RuntimeIdentifier=$(RuntimeIdentifier)">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\Takao.Launcher\Takao.Launcher.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework);RuntimeIdentifier=$(RuntimeIdentifier)">
       <Output TaskParameter="TargetOutputs" ItemName="_TakaoLauncherTargetPath" />
     </MSBuild>
     <Error Condition="'@(_TakaoLauncherTargetPath)' == ''" Text="The Launcher target path could not be resolved for the active build configuration." />

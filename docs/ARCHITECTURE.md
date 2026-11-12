@@ -1,5 +1,7 @@
 # Takao 架构与数据合同
 
+> 当前桌面入口是单进程 MewUI：`Takao.Host.exe` 直接承载 MewUI Win32 + Direct2D 窗口、ASP.NET 回环 API 和 CsWin32 采集服务。Qt/Electron 章节属于历史背景，当前接线见 [MEWUI-MIGRATION.md](MEWUI-MIGRATION.md)。
+
 ## 2026-11-08 本机快照投影
 
 沿用Qt→Kestrel回环HTTP、JSON.NET、自动gzip和弱ETag，增加固定白名单 `snapshot?view=live|history|performance`，只按需传两类历史；默认完整表示保持兼容。按revision/view有界缓存并区分ETag，Qt串行读取、切页重取且防止旧view迟到覆盖，冻结按需获取一份完整真实快照。轮询匹配采样周期，暂停时节流；ETW统计和Host采样保持原语义。合同与LT01～LT06见 [LOCAL-SNAPSHOT-TRAFFIC.md](LOCAL-SNAPSHOT-TRAFFIC.md)。

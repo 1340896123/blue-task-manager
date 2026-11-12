@@ -12,12 +12,12 @@
 
 八页视觉实现以 [FLUENT-DESIGN.md](FLUENT-DESIGN.md) 和MASTER顶部为准：语义Token集中到Qt主题，QPalette/QSS/delegate/图表统一引用；正文14px、页标题28px、主命令/导航44px、表格32/40px、圆角4/8px。设置用max1080px分组卡片、240px普通控件，禁止无约束拉满输入。保留原生可访问控件、真实数据/状态与所有现有交互；不以样式修改改变API、JSON.NET/CsWin32、身份或系统写保护。按顺序阶段代理实施并独立提交，FUI01～FUI18与Q系列保存实际1080P证据；不把静态检查或历史截图记作本轮通过。
 
-## 2026-11-04 当前 Qt 迁移规范
+## 2026-11-12 当前 MewUI 单进程规范
 
-- 现行实现为 Qt 6 Widgets + .NET 10；新增 `src/Takao.Qt` 原生界面，继续保留 `src/Takao.Host` 与 `src/Takao.Launcher`。旧React/Tailwind/Electron实现与CDP命令退出活动构建/发布路径，历史验收文档保留原貌。
-- C#沿用JSON.NET与CsWin32，Qt使用公开Qt JSON/Network/Widgets API，经既有回环HTTP访问后端；禁止另造协议、假数据或在GUI线程阻塞采样请求。Qt使用model/view及代理排序，刷新保留identity、焦点、输入和滚动；未知值保留原因，禁止转0。
-- Qt样式从MASTER语义Token映射到集中QPalette/QSS/绘图常量，采用原生可访问控件与稳定数值列；菜单、对话框、表格和搜索均有键盘入口。列宽拖动提供菜单或键盘替代。
-- 显示测试只执行1920×1080（1080P），按用户指定ui-ux-pro-max桌面标准和 [Q01～Q10](QT-MIGRATION.md) 验收。旧960/1380/125%/手机/Electron矩阵本轮不执行；后端构建/真实API测试无显示尺寸要求。
+- 现行实现为单进程 `.NET 10 + MewUI Win32/Direct2D`；`Takao.Host` 同时承载原生窗口、真实采集、受保护操作和回环 API，`Takao.Launcher` 只负责提升入口。旧 Qt/React/Tailwind/Electron 构建和验收文档保留为历史背景。
+- C#统一使用 JSON.NET 与 CsWin32；MewUI 直接注入 `SnapshotService`、操作服务和系统信息服务，不复制数据协议、不制造模拟值、不在 UI 线程阻塞采样。刷新保留 identity、焦点和输入；未知值保留原因，禁止转0。
+- Fluent 样式使用 MewUI 主题调色板和 MASTER 语义 Token，采用可访问原生控件、稳定数值列、键盘导航和明确的警告/错误状态。
+- 显示测试只执行1920×1080（1080P），按用户指定 ui-ux-pro-max 桌面标准和 [MEWUI-MIGRATION.md](MEWUI-MIGRATION.md) 验收。后端构建/真实 API 测试无显示尺寸要求。
 - 按阶段使用多个子代理，同一时间仅一位阶段代理写业务代码，检查后独立Git提交。更新结果必须记录实际命令、Git SHA、截图和未执行项，不将历史通过结果记到本轮。
 
 ## 产品命名（2026-10-28）

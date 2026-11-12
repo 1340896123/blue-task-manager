@@ -1,5 +1,7 @@
 # 产品需求：Takao
 
+> 当前桌面实现（2026-11-12）：`Takao.Host.exe` 内置 MewUI Win32 + Direct2D 原生窗口，采集服务、回环 API 和界面运行在同一进程。历史 Qt/Electron 迁移段落只保留为背景；当前接线和构建以 [MEWUI-MIGRATION.md](MEWUI-MIGRATION.md) 为准。
+
 ## 2026-11-08 本机快照通信开销
 
 截图中Host与Qt相同持续网络速率来自本机回环HTTP快照，完整gzip快照已正常压缩。按 [LOCAL-SNAPSHOT-TRAFFIC.md](LOCAL-SNAPSHOT-TRAFFIC.md) 只传当前页面需要的历史、匹配采样周期并在暂停时节流；保留默认完整API、真实ETW回环口径、身份保护及完整冻结快照，不以隐藏自身统计伪装零流量。

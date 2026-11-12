@@ -1,4 +1,6 @@
-# Qt + .NET 迁移规格与验收
+# Qt + .NET 迁移规格与验收（历史）
+
+> 当前实现已由 [MEWUI-MIGRATION.md](MEWUI-MIGRATION.md) 取代：Takao.Host.exe 直接承载 MewUI Win32 + Direct2D，取消 Qt UI 进程。本文件保留历史 Qt 验收证据，不作为当前桌面实现合同。
 
 ## 2026-11-04 默认窗口缩小
 

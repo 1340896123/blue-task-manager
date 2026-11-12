@@ -14,7 +14,7 @@ public sealed class TaskManagerController(SnapshotService snapshots, ProcessActi
     public IActionResult Health() => Ok(new { platform = "Windows", version = "1.1.1", ready = snapshots.Current is not null, processId = Environment.ProcessId, nativeSource = "Microsoft.Windows.CsWin32", json = "Newtonsoft.Json" });
 
     [HttpGet("bootstrap")]
-    public IActionResult Bootstrap() => Ok(new { token = guard.Token, settings = snapshots.Settings, capabilities = SnapshotService.Capabilities, version = "1.1.1", desktop = desktop.Available, desktopFramework = "Qt 6 Widgets", desktopProcessId = desktop.ProcessId, hostPid = Environment.ProcessId, currentUserName = CurrentIdentity.Name, currentSessionId = CurrentIdentity.SessionId });
+    public IActionResult Bootstrap() => Ok(new { token = guard.Token, settings = snapshots.Settings, capabilities = SnapshotService.Capabilities, version = "1.1.1", desktop = desktop.Available, desktopFramework = "MewUI Win32 + Direct2D", desktopProcessId = desktop.ProcessId, hostPid = Environment.ProcessId, currentUserName = CurrentIdentity.Name, currentSessionId = CurrentIdentity.SessionId });
 
     [HttpGet("snapshot")]
     public IActionResult Snapshot([FromQuery] string? view = null)
