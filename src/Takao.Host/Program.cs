@@ -82,7 +82,7 @@ try
         Direct2DBackend.Register();
         var window = new TaskManagerWindow(app.Services.GetRequiredService<SnapshotService>(), preferences,
             app.Services.GetRequiredService<ProcessActionService>(), app.Services.GetRequiredService<SystemInformationService>(),
-            app.Services.GetRequiredService<ShellActionService>());
+            app.Services.GetRequiredService<ShellActionService>(), app.Services.GetRequiredService<ServiceActionService>());
         desktop.Attach(window);
         window.OnClosed(() =>
         {

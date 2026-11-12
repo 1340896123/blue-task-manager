@@ -11,9 +11,9 @@ internal sealed class TaskManagerWindow : Window
 {
     private readonly TaskManagerView view;
 
-    public TaskManagerWindow(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell)
+    public TaskManagerWindow(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions)
     {
-        view = new TaskManagerView(snapshots, preferences, actions, systemInformation, shell);
+        view = new TaskManagerView(snapshots, preferences, actions, systemInformation, shell, serviceActions);
         Title = "Takao";
         this.Resizable(1100, 720, minWidth: 960, minHeight: 640)
             .ExtendClientAreaTitleBarHeight(48)
@@ -52,6 +52,7 @@ internal sealed class TaskManagerView : UserControl
     private readonly ProcessActionService actions;
     private readonly SystemInformationService systemInformation;
     private readonly ShellActionService shell;
+    private readonly ServiceActionService serviceActions;
     private readonly List<FrameworkElement> pages = [];
     private readonly List<ProcessDto> processRows = [];
     private readonly ItemsView<ProcessDto> processItems;
@@ -72,6 +73,7 @@ internal sealed class TaskManagerView : UserControl
     private GridView? startupGrid;
     private GridView? usersGrid;
     private GridView? detailGrid;
+    private GridView? serviceGrid;
     private NavigationList? navigation;
     private TextBox? searchBox;
     private TextBlock? cpuSummary;
@@ -87,13 +89,14 @@ internal sealed class TaskManagerView : UserControl
     private readonly ObservableValue<string> search = new(string.Empty);
     private readonly List<(TextBlock Block, Func<string> Get)> liveText = [];
 
-    public TaskManagerView(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell)
+    public TaskManagerView(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions)
     {
         this.snapshots = snapshots;
         this.preferences = preferences;
         this.actions = actions;
         this.systemInformation = systemInformation;
         this.shell = shell;
+        this.serviceActions = serviceActions;
         processItems = ItemsView.Create(processRows, row => row.Name, row => row.Identity);
         historyItems = ItemsView.Create(historyRows, row => row.Name, row => row.Identity);
         startupItems = ItemsView.Create(startupRows, row => row.Name, row => row.Id);
@@ -371,13 +374,29 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildServicesPage()
     {
-        var grid = new GridView { ItemsSource = serviceItems, ShowGridLines = false, ZebraStriping = false };
-        grid.Columns(
+        serviceGrid = new GridView { ItemsSource = serviceItems, ShowGridLines = false, ZebraStriping = false };
+        serviceGrid.Columns(
             new GridViewColumn<ServiceDto>().Header("显示名称").StarWidth(2, minWidth: 280).Text(row => row.DisplayName),
             new GridViewColumn<ServiceDto>().Header("服务名").StarWidth(2, minWidth: 240).Text(row => row.Name),
             new GridViewColumn<ServiceDto>().Header("状态").Width(140).Text(row => row.State),
             new GridViewColumn<ServiceDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid == 0 ? "—" : row.Pid.ToString(CultureInfo.InvariantCulture)));
-        return PageStack(new TextBlock().Text("服务").FontSize(ThemeFontSize.Medium).SemiBold(), LiveText(() => $"SCM 服务：{snapshots.Current?.Services.Count ?? 0} 项。"), grid, new TextBlock().Text("服务状态由 Windows Service Control Manager 返回。"));
+        var start = new Button().Content("启动").IsEnabled(false).OnClick(() => ControlService("start"));
+        var stop = new Button().Content("停止").IsEnabled(false).OnClick(() => ControlService("stop"));
+        var restart = new Button().Content("重启").IsEnabled(false).OnClick(() => ControlService("restart"));
+        var details = new Button().Content("服务详情").IsEnabled(false).OnClick(ShowServiceDetails);
+        var manager = new Button().Content("服务管理器").OnClick(() => _ = OpenServiceManager());
+        serviceGrid.OnSelectionChanged(value =>
+        {
+            var row = value as ServiceDto;
+            details.IsEnabled = row is not null;
+            start.IsEnabled = row is not null && row.State.Contains("STOPPED", StringComparison.OrdinalIgnoreCase);
+            stop.IsEnabled = row is not null && row.State.Contains("RUNNING", StringComparison.OrdinalIgnoreCase);
+            restart.IsEnabled = row is not null && row.State.Contains("RUNNING", StringComparison.OrdinalIgnoreCase);
+        });
+        var command = new DockPanel().Spacing(8).Children(
+            LiveText(() => $"SCM 服务：{snapshots.Current?.Services.Count ?? 0} 项。"),
+            new StackPanel().DockRight().Horizontal().Spacing(8).Children(start, stop, restart, details, manager));
+        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(serviceGrid));
     }
 
     private FrameworkElement BuildSettingsPage()
@@ -540,6 +559,72 @@ internal sealed class TaskManagerView : UserControl
         {
             statusText!.Text = error.Message;
         }
+    }
+
+    private async void ControlService(string command)
+    {
+        if (serviceGrid?.SelectedItem is not ServiceDto selected) return;
+        ServiceDetails details;
+        try
+        {
+            details = await Task.Run(() => serviceActions.Details(selected.Name));
+        }
+        catch (ApiException error)
+        {
+            statusText!.Text = error.Message;
+            return;
+        }
+        var allowed = command switch
+        {
+            "start" => details.CanStart,
+            "stop" => details.CanStop,
+            "restart" => details.CanRestart,
+            _ => false,
+        };
+        if (!allowed)
+        {
+            statusText!.Text = details.Unavailable.TryGetValue(command, out var reason)
+                ? reason.Message
+                : $"Windows当前不允许对服务“{details.DisplayName}”执行{command}。";
+            return;
+        }
+        var owner = FindVisualRoot() as Window;
+        if (owner is null || !await MessageBox.ConfirmAsync(
+                $"确认对服务“{details.DisplayName}”执行{command}？",
+                icon: PromptIconKind.Warning,
+                detail: "操作将通过 Windows Service Control Manager 执行，并等待实际状态读回。",
+                owner: owner)) return;
+        try
+        {
+            var result = await serviceActions.ControlAsync(selected.Name, new ServiceControlRequest(command, details.State, details.Pid));
+            statusText!.Text = result.Message;
+            snapshots.RefreshSlowData();
+        }
+        catch (ApiException error)
+        {
+            statusText!.Text = error.Message;
+        }
+    }
+
+    private async void ShowServiceDetails()
+    {
+        if (serviceGrid?.SelectedItem is not ServiceDto selected) return;
+        try
+        {
+            var details = await Task.Run(() => serviceActions.Details(selected.Name));
+            var dependencies = details.Dependencies.Count == 0 ? "—" : string.Join("、", details.Dependencies);
+            statusText!.Text = $"{details.DisplayName} · 状态 {details.State} · PID {(details.Pid == 0 ? "—" : details.Pid.ToString(CultureInfo.InvariantCulture))}\n启动类型：{details.StartType ?? "不可用"} · 账户：{details.Account ?? "不可用"}\n路径：{details.BinaryPath ?? "不可用"}\n依赖：{dependencies}";
+        }
+        catch (ApiException error)
+        {
+            statusText!.Text = error.Message;
+        }
+    }
+
+    private async Task OpenServiceManager()
+    {
+        try { statusText!.Text = await shell.OpenSystemLocationAsync("services"); }
+        catch (ApiException error) { statusText!.Text = error.Message; }
     }
 
     private void LocateUserProcesses()
