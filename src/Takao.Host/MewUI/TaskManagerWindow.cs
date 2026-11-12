@@ -360,7 +360,9 @@ internal sealed class TaskManagerView : UserControl
     {
         var run = new Button().Content("运行新任务").OnClick(() => RunTask());
         var end = new Button().Content("结束任务").IsEnabled(false).OnClick(() => EndSelected());
-        processGrid = new GridView { ItemsSource = processItems, ZebraStriping = false, ShowGridLines = false };
+        var details = new Button().Content("查看详情").IsEnabled(false);
+        var refresh = new Button().Content("刷新").OnClick(Poll);
+        processGrid = new GridView { ItemsSource = processItems, ZebraStriping = false, ShowGridLines = false, HeaderHeight = 40 };
         processGrid.Columns(
             new GridViewColumn<ProcessDto>().Header("名称").StarWidth(3, minWidth: 260).SortBy(row => row.Name, StringComparer.OrdinalIgnoreCase).Text(row => row.Name),
             new GridViewColumn<ProcessDto>().Header("状态").Width(100).Text(row => row.State == "running" ? "运行中" : row.State),
@@ -370,12 +372,26 @@ internal sealed class TaskManagerView : UserControl
             new GridViewColumn<ProcessDto>().Header("网络").Width(130).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
             new GridViewColumn<ProcessDto>().Header("GPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.GpuPercent)),
             new GridViewColumn<ProcessDto>().Header("PID").Width(86).HeaderTextAlignment(TextAlignment.Right).SortBy(row => row.Pid).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)));
-        processGrid.OnSelectionChanged(value => end.IsEnabled = value is ProcessDto dto && dto.CanTerminate);
+        processGrid.OnSelectionChanged(value =>
+        {
+            var row = value as ProcessDto;
+            end.IsEnabled = row?.CanTerminate == true;
+            details.IsEnabled = row is not null;
+        });
+        details.OnClick(() =>
+        {
+            if (processGrid.SelectedItem is not ProcessDto row) return;
+            SelectPage(Array.IndexOf(PageKeys, "details"));
+            detailGrid!.SelectedItem = row;
+            if (detailGrid.SelectedIndex >= 0) detailGrid.ScrollIntoView(detailGrid.SelectedIndex);
+        });
         // The global search box lives in the title bar. Keep the page command
         // row limited to actions so a MewUI element never has two parents.
-        var command = new DockPanel().Spacing(8).Children(
-            LiveText(ProcessSummary),
-            new StackPanel().DockRight().Horizontal().Spacing(8).Children(run, end));
+        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+            new StackPanel().Horizontal().Spacing(8).Children(
+                new TextBlock().Text("运行中的进程").SemiBold(),
+                LiveText(ProcessSummary).FontSize(ThemeFontSize.Small)),
+            ShellComponents.CommandBar(run, details, end, refresh).DockRight());
         return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(processGrid).Row(1));
     }
 
