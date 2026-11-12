@@ -17,15 +17,18 @@ internal sealed class TaskManagerWindow : Window
         Title = "Takao";
         this.Resizable(1100, 720, minWidth: 960, minHeight: 640)
             .ExtendClientAreaTitleBarHeight(48)
+            .Borderless(true)
             .AllowsTransparency(true)
             .StartCenterScreen()
             .Content(view)
             .OnLoaded(() =>
             {
                 view.Start();
+                view.UpdateWindowState(WindowState);
                 WindowChromeService.Apply(this);
             })
             .OnClosed(view.Stop);
+        WindowStateChanged += view.UpdateWindowState;
     }
 }
 
@@ -89,6 +92,7 @@ internal sealed class TaskManagerView : UserControl
     private TextBlock? integrationSummary;
     private Button? integrationEnableButton;
     private Button? integrationDisableButton;
+    private Button? maximizeButton;
     private DispatcherTimer? timer;
     private int currentPage;
     private string query = string.Empty;
@@ -129,6 +133,7 @@ internal sealed class TaskManagerView : UserControl
     protected override Element OnBuild()
     {
         var root = new Grid().Rows("48, *").Columns("204, *");
+        root.OnMouseDown(HandleWindowMouseDown);
         var top = BuildTopBar().ColumnSpan(2);
         var sidebar = BuildSidebar().Row(1);
         var content = BuildContent().Row(1).Column(1);
@@ -139,7 +144,7 @@ internal sealed class TaskManagerView : UserControl
     private FrameworkElement BuildTopBar()
     {
         searchBox = new TextBox()
-            .Width(360)
+            .Width(300)
             .Placeholder("搜索名称、PID 或发布者")
             .BindText(search)
             .OnTextChanged(value =>
@@ -158,6 +163,10 @@ internal sealed class TaskManagerView : UserControl
             new TextBlock().Text("▣").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical(),
             new TextBlock().Text("Takao").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical());
         var summary = new StackPanel().Horizontal().Spacing(18).Children(cpuSummary, memorySummary, processSummary, statusText);
+        var minimize = WindowButton("\uE921", "最小化窗口", owner => owner.Minimize());
+        maximizeButton = WindowButton("\uE922", "最大化窗口", _ => ToggleMaximize());
+        var close = WindowButton("\uE8BB", "关闭窗口", owner => owner.Close());
+        var windowButtons = new StackPanel().Horizontal().Children(minimize, maximizeButton, close);
         return new Border()
             .Padding(16, 0)
             .BorderThickness(new Thickness(0, 0, 0, 1))
@@ -166,11 +175,77 @@ internal sealed class TaskManagerView : UserControl
                 border.Background(Glass(theme.Palette.WindowBackground, theme.IsDark));
                 border.BorderBrush(theme.Palette.ControlBorder);
             })
-            .Child(new Grid().Columns("204, Auto, *, Auto").Children(
+            .Child(new Grid().Columns("204, Auto, Auto, *, Auto").Children(
                 brand,
                 searchBox.Column(1).Margin(0, 0, 16, 0),
-                new Border().Column(2),
-                summary.Column(3)));
+                summary.Column(2),
+                new Border().Column(3).OnMouseDown(_ => BeginDragMove()).OnMouseDoubleClick(_ => ToggleMaximize()),
+                windowButtons.Column(4)));
+    }
+
+    private Button WindowButton(string glyph, string label, Action<Window> action)
+    {
+        var button = new Button().Content(glyph).Width(46).Height(48).ToolTip(label).OnClick(() =>
+        {
+            if (FindVisualRoot() is Window owner) action(owner);
+        });
+        button.FontFamily = "Segoe Fluent Icons";
+        return button;
+    }
+
+    public void UpdateWindowState(WindowState state)
+    {
+        if (maximizeButton is null) return;
+        var maximized = state == WindowState.Maximized;
+        maximizeButton.Content = WindowGlyph(maximized ? "\uE923" : "\uE922");
+        maximizeButton.ToolTip = new TextBlock().Text(maximized ? "还原窗口" : "最大化窗口");
+    }
+
+    private static TextBlock WindowGlyph(string glyph)
+    {
+        var text = new TextBlock().Text(glyph).CenterVertical();
+        text.FontFamily = "Segoe Fluent Icons";
+        return text;
+    }
+
+    private void BeginDragMove()
+    {
+        if (FindVisualRoot() is Window owner) owner.DragMove();
+    }
+
+    private void ToggleMaximize()
+    {
+        if (FindVisualRoot() is not Window owner) return;
+        if (owner.WindowState == WindowState.Maximized) owner.Restore();
+        else owner.Maximize();
+    }
+
+    private void HandleWindowMouseDown(MouseEventArgs args)
+    {
+        if (FindVisualRoot() is not Window owner || owner.WindowState == WindowState.Maximized) return;
+        var position = owner.Position;
+        var size = owner.ClientSize;
+        var x = args.ScreenPosition.X - position.X;
+        var y = args.ScreenPosition.Y - position.Y;
+        const double edge = 8;
+        var left = x <= edge;
+        var right = x >= size.Width - edge;
+        var top = y <= edge;
+        var bottom = y >= size.Height - edge;
+        if (!left && !right && !top && !bottom) return;
+        var resizeEdge = (left, right, top, bottom) switch
+        {
+            (true, false, true, false) => ResizeEdge.TopLeft,
+            (false, true, true, false) => ResizeEdge.TopRight,
+            (true, false, false, true) => ResizeEdge.BottomLeft,
+            (false, true, false, true) => ResizeEdge.BottomRight,
+            (true, false, _, _) => ResizeEdge.Left,
+            (false, true, _, _) => ResizeEdge.Right,
+            (_, _, true, false) => ResizeEdge.Top,
+            _ => ResizeEdge.Bottom,
+        };
+        owner.DragResize(resizeEdge);
+        args.Handled = true;
     }
 
     private FrameworkElement BuildSidebar()
