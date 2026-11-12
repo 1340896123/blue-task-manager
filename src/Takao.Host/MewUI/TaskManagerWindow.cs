@@ -216,11 +216,15 @@ internal sealed class TaskManagerView : UserControl
             new GridViewColumn<ProcessDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).SortBy(row => row.CpuPercent ?? double.MinValue).Text(row => Percent(row.CpuPercent)),
             new GridViewColumn<ProcessDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Right).SortBy(row => row.WorkingSetBytes ?? long.MinValue).Text(row => Bytes(row.WorkingSetBytes)),
             new GridViewColumn<ProcessDto>().Header("I/O").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.IoReadBytesPerSecond, row.IoWriteBytesPerSecond)),
+            new GridViewColumn<ProcessDto>().Header("网络").Width(130).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
+            new GridViewColumn<ProcessDto>().Header("GPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.GpuPercent)),
             new GridViewColumn<ProcessDto>().Header("PID").Width(86).HeaderTextAlignment(TextAlignment.Right).SortBy(row => row.Pid).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)));
         processGrid.OnSelectionChanged(value => end.IsEnabled = value is ProcessDto dto && dto.CanTerminate);
         // The global search box lives in the title bar. Keep the page command
         // row limited to actions so a MewUI element never has two parents.
-        var command = new DockPanel().Spacing(8).Children(new StackPanel().DockRight().Horizontal().Spacing(8).Children(run, end));
+        var command = new DockPanel().Spacing(8).Children(
+            LiveText(ProcessSummary),
+            new StackPanel().DockRight().Horizontal().Spacing(8).Children(run, end));
         return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(processGrid));
     }
 
@@ -478,6 +482,14 @@ internal sealed class TaskManagerView : UserControl
     private static string Percent(double? value) => value is { } number && double.IsFinite(number) ? $"{number:0.0}%" : "—";
     private static string Bytes(long? value) => value is { } bytes && bytes >= 0 ? FormatBytes(bytes) : "—";
     private static string Rate(double? read, double? write) => read is { } r && write is { } w ? $"{FormatBytes(r)}/s · {FormatBytes(w)}/s" : "—";
+    private string ProcessSummary()
+    {
+        var current = snapshots.Current;
+        return current is null
+            ? "进程表：等待 Windows 首次成功采样"
+            : $"进程 {current.System.ProcessCount.ToString(CultureInfo.InvariantCulture)} · CPU {Percent(current.System.CpuPercent)} · 内存 {Percent(current.System.MemoryPercent)} · 网络 {Rate(current.System.NetworkReceiveBytesPerSecond, current.System.NetworkSendBytesPerSecond)}";
+    }
+
     private static string FormatBytes(double bytes)
     {
         if (!double.IsFinite(bytes) || bytes < 0) return "—";
