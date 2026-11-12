@@ -503,23 +503,66 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement BuildStartupPage()
     {
-        startupGrid = new GridView { ItemsSource = startupItems, ShowGridLines = false, ZebraStriping = false };
+        startupGrid = new GridView { ItemsSource = startupItems, ShowGridLines = false, ZebraStriping = false, HeaderHeight = 40 };
         startupGrid.Columns(
             new GridViewColumn<StartupDto>().Header("名称").StarWidth(2, minWidth: 220).Text(row => row.Name),
             new GridViewColumn<StartupDto>().Header("来源").Width(160).Text(row => row.Source),
-            new GridViewColumn<StartupDto>().Header("状态").Width(120).Text(row => row.Enabled is true ? "已启用" : row.Enabled is false ? "已禁用" : "未知"),
+            new GridViewColumn<StartupDto>().Header("状态").Width(140).Text(row => StartupStatus(row.Enabled)),
             new GridViewColumn<StartupDto>().Header("状态原因").StarWidth(2, minWidth: 220).Text(row => row.EnabledReason),
             new GridViewColumn<StartupDto>().Header("命令").StarWidth(3, minWidth: 320).Text(row => row.Command),
             new GridViewColumn<StartupDto>().Header("来源位置").StarWidth(2, minWidth: 240).Text(row => row.LocationPath ?? row.LocationReason ?? "不可用"));
         var openSource = new Button().Content("打开来源").IsEnabled(false).OnClick(OpenSelectedStartupLocation);
-        startupGrid.OnSelectionChanged(value => openSource.IsEnabled = value is StartupDto row && row.CanOpenLocation);
+        var detailsTitle = new TextBlock().Text("选择启动项").FontSize(ThemeFontSize.Medium).SemiBold();
+        var detailsStatus = new TextBlock().Text("从列表选择一个真实 Windows 启动项。").FontSize(ThemeFontSize.Small);
+        var detailsSource = new TextBlock().Text("来源：—").FontSize(ThemeFontSize.Small);
+        var detailsCommand = new TextBlock().Text("命令：—").FontSize(ThemeFontSize.Small);
+        var detailsLocation = new TextBlock().Text("位置：—").FontSize(ThemeFontSize.Small);
+        startupGrid.OnSelectionChanged(value =>
+        {
+            openSource.IsEnabled = value is StartupDto row && row.CanOpenLocation;
+            if (value is not StartupDto selected)
+            {
+                detailsTitle.Text = "选择启动项";
+                detailsStatus.Text = "从列表选择一个真实 Windows 启动项。";
+                detailsSource.Text = "来源：—";
+                detailsCommand.Text = "命令：—";
+                detailsLocation.Text = "位置：—";
+                return;
+            }
+
+            detailsTitle.Text = selected.Name;
+            detailsStatus.Text = $"状态：{StartupStatus(selected.Enabled)} · {selected.EnabledReason}";
+            detailsSource.Text = $"来源：{selected.Source}";
+            detailsCommand.Text = $"命令：{selected.Command}";
+            detailsLocation.Text = $"位置：{selected.LocationPath ?? selected.LocationReason ?? "不可用"}";
+        });
         var startupSettings = new Button().Content("启动设置").OnClick(() => OpenSystemLocation("startupSettings"));
         var userStartup = new Button().Content("用户 Startup").OnClick(() => OpenSystemLocation("userStartup"));
         var commonStartup = new Button().Content("公共 Startup").OnClick(() => OpenSystemLocation("commonStartup"));
-        var command = new DockPanel().Spacing(8).Children(
-            LiveText(() => $"Windows Run / RunOnce 与 Startup 文件夹：{snapshots.Current?.StartupItems.Count ?? 0} 项。"),
-            new StackPanel().DockRight().Horizontal().Spacing(8).Children(openSource, startupSettings, userStartup, commonStartup));
-        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(startupGrid).Row(1));
+        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+            new StackPanel().Vertical().Spacing(4).Children(
+                new TextBlock().Text("启动应用").SemiBold(),
+                LiveText(() => $"Windows Run / RunOnce 与 Startup 文件夹 · {snapshots.Current?.StartupItems.Count ?? 0} 项").FontSize(ThemeFontSize.Small)),
+            ShellComponents.CommandBar(openSource, startupSettings, userStartup, commonStartup).DockRight());
+        var details = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                var surface = theme.Palette.ControlBackground;
+                border.Background = Color.FromArgb(theme.IsDark ? (byte)245 : (byte)250, surface.R, surface.G, surface.B);
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new StackPanel().Vertical().Spacing(10).Children(
+                detailsTitle,
+                detailsStatus,
+                new Border().BorderThickness(new Thickness(0, 0, 0, 1)).WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder),
+                detailsSource,
+                detailsCommand,
+                detailsLocation,
+                new TextBlock().Text("状态来自 Windows 启动项读取；此页面不会写入或执行启动项。").FontSize(ThemeFontSize.Small)));
+        var body = new Grid().Columns("*, 300").Children(
+            ShellComponents.DataSurface(startupGrid),
+            details.Column(1).Margin(ShellTokens.ContentGap, 0, 0, 0));
+        return new Grid().Rows("Auto, *").Children(command, body.Row(1));
     }
 
     private FrameworkElement BuildUsersPage()
@@ -1089,6 +1132,13 @@ internal sealed class TaskManagerView : UserControl
     }
 
     private static string Percent(double? value) => value is { } number && double.IsFinite(number) ? $"{number:0.0}%" : "—";
+
+    private static string StartupStatus(bool? enabled) => enabled switch
+    {
+        true => "● 已启用",
+        false => "● 已禁用",
+        _ => "? 无法确定",
+    };
     private static string Bytes(long? value) => value is { } bytes && bytes >= 0 ? FormatBytes(bytes) : "—";
     private static string Rate(double? read, double? write) => read is { } r && write is { } w ? $"{FormatBytes(r)}/s · {FormatBytes(w)}/s" : "—";
     private string ProcessSummary()
