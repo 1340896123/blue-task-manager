@@ -132,12 +132,8 @@ internal sealed class TaskManagerView : UserControl
 
     protected override Element OnBuild()
     {
-        var root = new Grid().Rows("48, *").Columns("204, *");
+        var root = ShellComponents.WindowShell(BuildTopBar(), BuildSidebar(), BuildContent());
         root.OnMouseDown(HandleWindowMouseDown);
-        var top = BuildTopBar().ColumnSpan(2);
-        var sidebar = BuildSidebar().Row(1);
-        var content = BuildContent().Row(1).Column(1);
-        root.Children(top, sidebar, content);
         return root;
     }
 
@@ -166,21 +162,13 @@ internal sealed class TaskManagerView : UserControl
         var minimize = WindowButton("\uE921", "最小化窗口", owner => owner.Minimize());
         maximizeButton = WindowButton("\uE922", "最大化窗口", _ => ToggleMaximize());
         var close = WindowButton("\uE8BB", "关闭窗口", owner => owner.Close());
-        var windowButtons = new StackPanel().Horizontal().Children(minimize, maximizeButton, close);
-        return new Border()
-            .Padding(16, 0)
-            .BorderThickness(new Thickness(0, 0, 0, 1))
-            .WithTheme((theme, border) =>
-            {
-                border.Background(Glass(theme.Palette.WindowBackground, theme.IsDark));
-                border.BorderBrush(theme.Palette.ControlBorder);
-            })
-            .Child(new Grid().Columns("204, Auto, Auto, *, Auto").Children(
-                brand,
-                searchBox.Column(1).Margin(0, 0, 16, 0),
-                summary.Column(2),
-                new Border().Column(3).OnMouseDown(_ => BeginDragMove()).OnMouseDoubleClick(_ => ToggleMaximize()),
-                windowButtons.Column(4)));
+        var windowButtons = ShellComponents.CommandBar(minimize, maximizeButton, close);
+        return ShellComponents.TitleBar(
+            brand,
+            searchBox.Margin(0, 0, 16, 0),
+            summary,
+            new Border().OnMouseDown(_ => BeginDragMove()).OnMouseDoubleClick(_ => ToggleMaximize()),
+            windowButtons);
     }
 
     private Button WindowButton(string glyph, string label, Action<Window> action)
@@ -267,18 +255,10 @@ internal sealed class TaskManagerView : UserControl
                 var index = Array.IndexOf(PageKeys, entry.Key);
                 if (index >= 0) SelectPage(index);
             });
-        var sidebar = new Border()
-            .Padding(8)
-            .BorderThickness(new Thickness(0, 0, 1, 0))
-            .WithTheme((theme, border) =>
-            {
-                border.Background(Glass(theme.Palette.WindowBackground, theme.IsDark));
-                border.BorderBrush(theme.Palette.ControlBorder);
-            })
-            .Child(new DockPanel().Spacing(8).Children(
-                new StackPanel().DockBottom().Spacing(4).Children(new TextBlock().Text("Takao").FontSize(ThemeFontSize.Small).SemiBold(), new TextBlock().Text("Windows 监控").FontSize(ThemeFontSize.Small)),
-                navigation));
-        return sidebar;
+        var footer = new StackPanel().Spacing(4).Children(
+            new TextBlock().Text("Takao").FontSize(ThemeFontSize.Small).SemiBold(),
+            new TextBlock().Text("Windows 监控").FontSize(ThemeFontSize.Small));
+        return ShellComponents.Sidebar(navigation, footer);
     }
 
     private FrameworkElement BuildContent()
@@ -297,9 +277,7 @@ internal sealed class TaskManagerView : UserControl
         pages[0].IsVisible = true;
 
         var body = new Grid().Rows("56, *").Children(
-            new Border().Row(0).Padding(16, 0).BorderThickness(new Thickness(0, 0, 0, 1))
-                .WithTheme((theme, border) => border.BorderBrush(theme.Palette.ControlBorder))
-                .Child(pageTitle!),
+            ShellComponents.PageHeader(pageTitle!).Row(0),
             new Border().Row(1).Padding(16).Child(new Grid().Children(pages.ToArray())));
         return body;
     }
@@ -324,7 +302,7 @@ internal sealed class TaskManagerView : UserControl
         var command = new DockPanel().Spacing(8).Children(
             LiveText(ProcessSummary),
             new StackPanel().DockRight().Horizontal().Spacing(8).Children(run, end));
-        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(processGrid));
+        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(processGrid).Row(1));
     }
 
     private FrameworkElement BuildPerformancePage()
@@ -385,7 +363,7 @@ internal sealed class TaskManagerView : UserControl
                     ? $"会话开始：{current.SessionStartedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss} · 已观测 {current.History.Count.ToString(CultureInfo.InvariantCulture)} 个进程身份"
                     : "等待 Windows 首次成功采样")),
             new StackPanel().DockRight().Horizontal().Spacing(8).Children(locate, reset));
-        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(historyGrid));
+        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(historyGrid).Row(1));
     }
 
     private FrameworkElement BuildStartupPage()
@@ -406,7 +384,7 @@ internal sealed class TaskManagerView : UserControl
         var command = new DockPanel().Spacing(8).Children(
             LiveText(() => $"Windows Run / RunOnce 与 Startup 文件夹：{snapshots.Current?.StartupItems.Count ?? 0} 项。"),
             new StackPanel().DockRight().Horizontal().Spacing(8).Children(openSource, startupSettings, userStartup, commonStartup));
-        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(startupGrid));
+        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(startupGrid).Row(1));
     }
 
     private FrameworkElement BuildUsersPage()
@@ -427,7 +405,7 @@ internal sealed class TaskManagerView : UserControl
                 ? $"当前会话用户：{current.Users.Count.ToString(CultureInfo.InvariantCulture)} 个 · 采样：{current.CapturedAtUtc.ToLocalTime():HH:mm:ss}"
                 : "等待 Windows 首次成功采样"),
             new StackPanel().DockRight().Horizontal().Spacing(8).Children(locate));
-        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(usersGrid));
+        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(usersGrid).Row(1));
     }
 
     private FrameworkElement BuildDetailsPage()
@@ -453,7 +431,7 @@ internal sealed class TaskManagerView : UserControl
         var command = new DockPanel().Spacing(8).Children(
             LiveText(() => $"真实进程身份：{snapshots.Current?.Processes.Count ?? 0} 条。"),
             new StackPanel().DockRight().Horizontal().Spacing(8).Children(run, end));
-        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(detailGrid));
+        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(detailGrid).Row(1));
     }
 
     private FrameworkElement BuildServicesPage()
@@ -480,7 +458,7 @@ internal sealed class TaskManagerView : UserControl
         var command = new DockPanel().Spacing(8).Children(
             LiveText(() => $"SCM 服务：{snapshots.Current?.Services.Count ?? 0} 项。"),
             new StackPanel().DockRight().Horizontal().Spacing(8).Children(start, stop, restart, details, manager));
-        return new Grid().Rows("Auto, *").Children(command, new Border().Row(1).Child(serviceGrid));
+        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(serviceGrid).Row(1));
     }
 
     private FrameworkElement BuildSettingsPage()
