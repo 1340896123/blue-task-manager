@@ -15,6 +15,10 @@ internal sealed class TaskManagerWindow : Window
     {
         view = new TaskManagerView(snapshots, preferences, actions, systemInformation, shell, serviceActions, desktop, integration, processIcons);
         Title = "Takao";
+        // Keep the application font on the top-level window as well as the
+        // page host so title-bar content and any generated child controls use
+        // the bundled face through MewUI's inherited text property.
+        FontFamily = AppTypography.DefaultFontFamily;
         // Keep the native window icon in sync with the branded icon shown in
         // the custom title bar. The transparent borderless window does not
         // inherit the executable icon automatically on every backend.
@@ -49,7 +53,6 @@ internal sealed class TaskManagerView : UserControl
     private sealed record NavigationEntry(string Key, string Title, string Glyph);
 
     private static readonly string[] PageKeys = ["overview", "processes", "performance", "history", "startup", "users", "details", "services", "settings", "systemInformation"];
-    private static readonly string[] PageTitles = ["总览", "进程", "性能", "应用历史记录", "启动应用", "用户", "详细信息", "服务", "设置", "系统信息"];
     private static readonly IReadOnlyList<NavigationEntry> NavigationEntries =
     [
         new("overview", "总览", "\uE80F"),
@@ -107,7 +110,6 @@ internal sealed class TaskManagerView : UserControl
     private TextBlock? memorySummary;
     private TextBlock? processSummary;
     private TextBlock? statusText;
-    private TextBlock? pageTitle;
     private TextBlock? systemInfoSummary;
     private TextBlock? systemInfoProcessors;
     private TextBlock? systemInfoGraphics;
@@ -123,6 +125,11 @@ internal sealed class TaskManagerView : UserControl
     private TextBlock? overviewSystemInfoDisks;
     private TextBlock? overviewSystemInfoDisplays;
     private TextBlock? overviewSystemInfoWindows;
+    // The hardware snapshot is shared by the system-information page and the
+    // performance page.  Keeping it in the view lets the performance cards
+    // expose the same Windows facts without making another blocking query on
+    // every sampling tick.
+    private SystemInformationDto? performanceHardware;
     private Button? systemInfoCopyButton;
     private string systemInformationClipboard = string.Empty;
     private TextBlock? integrationSummary;
@@ -207,8 +214,6 @@ internal sealed class TaskManagerView : UserControl
         memorySummary = new TextBlock().Text("内存 —").CenterVertical();
         processSummary = new TextBlock().Text("进程 —").CenterVertical();
         statusText = new TextBlock().Text("正在连接 Windows 数据源…").CenterVertical();
-        pageTitle = new TextBlock().Text(PageTitles[0]).FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical();
-
         var brandIcon = new Image
         {
             Width = 20,
@@ -434,10 +439,13 @@ internal sealed class TaskManagerView : UserControl
         foreach (var page in pages) page.IsVisible = false;
         pages[0].IsVisible = true;
 
-        var body = new Grid().Rows("56, *").Children(
-            ShellComponents.PageHeader(pageTitle!).Row(0),
-            new Border().Row(1).Padding(16).Child(new Grid().Children(pages.ToArray())));
-        return body;
+        // Page titles were rendered in a dedicated 56px strip above every
+        // page. The navigation already identifies the active page, so keep
+        // the content area focused on its actual controls and data.
+        return new Border()
+            .Padding(ShellTokens.PagePadding)
+            .WithTheme((theme, border) => border.Background = GlassMaterial.ContentTint(theme))
+            .Child(new Grid().Children(pages.ToArray()));
     }
 
     private GridViewColumn<TItem> ProcessNameColumn<TItem>(string header, string iconKind, Func<TItem, string> idSelector, Func<TItem, string> nameSelector)
@@ -673,16 +681,16 @@ internal sealed class TaskManagerView : UserControl
 
     private FrameworkElement OverviewMetric(string label, Func<string> value)
     {
-        return new Border().Padding(8, 10).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        return ShellComponents.Shadowed(new Border().Padding(8, 10).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
             })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new TextBlock().Text(label).FontSize(ThemeFontSize.Small),
-                LiveText(value).FontSize(ThemeFontSize.Medium).SemiBold()));
+                LiveText(value).FontSize(ThemeFontSize.Medium).SemiBold())));
     }
 
     private FrameworkElement BuildProcessesPage()
@@ -702,7 +710,7 @@ internal sealed class TaskManagerView : UserControl
             CellPadding = new Thickness(8, 4),
         };
         processGrid.Columns(
-            ProcessNameColumn<ProcessDto>("名称", "process", row => row.Identity, row => row.Name).StarWidth(3).SortBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
+            ProcessNameColumn<ProcessDto>("名称", "process", row => row.Identity, row => row.Name).StarWidth(3, minWidth: 260).SortBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
             new GridViewColumn<ProcessDto>().Header("状态").Width(100).Text(row => row.State == "running" ? "运行中" : row.State),
             new GridViewColumn<ProcessDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Left).SortBy(row => row.CpuPercent ?? double.MinValue).Text(row => Percent(row.CpuPercent)),
             new GridViewColumn<ProcessDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Left).SortBy(row => row.WorkingSetBytes ?? long.MinValue).Text(row => Bytes(row.WorkingSetBytes)),
@@ -737,18 +745,18 @@ internal sealed class TaskManagerView : UserControl
             Transition = ContentTransition.CreateSlide(SlideDirection.Left, 220, 0, Aprillz.MewUI.Animation.Easing.Default),
             Content = BuildProcessInspectorEmpty(),
         };
-        var inspector = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        var inspector = ShellComponents.Shadowed(new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
             })
             .Child(new Grid().Rows("Auto, *").Children(
                 new StackPanel().Vertical().Spacing(2).Children(
                     new TextBlock().Text("进程详情").FontSize(ThemeFontSize.Medium).SemiBold(),
                     new TextBlock().Text("选择列表中的进程查看实时信息").FontSize(ThemeFontSize.Small)),
-                processInspectorTransition.Row(1)));
+                processInspectorTransition.Row(1))));
         var body = new Grid().Columns("*, 320").Spacing(ShellTokens.ContentGap).Children(
             ShellComponents.DataSurface(processGrid),
             inspector.Column(1));
@@ -804,7 +812,7 @@ internal sealed class TaskManagerView : UserControl
             new StackPanel().Vertical().Spacing(12).Children(
                 title,
                 new Border().BorderThickness(new Thickness(0, 0, 0, 1))
-                    .WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder),
+                    .WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha)),
                 metrics,
                 new TextBlock().Text("进程信息").SemiBold(),
                 information,
@@ -819,8 +827,8 @@ internal sealed class TaskManagerView : UserControl
         return new Border().Padding(10).BorderThickness(1).CornerRadius(ShellTokens.ControlRadius)
             .WithTheme((theme, border) =>
             {
-                border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
             })
             .Child(new StackPanel().Vertical().Spacing(3).Children(
                 new TextBlock().Text(label).FontSize(ThemeFontSize.Small),
@@ -900,34 +908,35 @@ internal sealed class TaskManagerView : UserControl
         // surface.  Each card is populated from the current Windows snapshot;
         // absent values stay unknown instead of being replaced with demo data.
         var resources = new StackPanel().Vertical().Spacing(ShellTokens.CardGap).Children(
-            PerformanceResourceCard("CPU", "总体使用率", () => snapshots.Current?.System.CpuPercent is { } cpu ? Percent(cpu) : "预热中 / 不可用", true),
+            PerformanceResourceCard("CPU", "利用率", CpuSummary, true),
             PerformanceResourceCard("内存", "物理内存", MemorySummary, false),
             PerformanceResourceCard("网络", "网络适配器", NetworkSummary, false),
             PerformanceResourceCard("磁盘", "物理磁盘", DiskSummary, false),
             PerformanceResourceCard("GPU", "图形处理器", GpuSummary, false),
-            PerformanceResourceCard("进程", "逻辑处理器 / 进程", ProcessSummary, false));
+            PerformanceResourceCard("进程", "进程 / 线程", ProcessSummary, false));
 
-        var current = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        var current = ShellComponents.Shadowed(new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
             })
             .Child(new Grid().Columns("*, Auto").Children(
                 new StackPanel().Vertical().Spacing(4).Children(
                     new TextBlock().Text("CPU").FontSize(ThemeFontSize.Large).SemiBold(),
+                    LiveText(CpuFactsSummary).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap),
                     new TextBlock().Text("总体使用率 · 来自最近一次成功采样").FontSize(ThemeFontSize.Small)),
                 new StackPanel().Vertical().Spacing(2).Children(
                     LiveText(() => Percent(snapshots.Current?.System.CpuPercent)).FontSize(ThemeFontSize.Large).SemiBold(),
-                    LiveText(() => snapshots.Current is { } point ? point.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss") : "—").FontSize(ThemeFontSize.Small)).Column(1).CenterVertical()));
+                    LiveText(() => snapshots.Current is { } point ? point.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss") : "—").FontSize(ThemeFontSize.Small)).Column(1).CenterVertical())));
 
-        var history = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
-            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
+        var history = ShellComponents.Shadowed(new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) => { border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha); })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new TextBlock().Text("真实采样历史").FontSize(ThemeFontSize.Medium).SemiBold(),
                 new TextBlock().Text("空表表示尚未取得成功采样；未知指标保留为 —，不会以 0 填充。").FontSize(ThemeFontSize.Small),
-                performanceGrid));
+                performanceGrid)));
         var right = new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(current, history);
         return new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
             new DockPanel().LastChildFill(false).Children(
@@ -961,15 +970,15 @@ internal sealed class TaskManagerView : UserControl
             {
                 var surface = theme.Palette.ControlBackground;
                 var alpha = selected ? ShellTokens.SelectedSurfaceAlpha : ShellTokens.SurfaceAlpha;
-                border.Background = Color.FromArgb(alpha, surface.R, surface.G, surface.B);
+                border.Background = GlassMaterial.SelectedSurface(theme, alpha);
                 border.BorderBrush = selected ? theme.Palette.Accent : theme.Palette.ControlBorder;
             })
             .Child(new Grid().Columns("28, *").Children(
                 new TextBlock().Text(glyph).FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical(),
                 new StackPanel().Vertical().Spacing(2).Children(
                     new TextBlock().Text(title).SemiBold(),
-                    LiveText(value).FontSize(ThemeFontSize.Small)) .Column(1).Margin(8, 0, 0, 0)));
-        return card;
+                    LiveText(value).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)) .Column(1).Margin(8, 0, 0, 0)));
+        return ShellComponents.Shadowed(card);
     }
 
     private FrameworkElement BuildHistoryPage()
@@ -1073,21 +1082,21 @@ internal sealed class TaskManagerView : UserControl
                 new TextBlock().Text("启动应用").SemiBold(),
                 LiveText(() => $"Windows Run / RunOnce 与 Startup 文件夹 · {snapshots.Current?.StartupItems.Count ?? 0} 项").FontSize(ThemeFontSize.Small)),
             ShellComponents.CommandBar(openSource, startupSettings, userStartup, commonStartup).DockRight());
-        var details = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        var details = ShellComponents.Shadowed(new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
             })
             .Child(new StackPanel().Vertical().Spacing(10).Children(
                 detailsTitle,
                 detailsStatus,
-                new Border().BorderThickness(new Thickness(0, 0, 0, 1)).WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder),
+                new Border().BorderThickness(new Thickness(0, 0, 0, 1)).WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha)),
                 detailsSource,
                 detailsCommand,
                 detailsLocation,
-                new TextBlock().Text("状态来自 Windows 启动项读取；此页面不会写入或执行启动项。").FontSize(ThemeFontSize.Small)));
+                new TextBlock().Text("状态来自 Windows 启动项读取；此页面不会写入或执行启动项。").FontSize(ThemeFontSize.Small))));
         var body = new Grid().Columns("*, 300").Children(
             ShellComponents.DataSurface(startupGrid),
             details.Column(1).Margin(ShellTokens.ContentGap, 0, 0, 0));
@@ -1151,14 +1160,14 @@ internal sealed class TaskManagerView : UserControl
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
             })
             .Child(new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text(title).FontSize(ThemeFontSize.Small),
                 LiveText(value).FontSize(ThemeFontSize.Large).SemiBold(),
                 new TextBlock().Text(description).FontSize(ThemeFontSize.Small)));
-        return card.Width(220);
+        return ShellComponents.Shadowed(card).Width(220);
     }
 
     private FrameworkElement BuildDetailsPage()
@@ -1256,20 +1265,20 @@ internal sealed class TaskManagerView : UserControl
                     ? $"Windows Service Control Manager · {current.Services.Count.ToString(CultureInfo.InvariantCulture)} 项"
                     : "等待 Windows 首次成功采样").FontSize(ThemeFontSize.Small)),
             ShellComponents.CommandBar(start, stop, restart, details, manager).DockRight());
-        var detailCard = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        var detailCard = ShellComponents.Shadowed(new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
             })
             .Child(new StackPanel().Vertical().Spacing(10).Children(
                 detailsTitle,
                 detailsStatus,
-                new Border().BorderThickness(new Thickness(0, 0, 0, 1)).WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder),
+                new Border().BorderThickness(new Thickness(0, 0, 0, 1)).WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha)),
                 detailsName,
                 detailsPid,
-                new TextBlock().Text("动作只通过 Windows SCM 执行；权限或 pending 状态会保留具体原因。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)));
+                new TextBlock().Text("动作只通过 Windows SCM 执行；权限或 pending 状态会保留具体原因。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap))));
         var body = new Grid().Columns("*, 320").Children(
             ShellComponents.DataSurface(serviceGrid),
             detailCard.Column(1).Margin(ShellTokens.ContentGap, 0, 0, 0));
@@ -1316,15 +1325,15 @@ internal sealed class TaskManagerView : UserControl
             integrationEnableButton,
             integrationDisableButton,
             new Button().Content("刷新状态").OnClick(RefreshIntegration));
-        var integrationCard = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
-            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
+        var integrationCard = ShellComponents.Shadowed(new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) => { border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha); })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new Grid().Columns("*, Auto").Children(
                     new StackPanel().Vertical().Spacing(4).Children(
                         new TextBlock().Text("任务管理器入口").SemiBold(),
                         new TextBlock().Text("只读显示真实 IFEO 状态；写入需要管理员权限并在执行前重新确认版本。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)),
                     integrationControls.Column(1).CenterVertical()),
-                integrationSummary));
+                integrationSummary)));
 
         var version = typeof(TaskManagerWindow).Assembly.GetName().Version?.ToString() ?? "版本信息不可用";
         var updateInfo = SettingCard("当前版本", $"Takao {version} · MewUI Win32 + Direct2D。正式桌面后台服务负责检查、下载和安装。", new TextBlock().Text("已安装").FontSize(ThemeFontSize.Small));
@@ -1340,13 +1349,13 @@ internal sealed class TaskManagerView : UserControl
             new Button().Content("打开系统信息").OnClick(() => SelectPage(Array.IndexOf(PageKeys, "systemInformation"))),
             new Button().Content("打开启动应用").OnClick(() => SelectPage(Array.IndexOf(PageKeys, "startup"))),
             new Button().Content("打开服务").OnClick(() => SelectPage(Array.IndexOf(PageKeys, "services"))));
-        var sourceCard = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
-            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
+        var sourceCard = ShellComponents.Shadowed(new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) => { border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha); })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new TextBlock().Text("来源与能力").SemiBold(),
                 new TextBlock().Text("数据来自 Windows 原生进程、性能、启动项、SCM 和硬件接口；页面只显示实际可用能力。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap),
                 sourceStatus,
-                sourceLinks));
+                sourceLinks)));
 
         var sampling = SettingGroup("采样与显示", "控制实时采样和数据行的阅读密度。",
             SettingCard("采样间隔", "控制真实 Windows 采样频率。", interval),
@@ -1418,8 +1427,8 @@ internal sealed class TaskManagerView : UserControl
             new Border().Padding(12, 10).BorderThickness(1).CornerRadius(ShellTokens.ControlRadius)
                 .WithTheme((theme, border) =>
                 {
-                    border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha);
-                    border.BorderBrush = theme.Palette.ControlBorder;
+                    border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                    border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
                 })
                 .Child(systemInfoSummary),
             cards);
@@ -1428,19 +1437,19 @@ internal sealed class TaskManagerView : UserControl
 
     private static FrameworkElement SystemInfoCard(string title, string description, TextBlock details)
     {
-        return new Border().Padding(16).Margin(0, 0, ShellTokens.CardGap, ShellTokens.CardGap)
+        return ShellComponents.Shadowed(new Border().Padding(16).Margin(0, 0, ShellTokens.CardGap, ShellTokens.CardGap)
             .BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
-                border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
             })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new StackPanel().Vertical().Spacing(2).Children(
                     new TextBlock().Text(title).FontSize(ThemeFontSize.Medium).SemiBold(),
                     new TextBlock().Text(description).FontSize(ThemeFontSize.Small)
                         .TextWrapping(TextWrapping.NoWrap).TextTrimming(TextTrimming.CharacterEllipsis)),
-                details.TextWrapping(TextWrapping.Wrap).LineSpacing(2)));
+                details.TextWrapping(TextWrapping.Wrap).LineSpacing(2))), ShellTokens.PanelRadius);
     }
 
     private async Task RefreshSystemInformation(bool refresh)
@@ -1448,6 +1457,7 @@ internal sealed class TaskManagerView : UserControl
         try
         {
             var info = await systemInformation.ReadAsync(refresh, CancellationToken.None);
+            performanceHardware = info;
             if (systemInfoSummary is null) return;
             systemInformationClipboard = FormatSystemInformation(info);
             systemInfoSummary.Text = $"状态：{SystemInformationStatus(info.Status)} · 采集时间：{FormatCaptureTime(info.CapturedAtUtc)}";
@@ -1721,27 +1731,27 @@ internal sealed class TaskManagerView : UserControl
 
     private static FrameworkElement SettingCard(string title, string description, FrameworkElement control)
     {
-        return new Border().Padding(8, 10).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        return ShellComponents.Shadowed(new Border().Padding(8, 10).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
-                border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha);
             })
             .Child(new Grid().Columns("*, Auto").Children(
                 new StackPanel().Vertical().Spacing(4).Children(
                     new TextBlock().Text(title).SemiBold(),
                     new TextBlock().Text(description).FontSize(ThemeFontSize.Small)
                         .TextWrapping(TextWrapping.NoWrap).TextTrimming(TextTrimming.CharacterEllipsis)),
-                control.Column(1).CenterVertical()));
+                control.Column(1).CenterVertical())), ShellTokens.PanelRadius);
     }
 
     private static FrameworkElement SettingRow(string title, string description, FrameworkElement control) => SettingCard(title, description, control);
 
     private FrameworkElement MetricRow(string label, Func<string> value)
     {
-        return new Border().Padding(16).BorderThickness(1).CornerRadius(8)
-            .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
-            .Child(new Grid().Columns("*, Auto").Children(new TextBlock().Text(label), LiveText(value).Column(1).SemiBold()));
+        return ShellComponents.Shadowed(new Border().Padding(16).BorderThickness(1).CornerRadius(8)
+            .WithTheme((theme, border) => { border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder.WithAlpha(ShellTokens.BorderAlpha); })
+            .Child(new Grid().Columns("*, Auto").Children(new TextBlock().Text(label), LiveText(value).Column(1).SemiBold())), 8);
     }
 
     private TextBlock LiveText(Func<string> value)
@@ -1755,8 +1765,6 @@ internal sealed class TaskManagerView : UserControl
     {
         currentPage = Math.Clamp(index, 0, pages.Count - 1);
         for (var i = 0; i < pages.Count; i++) pages[i].IsVisible = i == currentPage;
-        if (pageTitle is not null) pageTitle.Text = PageTitles[currentPage];
-
         var pageKey = PageKeys[currentPage];
         var mainIndex = Array.FindIndex(MainNavigationEntries, item => item.Key == pageKey);
         if (navigation is not null && navigation.SelectedIndex != mainIndex)
@@ -1986,10 +1994,14 @@ internal sealed class TaskManagerView : UserControl
         var dialog = new Window
         {
             Title = "运行新任务",
+            FontFamily = AppTypography.DefaultFontFamily,
+            Background = Color.Transparent,
+            AllowsTransparency = true,
             StartupLocation = WindowStartupLocation.CenterOwner,
             WindowSize = WindowSize.FitContentSize(520, 280),
             Padding = new Thickness(20),
         };
+        dialog.OnLoaded(() => WindowChromeService.Apply(dialog));
         var launch = new Button().Content("运行");
         launch.OnClick(() =>
         {
@@ -2067,8 +2079,37 @@ internal sealed class TaskManagerView : UserControl
     {
         var current = snapshots.Current;
         return current is null
-            ? "进程表：等待 Windows 首次成功采样"
-            : $"进程 {current.System.ProcessCount.ToString(CultureInfo.InvariantCulture)} · CPU {Percent(current.System.CpuPercent)} · 内存 {Percent(current.System.MemoryPercent)} · 网络 {Rate(current.System.NetworkReceiveBytesPerSecond, current.System.NetworkSendBytesPerSecond)}";
+            ? "等待 Windows 首次成功采样"
+            : $"{current.System.ProcessCount.ToString(CultureInfo.InvariantCulture)} 个 · CPU {Percent(current.System.CpuPercent)} · 内存 {Percent(current.System.MemoryPercent)}\n线程 {Text(current.System.ThreadCount)} · 句柄 {Text(current.System.HandleCount)} · 逻辑处理器 {current.System.LogicalProcessorCount.ToString(CultureInfo.InvariantCulture)}";
+    }
+
+    private string CpuSummary()
+    {
+        var current = snapshots.Current;
+        if (current is null) return "等待 Windows 首次成功采样";
+        var processor = performanceHardware?.Processors.FirstOrDefault();
+        var name = ShortText(processor?.Name, 34);
+        var cores = processor?.CoreCount is { } coreCount ? $"核心 {coreCount.ToString(CultureInfo.InvariantCulture)}" : "核心 —";
+        var logical = processor?.LogicalProcessorCount ?? (uint?)current.System.LogicalProcessorCount;
+        var logicalText = logical is { } logicalCount ? $"逻辑处理器 {logicalCount.ToString(CultureInfo.InvariantCulture)}" : "逻辑处理器 —";
+        return $"{Percent(current.System.CpuPercent)}\n{name} · {cores} · {logicalText}";
+    }
+
+    private string CpuFactsSummary()
+    {
+        var current = snapshots.Current;
+        var processor = performanceHardware?.Processors.FirstOrDefault();
+        var name = ShortText(processor?.Name, 48);
+        var logical = processor?.LogicalProcessorCount ?? (uint?)current?.System.LogicalProcessorCount;
+        var coreText = processor?.CoreCount is { } cores ? $"核心 {cores.ToString(CultureInfo.InvariantCulture)}" : "核心 —";
+        var logicalText = logical is { } count ? $"逻辑处理器 {count.ToString(CultureInfo.InvariantCulture)}" : "逻辑处理器 —";
+        var processText = current is null ? "进程 —" : $"进程 {current.System.ProcessCount.ToString(CultureInfo.InvariantCulture)}";
+        var threadText = current is null ? "线程 —" : $"线程 {Text(current.System.ThreadCount)}";
+        var handleText = current is null ? "句柄 —" : $"句柄 {Text(current.System.HandleCount)}";
+        var uptimeText = current is null ? "运行时间 —" : $"运行时间 {Uptime(current.System.UptimeSeconds)}";
+        var hardware = string.Join(" · ", new[] { name, coreText, logicalText }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        var runtime = string.Join(" · ", new[] { processText, threadText, handleText, uptimeText }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        return hardware + "\n" + runtime;
     }
 
     private string MemorySummary()
@@ -2077,30 +2118,70 @@ internal sealed class TaskManagerView : UserControl
         if (system is null) return "等待 Windows 首次成功采样";
         var used = Bytes(system.UsedPhysicalBytes);
         var total = Bytes(system.TotalPhysicalBytes);
-        return $"{used} / {total}（{Percent(system.MemoryPercent)}）";
+        return $"{used} / {total}（{Percent(system.MemoryPercent)}）\n可用 {Bytes(system.AvailablePhysicalBytes)} · 提交 {Bytes(system.CommitBytes)} / {Bytes(system.CommitLimitBytes)}";
     }
 
     private string NetworkSummary()
     {
         var current = snapshots.Current;
         if (current is null) return "等待 Windows 首次成功采样";
-        return $"{current.System.NetworkInterfaceCount.ToString(CultureInfo.InvariantCulture)} 个 · {Rate(current.System.NetworkReceiveBytesPerSecond, current.System.NetworkSendBytesPerSecond)}";
+        var adapter = current.NetworkAdapters.FirstOrDefault(row => row.Status.Equals("IfOperStatusUp", StringComparison.OrdinalIgnoreCase))
+            ?? current.NetworkAdapters.FirstOrDefault();
+        var adapterText = adapter is null ? "—" : ShortText(adapter.Alias, 22);
+        var link = adapter is null ? "—" : FormatLinkSpeed(adapter.ReceiveLinkSpeedBitsPerSecond);
+        return $"{current.System.NetworkInterfaceCount.ToString(CultureInfo.InvariantCulture)} 个 · ↓ {PerSecond(current.System.NetworkReceiveBytesPerSecond)} · ↑ {PerSecond(current.System.NetworkSendBytesPerSecond)}\n{adapterText} · 链路 {link}";
     }
 
     private string DiskSummary()
     {
         var current = snapshots.Current;
         if (current is null) return "等待 Windows 首次成功采样";
-        var identity = current.PhysicalDisks.Count == 0 ? "不可用" : string.Join("、", current.PhysicalDisks.Take(3).Select(row => row.Name));
-        return $"{current.PhysicalDisks.Count.ToString(CultureInfo.InvariantCulture)} 个 · {Rate(current.System.DiskReadBytesPerSecond, current.System.DiskWriteBytesPerSecond)}\n{identity}";
+        var disk = current.PhysicalDisks.FirstOrDefault();
+        var identity = disk is null ? "不可用" : ShortText(disk.Model ?? disk.Name, 28);
+        var media = disk?.MediaType ?? disk?.BusType ?? "介质 —";
+        return $"{current.PhysicalDisks.Count.ToString(CultureInfo.InvariantCulture)} 个 · 活动 {Percent(current.System.DiskActivePercent)}\n{identity} · {media} · 读 {PerSecond(current.System.DiskReadBytesPerSecond)} · 写 {PerSecond(current.System.DiskWriteBytesPerSecond)}";
     }
 
     private string GpuSummary()
     {
         var current = snapshots.Current;
         if (current is null) return "等待 Windows 首次成功采样";
-        var names = current.GpuAdapters.Count == 0 ? "不可用" : string.Join("、", current.GpuAdapters.Take(3).Select(row => row.Description ?? row.Id));
-        return $"{current.GpuAdapters.Count.ToString(CultureInfo.InvariantCulture)} 个 · {Percent(current.System.GpuPercent)}\n{names}";
+        var gpu = current.GpuAdapters.FirstOrDefault();
+        var hardware = performanceHardware?.GraphicsAdapters.FirstOrDefault(row => gpu is null || string.Equals(row.Name, gpu.Description, StringComparison.OrdinalIgnoreCase));
+        var name = ShortText(gpu?.Description ?? hardware?.Name ?? gpu?.Id, 28);
+        return $"{current.GpuAdapters.Count.ToString(CultureInfo.InvariantCulture)} 个 · {Percent(current.System.GpuPercent)}\n{name} · 专用 {FormatHardwareBytes(hardware?.DedicatedMemoryBytes)} · 引擎 {gpu?.BusiestEngine ?? "—"}";
+    }
+
+    private static string ShortText(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return "—";
+        value = value.Trim();
+        return value.Length <= maxLength ? value : value[..Math.Max(1, maxLength - 1)] + "…";
+    }
+
+    private static string FormatHardwareBytes(string? value)
+        => ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var bytes) ? FormatBytes(bytes) : "—";
+
+    private static string PerSecond(double? value)
+        => value is { } number && double.IsFinite(number) ? $"{FormatBytes(number)}/s" : "—";
+
+    private static string Uptime(double seconds)
+    {
+        if (!double.IsFinite(seconds) || seconds < 0) return "—";
+        var span = TimeSpan.FromSeconds(seconds);
+        return span.TotalDays >= 1
+            ? $"{(int)span.TotalDays}.{span.Hours:00}:{span.Minutes:00}:{span.Seconds:00}"
+            : $"{span.Hours:00}:{span.Minutes:00}:{span.Seconds:00}";
+    }
+
+    private static string FormatLinkSpeed(string? value)
+    {
+        if (!ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var bits)) return "—";
+        var number = (double)bits;
+        var units = new[] { "bps", "Kbps", "Mbps", "Gbps", "Tbps" };
+        var index = 0;
+        while (number >= 1000 && index < units.Length - 1) { number /= 1000; index++; }
+        return $"{number:0.#} {units[index]}";
     }
 
     private static double? SumKnown(IEnumerable<double?> values)
@@ -2118,10 +2199,5 @@ internal sealed class TaskManagerView : UserControl
         return $"{bytes:0.0} {units[index]}";
     }
 
-    private static Color Glass(Color baseColor, bool dark)
-    {
-        var alpha = (byte)(dark ? 222 : 232);
-        return Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
-    }
 }
 

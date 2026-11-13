@@ -19,11 +19,24 @@ internal static class WindowChromeService
 
         try
         {
-            var backdrop = BitConverter.GetBytes((int)DWM_SYSTEMBACKDROP_TYPE.DWMSBT_MAINWINDOW);
+            // Transient Acrylic is the Fluent material intended for utility
+            // surfaces.  Unlike the opaque theme clear, it keeps the desktop
+            // backdrop visible behind our translucent page layers.
+            var backdrop = BitConverter.GetBytes((int)DWM_SYSTEMBACKDROP_TYPE.DWMSBT_TRANSIENTWINDOW);
             var result = PInvoke.DwmSetWindowAttribute(
                 (HWND)window.Handle,
                 DWMWINDOWATTRIBUTE.DWMWA_SYSTEMBACKDROP_TYPE,
                 backdrop);
+            if (!result.Succeeded)
+            {
+                // Mica is available on a wider range of Windows 11 builds;
+                // retain a backdrop when Acrylic is rejected by the shell.
+                backdrop = BitConverter.GetBytes((int)DWM_SYSTEMBACKDROP_TYPE.DWMSBT_MAINWINDOW);
+                result = PInvoke.DwmSetWindowAttribute(
+                    (HWND)window.Handle,
+                    DWMWINDOWATTRIBUTE.DWMWA_SYSTEMBACKDROP_TYPE,
+                    backdrop);
+            }
             return result.Succeeded;
         }
         catch (DllNotFoundException)

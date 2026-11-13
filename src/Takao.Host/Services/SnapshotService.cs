@@ -105,79 +105,92 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
         var nextSlowAttempt = DateTime.MinValue;
         long sampleId = 0;
         long nextSample = 0;
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            var settings = Settings;
-            if (!settings.Paused && Stopwatch.GetTimestamp() >= nextSample)
+            while (!stoppingToken.IsCancellationRequested)
             {
-                try
+                var settings = Settings;
+                if (!settings.Paused && Stopwatch.GetTimestamp() >= nextSample)
                 {
-                    var started = Stopwatch.GetTimestamp();
-                    var raw = _collector.Collect();
-                    var telemetry = FreshTelemetry(_telemetry.Current, settings.IntervalMs);
-                    var hwInfo = _hwInfo.Current;
-                    ApplyTelemetry(raw, telemetry, settings.IntervalMs);
-                    var processNetwork = ProcessNetworkCollector.Apply(raw.Processes, _processNetwork.Current, settings.IntervalMs);
-                    var capturedAt = DateTime.UtcNow;
-                    bool refreshSlow;
-                    lock (_gate) { refreshSlow = _forceSlowRefresh; _forceSlowRefresh = false; }
-                    if (_slowRead is { IsCompleted: true } completed)
+                    try
                     {
-                        _slowRead = null;
-                        try { slow = await completed; }
-                        catch (Exception ex)
+                        var started = Stopwatch.GetTimestamp();
+                        var raw = _collector.Collect();
+                        var telemetry = FreshTelemetry(_telemetry.Current, settings.IntervalMs);
+                        var hwInfo = _hwInfo.Current;
+                        ApplyTelemetry(raw, telemetry, settings.IntervalMs);
+                        var processNetwork = ProcessNetworkCollector.Apply(raw.Processes, _processNetwork.Current, settings.IntervalMs);
+                        var capturedAt = DateTime.UtcNow;
+                        bool refreshSlow;
+                        lock (_gate) { refreshSlow = _forceSlowRefresh; _forceSlowRefresh = false; }
+                        if (_slowRead is { IsCompleted: true } completed)
                         {
-                            logger.LogWarning(ex, "慢来源读取失败；保留上次来源，基础采样继续");
-                            slow = slow with { Warnings = slow.Warnings.Where(w => w.Code != "slowSourceError").Append(new Unavailable("slowSourceError", "服务、启动项或会话读取失败，保留上次来源并稍后重试。")).TakeLast(20).ToList() };
-                            nextSlowAttempt = DateTime.UtcNow.AddSeconds(5);
+                            _slowRead = null;
+                            try { slow = await completed; }
+                            catch (Exception ex)
+                            {
+                                logger.LogWarning(ex, "慢来源读取失败；保留上次来源，基础采样继续");
+                                slow = slow with { Warnings = slow.Warnings.Where(w => w.Code != "slowSourceError").Append(new Unavailable("slowSourceError", "服务、启动项或会话读取失败，保留上次来源并稍后重试。")).TakeLast(20).ToList() };
+                                nextSlowAttempt = DateTime.UtcNow.AddSeconds(5);
+                            }
                         }
-                    }
-                    if ((slow.CapturedAtUtc is null || capturedAt - slow.CapturedAtUtc.Value > TimeSpan.FromSeconds(15) || refreshSlow) && capturedAt >= nextSlowAttempt)
-                    {
-                        if (_slowRead is null) _slowRead = Task.Run(SlowDataReader.Read, CancellationToken.None);
-                        else if (refreshSlow) lock (_gate) _forceSlowRefresh = true;
-                    }
-                    var users = AggregateUsers(slow.Users, raw.Processes);
-                    lock (_gate)
-                    {
-                        // A pause accepted during the native collection must not
-                        // publish a later sample/history point after its response.
-                        if (_settings.Paused) continue;
-                        if (_resetHistory) { _history.Clear(); _historyPrevious.Clear(); _resetHistory = false; }
-                        Accumulate(raw, capturedAt);
-                        _performance.Enqueue(new(capturedAt, raw.System.CpuPercent, raw.System.MemoryPercent, raw.System.NetworkReceiveBytesPerSecond, raw.System.NetworkSendBytesPerSecond)
+                        if ((slow.CapturedAtUtc is null || capturedAt - slow.CapturedAtUtc.Value > TimeSpan.FromSeconds(15) || refreshSlow) && capturedAt >= nextSlowAttempt)
                         {
-                            TelemetryCapturedAtUtc = telemetry.Status.CapturedAtUtc, GpuPercent = raw.System.GpuPercent, DiskActivePercent = raw.System.DiskActivePercent,
-                            CpuTelemetryCapturedAtUtc = telemetry.Status.CpuCapturedAtUtc,
-                            LogicalProcessors = telemetry.LogicalProcessors.Select(row => new LogicalProcessorHistoryPoint(row.Id, row.Percent)).ToArray(),
-                            NetworkAdapters = raw.NetworkAdapters.Where(row => row.ReceiveBytesPerSecond.HasValue || row.SendBytesPerSecond.HasValue).Select(row => new ResourceHistoryPoint(row.Id, null, row.ReceiveBytesPerSecond, row.SendBytesPerSecond)).ToArray(),
-                            PhysicalDisks = telemetry.Disks.Select(row => new ResourceHistoryPoint(row.Id, row.ActivePercent, row.ReadBytesPerSecond, row.WriteBytesPerSecond)).ToArray(),
-                            GpuAdapters = telemetry.Gpus.Select(row => new ResourceHistoryPoint(row.Id, row.UtilizationPercent, null, null)).ToArray()
-                        });
-                        while (_performance.Count > 120) _performance.Dequeue();
-                        _snapshot = new(++sampleId, capturedAt, _sessionStartedAt, _settings.IntervalMs, _settings.Paused, raw.System, raw.Processes,
-                            slow.Services, slow.StartupItems, users, _history.Values.Select(item => item.ToDto()).OrderByDescending(item => item.IsRunning).ThenBy(item => item.Name).ToArray(),
-                            _performance.ToArray(), Capabilities, preferences.Warning is { } warning ? slow.Warnings.Append(warning).ToArray() : slow.Warnings, slow.CapturedAtUtc)
-                        { SamplingDurationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds, NetworkAdapters = raw.NetworkAdapters,
-                            PhysicalDisks = telemetry.Disks, GpuAdapters = telemetry.Gpus, Telemetry = telemetry.Status,
-                            LogicalProcessors = telemetry.LogicalProcessors, HwInfo = hwInfo.Summary, ProcessNetwork = processNetwork };
-                        Invalidate();
+                            if (_slowRead is null) _slowRead = Task.Run(SlowDataReader.Read, CancellationToken.None);
+                            else if (refreshSlow) lock (_gate) _forceSlowRefresh = true;
+                        }
+                        var users = AggregateUsers(slow.Users, raw.Processes);
+                        lock (_gate)
+                        {
+                            // A pause accepted during the native collection must not
+                            // publish a later sample/history point after its response.
+                            if (_settings.Paused) continue;
+                            if (_resetHistory) { _history.Clear(); _historyPrevious.Clear(); _resetHistory = false; }
+                            Accumulate(raw, capturedAt);
+                            _performance.Enqueue(new(capturedAt, raw.System.CpuPercent, raw.System.MemoryPercent, raw.System.NetworkReceiveBytesPerSecond, raw.System.NetworkSendBytesPerSecond)
+                            {
+                                TelemetryCapturedAtUtc = telemetry.Status.CapturedAtUtc,
+                                GpuPercent = raw.System.GpuPercent,
+                                DiskActivePercent = raw.System.DiskActivePercent,
+                                CpuTelemetryCapturedAtUtc = telemetry.Status.CpuCapturedAtUtc,
+                                LogicalProcessors = telemetry.LogicalProcessors.Select(row => new LogicalProcessorHistoryPoint(row.Id, row.Percent)).ToArray(),
+                                NetworkAdapters = raw.NetworkAdapters.Where(row => row.ReceiveBytesPerSecond.HasValue || row.SendBytesPerSecond.HasValue).Select(row => new ResourceHistoryPoint(row.Id, null, row.ReceiveBytesPerSecond, row.SendBytesPerSecond)).ToArray(),
+                                PhysicalDisks = telemetry.Disks.Select(row => new ResourceHistoryPoint(row.Id, row.ActivePercent, row.ReadBytesPerSecond, row.WriteBytesPerSecond)).ToArray(),
+                                GpuAdapters = telemetry.Gpus.Select(row => new ResourceHistoryPoint(row.Id, row.UtilizationPercent, null, null)).ToArray()
+                            });
+                            while (_performance.Count > 120) _performance.Dequeue();
+                            _snapshot = new(++sampleId, capturedAt, _sessionStartedAt, _settings.IntervalMs, _settings.Paused, raw.System, raw.Processes,
+                                slow.Services, slow.StartupItems, users, _history.Values.Select(item => item.ToDto()).OrderByDescending(item => item.IsRunning).ThenBy(item => item.Name).ToArray(),
+                                _performance.ToArray(), Capabilities, preferences.Warning is { } warning ? slow.Warnings.Append(warning).ToArray() : slow.Warnings, slow.CapturedAtUtc)
+                            {
+                                SamplingDurationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds,
+                                NetworkAdapters = raw.NetworkAdapters,
+                                PhysicalDisks = telemetry.Disks,
+                                GpuAdapters = telemetry.Gpus,
+                                Telemetry = telemetry.Status,
+                                LogicalProcessors = telemetry.LogicalProcessors,
+                                HwInfo = hwInfo.Summary,
+                                ProcessNetwork = processNetwork
+                            };
+                            Invalidate();
+                        }
+                        _telemetry.Request(raw.Processes);
+                        _hwInfo.Request();
+                        _processNetwork.Request(raw.Processes);
+                        nextSample = Stopwatch.GetTimestamp() + settings.IntervalMs * Stopwatch.Frequency / 1000;
                     }
-                    _telemetry.Request(raw.Processes);
-                    _hwInfo.Request();
-                    _processNetwork.Request(raw.Processes);
-                    nextSample = Stopwatch.GetTimestamp() + settings.IntervalMs * Stopwatch.Frequency / 1000;
+                    catch (Exception exception)
+                    {
+                        logger.LogError(exception, "Windows 采样失败；保留最后成功快照");
+                        lock (_gate) { if (_snapshot is not null) _snapshot = _snapshot with { Warnings = _snapshot.Warnings.Append(new Unavailable("error", "最新系统采样失败；当前数据是上次成功快照。")).TakeLast(20).ToArray() }; Invalidate(); }
+                        nextSample = Stopwatch.GetTimestamp() + settings.IntervalMs * Stopwatch.Frequency / 1000;
+                    }
                 }
-                catch (Exception exception)
-                {
-                    logger.LogError(exception, "Windows 采样失败；保留最后成功快照");
-                    lock (_gate) { if (_snapshot is not null) _snapshot = _snapshot with { Warnings = _snapshot.Warnings.Append(new Unavailable("error", "最新系统采样失败；当前数据是上次成功快照。")).TakeLast(20).ToArray() }; Invalidate(); }
-                    nextSample = Stopwatch.GetTimestamp() + settings.IntervalMs * Stopwatch.Frequency / 1000;
-                }
+                // Settings react within 100ms while sampling itself remains single-threaded and bounded.
+                await Task.Delay(100, stoppingToken);
             }
-            // Settings react within 100ms while sampling itself remains single-threaded and bounded.
-            await Task.Delay(100, stoppingToken);
         }
+        catch { }
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
@@ -238,8 +251,13 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
             Status = sample.Status with { Unavailable = new Dictionary<string, Unavailable>(sample.Status.Unavailable) { ["gpu"] = stale, ["disk"] = stale, ["logicalProcessors"] = stale } },
             Processes = new Dictionary<string, GpuReading>(),
             Gpus = sample.Gpus.Select(row => row with { UtilizationPercent = null, BusiestEngine = null, Unavailable = new Dictionary<string, Unavailable>(row.Unavailable) { ["utilizationPercent"] = stale } }).ToArray(),
-            Disks = sample.Disks.Select(row => row with { ReadBytesPerSecond = null, WriteBytesPerSecond = null, ActivePercent = null,
-                Unavailable = new Dictionary<string, Unavailable>(row.Unavailable) { ["readBytesPerSecond"] = stale, ["writeBytesPerSecond"] = stale, ["activePercent"] = stale } }).ToArray()
+            Disks = sample.Disks.Select(row => row with
+            {
+                ReadBytesPerSecond = null,
+                WriteBytesPerSecond = null,
+                ActivePercent = null,
+                Unavailable = new Dictionary<string, Unavailable>(row.Unavailable) { ["readBytesPerSecond"] = stale, ["writeBytesPerSecond"] = stale, ["activePercent"] = stale }
+            }).ToArray()
         };
     }
 
@@ -277,9 +295,18 @@ public sealed class SnapshotService(ILogger<SnapshotService> logger, Preferences
             var unavailable = new Dictionary<string, Unavailable>(user.Unavailable);
             if (owned.Count == 0 || owned.Any(process => process.CpuPercent is null)) unavailable["cpuPercent"] = new("partial", "聚合仅包含可确定归属且可读取的进程；部分 CPU 不可用。");
             if (owned.Count == 0 || owned.Any(process => process.WorkingSetBytes is null)) unavailable["workingSetBytes"] = new("partial", "聚合仅包含可确定归属且可读取的进程；部分工作集不可用。");
-            return new UserDto { SessionId = user.SessionId, UserName = user.UserName, StationName = user.StationName, State = user.State,
-                ProcessCount = owned.Count, UnreadableProcessCount = unknown, CpuPercent = owned.Count > 0 && owned.All(process => process.CpuPercent.HasValue) ? owned.Sum(process => process.CpuPercent!.Value) : null,
-                WorkingSetBytes = owned.Count > 0 && owned.All(process => process.WorkingSetBytes.HasValue) ? owned.Sum(process => process.WorkingSetBytes!.Value) : null, Unavailable = unavailable };
+            return new UserDto
+            {
+                SessionId = user.SessionId,
+                UserName = user.UserName,
+                StationName = user.StationName,
+                State = user.State,
+                ProcessCount = owned.Count,
+                UnreadableProcessCount = unknown,
+                CpuPercent = owned.Count > 0 && owned.All(process => process.CpuPercent.HasValue) ? owned.Sum(process => process.CpuPercent!.Value) : null,
+                WorkingSetBytes = owned.Count > 0 && owned.All(process => process.WorkingSetBytes.HasValue) ? owned.Sum(process => process.WorkingSetBytes!.Value) : null,
+                Unavailable = unavailable
+            };
         }).ToList();
     }
 

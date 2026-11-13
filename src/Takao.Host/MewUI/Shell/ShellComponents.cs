@@ -15,7 +15,25 @@ internal static class ShellComponents
             .Rows($"{ShellTokens.TitleBarHeight}, *")
             .Columns($"{ShellTokens.SidebarWidth}, *");
         root.Children(titleBar.ColumnSpan(2), sidebar.Row(1), content.Row(1).Column(1));
-        return root;
+
+        // Put two low-alpha color blooms behind the shell. They are ambient
+        // light sources rather than decorative content, so translucent cards
+        // keep a visible acrylic read even over a flat desktop wallpaper.
+        var ambientPrimary = new Ellipse { Width = 1400, Height = 900, IsHitTestVisible = false };
+        var ambientSecondary = new Ellipse { Width = 1200, Height = 900, IsHitTestVisible = false };
+        Canvas.SetLeft(ambientPrimary, -230);
+        Canvas.SetTop(ambientPrimary, -330);
+        Canvas.SetLeft(ambientSecondary, -100);
+        Canvas.SetTop(ambientSecondary, 250);
+        var ambient = new Canvas { IsHitTestVisible = false }
+            .Children(ambientPrimary, ambientSecondary)
+            .WithTheme((theme, _) =>
+            {
+                ambientPrimary.Fill = GlassMaterial.AmbientPrimary(theme);
+                ambientSecondary.Fill = GlassMaterial.AmbientSecondary(theme);
+            });
+
+        return new Grid().Children(ambient, root);
     }
 
     public static FrameworkElement TitleBar(
@@ -32,11 +50,8 @@ internal static class ShellComponents
             .BorderThickness(new Thickness(0, 0, 0, 1))
             .WithTheme((theme, border) =>
             {
-                border.Background = Color.FromArgb(ShellTokens.GlassTitleAlpha,
-                    theme.IsDark ? (byte)30 : (byte)224,
-                    theme.IsDark ? (byte)34 : (byte)241,
-                    theme.IsDark ? (byte)42 : (byte)252);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Title(theme);
+                border.BorderBrush = GlassMaterial.Border(theme);
             })
             .Child(new Grid().Columns("204, *, Auto, Auto").Children(
                 brand,
@@ -57,39 +72,35 @@ internal static class ShellComponents
             .BorderThickness(new Thickness(0, 0, 1, 0))
             .WithTheme((theme, border) =>
             {
-                border.Background = Color.FromArgb(ShellTokens.GlassSidebarAlpha,
-                    theme.IsDark ? (byte)30 : (byte)219,
-                    theme.IsDark ? (byte)34 : (byte)237,
-                    theme.IsDark ? (byte)42 : (byte)250);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Sidebar(theme);
+                border.BorderBrush = GlassMaterial.Border(theme);
             })
             .Child(new DockPanel().Spacing(8).Children(footer.DockBottom(), navigation));
     }
 
-    public static FrameworkElement PageHeader(FrameworkElement title)
-    {
-        return new Border()
-            .Padding(16, 0)
-            .BorderThickness(new Thickness(0, 0, 0, 1))
-            .WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder)
-            .Child(title);
-    }
-
     public static FrameworkElement DataSurface(FrameworkElement content)
     {
-        return new Border()
+        var surface = new Border()
             .BorderThickness(1)
             .CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 // Keep data surfaces translucent so the window backdrop remains
                 // visible while preserving a readable contrast layer.
-                var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
-                border.BorderBrush = theme.Palette.ControlBorder;
+                border.Background = GlassMaterial.Surface(theme, ShellTokens.SurfaceAlpha);
+                border.BorderBrush = GlassMaterial.Border(theme);
             })
             .Child(content);
+        return Shadowed(surface);
     }
+
+    public static FrameworkElement Shadowed(FrameworkElement content, double radius = ShellTokens.PanelRadius)
+        => new ShadowDecorator()
+            .BlurRadius(8)
+            .OffsetY(2)
+            .ShadowColor(Color.FromArgb(34, 24, 46, 64))
+            .CornerRadius(radius)
+            .Child(content);
 
     public static FrameworkElement CommandBar(params FrameworkElement[] commands)
     {

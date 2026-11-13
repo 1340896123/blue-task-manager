@@ -103,7 +103,14 @@ try
             "dark" => ThemeVariant.Dark,
             _ => ThemeVariant.System,
         };
-        Application.Run(window, () => Application.Current.SetTheme(theme));
+        Application.Run(window, () =>
+        {
+            // Install one application-level sheet before the first frame so
+            // buttons, inputs, selectors and dialogs on every page use the
+            // same Fluent glass material.
+            Application.Current.StyleSheet = GlassTheme.CreateStyleSheet();
+            Application.Current.SetTheme(theme);
+        });
         if (!app.Lifetime.ApplicationStopping.IsCancellationRequested)
             app.Lifetime.StopApplication();
         await app.StopAsync();
