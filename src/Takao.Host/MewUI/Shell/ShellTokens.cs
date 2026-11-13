@@ -13,6 +13,7 @@ internal static class ShellTokens
     public const double NavigationItemHeight = 44;
     public const double CommandHeight = 44;
     public const double PageHeaderHeight = 56;
+    public const double TitleBarSummaryGap = 12;
     public const double PanelRadius = 8;
     public const double ControlRadius = 4;
 

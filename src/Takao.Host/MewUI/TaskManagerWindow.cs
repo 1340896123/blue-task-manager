@@ -11,17 +11,24 @@ internal sealed class TaskManagerWindow : Window
 {
     private readonly TaskManagerView view;
 
-    public TaskManagerWindow(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions, DesktopWindowService desktop, TaskManagerIntegrationService integration)
+    public TaskManagerWindow(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions, DesktopWindowService desktop, TaskManagerIntegrationService integration, ProcessIconService processIcons)
     {
-        view = new TaskManagerView(snapshots, preferences, actions, systemInformation, shell, serviceActions, desktop, integration);
+        view = new TaskManagerView(snapshots, preferences, actions, systemInformation, shell, serviceActions, desktop, integration, processIcons);
         Title = "Takao";
+        // Keep the native window icon in sync with the branded icon shown in
+        // the custom title bar. The transparent borderless window does not
+        // inherit the executable icon automatically on every backend.
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "branding", "takao.ico");
+        if (File.Exists(iconPath)) Icon = IconSource.FromFile(iconPath);
         // MewUI's default Window style supplies an opaque theme background.
         // Keep the native surface transparent so the shell's acrylic layers
         // and the DWM backdrop remain visible on every page.
         Background = Color.Transparent;
         Padding = Thickness.Zero;
-        this.Resizable(1100, 720, minWidth: 960, minHeight: 640)
-            .ExtendClientAreaTitleBarHeight(48)
+        // Borderless windows already use the full client surface. Extending the
+        // client area again offsets the custom title bar outside the Win32
+        // surface, so keep the two modes mutually exclusive.
+        this.Fixed(1100, 720)
             .Borderless(true)
             .AllowsTransparency(true)
             .StartCenterScreen()
@@ -68,6 +75,7 @@ internal sealed class TaskManagerView : UserControl
     private readonly ServiceActionService serviceActions;
     private readonly DesktopWindowService desktop;
     private readonly TaskManagerIntegrationService integration;
+    private readonly ProcessIconService processIcons;
     private readonly List<FrameworkElement> pages = [];
     private readonly List<ProcessDto> processRows = [];
     private readonly ItemsView<ProcessDto> processItems;
@@ -82,6 +90,7 @@ internal sealed class TaskManagerView : UserControl
     private readonly List<HistoryPoint> performanceHistoryRows = [];
     private readonly ItemsView<HistoryPoint> performanceHistoryItems;
     private readonly ItemsView<ProcessDto> detailItems;
+    private readonly List<(TextBlock Block, Func<string> Get)> processInspectorLiveText = [];
     private GridView? processGrid;
     private GridView? performanceGrid;
     private GridView? historyGrid;
@@ -89,8 +98,8 @@ internal sealed class TaskManagerView : UserControl
     private GridView? usersGrid;
     private GridView? detailGrid;
     private GridView? serviceGrid;
-    private GridView? overviewRecentGrid;
-    private GridView? overviewPerformanceGrid;
+    private TransitionContentControl? processInspectorTransition;
+    private Button? processInspectorEndButton;
     private NavigationList? navigation;
     private NavigationList? footerNavigation;
     private TextBox? searchBox;
@@ -107,6 +116,13 @@ internal sealed class TaskManagerView : UserControl
     private TextBlock? systemInfoDisks;
     private TextBlock? systemInfoDisplays;
     private TextBlock? systemInfoWindows;
+    private TextBlock? overviewSystemInfoProcessors;
+    private TextBlock? overviewSystemInfoGraphics;
+    private TextBlock? overviewSystemInfoMotherboard;
+    private TextBlock? overviewSystemInfoMemory;
+    private TextBlock? overviewSystemInfoDisks;
+    private TextBlock? overviewSystemInfoDisplays;
+    private TextBlock? overviewSystemInfoWindows;
     private Button? systemInfoCopyButton;
     private string systemInformationClipboard = string.Empty;
     private TextBlock? integrationSummary;
@@ -117,10 +133,14 @@ internal sealed class TaskManagerView : UserControl
     private int currentPage;
     private string query = string.Empty;
     private uint? processSessionFilter;
+    private ProcessDto? selectedProcess;
     private readonly ObservableValue<string> search = new(string.Empty);
     private readonly List<(TextBlock Block, Func<string> Get)> liveText = [];
+    private readonly Dictionary<string, ImageSource?> iconSources = new(StringComparer.Ordinal);
+    private readonly HashSet<string> iconLoads = new(StringComparer.Ordinal);
+    private bool iconLoadingStopped;
 
-    public TaskManagerView(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions, DesktopWindowService desktop, TaskManagerIntegrationService integration)
+    public TaskManagerView(SnapshotService snapshots, PreferencesService preferences, ProcessActionService actions, SystemInformationService systemInformation, ShellActionService shell, ServiceActionService serviceActions, DesktopWindowService desktop, TaskManagerIntegrationService integration, ProcessIconService processIcons)
     {
         this.snapshots = snapshots;
         this.preferences = preferences;
@@ -130,6 +150,10 @@ internal sealed class TaskManagerView : UserControl
         this.serviceActions = serviceActions;
         this.desktop = desktop;
         this.integration = integration;
+        this.processIcons = processIcons;
+        // Keep a local inherited value on the page host as well as the theme
+        // default so every page and generated row uses the bundled font.
+        FontFamily = AppTypography.DefaultFontFamily;
         processItems = ItemsView.Create(processRows, row => row.Name, row => row.Identity);
         historyItems = ItemsView.Create(historyRows, row => row.Name, row => row.Identity);
         startupItems = ItemsView.Create(startupRows, row => row.Name, row => row.Id);
@@ -148,7 +172,11 @@ internal sealed class TaskManagerView : UserControl
         _ = RefreshSystemInformation(false);
     }
 
-    public void Stop() => timer?.Stop();
+    public void Stop()
+    {
+        iconLoadingStopped = true;
+        timer?.Stop();
+    }
 
     protected override Element OnBuild()
     {
@@ -181,8 +209,16 @@ internal sealed class TaskManagerView : UserControl
         statusText = new TextBlock().Text("正在连接 Windows 数据源…").CenterVertical();
         pageTitle = new TextBlock().Text(PageTitles[0]).FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical();
 
+        var brandIcon = new Image
+        {
+            Width = 20,
+            Height = 20,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Source = ImageSource.FromFile(Path.Combine(AppContext.BaseDirectory, "branding", "takao-256.png")),
+        };
         var brand = new StackPanel().Horizontal().Spacing(8).Width(204).Children(
-            new TextBlock().Text("▣").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical(),
+            brandIcon,
             new TextBlock().Text("Takao").FontSize(ThemeFontSize.Medium).SemiBold().CenterVertical())
             .OnMouseDown(HandleTitleBarMouseDown)
             .OnMouseDoubleClick(HandleTitleBarDoubleClick);
@@ -196,7 +232,7 @@ internal sealed class TaskManagerView : UserControl
         return ShellComponents.TitleBar(
             brand,
             searchBox.Margin(0, 0, 16, 0),
-            summary,
+            summary.Margin(0, 0, ShellTokens.TitleBarSummaryGap, 0),
             new Border { Background = Color.Transparent }
                 .OnMouseDown(args =>
                 {
@@ -215,8 +251,40 @@ internal sealed class TaskManagerView : UserControl
 
     private Button WindowButton(string glyph, string label, Action<Window> action)
     {
-        var button = new Button().Content(WindowGlyph(glyph)).Width(46).Height(48).ToolTip(label).OnClick(() =>
+        var mouseFallbackPending = false;
+        var button = new Button().Content(WindowGlyph(glyph)).Width(46).Height(48).ToolTip(label).OnMouseDown(_ => TraceInput($"down:{label}"));
+        button.OnMouseUp(args =>
         {
+            TraceInput($"up:{label}");
+            var position = args.GetPosition(button);
+            if (args.Button != MouseButton.Left || position.X < 0 || position.Y < 0
+                || position.X >= button.RenderSize.Width || position.Y >= button.RenderSize.Height) return;
+
+            // MewUI 0.21.x can miss pointer-release activation for controls in a
+            // custom title bar. Evaluate the release in the button's own local
+            // coordinate space, while keeping Click for keyboard/future backends.
+            mouseFallbackPending = true;
+            void InvokeAction()
+            {
+                if (!mouseFallbackPending) return;
+                mouseFallbackPending = false;
+                if (FindVisualRoot() is Window owner) action(owner);
+            }
+
+            var dispatcher = Application.IsRunning ? Application.Current.Dispatcher : null;
+            if (dispatcher is null) InvokeAction();
+            else dispatcher.BeginInvoke(InvokeAction);
+        });
+        button.OnClick(() =>
+        {
+            TraceInput($"click:{label}");
+            // If Button raised Click for this pointer release, the deferred
+            // compatibility fallback has already been superseded.
+            if (mouseFallbackPending)
+            {
+                mouseFallbackPending = false;
+                return;
+            }
             if (FindVisualRoot() is Window owner) action(owner);
         });
         button.StyleName = BuiltInStyles.FlatButton;
@@ -225,6 +293,11 @@ internal sealed class TaskManagerView : UserControl
         button.HorizontalAlignment = HorizontalAlignment.Center;
         button.VerticalAlignment = VerticalAlignment.Center;
         return button;
+    }
+
+    private static void TraceInput(string message)
+    {
+        try { File.AppendAllText(Path.Combine(Path.GetTempPath(), "takao-input.log"), $"{DateTime.UtcNow:O} {message}{Environment.NewLine}"); } catch { }
     }
 
     public void UpdateWindowState(WindowState state)
@@ -238,7 +311,7 @@ internal sealed class TaskManagerView : UserControl
     private static TextBlock WindowGlyph(string glyph)
     {
         var text = new TextBlock().Text(glyph).FontSize(16).CenterVertical();
-        text.FontFamily = "Segoe Fluent Icons";
+        text.FontFamily = AppTypography.IconFontFamily;
         text.HorizontalAlignment = HorizontalAlignment.Center;
         text.VerticalAlignment = VerticalAlignment.Center;
         return text;
@@ -265,14 +338,16 @@ internal sealed class TaskManagerView : UserControl
 
     private void ToggleMaximize()
     {
-        if (FindVisualRoot() is not Window owner) return;
+        if (FindVisualRoot() is not Window owner || !owner.CanMaximize) return;
         if (owner.WindowState == WindowState.Maximized) owner.Restore();
         else owner.Maximize();
     }
 
     private void HandleWindowMouseDown(MouseEventArgs args)
     {
-        if (FindVisualRoot() is not Window owner || owner.WindowState == WindowState.Maximized) return;
+        if (FindVisualRoot() is not Window owner) return;
+        var windowSize = owner.WindowSize;
+        if (owner.WindowState == WindowState.Maximized || (windowSize.MinWidth == windowSize.MaxWidth && windowSize.MinHeight == windowSize.MaxHeight)) return;
         var size = owner.ClientSize;
         // MouseEventArgs.ScreenPosition is in device pixels while the window
         // geometry is expressed in DIPs. Convert through the window backend so
@@ -330,7 +405,7 @@ internal sealed class TaskManagerView : UserControl
                     var icon = (TextBlock)row.Children[0];
                     var title = (TextBlock)row.Children[1];
                     icon.Text = item.Glyph;
-                    icon.FontFamily = "Segoe Fluent Icons";
+                    icon.FontFamily = AppTypography.IconFontFamily;
                     title.Text = item.Title;
                 },
                 _ => NavigationItemKind.Item,
@@ -365,11 +440,211 @@ internal sealed class TaskManagerView : UserControl
         return body;
     }
 
+    private GridViewColumn<TItem> ProcessNameColumn<TItem>(string header, string iconKind, Func<TItem, string> idSelector, Func<TItem, string> nameSelector)
+    {
+        return new GridViewColumn<TItem>().Header(header).Template(
+            context =>
+            {
+                var fallback = new TextBlock()
+                    .Text(ProcessFallbackGlyph(iconKind))
+                    .FontFamily(AppTypography.IconFontFamily)
+                    .FontSize(15)
+                    .CenterHorizontal()
+                    .CenterVertical()
+                    .Register(context, "Fallback");
+                var icon = new Image()
+                    .Width(20)
+                    .Height(20)
+                    .CenterHorizontal()
+                    .CenterVertical()
+                    .Register(context, "Icon");
+                var iconCell = new Grid().Width(24).Height(24).Children(fallback, icon).CenterVertical();
+                var name = new TextBlock()
+                    .CenterVertical()
+                    .TextTrimming(TextTrimming.CharacterEllipsis)
+                    .Register(context, "Name");
+                return new Grid().Columns("24, *").Children(iconCell, name.Column(1).Margin(8, 0, 0, 0));
+            },
+            (Grid _, TItem row, int _, TemplateContext context) =>
+            {
+                var source = GetIconSource(iconKind, idSelector(row));
+                var icon = context.Get<Image>("Icon");
+                var fallback = context.Get<TextBlock>("Fallback");
+                icon.Source = source;
+                icon.IsVisible = source is not null;
+                fallback.IsVisible = source is null;
+                context.Get<TextBlock>("Name").Text = nameSelector(row) ?? string.Empty;
+            });
+    }
+
+    private static string ProcessFallbackGlyph(string iconKind) => iconKind switch
+    {
+        "startup" => "\uE713",
+        "service" => "\uE77B",
+        _ => "\uE7F4",
+    };
+
+    private ImageSource? GetIconSource(string kind, string id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return null;
+        var key = string.Concat(kind, '\0', id);
+        if (iconSources.TryGetValue(key, out var source)) return source;
+        if (Application.IsRunning && iconLoads.Add(key)) _ = LoadIconAsync(kind, id, key);
+        return null;
+    }
+
+    private async Task LoadIconAsync(string kind, string id, string key)
+    {
+        var snapshot = snapshots.Current;
+        if (snapshot is null) return;
+
+        byte[]? png = null;
+        try
+        {
+            png = await processIcons.ReadApplicationAsync(kind, id, snapshot).ConfigureAwait(false);
+        }
+        catch (Exception error) when (error is not OutOfMemoryException)
+        {
+            // The fallback Fluent glyph remains visible when Windows cannot expose
+            // a resource (protected process, missing executable, or inaccessible service).
+        }
+
+        if (iconLoadingStopped || !Application.IsRunning) return;
+        IDispatcher? dispatcher;
+        try { dispatcher = Application.Current.Dispatcher; }
+        catch (InvalidOperationException) { return; }
+        if (dispatcher is null) return;
+        dispatcher.BeginInvoke(() =>
+        {
+            if (iconLoadingStopped) return;
+            ImageSource? source = null;
+            try
+            {
+                if (png is { Length: > 0 }) source = ImageSource.FromBytes(png);
+            }
+            catch (Exception error) when (error is not OutOfMemoryException)
+            {
+                source = null;
+            }
+            iconSources[key] = source;
+            InvalidateIconRows();
+        });
+    }
+
+    private void InvalidateIconRows()
+    {
+        processItems.Invalidate();
+        detailItems.Invalidate();
+        historyItems.Invalidate();
+        startupItems.Invalidate();
+        serviceItems.Invalidate();
+    }
+
+    // MewUI's GridView row is an ICommandArgumentSource, so putting one menu
+    // on the realized row lets every command receive the exact item that was
+    // right-clicked, including virtualized and recycled rows.
+    private void ConfigureProcessContextMenu(GridView grid)
+    {
+        var details = new Command("takao.process.details", "查看详细信息");
+        var end = new Command("takao.process.end", "结束任务");
+        var openLocation = new Command("takao.process.openLocation", "打开文件位置");
+        var copyName = new Command("takao.process.copyName", "复制进程名称");
+        var copyPid = new Command("takao.process.copyPid", "复制 PID");
+        var copyPath = new Command("takao.process.copyPath", "复制文件路径");
+        var menu = new ContextMenu()
+            .Item(details)
+            .Item(end)
+            .Item(openLocation)
+            .Separator()
+            .Item(copyName)
+            .Item(copyPid)
+            .Item(copyPath);
+
+        grid.Commands.Register(details, (ProcessDto row) => ShowProcessDetails(row));
+        grid.Commands.Register(end, (ProcessDto row) => EndSelected(row), (ProcessDto row) => row.CanTerminate);
+        grid.Commands.Register(openLocation, (ProcessDto row) => OpenProcessLocation(row),
+            (ProcessDto row) => !string.IsNullOrWhiteSpace(row.Path) && row.CreationTimeFileTime is not null);
+        grid.Commands.Register(copyName, (ProcessDto row) => CopyToClipboard(row.Name, $"已复制进程名称：{row.Name}"));
+        grid.Commands.Register(copyPid, (ProcessDto row) => CopyToClipboard(row.Pid.ToString(CultureInfo.InvariantCulture), $"已复制 PID {row.Pid.ToString(CultureInfo.InvariantCulture)}。"));
+        grid.Commands.Register(copyPath, (ProcessDto row) => CopyToClipboard(row.Path!, "已复制进程文件路径。"),
+            (ProcessDto row) => !string.IsNullOrWhiteSpace(row.Path));
+        grid.PrepareContainer<ProcessDto>((row, _, _, _) => row.ContextMenu = menu);
+    }
+
+    private void ConfigurePerformanceContextMenu(GridView grid)
+    {
+        var copySample = new Command("takao.performance.copySample", "复制采样数据");
+        var copyTime = new Command("takao.performance.copyTime", "复制采样时间");
+        var menu = new ContextMenu().Item(copySample).Item(copyTime);
+        grid.Commands.Register(copySample, (HistoryPoint row) => CopyToClipboard(FormatPerformanceRow(row), "已复制采样数据。"));
+        grid.Commands.Register(copyTime, (HistoryPoint row) => CopyToClipboard(row.CapturedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture), "已复制采样时间。"));
+        grid.PrepareContainer<HistoryPoint>((row, _, _, _) => row.ContextMenu = menu);
+    }
+
+    private void ConfigureHistoryContextMenu(GridView grid)
+    {
+        var locate = new Command("takao.history.locate", "定位运行进程");
+        var copyName = new Command("takao.history.copyName", "复制进程名称");
+        var copyPid = new Command("takao.history.copyPid", "复制 PID");
+        var menu = new ContextMenu().Item(locate).Separator().Item(copyName).Item(copyPid);
+        grid.Commands.Register(locate, (ProcessHistoryDto row) => LocateHistoryProcess(row),
+            (ProcessHistoryDto row) => row.IsRunning && FindProcess(row.Identity) is not null);
+        grid.Commands.Register(copyName, (ProcessHistoryDto row) => CopyToClipboard(row.Name, $"已复制进程名称：{row.Name}"));
+        grid.Commands.Register(copyPid, (ProcessHistoryDto row) => CopyToClipboard(row.Pid.ToString(CultureInfo.InvariantCulture), $"已复制 PID {row.Pid.ToString(CultureInfo.InvariantCulture)}。"));
+        grid.PrepareContainer<ProcessHistoryDto>((row, _, _, _) => row.ContextMenu = menu);
+    }
+
+    private void ConfigureStartupContextMenu(GridView grid)
+    {
+        var openSource = new Command("takao.startup.openSource", "打开来源");
+        var copyCommand = new Command("takao.startup.copyCommand", "复制启动命令");
+        var copyLocation = new Command("takao.startup.copyLocation", "复制来源位置");
+        var menu = new ContextMenu().Item(openSource).Separator().Item(copyCommand).Item(copyLocation);
+        grid.Commands.Register(openSource, (StartupDto row) => OpenSelectedStartupLocation(row), (StartupDto row) => row.CanOpenLocation);
+        grid.Commands.Register(copyCommand, (StartupDto row) => CopyToClipboard(row.Command, "已复制启动命令。"));
+        grid.Commands.Register(copyLocation, (StartupDto row) => CopyToClipboard(row.LocationPath ?? row.LocationReason ?? "不可用", "已复制启动项来源位置。"));
+        grid.PrepareContainer<StartupDto>((row, _, _, _) => row.ContextMenu = menu);
+    }
+
+    private void ConfigureUsersContextMenu(GridView grid)
+    {
+        var locate = new Command("takao.users.locateProcesses", "查看此会话进程");
+        var copyUser = new Command("takao.users.copyUser", "复制用户名称");
+        var copySession = new Command("takao.users.copySession", "复制会话 ID");
+        var menu = new ContextMenu().Item(locate).Separator().Item(copyUser).Item(copySession);
+        grid.Commands.Register(locate, (UserDto row) => LocateUserProcesses(row));
+        grid.Commands.Register(copyUser, (UserDto row) => CopyToClipboard(row.UserName ?? row.StationName, "已复制用户名称。"));
+        grid.Commands.Register(copySession, (UserDto row) => CopyToClipboard(row.SessionId.ToString(CultureInfo.InvariantCulture), "已复制会话 ID。"));
+        grid.PrepareContainer<UserDto>((row, _, _, _) => row.ContextMenu = menu);
+    }
+
+    private void ConfigureServiceContextMenu(GridView grid)
+    {
+        var start = new Command("takao.service.start", "启动服务");
+        var stop = new Command("takao.service.stop", "停止服务");
+        var restart = new Command("takao.service.restart", "重启服务");
+        var details = new Command("takao.service.details", "查看服务详情");
+        var copyName = new Command("takao.service.copyName", "复制服务名");
+        var menu = new ContextMenu().Item(start).Item(stop).Item(restart).Item(details).Separator().Item(copyName);
+        grid.Commands.Register(start, (ServiceDto row) => ControlService("start", row), (ServiceDto row) => IsServiceStopped(row.State));
+        grid.Commands.Register(stop, (ServiceDto row) => ControlService("stop", row), (ServiceDto row) => IsServiceRunning(row.State));
+        grid.Commands.Register(restart, (ServiceDto row) => ControlService("restart", row), (ServiceDto row) => IsServiceRunning(row.State));
+        grid.Commands.Register(details, (ServiceDto row) => ShowServiceDetails(row));
+        grid.Commands.Register(copyName, (ServiceDto row) => CopyToClipboard(row.Name, "已复制服务名。"));
+        grid.PrepareContainer<ServiceDto>((row, _, _, _) => row.ContextMenu = menu);
+    }
+
+    private static string FormatPerformanceRow(HistoryPoint row)
+        => string.Join("\t", row.CapturedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+            Percent(row.CpuPercent), Percent(row.MemoryPercent),
+            Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond),
+            Rate(SumKnown(row.PhysicalDisks.Select(item => item.ReadBytesPerSecond)), SumKnown(row.PhysicalDisks.Select(item => item.WriteBytesPerSecond))),
+            Percent(row.GpuPercent));
+
     private FrameworkElement BuildOverviewPage()
     {
-        // The overview uses only values from the current Windows snapshot.  It
-        // deliberately keeps the compact card/graph/activity hierarchy from
-        // the reference while avoiding demo values when the collector warms up.
+        // Keep the overview focused on the live summary and the same hardware
+        // cards shown on the dedicated system information page.
         var metrics = new Grid().Columns("*, *, *, *, *").Children(
             OverviewMetric("CPU", () => Percent(snapshots.Current?.System.CpuPercent)),
             OverviewMetric("内存", () => Percent(snapshots.Current?.System.MemoryPercent)),
@@ -377,74 +652,28 @@ internal sealed class TaskManagerView : UserControl
             OverviewMetric("磁盘", () => Percent(snapshots.Current?.System.DiskActivePercent)),
             OverviewMetric("网络", () => Rate(snapshots.Current?.System.NetworkReceiveBytesPerSecond, snapshots.Current?.System.NetworkSendBytesPerSecond)));
 
-        overviewRecentGrid = new GridView
-        {
-            Background = Color.Transparent,
-            ItemsSource = historyItems,
-            ShowGridLines = false,
-            ZebraStriping = false,
-            HeaderHeight = 40,
-            RowHeight = 40,
-            CellPadding = new Thickness(8, 4),
-        };
-        overviewRecentGrid.Columns(
-            new GridViewColumn<ProcessHistoryDto>().Header("时间").Width(120).Text(row => row.LastObservedAtUtc.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)),
-            new GridViewColumn<ProcessHistoryDto>().Header("事件").Width(150).Text(_ => "进程观测"),
-            new GridViewColumn<ProcessHistoryDto>().Header("对象").StarWidth(2, minWidth: 220).Text(row => row.Name),
-            new GridViewColumn<ProcessHistoryDto>().Header("详细信息").StarWidth(2, minWidth: 240).Text(row => row.IsRunning ? "运行中" : "已退出"));
+        overviewSystemInfoProcessors = NewSystemInfoDetailsBlock();
+        overviewSystemInfoGraphics = NewSystemInfoDetailsBlock();
+        overviewSystemInfoMotherboard = NewSystemInfoDetailsBlock();
+        overviewSystemInfoMemory = NewSystemInfoDetailsBlock();
+        overviewSystemInfoDisks = NewSystemInfoDetailsBlock();
+        overviewSystemInfoDisplays = NewSystemInfoDetailsBlock();
+        overviewSystemInfoWindows = NewSystemInfoDetailsBlock();
+        var systemInfoCards = BuildSystemInformationCards(
+            overviewSystemInfoProcessors,
+            overviewSystemInfoGraphics,
+            overviewSystemInfoMotherboard,
+            overviewSystemInfoMemory,
+            overviewSystemInfoDisks,
+            overviewSystemInfoDisplays,
+            overviewSystemInfoWindows);
 
-        overviewPerformanceGrid = new GridView
-        {
-            Background = Color.Transparent,
-            ItemsSource = performanceHistoryItems,
-            ShowGridLines = false,
-            ZebraStriping = false,
-            HeaderHeight = 40,
-            RowHeight = 40,
-            CellPadding = new Thickness(8, 4),
-        };
-        overviewPerformanceGrid.Columns(
-            new GridViewColumn<HistoryPoint>().Header("时间").Width(120).Text(row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)),
-            new GridViewColumn<HistoryPoint>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
-            new GridViewColumn<HistoryPoint>().Header("内存").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.MemoryPercent)),
-            new GridViewColumn<HistoryPoint>().Header("网络").StarWidth(1, minWidth: 160).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
-            new GridViewColumn<HistoryPoint>().Header("磁盘").StarWidth(1, minWidth: 160).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(SumKnown(row.PhysicalDisks.Select(item => item.ReadBytesPerSecond)), SumKnown(row.PhysicalDisks.Select(item => item.WriteBytesPerSecond)))));
-
-        var graph = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
-            .WithTheme((theme, border) =>
-            {
-                var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
-                border.BorderBrush = theme.Palette.ControlBorder;
-            })
-            .Child(new StackPanel().Vertical().Spacing(8).Children(
-                new TextBlock().Text("系统资源使用情况（最近 60 秒）").FontSize(ThemeFontSize.Medium).SemiBold(),
-                new TextBlock().Text("蓝色数值与历史表均来自真实 Windows 采样；预热或不可用指标显示为 —。" ).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap),
-                ShellComponents.DataSurface(overviewPerformanceGrid)));
-
-        var recent = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
-            .WithTheme((theme, border) =>
-            {
-                var surface = theme.Palette.ControlBackground;
-                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
-                border.BorderBrush = theme.Palette.ControlBorder;
-            })
-            .Child(new StackPanel().Vertical().Spacing(8).Children(
-                new DockPanel().Children(
-                    new TextBlock().Text("最近活动").FontSize(ThemeFontSize.Medium).SemiBold(),
-                    new Button().Content("查看全部").DockRight().OnClick(() =>
-                    {
-                        SelectPage(Array.IndexOf(PageKeys, "history"));
-                    })),
-                ShellComponents.DataSurface(overviewRecentGrid)));
-
-        return new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(
-            new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(metrics, graph, recent));
+        return new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(metrics, systemInfoCards);
     }
 
     private FrameworkElement OverviewMetric(string label, Func<string> value)
     {
-        return new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        return new Border().Padding(8, 10).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 var surface = theme.Palette.ControlBackground;
@@ -473,19 +702,21 @@ internal sealed class TaskManagerView : UserControl
             CellPadding = new Thickness(8, 4),
         };
         processGrid.Columns(
-            new GridViewColumn<ProcessDto>().Header("名称").StarWidth(3, minWidth: 260).SortBy(row => row.Name, StringComparer.OrdinalIgnoreCase).Text(row => row.Name),
+            ProcessNameColumn<ProcessDto>("名称", "process", row => row.Identity, row => row.Name).StarWidth(3).SortBy(row => row.Name, StringComparer.OrdinalIgnoreCase),
             new GridViewColumn<ProcessDto>().Header("状态").Width(100).Text(row => row.State == "running" ? "运行中" : row.State),
-            new GridViewColumn<ProcessDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).SortBy(row => row.CpuPercent ?? double.MinValue).Text(row => Percent(row.CpuPercent)),
-            new GridViewColumn<ProcessDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Right).SortBy(row => row.WorkingSetBytes ?? long.MinValue).Text(row => Bytes(row.WorkingSetBytes)),
-            new GridViewColumn<ProcessDto>().Header("I/O").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.IoReadBytesPerSecond, row.IoWriteBytesPerSecond)),
-            new GridViewColumn<ProcessDto>().Header("网络").Width(130).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
-            new GridViewColumn<ProcessDto>().Header("GPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.GpuPercent)),
-            new GridViewColumn<ProcessDto>().Header("PID").Width(86).HeaderTextAlignment(TextAlignment.Right).SortBy(row => row.Pid).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)));
+            new GridViewColumn<ProcessDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Left).SortBy(row => row.CpuPercent ?? double.MinValue).Text(row => Percent(row.CpuPercent)),
+            new GridViewColumn<ProcessDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Left).SortBy(row => row.WorkingSetBytes ?? long.MinValue).Text(row => Bytes(row.WorkingSetBytes)),
+            new GridViewColumn<ProcessDto>().Header("I/O").Width(120).HeaderTextAlignment(TextAlignment.Left).Text(row => Rate(row.IoReadBytesPerSecond, row.IoWriteBytesPerSecond)),
+            new GridViewColumn<ProcessDto>().Header("网络").Width(130).HeaderTextAlignment(TextAlignment.Left).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
+            new GridViewColumn<ProcessDto>().Header("GPU").Width(90).HeaderTextAlignment(TextAlignment.Left).Text(row => Percent(row.GpuPercent)),
+            new GridViewColumn<ProcessDto>().Header("PID").Width(86).HeaderTextAlignment(TextAlignment.Left).SortBy(row => row.Pid).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)));
+        ConfigureProcessContextMenu(processGrid);
         processGrid.OnSelectionChanged(value =>
         {
             var row = value as ProcessDto;
             end.IsEnabled = row?.CanTerminate == true;
             details.IsEnabled = row is not null;
+            SetSelectedProcess(row);
         });
         details.OnClick(() =>
         {
@@ -496,13 +727,149 @@ internal sealed class TaskManagerView : UserControl
         });
         // The global search box lives in the title bar. Keep the page command
         // row limited to actions so a MewUI element never has two parents.
-        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+        var command = new DockPanel().LastChildFill(false).Padding(0, 0, 0, 12).Spacing(8).Children(
             new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text("运行中的进程").SemiBold(),
                 LiveText(ProcessSummary).FontSize(ThemeFontSize.Small)),
             ShellComponents.CommandBar(run, details, end, refresh).DockRight());
-        return new Grid().Rows("Auto, *").Children(command, ShellComponents.DataSurface(processGrid).Row(1));
+        processInspectorTransition = new TransitionContentControl
+        {
+            Transition = ContentTransition.CreateSlide(SlideDirection.Left, 220, 0, Aprillz.MewUI.Animation.Easing.Default),
+            Content = BuildProcessInspectorEmpty(),
+        };
+        var inspector = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+            .WithTheme((theme, border) =>
+            {
+                var surface = theme.Palette.ControlBackground;
+                border.Background = Color.FromArgb(ShellTokens.SurfaceAlpha, surface.R, surface.G, surface.B);
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new Grid().Rows("Auto, *").Children(
+                new StackPanel().Vertical().Spacing(2).Children(
+                    new TextBlock().Text("进程详情").FontSize(ThemeFontSize.Medium).SemiBold(),
+                    new TextBlock().Text("选择列表中的进程查看实时信息").FontSize(ThemeFontSize.Small)),
+                processInspectorTransition.Row(1)));
+        var body = new Grid().Columns("*, 320").Spacing(ShellTokens.ContentGap).Children(
+            ShellComponents.DataSurface(processGrid),
+            inspector.Column(1));
+        return new Grid().Rows("Auto, *").Children(command, body.Row(1));
     }
+
+    private FrameworkElement BuildProcessInspectorEmpty()
+    {
+        processInspectorLiveText.Clear();
+        return new StackPanel().Vertical().Spacing(10).Center().Children(
+            new TextBlock().Text("\uE7F4").FontFamily(AppTypography.IconFontFamily).FontSize(30).CenterHorizontal(),
+            new TextBlock().Text("选择进程查看详情").SemiBold().CenterHorizontal(),
+            new TextBlock().Text("从左侧列表选择一行，实时查看资源占用和进程信息。")
+                .FontSize(ThemeFontSize.Small)
+                .TextWrapping(TextWrapping.Wrap)
+                .CenterHorizontal());
+    }
+
+    private FrameworkElement BuildProcessInspector(ProcessDto row)
+    {
+        processInspectorLiveText.Clear();
+        var title = new StackPanel().Horizontal().Spacing(10).Children(
+            new TextBlock().Text("\uE7F4").FontFamily(AppTypography.IconFontFamily).FontSize(24).CenterVertical(),
+            new StackPanel().Vertical().Spacing(2).Children(
+                new TextBlock().Text(row.Name).FontSize(ThemeFontSize.Medium).SemiBold(),
+                ProcessInspectorText(() => selectedProcess is { } current
+                    ? $"PID {current.Pid.ToString(CultureInfo.InvariantCulture)} · {ProcessState(current)}"
+                    : "进程已退出").FontSize(ThemeFontSize.Small)));
+
+        var metrics = new Grid().Columns("*, *").Rows("Auto, Auto, Auto").Spacing(8).Children(
+            ProcessInspectorMetric("CPU", () => Percent(selectedProcess?.CpuPercent)),
+            ProcessInspectorMetric("内存", () => Bytes(selectedProcess?.WorkingSetBytes)).Column(1),
+            ProcessInspectorMetric("I/O", () => Rate(selectedProcess?.IoReadBytesPerSecond, selectedProcess?.IoWriteBytesPerSecond)).Row(1),
+            ProcessInspectorMetric("网络", () => Rate(selectedProcess?.NetworkReceiveBytesPerSecond, selectedProcess?.NetworkSendBytesPerSecond)).Row(1).Column(1),
+            ProcessInspectorMetric("GPU", () => Percent(selectedProcess?.GpuPercent)).Row(2),
+            ProcessInspectorMetric("线程", () => selectedProcess?.ThreadCount.ToString(CultureInfo.InvariantCulture) ?? "—").Row(2).Column(1));
+
+        processInspectorEndButton = new Button()
+            .Content("结束任务")
+            .IsEnabled(row.CanTerminate)
+            .OnClick(() => EndSelected());
+
+        var information = new StackPanel().Vertical().Spacing(8).Children(
+            ProcessInspectorInfo("用户", () => selectedProcess?.UserName ?? "未知用户"),
+            ProcessInspectorInfo("会话", () => selectedProcess?.SessionId?.ToString(CultureInfo.InvariantCulture) ?? "—"),
+            ProcessInspectorInfo("父进程", () => selectedProcess?.ParentPid.ToString(CultureInfo.InvariantCulture) ?? "—"),
+            ProcessInspectorInfo("句柄", () => selectedProcess?.HandleCount?.ToString(CultureInfo.InvariantCulture) ?? "—"),
+            ProcessInspectorInfo("优先级", () => selectedProcess?.Priority ?? "—"),
+            ProcessInspectorInfo("路径", () => selectedProcess?.Path ?? "不可用"),
+            ProcessInspectorInfo("发布者", () => selectedProcess?.Publisher ?? "未知"));
+
+        return new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(
+            new StackPanel().Vertical().Spacing(12).Children(
+                title,
+                new Border().BorderThickness(new Thickness(0, 0, 0, 1))
+                    .WithTheme((theme, border) => border.BorderBrush = theme.Palette.ControlBorder),
+                metrics,
+                new TextBlock().Text("进程信息").SemiBold(),
+                information,
+                new TextBlock().Text("实时数据随 Windows 采样刷新；不可用字段保留为 —。")
+                    .FontSize(ThemeFontSize.Small)
+                    .TextWrapping(TextWrapping.Wrap),
+                new StackPanel().Horizontal().Spacing(8).Children(processInspectorEndButton)));
+    }
+
+    private FrameworkElement ProcessInspectorMetric(string label, Func<string> value)
+    {
+        return new Border().Padding(10).BorderThickness(1).CornerRadius(ShellTokens.ControlRadius)
+            .WithTheme((theme, border) =>
+            {
+                border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha);
+                border.BorderBrush = theme.Palette.ControlBorder;
+            })
+            .Child(new StackPanel().Vertical().Spacing(3).Children(
+                new TextBlock().Text(label).FontSize(ThemeFontSize.Small),
+                ProcessInspectorText(value).FontSize(ThemeFontSize.Medium).SemiBold()));
+    }
+
+    private FrameworkElement ProcessInspectorInfo(string label, Func<string> value)
+    {
+        return new Grid().Columns("72, *").Spacing(8).Children(
+            new TextBlock().Text(label).FontSize(ThemeFontSize.Small).CenterVertical(),
+            ProcessInspectorText(value).Column(1).TextWrapping(TextWrapping.Wrap));
+    }
+
+    private TextBlock ProcessInspectorText(Func<string> value)
+    {
+        var block = new TextBlock { Text = value() };
+        processInspectorLiveText.Add((block, value));
+        return block;
+    }
+
+    private void SetSelectedProcess(ProcessDto? row)
+    {
+        var identityChanged = selectedProcess?.Identity != row?.Identity;
+        selectedProcess = row;
+        if (processInspectorEndButton is not null)
+            processInspectorEndButton.IsEnabled = row?.CanTerminate == true;
+        if (!identityChanged || processInspectorTransition is null) return;
+
+        processInspectorTransition.Content = row is null
+            ? BuildProcessInspectorEmpty()
+            : BuildProcessInspector(row);
+    }
+
+    private void RefreshSelectedProcess()
+    {
+        if (selectedProcess is null) return;
+        var current = snapshots.Current?.Processes.FirstOrDefault(row => row.Identity == selectedProcess.Identity);
+        if (current is null)
+        {
+            SetSelectedProcess(null);
+            return;
+        }
+
+        selectedProcess = current;
+        if (processInspectorEndButton is not null)
+            processInspectorEndButton.IsEnabled = current.CanTerminate;
+    }
+
+    private static string ProcessState(ProcessDto process) => process.State == "running" ? "运行中" : process.State;
 
     private FrameworkElement BuildPerformancePage()
     {
@@ -514,15 +881,20 @@ internal sealed class TaskManagerView : UserControl
             ShowGridLines = false,
             HeaderHeight = 40,
             RowHeight = 40,
-            CellPadding = new Thickness(8, 4),
+            // Keep the compact history table inside the right-hand surface.
+            // The previous fixed widths added up to 740 DIP while this surface
+            // is about 600 DIP at the default window size, so the last columns
+            // were clipped behind the viewport's horizontal scroll range.
+            CellPadding = new Thickness(6, 4),
         };
         performanceGrid.Columns(
-            new GridViewColumn<HistoryPoint>().Header("采样时间").Width(170).Text(row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss")),
-            new GridViewColumn<HistoryPoint>().Header("CPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
-            new GridViewColumn<HistoryPoint>().Header("内存").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.MemoryPercent)),
-            new GridViewColumn<HistoryPoint>().Header("网络收 / 发").Width(150).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
-            new GridViewColumn<HistoryPoint>().Header("磁盘读 / 写").Width(150).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(SumKnown(row.PhysicalDisks.Select(item => item.ReadBytesPerSecond)), SumKnown(row.PhysicalDisks.Select(item => item.WriteBytesPerSecond)))),
-            new GridViewColumn<HistoryPoint>().Header("GPU").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.GpuPercent)));
+            PerformanceHistoryColumn("采样时间", 1.25, row => row.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss")),
+            PerformanceHistoryColumn("CPU", 0.72, row => Percent(row.CpuPercent)),
+            PerformanceHistoryColumn("内存", 0.72, row => Percent(row.MemoryPercent)),
+            PerformanceHistoryColumn("网络收 / 发", 1.75, row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
+            PerformanceHistoryColumn("磁盘读 / 写", 1.75, row => Rate(SumKnown(row.PhysicalDisks.Select(item => item.ReadBytesPerSecond)), SumKnown(row.PhysicalDisks.Select(item => item.WriteBytesPerSecond)))),
+            PerformanceHistoryColumn("GPU", 0.72, row => Percent(row.GpuPercent)));
+        ConfigurePerformanceContextMenu(performanceGrid);
 
         // The reference keeps a narrow resource rail and one selected resource
         // surface.  Each card is populated from the current Windows snapshot;
@@ -550,20 +922,36 @@ internal sealed class TaskManagerView : UserControl
                     LiveText(() => Percent(snapshots.Current?.System.CpuPercent)).FontSize(ThemeFontSize.Large).SemiBold(),
                     LiveText(() => snapshots.Current is { } point ? point.CapturedAtUtc.ToLocalTime().ToString("HH:mm:ss") : "—").FontSize(ThemeFontSize.Small)).Column(1).CenterVertical()));
 
-        var history = new Border().BorderThickness(1).CornerRadius(8)
+        var history = new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) => { border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha); border.BorderBrush = theme.Palette.ControlBorder; })
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new TextBlock().Text("真实采样历史").FontSize(ThemeFontSize.Medium).SemiBold(),
                 new TextBlock().Text("空表表示尚未取得成功采样；未知指标保留为 —，不会以 0 填充。").FontSize(ThemeFontSize.Small),
                 performanceGrid));
         var right = new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(current, history);
-        return new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
-            new DockPanel().Children(
+        return new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
+            new DockPanel().LastChildFill(false).Children(
                 new StackPanel().Vertical().Spacing(4).Children(
-                    new TextBlock().Text("性能").FontSize(ThemeFontSize.Medium).SemiBold(),
                     new TextBlock().Text("选择资源查看真实 Windows 采样历史和设备事实").FontSize(ThemeFontSize.Small)),
                 LiveText(() => snapshots.Current is null ? "预热中" : snapshots.Settings.Paused ? "已暂停" : "实时").DockRight().CenterVertical()),
-            new Grid().Columns("240, *").Children(resources, right.Column(1).Margin(ShellTokens.ContentGap, 0, 0, 0))));
+            new Grid().Columns("240, *").Children(resources, right.Column(1).Margin(ShellTokens.ContentGap, 0, 0, 0)));
+    }
+
+    private static GridViewColumn<HistoryPoint> PerformanceHistoryColumn(string header, double weight, Func<HistoryPoint, string> value)
+    {
+        return new GridViewColumn<HistoryPoint>().Header(header).StarWidth(weight).HeaderTextAlignment(TextAlignment.Left).Template(
+            _ => new TextBlock()
+                .CenterVertical()
+                .TextTrimming(TextTrimming.CharacterEllipsis),
+            (TextBlock text, HistoryPoint row) =>
+            {
+                var content = value(row);
+                text.Text = content;
+                // Preserve the complete sample value when a narrow window has
+                // to ellipsize the cell. Tooltips are available to pointer and
+                // keyboard users without widening the whole data surface.
+                text.ToolTip(content);
+            });
     }
 
     private FrameworkElement PerformanceResourceCard(string glyph, string title, Func<string> value, bool selected)
@@ -600,15 +988,16 @@ internal sealed class TaskManagerView : UserControl
             CellPadding = new Thickness(8, 4),
         };
         historyGrid.Columns(
-            new GridViewColumn<ProcessHistoryDto>().Header("名称").StarWidth(3, minWidth: 260).Text(row => row.Name),
-            new GridViewColumn<ProcessHistoryDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
+            ProcessNameColumn<ProcessHistoryDto>("名称", "history", row => row.Identity, row => row.Name).StarWidth(3),
+            new GridViewColumn<ProcessHistoryDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Left).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
             new GridViewColumn<ProcessHistoryDto>().Header("状态").Width(100).Text(row => row.IsRunning ? "运行中" : "已退出"),
             new GridViewColumn<ProcessHistoryDto>().Header("首次观测").Width(180).Text(row => row.FirstObservedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")),
             new GridViewColumn<ProcessHistoryDto>().Header("最后观测").Width(180).Text(row => row.LastObservedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")),
-            new GridViewColumn<ProcessHistoryDto>().Header("CPU 时间").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ObservedCpuTime100ns ?? "—"),
-            new GridViewColumn<ProcessHistoryDto>().Header("I/O 读取").Width(130).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ObservedIoReadBytes ?? "—"),
-            new GridViewColumn<ProcessHistoryDto>().Header("I/O 写入").Width(130).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ObservedIoWriteBytes ?? "—"));
-        var locate = new Button().Content("定位运行进程").IsEnabled(false).OnClick(LocateHistoryProcess);
+            new GridViewColumn<ProcessHistoryDto>().Header("CPU 时间").Width(120).HeaderTextAlignment(TextAlignment.Left).Text(row => row.ObservedCpuTime100ns ?? "—"),
+            new GridViewColumn<ProcessHistoryDto>().Header("I/O 读取").Width(130).HeaderTextAlignment(TextAlignment.Left).Text(row => row.ObservedIoReadBytes ?? "—"),
+            new GridViewColumn<ProcessHistoryDto>().Header("I/O 写入").Width(130).HeaderTextAlignment(TextAlignment.Left).Text(row => row.ObservedIoWriteBytes ?? "—"));
+        ConfigureHistoryContextMenu(historyGrid);
+        var locate = new Button().Content("定位运行进程").IsEnabled(false).OnClick(() => LocateHistoryProcess());
         historyGrid.OnSelectionChanged(value => locate.IsEnabled = value is ProcessHistoryDto row && row.IsRunning && FindProcess(row.Identity) is not null);
         var reset = new Button().Content("清除统计").OnClick(() =>
         {
@@ -616,7 +1005,7 @@ internal sealed class TaskManagerView : UserControl
             UpdateOtherRows();
             statusText!.Text = "本次会话历史已清除。";
         });
-        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+        var command = new DockPanel().LastChildFill(false).Padding(0, 0, 0, 12).Spacing(8).Children(
             new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text("本次会话").SemiBold(),
                 LiveText(() => snapshots.Current is { } current
@@ -644,13 +1033,14 @@ internal sealed class TaskManagerView : UserControl
             CellPadding = new Thickness(8, 4),
         };
         startupGrid.Columns(
-            new GridViewColumn<StartupDto>().Header("名称").StarWidth(2, minWidth: 220).Text(row => row.Name),
+            ProcessNameColumn<StartupDto>("名称", "startup", row => row.Id, row => row.Name).StarWidth(2),
             new GridViewColumn<StartupDto>().Header("来源").Width(160).Text(row => row.Source),
             new GridViewColumn<StartupDto>().Header("状态").Width(140).Text(row => StartupStatus(row.Enabled)),
-            new GridViewColumn<StartupDto>().Header("状态原因").StarWidth(2, minWidth: 220).Text(row => row.EnabledReason),
-            new GridViewColumn<StartupDto>().Header("命令").StarWidth(3, minWidth: 320).Text(row => row.Command),
-            new GridViewColumn<StartupDto>().Header("来源位置").StarWidth(2, minWidth: 240).Text(row => row.LocationPath ?? row.LocationReason ?? "不可用"));
-        var openSource = new Button().Content("打开来源").IsEnabled(false).OnClick(OpenSelectedStartupLocation);
+            new GridViewColumn<StartupDto>().Header("状态原因").StarWidth(2).Text(row => row.EnabledReason),
+            new GridViewColumn<StartupDto>().Header("命令").StarWidth(3).Text(row => row.Command),
+            new GridViewColumn<StartupDto>().Header("来源位置").StarWidth(2).Text(row => row.LocationPath ?? row.LocationReason ?? "不可用"));
+        ConfigureStartupContextMenu(startupGrid);
+        var openSource = new Button().Content("打开来源").IsEnabled(false).OnClick(() => OpenSelectedStartupLocation());
         var detailsTitle = new TextBlock().Text("选择启动项").FontSize(ThemeFontSize.Medium).SemiBold();
         var detailsStatus = new TextBlock().Text("从列表选择一个真实 Windows 启动项。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
         var detailsSource = new TextBlock().Text("来源：—").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
@@ -678,7 +1068,7 @@ internal sealed class TaskManagerView : UserControl
         var startupSettings = new Button().Content("启动设置").OnClick(() => OpenSystemLocation("startupSettings"));
         var userStartup = new Button().Content("用户 Startup").OnClick(() => OpenSystemLocation("userStartup"));
         var commonStartup = new Button().Content("公共 Startup").OnClick(() => OpenSystemLocation("commonStartup"));
-        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+        var command = new DockPanel().LastChildFill(false).Padding(0, 0, 0, 12).Spacing(8).Children(
             new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text("启动应用").SemiBold(),
                 LiveText(() => $"Windows Run / RunOnce 与 Startup 文件夹 · {snapshots.Current?.StartupItems.Count ?? 0} 项").FontSize(ThemeFontSize.Small)),
@@ -717,16 +1107,17 @@ internal sealed class TaskManagerView : UserControl
             CellPadding = new Thickness(8, 4),
         };
         usersGrid.Columns(
-            new GridViewColumn<UserDto>().Header("用户").StarWidth(2, minWidth: 220).Text(row => row.UserName ?? "未知用户"),
-            new GridViewColumn<UserDto>().Header("会话").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.SessionId.ToString(CultureInfo.InvariantCulture)),
+            new GridViewColumn<UserDto>().Header("用户").StarWidth(2).Text(row => row.UserName ?? "未知用户"),
+            new GridViewColumn<UserDto>().Header("会话").Width(90).HeaderTextAlignment(TextAlignment.Left).Text(row => row.SessionId.ToString(CultureInfo.InvariantCulture)),
             new GridViewColumn<UserDto>().Header("状态").Width(140).Text(row => row.State),
-            new GridViewColumn<UserDto>().Header("进程").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ProcessCount.ToString(CultureInfo.InvariantCulture)),
-            new GridViewColumn<UserDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
-            new GridViewColumn<UserDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => Bytes(row.WorkingSetBytes)),
-            new GridViewColumn<UserDto>().Header("不可读进程").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => row.UnreadableProcessCount.ToString(CultureInfo.InvariantCulture)));
-        var locate = new Button().Content("查看此会话进程").IsEnabled(false).OnClick(LocateUserProcesses);
+            new GridViewColumn<UserDto>().Header("进程").Width(100).HeaderTextAlignment(TextAlignment.Left).Text(row => row.ProcessCount.ToString(CultureInfo.InvariantCulture)),
+            new GridViewColumn<UserDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Left).Text(row => Percent(row.CpuPercent)),
+            new GridViewColumn<UserDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Left).Text(row => Bytes(row.WorkingSetBytes)),
+            new GridViewColumn<UserDto>().Header("不可读进程").Width(120).HeaderTextAlignment(TextAlignment.Left).Text(row => row.UnreadableProcessCount.ToString(CultureInfo.InvariantCulture)));
+        ConfigureUsersContextMenu(usersGrid);
+        var locate = new Button().Content("查看此会话进程").IsEnabled(false).OnClick(() => LocateUserProcesses());
         usersGrid.OnSelectionChanged(value => locate.IsEnabled = value is UserDto);
-        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+        var command = new DockPanel().LastChildFill(false).Padding(0, 0, 0, 12).Spacing(8).Children(
             new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text("用户").SemiBold(),
                 LiveText(() => snapshots.Current is { } current
@@ -751,7 +1142,7 @@ internal sealed class TaskManagerView : UserControl
         var body = new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
             summary,
             ShellComponents.DataSurface(usersGrid));
-        return new Grid().Rows("Auto, *").Children(command, new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(body).Row(1));
+        return new Grid().Rows("Auto, *").Children(command, body.Row(1));
     }
 
     private FrameworkElement UserMetricCard(string title, Func<string> value, string description)
@@ -783,23 +1174,24 @@ internal sealed class TaskManagerView : UserControl
             CellPadding = new Thickness(8, 4),
         };
         detailGrid.Columns(
-            new GridViewColumn<ProcessDto>().Header("名称").StarWidth(2, minWidth: 260).Text(row => row.Name),
-            new GridViewColumn<ProcessDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
+            ProcessNameColumn<ProcessDto>("名称", "process", row => row.Identity, row => row.Name).StarWidth(2),
+            new GridViewColumn<ProcessDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Left).Text(row => row.Pid.ToString(CultureInfo.InvariantCulture)),
             new GridViewColumn<ProcessDto>().Header("状态").Width(100).Text(row => row.State == "running" ? "运行中" : row.State),
-            new GridViewColumn<ProcessDto>().Header("用户").StarWidth(1, minWidth: 160).Text(row => row.UserName ?? "未知用户"),
-            new GridViewColumn<ProcessDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => Percent(row.CpuPercent)),
-            new GridViewColumn<ProcessDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Right).Text(row => Bytes(row.WorkingSetBytes)),
-            new GridViewColumn<ProcessDto>().Header("父 PID").Width(100).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ParentPid.ToString(CultureInfo.InvariantCulture)),
-            new GridViewColumn<ProcessDto>().Header("会话").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.SessionId?.ToString(CultureInfo.InvariantCulture) ?? "—"),
+            new GridViewColumn<ProcessDto>().Header("用户").StarWidth(1).Text(row => row.UserName ?? "未知用户"),
+            new GridViewColumn<ProcessDto>().Header("CPU").Width(100).HeaderTextAlignment(TextAlignment.Left).Text(row => Percent(row.CpuPercent)),
+            new GridViewColumn<ProcessDto>().Header("内存").Width(120).HeaderTextAlignment(TextAlignment.Left).Text(row => Bytes(row.WorkingSetBytes)),
+            new GridViewColumn<ProcessDto>().Header("父 PID").Width(100).HeaderTextAlignment(TextAlignment.Left).Text(row => row.ParentPid.ToString(CultureInfo.InvariantCulture)),
+            new GridViewColumn<ProcessDto>().Header("会话").Width(90).HeaderTextAlignment(TextAlignment.Left).Text(row => row.SessionId?.ToString(CultureInfo.InvariantCulture) ?? "—"),
             new GridViewColumn<ProcessDto>().Header("优先级").Width(120).Text(row => row.Priority ?? "—"),
-            new GridViewColumn<ProcessDto>().Header("线程").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.ThreadCount.ToString(CultureInfo.InvariantCulture)),
-            new GridViewColumn<ProcessDto>().Header("句柄").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.HandleCount?.ToString(CultureInfo.InvariantCulture) ?? "—"),
-            new GridViewColumn<ProcessDto>().Header("网络").Width(130).HeaderTextAlignment(TextAlignment.Right).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
-            new GridViewColumn<ProcessDto>().Header("路径").StarWidth(3, minWidth: 360).Text(row => row.Path ?? "不可用"));
+            new GridViewColumn<ProcessDto>().Header("线程").Width(90).HeaderTextAlignment(TextAlignment.Left).Text(row => row.ThreadCount.ToString(CultureInfo.InvariantCulture)),
+            new GridViewColumn<ProcessDto>().Header("句柄").Width(90).HeaderTextAlignment(TextAlignment.Left).Text(row => row.HandleCount?.ToString(CultureInfo.InvariantCulture) ?? "—"),
+            new GridViewColumn<ProcessDto>().Header("网络").Width(130).HeaderTextAlignment(TextAlignment.Left).Text(row => Rate(row.NetworkReceiveBytesPerSecond, row.NetworkSendBytesPerSecond)),
+            new GridViewColumn<ProcessDto>().Header("路径").StarWidth(3).Text(row => row.Path ?? "不可用"));
+        ConfigureProcessContextMenu(detailGrid);
         var run = new Button().Content("运行新任务").OnClick(RunTask);
-        var end = new Button().Content("结束任务").IsEnabled(false).OnClick(EndSelected);
+        var end = new Button().Content("结束任务").IsEnabled(false).OnClick(() => EndSelected());
         detailGrid.OnSelectionChanged(value => end.IsEnabled = value is ProcessDto row && row.CanTerminate);
-        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+        var command = new DockPanel().LastChildFill(false).Padding(0, 0, 0, 12).Spacing(8).Children(
             new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text("详细信息").SemiBold(),
                 LiveText(() => snapshots.Current is { } current
@@ -822,14 +1214,15 @@ internal sealed class TaskManagerView : UserControl
             CellPadding = new Thickness(8, 4),
         };
         serviceGrid.Columns(
-            new GridViewColumn<ServiceDto>().Header("显示名称").StarWidth(2, minWidth: 280).Text(row => row.DisplayName),
-            new GridViewColumn<ServiceDto>().Header("服务名").StarWidth(2, minWidth: 240).Text(row => row.Name),
+            ProcessNameColumn<ServiceDto>("显示名称", "service", row => row.Name, row => row.DisplayName).StarWidth(2),
+            new GridViewColumn<ServiceDto>().Header("服务名").StarWidth(2).Text(row => row.Name),
             new GridViewColumn<ServiceDto>().Header("状态").Width(140).Text(ServiceStatus),
-            new GridViewColumn<ServiceDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Right).Text(row => row.Pid == 0 ? "—" : row.Pid.ToString(CultureInfo.InvariantCulture)));
+            new GridViewColumn<ServiceDto>().Header("PID").Width(90).HeaderTextAlignment(TextAlignment.Left).Text(row => row.Pid == 0 ? "—" : row.Pid.ToString(CultureInfo.InvariantCulture)));
+        ConfigureServiceContextMenu(serviceGrid);
         var start = new Button().Content("启动").IsEnabled(false).OnClick(() => ControlService("start"));
         var stop = new Button().Content("停止").IsEnabled(false).OnClick(() => ControlService("stop"));
         var restart = new Button().Content("重启").IsEnabled(false).OnClick(() => ControlService("restart"));
-        var details = new Button().Content("服务详情").IsEnabled(false).OnClick(ShowServiceDetails);
+        var details = new Button().Content("服务详情").IsEnabled(false).OnClick(() => ShowServiceDetails());
         var manager = new Button().Content("服务管理器").OnClick(() => _ = OpenServiceManager());
         var detailsTitle = new TextBlock().Text("选择服务").FontSize(ThemeFontSize.Medium).SemiBold();
         var detailsStatus = new TextBlock().Text("从列表选择一个真实 Windows 服务。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap);
@@ -856,7 +1249,7 @@ internal sealed class TaskManagerView : UserControl
             detailsName.Text = $"服务名：{row.Name}";
             detailsPid.Text = $"PID：{(row.Pid == 0 ? "—" : row.Pid.ToString(CultureInfo.InvariantCulture))}";
         });
-        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+        var command = new DockPanel().LastChildFill(false).Padding(0, 0, 0, 12).Spacing(8).Children(
             new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text("服务").SemiBold(),
                 LiveText(() => snapshots.Current is { } current
@@ -955,49 +1348,72 @@ internal sealed class TaskManagerView : UserControl
                 sourceStatus,
                 sourceLinks));
 
-        var content = new StackPanel().Vertical().Spacing(24).Children(
-            new TextBlock().Text("设置").FontSize(ThemeFontSize.Large).SemiBold(),
-            SettingGroup("采样与显示", "控制实时采样和数据行的阅读密度。",
-                SettingCard("采样间隔", "控制真实 Windows 采样频率。", interval),
-                SettingCard("暂停采样", "暂停时保留最后成功快照，并在页头标注暂停状态。", paused)),
-            SettingGroup("外观与窗口", "调整界面层级和窗口行为；保存后立即生效。",
-                SettingCard("密度", "保存紧凑或标准数据行密度。", density),
-                SettingCard("主题", "选择浅色、深色或跟随 Windows 系统设置。", theme),
-                fontInfo,
-                SettingCard("侧栏", "折叠后保留导航图标和键盘语义。", sidebarCollapsed),
-                SettingCard("窗口", "通过 Windows 读回当前置顶状态。", alwaysOnTop)),
-            SettingGroup("任务管理器入口", "安全读取或恢复本机任务管理器入口，动作按实际权限启用。", integrationCard),
-            SettingGroup("版本与更新", "安装版本与更新状态由正式桌面后台服务提供。", updateInfo),
-            SettingGroup("来源与能力", "查看真实 Windows 来源和当前采样状态。", sourceCard));
-        return new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(content);
+        var sampling = SettingGroup("采样与显示", "控制实时采样和数据行的阅读密度。",
+            SettingCard("采样间隔", "控制真实 Windows 采样频率。", interval),
+            SettingCard("暂停采样", "暂停时保留最后成功快照，并在页头标注暂停状态。", paused));
+        var appearance = SettingGroup("外观与窗口", "调整界面层级和窗口行为；保存后立即生效。",
+            SettingCard("密度", "保存紧凑或标准数据行密度。", density),
+            SettingCard("主题", "选择浅色、深色或跟随 Windows 系统设置。", theme),
+            fontInfo,
+            SettingCard("侧栏", "折叠后保留导航图标和键盘语义。", sidebarCollapsed),
+            SettingCard("窗口", "通过 Windows 读回当前置顶状态。", alwaysOnTop));
+        var entry = SettingGroup("任务管理器入口", "安全读取或恢复本机任务管理器入口，动作按实际权限启用。", integrationCard);
+        var update = SettingGroup("版本与更新", "安装版本与更新状态由正式桌面后台服务提供。", updateInfo);
+        var source = SettingGroup("来源与能力", "查看真实 Windows 来源和当前采样状态。", sourceCard);
+        return new Grid().Columns("*, *").Spacing(ShellTokens.ContentGap).Children(
+            new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(sampling, appearance),
+            new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(entry, update, source).Column(1));
+    }
+
+    private static TextBlock NewSystemInfoDetailsBlock()
+        => new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small)
+            .TextWrapping(TextWrapping.NoWrap).TextTrimming(TextTrimming.CharacterEllipsis);
+
+    private static FrameworkElement BuildSystemInformationCards(
+        TextBlock processors,
+        TextBlock graphics,
+        TextBlock motherboard,
+        TextBlock memory,
+        TextBlock disks,
+        TextBlock displays,
+        TextBlock windows)
+    {
+        return new Grid().Columns("*, *").Rows("Auto, Auto, Auto, Auto").Children(
+            SystemInfoCard("处理器", "CPU、核心和逻辑处理器", processors).Row(0).Column(0),
+            SystemInfoCard("显卡", "真实图形适配器与显存", graphics).Row(0).Column(1),
+            SystemInfoCard("主板", "主板制造商、产品与版本", motherboard).Row(1).Column(0),
+            SystemInfoCard("内存", "容量、模块与配置速度", memory).Row(1).Column(1),
+            SystemInfoCard("磁盘", "型号、介质、总线与容量", disks).Row(2).Column(0),
+            SystemInfoCard("显示器", "分辨率、刷新率与物理尺寸", displays).Row(2).Column(1),
+            SystemInfoCard("Windows", "系统版本与架构", windows).Row(3).ColumnSpan(2));
     }
 
     private FrameworkElement BuildSystemInformationPage()
     {
         systemInfoSummary = new TextBlock().Text("正在读取 Windows 硬件概览…").FontSize(ThemeFontSize.Small);
-        systemInfoProcessors = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
-        systemInfoGraphics = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
-        systemInfoMotherboard = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
-        systemInfoMemory = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
-        systemInfoDisks = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
-        systemInfoDisplays = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
-        systemInfoWindows = new TextBlock().Text("正在等待 Windows 硬件读取…").FontSize(ThemeFontSize.Small);
+        systemInfoProcessors = NewSystemInfoDetailsBlock();
+        systemInfoGraphics = NewSystemInfoDetailsBlock();
+        systemInfoMotherboard = NewSystemInfoDetailsBlock();
+        systemInfoMemory = NewSystemInfoDetailsBlock();
+        systemInfoDisks = NewSystemInfoDetailsBlock();
+        systemInfoDisplays = NewSystemInfoDetailsBlock();
+        systemInfoWindows = NewSystemInfoDetailsBlock();
         var refresh = new Button().Content("刷新硬件信息").OnClick(() => _ = RefreshSystemInformation(true));
         systemInfoCopyButton = new Button().Content("复制").IsEnabled(false).OnClick(CopySystemInformation);
-        var command = new DockPanel().Padding(0, 0, 0, 12).Spacing(8).Children(
+        var command = new DockPanel().LastChildFill(false).Padding(0, 0, 0, 12).Spacing(8).Children(
             new StackPanel().Vertical().Spacing(4).Children(
                 new TextBlock().Text("系统信息").SemiBold(),
                 new TextBlock().Text("硬件概览由 Windows 原生接口按需读取，不参与实时采样。").FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)),
             ShellComponents.CommandBar(refresh, systemInfoCopyButton).DockRight());
 
-        var cards = new Grid().Columns("*, *").Rows("Auto, Auto, Auto, Auto").Children(
-            SystemInfoCard("处理器", "CPU、核心和逻辑处理器", systemInfoProcessors!).Row(0).Column(0),
-            SystemInfoCard("显卡", "真实图形适配器与显存", systemInfoGraphics!).Row(0).Column(1),
-            SystemInfoCard("主板", "主板制造商、产品与版本", systemInfoMotherboard!).Row(1).Column(0),
-            SystemInfoCard("内存", "容量、模块与配置速度", systemInfoMemory!).Row(1).Column(1),
-            SystemInfoCard("磁盘", "型号、介质、总线与容量", systemInfoDisks!).Row(2).Column(0),
-            SystemInfoCard("显示器", "分辨率、刷新率与物理尺寸", systemInfoDisplays!).Row(2).Column(1),
-            SystemInfoCard("Windows", "系统版本与架构", systemInfoWindows!).Row(3).ColumnSpan(2));
+        var cards = BuildSystemInformationCards(
+            systemInfoProcessors,
+            systemInfoGraphics,
+            systemInfoMotherboard,
+            systemInfoMemory,
+            systemInfoDisks,
+            systemInfoDisplays,
+            systemInfoWindows);
         var content = new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(
             new Border().Padding(12, 10).BorderThickness(1).CornerRadius(ShellTokens.ControlRadius)
                 .WithTheme((theme, border) =>
@@ -1007,8 +1423,7 @@ internal sealed class TaskManagerView : UserControl
                 })
                 .Child(systemInfoSummary),
             cards);
-        return new ScrollViewer().Background(Color.Transparent).AutoVerticalScroll().NoHorizontalScroll().Content(
-            new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(command, content));
+        return new StackPanel().Vertical().Spacing(ShellTokens.ContentGap).Children(command, content);
     }
 
     private static FrameworkElement SystemInfoCard(string title, string description, TextBlock details)
@@ -1023,7 +1438,8 @@ internal sealed class TaskManagerView : UserControl
             .Child(new StackPanel().Vertical().Spacing(8).Children(
                 new StackPanel().Vertical().Spacing(2).Children(
                     new TextBlock().Text(title).FontSize(ThemeFontSize.Medium).SemiBold(),
-                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)),
+                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small)
+                        .TextWrapping(TextWrapping.NoWrap).TextTrimming(TextTrimming.CharacterEllipsis)),
                 details.TextWrapping(TextWrapping.Wrap).LineSpacing(2)));
     }
 
@@ -1035,13 +1451,13 @@ internal sealed class TaskManagerView : UserControl
             if (systemInfoSummary is null) return;
             systemInformationClipboard = FormatSystemInformation(info);
             systemInfoSummary.Text = $"状态：{SystemInformationStatus(info.Status)} · 采集时间：{FormatCaptureTime(info.CapturedAtUtc)}";
-            if (systemInfoProcessors is not null) systemInfoProcessors.Text = FormatProcessors(info);
-            if (systemInfoGraphics is not null) systemInfoGraphics.Text = FormatGraphics(info);
-            if (systemInfoMotherboard is not null) systemInfoMotherboard.Text = FormatMotherboard(info);
-            if (systemInfoMemory is not null) systemInfoMemory.Text = FormatMemory(info);
-            if (systemInfoDisks is not null) systemInfoDisks.Text = FormatDisks(info);
-            if (systemInfoDisplays is not null) systemInfoDisplays.Text = FormatDisplays(info);
-            if (systemInfoWindows is not null) systemInfoWindows.Text = FormatWindows(info);
+            SetSystemInfoDetails(systemInfoProcessors, overviewSystemInfoProcessors, FormatProcessors(info));
+            SetSystemInfoDetails(systemInfoGraphics, overviewSystemInfoGraphics, FormatGraphics(info));
+            SetSystemInfoDetails(systemInfoMotherboard, overviewSystemInfoMotherboard, FormatMotherboard(info));
+            SetSystemInfoDetails(systemInfoMemory, overviewSystemInfoMemory, FormatMemory(info));
+            SetSystemInfoDetails(systemInfoDisks, overviewSystemInfoDisks, FormatDisks(info));
+            SetSystemInfoDetails(systemInfoDisplays, overviewSystemInfoDisplays, FormatDisplays(info));
+            SetSystemInfoDetails(systemInfoWindows, overviewSystemInfoWindows, FormatWindows(info));
             if (systemInfoCopyButton is not null) systemInfoCopyButton.IsEnabled = info.Status is not "loading";
         }
         catch (Exception error) when (error is not OutOfMemoryException)
@@ -1049,6 +1465,19 @@ internal sealed class TaskManagerView : UserControl
             if (systemInfoSummary is not null) systemInfoSummary.Text = $"硬件信息暂不可用：{error.Message}";
             if (systemInfoCopyButton is not null) systemInfoCopyButton.IsEnabled = false;
         }
+    }
+
+    private static void SetSystemInfoDetails(TextBlock? primary, TextBlock? overview, string text)
+    {
+        var summary = CompactSystemInfoSummary(text);
+        if (primary is not null) primary.Text = summary;
+        if (overview is not null) overview.Text = summary;
+    }
+
+    private static string CompactSystemInfoSummary(string text)
+    {
+        var lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return lines.Length <= 2 ? string.Join(" · ", lines) : string.Join(" · ", lines.Take(2)) + " …";
     }
 
     private void SaveUiPreferences(Func<UiPreferences, UiPreferences> update)
@@ -1141,6 +1570,23 @@ internal sealed class TaskManagerView : UserControl
         {
             statusText!.Text = error.Message;
             RefreshIntegration();
+        }
+    }
+
+    private void CopyToClipboard(string text, string successMessage)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+        try
+        {
+            if (statusText is null) return;
+            var clipboard = Application.Current?.PlatformServices?.Clipboard;
+            statusText.Text = clipboard is not null && clipboard.TrySetText(text)
+                ? successMessage
+                : "系统剪贴板当前不可用。";
+        }
+        catch (Exception error) when (error is not OutOfMemoryException)
+        {
+            statusText!.Text = $"复制失败：{error.Message}";
         }
     }
 
@@ -1275,7 +1721,7 @@ internal sealed class TaskManagerView : UserControl
 
     private static FrameworkElement SettingCard(string title, string description, FrameworkElement control)
     {
-        return new Border().Padding(16).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
+        return new Border().Padding(8, 10).BorderThickness(1).CornerRadius(ShellTokens.PanelRadius)
             .WithTheme((theme, border) =>
             {
                 border.Background = theme.Palette.ControlBackground.WithAlpha(ShellTokens.SurfaceAlpha);
@@ -1284,7 +1730,8 @@ internal sealed class TaskManagerView : UserControl
             .Child(new Grid().Columns("*, Auto").Children(
                 new StackPanel().Vertical().Spacing(4).Children(
                     new TextBlock().Text(title).SemiBold(),
-                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small).TextWrapping(TextWrapping.Wrap)),
+                    new TextBlock().Text(description).FontSize(ThemeFontSize.Small)
+                        .TextWrapping(TextWrapping.NoWrap).TextTrimming(TextTrimming.CharacterEllipsis)),
                 control.Column(1).CenterVertical()));
     }
 
@@ -1324,8 +1771,10 @@ internal sealed class TaskManagerView : UserControl
     {
         UpdateSummary();
         UpdateProcessRows();
+        RefreshSelectedProcess();
         UpdateOtherRows();
         foreach (var item in liveText) item.Block.Text = item.Get();
+        foreach (var item in processInspectorLiveText) item.Block.Text = item.Get();
         if (statusText is not null) statusText.Text = snapshots.Current is null ? "正在预热 Windows 数据源…" : snapshots.Settings.Paused ? "已暂停" : $"已更新 {snapshots.Current.CapturedAtUtc.ToLocalTime():HH:mm:ss}";
     }
 
@@ -1355,9 +1804,35 @@ internal sealed class TaskManagerView : UserControl
 
     private ProcessDto? FindProcess(string identity) => snapshots.Current?.Processes.FirstOrDefault(row => row.Identity == identity);
 
-    private void LocateHistoryProcess()
+    private void ShowProcessDetails(ProcessDto row)
     {
-        if (historyGrid?.SelectedItem is not ProcessHistoryDto history || !history.IsRunning) return;
+        if (processGrid is not null) processGrid.SelectedItem = row;
+        if (detailGrid is not null)
+        {
+            detailGrid.SelectedItem = row;
+            if (detailGrid.SelectedIndex >= 0) detailGrid.ScrollIntoView(detailGrid.SelectedIndex);
+        }
+        SetSelectedProcess(row);
+        SelectPage(Array.IndexOf(PageKeys, "details"));
+    }
+
+    private async void OpenProcessLocation(ProcessDto row)
+    {
+        if (row.CreationTimeFileTime is not { } creation || string.IsNullOrWhiteSpace(row.Path)) return;
+        try
+        {
+            statusText!.Text = await shell.ProcessFileAsync(row.Pid, new FileActionRequest(creation, "openLocation"));
+        }
+        catch (ApiException error)
+        {
+            statusText!.Text = error.Message;
+        }
+    }
+
+    private void LocateHistoryProcess(ProcessHistoryDto? selected = null)
+    {
+        var history = selected ?? historyGrid?.SelectedItem as ProcessHistoryDto;
+        if (history is null || !history.IsRunning) return;
         var process = FindProcess(history.Identity);
         if (process is null)
         {
@@ -1374,9 +1849,10 @@ internal sealed class TaskManagerView : UserControl
         statusText!.Text = $"已定位进程 {process.Name}（PID {process.Pid.ToString(CultureInfo.InvariantCulture)}）。";
     }
 
-    private async void OpenSelectedStartupLocation()
+    private async void OpenSelectedStartupLocation(StartupDto? selected = null)
     {
-        if (startupGrid?.SelectedItem is not StartupDto row || !row.CanOpenLocation) return;
+        var row = selected ?? startupGrid?.SelectedItem as StartupDto;
+        if (row is null || !row.CanOpenLocation) return;
         try
         {
             statusText!.Text = await shell.StartupLocationAsync(row.Id);
@@ -1399,13 +1875,14 @@ internal sealed class TaskManagerView : UserControl
         }
     }
 
-    private async void ControlService(string command)
+    private async void ControlService(string command, ServiceDto? selected = null)
     {
-        if (serviceGrid?.SelectedItem is not ServiceDto selected) return;
+        var service = selected ?? serviceGrid?.SelectedItem as ServiceDto;
+        if (service is null) return;
         ServiceDetails details;
         try
         {
-            details = await Task.Run(() => serviceActions.Details(selected.Name));
+            details = await Task.Run(() => serviceActions.Details(service.Name));
         }
         catch (ApiException error)
         {
@@ -1434,7 +1911,7 @@ internal sealed class TaskManagerView : UserControl
                 owner: owner)) return;
         try
         {
-            var result = await serviceActions.ControlAsync(selected.Name, new ServiceControlRequest(command, details.State, details.Pid));
+            var result = await serviceActions.ControlAsync(service.Name, new ServiceControlRequest(command, details.State, details.Pid));
             statusText!.Text = result.Message;
             snapshots.RefreshSlowData();
         }
@@ -1444,12 +1921,13 @@ internal sealed class TaskManagerView : UserControl
         }
     }
 
-    private async void ShowServiceDetails()
+    private async void ShowServiceDetails(ServiceDto? selected = null)
     {
-        if (serviceGrid?.SelectedItem is not ServiceDto selected) return;
+        var service = selected ?? serviceGrid?.SelectedItem as ServiceDto;
+        if (service is null) return;
         try
         {
-            var details = await Task.Run(() => serviceActions.Details(selected.Name));
+            var details = await Task.Run(() => serviceActions.Details(service.Name));
             var dependencies = details.Dependencies.Count == 0 ? "—" : string.Join("、", details.Dependencies);
             statusText!.Text = $"{details.DisplayName} · 状态 {details.State} · PID {(details.Pid == 0 ? "—" : details.Pid.ToString(CultureInfo.InvariantCulture))}\n启动类型：{details.StartType ?? "不可用"} · 账户：{details.Account ?? "不可用"}\n路径：{details.BinaryPath ?? "不可用"}\n依赖：{dependencies}";
         }
@@ -1465,9 +1943,10 @@ internal sealed class TaskManagerView : UserControl
         catch (ApiException error) { statusText!.Text = error.Message; }
     }
 
-    private void LocateUserProcesses()
+    private void LocateUserProcesses(UserDto? selected = null)
     {
-        if (usersGrid?.SelectedItem is not UserDto user) return;
+        var user = selected ?? usersGrid?.SelectedItem as UserDto;
+        if (user is null) return;
         processSessionFilter = user.SessionId;
         query = string.Empty;
         if (searchBox is not null) searchBox.Text = string.Empty;
@@ -1535,9 +2014,9 @@ internal sealed class TaskManagerView : UserControl
         await dialog.ShowDialogAsync(owner);
     }
 
-    private async void EndSelected()
+    private async void EndSelected(ProcessDto? selected = null)
     {
-        var row = processGrid?.SelectedItem as ProcessDto ?? detailGrid?.SelectedItem as ProcessDto;
+        var row = selected ?? selectedProcess ?? processGrid?.SelectedItem as ProcessDto ?? detailGrid?.SelectedItem as ProcessDto;
         if (row is null || !row.CanTerminate || row.CreationTimeFileTime is not { } creation)
             return;
         var owner = FindVisualRoot() as Window;

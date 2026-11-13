@@ -86,7 +86,8 @@ try
         var window = new TaskManagerWindow(app.Services.GetRequiredService<SnapshotService>(), preferences,
             app.Services.GetRequiredService<ProcessActionService>(), app.Services.GetRequiredService<SystemInformationService>(),
             app.Services.GetRequiredService<ShellActionService>(), app.Services.GetRequiredService<ServiceActionService>(),
-            desktop, app.Services.GetRequiredService<TaskManagerIntegrationService>());
+            desktop, app.Services.GetRequiredService<TaskManagerIntegrationService>(),
+            app.Services.GetRequiredService<ProcessIconService>());
         desktop.Attach(window);
         window.OnClosed(() =>
         {

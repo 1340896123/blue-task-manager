@@ -40,10 +40,23 @@
     <!-- The native MewUI window is part of this Host process. -->
   </ItemGroup>
   <ItemGroup>
-    <!-- Keep the UI font beside the published app so installation does not depend on a system font. -->
-    <Content Include="../../assets/fonts/HarmonyOS_Sans_SC_Regular.ttf">
-      <Link>fonts/HarmonyOS_Sans_SC_Regular.ttf</Link>
-      <TargetPath>fonts/HarmonyOS_Sans_SC_Regular.ttf</TargetPath>
+    <!-- The custom title bar and native window chrome both use the bundled brand assets. -->
+    <Content Include="../../assets/branding/takao-256.png">
+      <Link>branding/takao-256.png</Link>
+      <TargetPath>branding/takao-256.png</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+    <Content Include="../../assets/branding/takao.ico">
+      <Link>branding/takao.ico</Link>
+      <TargetPath>branding/takao.ico</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+    <!-- Keep the bundled font family beside the published app so installation does not depend on system fonts. -->
+    <Content Include="../../assets/fonts/*.ttf">
+      <Link>fonts/%(Filename)%(Extension)</Link>
+      <TargetPath>fonts/%(Filename)%(Extension)</TargetPath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>Always</CopyToPublishDirectory>
     </Content>

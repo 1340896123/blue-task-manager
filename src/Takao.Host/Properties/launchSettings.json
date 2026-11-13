@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Takao.Host": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:14319;http://localhost:14320"
+    }
+  }
+}

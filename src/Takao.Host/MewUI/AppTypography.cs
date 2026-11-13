@@ -9,6 +9,8 @@ namespace Takao.Host.MewUI;
 internal static class AppTypography
 {
     internal const string FontRelativePath = "fonts/HarmonyOS_Sans_SC_Regular.ttf";
+    internal const string IconFontFamily = "Segoe Fluent Icons";
+    internal static string DefaultFontFamily { get; private set; } = string.Empty;
 
     internal static FontResource Load()
     {
@@ -23,6 +25,7 @@ internal static class AppTypography
     internal static void Apply(FontResource font)
     {
         ArgumentNullException.ThrowIfNull(font);
+        DefaultFontFamily = font.FontFamily;
         ThemeManager.DefaultMetrics = ThemeManager.DefaultMetrics with { FontFamily = font.FontFamily };
     }
 }
